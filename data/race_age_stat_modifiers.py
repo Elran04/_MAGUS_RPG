@@ -69,7 +69,7 @@ RACE_MODIFIERS = {
         },  
         "limits": {
             "Erő": (4,21),
-            "Álloképesség": (3,20),
+            "Állóképesség": (3,20),
             "Gyorsaság": (3,20),
             "Ügyesség": (2,19),
             "Intelligencia": (1,17),
@@ -122,7 +122,11 @@ AGE_LIMITS_BY_RACE = {
     # fajok bővíthetők
 }
 
-def get_age_category(race: str, age: int) -> int:
+def get_age_category(race: str, age) -> int:
+    try:
+        age = int(age)
+    except ValueError:
+        raise ValueError("Az életkor csak szám lehet.")
     limits = AGE_LIMITS_BY_RACE.get(race)
     if not limits:
         return 2  # ha nincs faj megadva, alapértelmezett "felnőtt" kategória

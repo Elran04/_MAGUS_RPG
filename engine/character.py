@@ -23,8 +23,8 @@ def generate_stats(klass: str) -> dict:
 
 def generate_character(name, gender, age, race, klass):
     stats = generate_stats(klass)
-    stats = apply_race_modifiers(stats, race)
     stats = apply_age_modifiers(stats, race, age)
+    stats = apply_race_modifiers(stats, race)
     upgradable = UPGRADABLE_STATS.get(klass, [])
     
     return {
