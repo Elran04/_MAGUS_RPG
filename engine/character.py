@@ -1,6 +1,7 @@
 # engine/character.py
 import random
 from data.class_stat_weights import CLASS_STAT_WEIGHTS , UPGRADABLE_STATS
+from data.race_age_stat_modifiers import apply_age_modifiers , apply_race_modifiers
 
 def generate_stats(klass: str) -> dict:
     default_range = (8, 18)
@@ -22,6 +23,8 @@ def generate_stats(klass: str) -> dict:
 
 def generate_character(name, gender, age, race, klass):
     stats = generate_stats(klass)
+    stats = apply_race_modifiers(stats, race)
+    stats = apply_age_modifiers(stats, race, age)
     upgradable = UPGRADABLE_STATS.get(klass, [])
     
     return {

@@ -8,8 +8,9 @@ def display_character(char):
     text_area.insert(tk.END, f"Név: {char['Név']}\nNem: {char['Nem']}\nKor: {char['Kor']}\n")
     text_area.insert(tk.END, f"Faj: {char['Faj']}\nKaszt: {char['Kaszt']}\n")
     text_area.insert(tk.END, "Tulajdonságok:\n")
-    for stat, value in char['Tulajdonságok'].items():
-        text_area.insert(tk.END, f"  {stat}: {value}\n")
+    for stat, value in char["Tulajdonságok"].items():
+        marker = " [✓]" if stat in char.get("Fejleszthető", []) else ""
+        text_area.insert(tk.END, f"  {stat}: {value}{marker}\n")
     text_area.insert(tk.END, "-" * 40 + "\n")
 
 root = tk.Tk()
