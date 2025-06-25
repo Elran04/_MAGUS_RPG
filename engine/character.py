@@ -1,28 +1,37 @@
 # engine/character.py
 import random
+from data.class_stat_weights import CLASS_STAT_WEIGHTS , UPGRADABLE_STATS
 
-def generate_stats():
-    return {
-        "Erő": random.randint(8, 18),
-        "Gyorsaság": random.randint(8, 18),
-        "Ügyesség": random.randint(8, 18),
-        "Állóképesség": random.randint(8, 18),
-        "Karizma": random.randint(8, 18),
-        "Egészség": random.randint(8, 18),
-        "Intelligencia": random.randint(8, 18),
-        "Akaraterő": random.randint(8, 18),
-        "Asztrál": random.randint(8, 18),
-        "Érzékelés": random.randint(8, 18),
-    }
+def generate_stats(klass: str) -> dict:
+    default_range = (8, 18)
+    class_data = CLASS_STAT_WEIGHTS.get(klass, {})
+    weights = class_data.get("statok", {})
+    dupla_dobas = set(class_data.get("dupla_dobas", []))
+
+    stats = {}
+    for stat in ["Erő", "Gyorsaság", "Ügyesség", "Állóképesség", "Karizma",
+                 "Egészség", "Intelligencia", "Akaraterő", "Asztrál", "Érzékelés"]:
+        low, high = weights.get(stat, default_range)
+        if stat in dupla_dobas:
+            val1 = random.randint(low, high)
+            val2 = random.randint(low, high)
+            stats[stat] = max(val1, val2)
+        else:
+            stats[stat] = random.randint(low, high)
+    return stats
 
 def generate_character(name, gender, age, race, klass):
+    stats = generate_stats(klass)
+    upgradable = UPGRADABLE_STATS.get(klass, [])
+    
     return {
         "Név": name,
         "Nem": gender,
         "Kor": age,
         "Faj": race,
         "Kaszt": klass,
-        "Tulajdonságok": generate_stats()
+        "Tulajdonságok": stats,
+        "Fejleszthető": upgradable
     }
 
 # Tiltott kasztok nem szerint

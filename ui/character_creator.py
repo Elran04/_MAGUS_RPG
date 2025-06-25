@@ -5,8 +5,7 @@ from engine.character import generate_character , is_valid_character
 
 def open_character_creator(root, on_character_created):
     def create():
-        result_label.config(text="")  # <--- Ez a sor a kulcs!
-
+        result_label.config(text="")
         name = name_entry.get()
         gender = gender_var.get()
         age = age_entry.get()
@@ -24,6 +23,37 @@ def open_character_creator(root, on_character_created):
             text=f"A(z) {race.lower()} {gender.lower()} nem lehet {klass.lower()}!"
         )
             return
+        try:
+            age_int = int(age)
+        except ValueError:
+            result_label.config(text="A kor csak szám lehet.")
+            return
+
+        # Fajfüggő korhatárok dictionary-ben
+        AGE_LIMITS = {
+            "Ember": (13, 100),
+            "Elf": (30, 3000),
+            "Félelf": (16, 200),
+            "Törpe": (25, 800),
+            "Udvari ork": (9, 80),
+            "Amund": (30, 120),
+            "Dzsenn": (15, 250),
+            "Khál": (1, 50),
+            "Wier": (10, 130),
+            # ide jöhetnek még a többi fajok
+        }
+
+        if race in AGE_LIMITS:
+            min_age, max_age = AGE_LIMITS[race]
+            if age_int < min_age or age_int > max_age:
+                result_label.config(text=f"A(z) {race} kora {min_age} és {max_age} között kell legyen.")
+                return
+        else:
+            # Ha nincs megadva korhatár a fajhoz, az általános tartományt lép érvénybe
+            if age_int < 13 or age_int > 100:
+                result_label.config(text="A kor 10 és 100 között kell legyen.")
+                return
+
     
         char = generate_character(name, gender, age, race, klass)
         on_character_created(char)
