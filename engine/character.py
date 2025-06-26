@@ -2,6 +2,8 @@
 import random
 from data.class_stat_weights import CLASS_STAT_WEIGHTS , UPGRADABLE_STATS
 from data.race_age_stat_modifiers import apply_age_modifiers , apply_race_modifiers
+from data.class_additional_stats import CLASS_COMBAT_STATS_AND_SKILL_POINTS
+
 
 def generate_stats(klass: str) -> dict:
     default_range = (8, 18)
@@ -21,13 +23,52 @@ def generate_stats(klass: str) -> dict:
             stats[stat] = random.randint(low, high)
     return stats
 
+
+def calculate_combat_stats(character):
+    klass = character["Kaszt"]
+    stats = character["Tulajdonságok"]
+    data = CLASS_COMBAT_STATS_AND_SKILL_POINTS.get(klass, {})
+
+    # Véletlenszerű FP bónusz első szintre
+    fp_bonus = random.randint(*data.get("FP_per_level", (0, 0)))
+
+
+    # További stat alapú bónuszok kiszámítása
+    def bonus(val):
+        return max(0, val - 10)
+
+    fp = data.get("FP", 0) + fp_bonus + bonus(stats["Akaraterő"]) + bonus(stats["Állóképesség"])
+    ep = data.get("ÉP", 0) + bonus(stats["Egészség"])
+    ke = data.get("KÉ", 0) + bonus(stats["Gyorsaság"]) + bonus(stats["Ügyesség"])
+    te = data.get("TÉ", 0) + bonus(stats["Erő"]) + bonus(stats["Gyorsaság"]) + bonus(stats["Ügyesség"])
+    ve = data.get("VÉ", 0) + bonus(stats["Gyorsaság"]) + bonus(stats["Ügyesség"])
+    ce = data.get("CÉ", 0) + bonus(stats["Ügyesség"])
+
+    character["Harci értékek"] = {
+        "FP": fp,
+        "ÉP": ep,
+        "KÉ": ke,
+        "TÉ": te,
+        "VÉ": ve,
+        "CÉ": ce,
+        "HM/szint": data.get("HM_per_level", {"total": 0, "mandatory": {}}),
+    }
+
+    character["Képzettségpontok"] = {
+        "Alap": data.get("KP", 0),
+        "Szintenként": data.get("KP_per_level", 0)
+    }
+
+    return character
+
+
 def generate_character(name, gender, age, race, klass):
     stats = generate_stats(klass)
     stats = apply_age_modifiers(stats, race, age)
     stats = apply_race_modifiers(stats, race)
     upgradable = UPGRADABLE_STATS.get(klass, [])
-    
-    return {
+
+    char = {
         "Név": name,
         "Nem": gender,
         "Kor": age,
@@ -37,14 +78,18 @@ def generate_character(name, gender, age, race, klass):
         "Fejleszthető": upgradable
     }
 
+    char = calculate_combat_stats(char)
+    return char
+
+
 # Tiltott kasztok nem szerint
 GENDER_RESTRICTIONS = {
     "Nő": {"Lovag", "Paplovag", "Barbár", "Boszorkánymester"},
     "Férfi": {"Boszorkány", "Amazon"}
 }
+
 # Tiltott kasztok faj szerint
 RACE_RESTRICTIONS = {
-
     "Amund": {
         "Fejvadász", "Amazon", "Barbár", "Bárd", "Harcművész", "Kardművész",
         "Pap", "Szerzetes", "Sámán", "Boszorkánymester", "Tűzvarázsló", "Varázsló", "Pszi mester"
