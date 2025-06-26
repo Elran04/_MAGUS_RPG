@@ -72,19 +72,47 @@ RACE_MODIFIERS = {
             "Állóképesség": (3,20),
             "Gyorsaság": (3,20),
             "Ügyesség": (2,19),
+            "Egészség": (4,21),
             "Intelligencia": (1,17),
             "Asztrál": (1,13)
         }    
     },
     "Törpe": {
         "modifiers": {
-            "Állóképesség": +2,
+            "Erő": +1,
+            "Állóképesség": +1,
+            "Egészség": +1,
+            "Karizma": -2,
+            "Intelligencia": -1,
             "Asztrál": -1
-        },
+
+        },  
         "limits": {
-            "Asztrál": (3, 16),
-            "Karizma": (3, 17)
-        }
+            "Erő": (2,19),
+            "Állóképesség": (2,19),
+            "Egészség": (4,21),
+            "Karizma": (1,15),
+            "Asztrál": (1,16)
+        }    
+    },
+    "Udvari ork": {
+        "modifiers": {
+            "Erő": +2,
+            "Állóképesség": +1,
+            "Egészség": +2,
+            "Karizma": -3,
+            "Intelligencia": -1,
+            "Asztrál": -3
+
+        },  
+        "limits": {
+            "Erő": (3,20),
+            "Állóképesség": (2,19),
+            "Egészség": (4,22),
+            "Karizma": (1,13),
+            "Intelligencia": (1,16),
+            "Asztrál": (1,15)
+        }    
     },
     # többi faj...
 }
