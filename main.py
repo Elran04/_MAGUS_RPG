@@ -4,6 +4,8 @@ import tkinter as tk
 from tkinter import simpledialog, messagebox
 from ui.character_creator import open_character_creator
 from engine.storage import save_character, load_character
+import subprocess
+import sys
 
 last_character = {}
 
@@ -84,6 +86,11 @@ def load_character_dialog():
     listbox.bind('<Double-1>', lambda event: do_load())
     tk.Button(dialog, text="Betöltés", command=do_load).pack(pady=10)
 
+def open_skill_editor():
+    # Windows alatt:
+    subprocess.Popen([sys.executable, "data/skills_editor.py"])
+    # Ha máshol van a skills_editor.py, add meg a teljes elérési utat!
+
 root = tk.Tk()
 root.title("M.A.G.U.S. Szöveges RPG")
 root.geometry("600x400")
@@ -102,5 +109,8 @@ save_button.pack(side=tk.LEFT, padx=10)
 
 load_button = tk.Button(root, text="Betöltés", command=load_character_dialog)
 load_button.pack(side=tk.LEFT, padx=10)
+
+skill_editor_button = tk.Button(root, text="Képzettség szerkesztő", command=open_skill_editor)
+skill_editor_button.pack(side=tk.LEFT, padx=10)
 
 root.mainloop()
