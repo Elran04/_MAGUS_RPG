@@ -92,9 +92,10 @@ def add_skill_gui():
     sub_cat_var.set(CATEGORIES[main_cat_var.get()][0])
     main_cat_var.trace_add("write", update_subcategories)
 
-    tk.Label(win, text="Leírás:").grid(row=3, column=0)
-    desc_text = tk.Text(win, height=3, width=30)
-    desc_text.grid(row=3, column=1)
+    # Általános leírás mező - VÁLTOZÓNÉV MÓDOSÍTÁS!
+    tk.Label(win, text="Általános leírás:").grid(row=3, column=0)
+    general_desc_text = tk.Text(win, height=3, width=30)
+    general_desc_text.grid(row=3, column=1)
 
     # Elsajátítás módja
     acq_method_var = tk.StringVar(value="Gyakorlás")
@@ -180,7 +181,7 @@ def add_skill_gui():
             "name": name_var.get(),
             "main_category": main_cat_var.get(),
             "sub_category": sub_cat_var.get(),
-            "description": desc_text.get("1.0", tk.END).strip(),
+            "description": general_desc_text.get("1.0", tk.END).strip(),  # <-- JAVÍTOTT SOR!
             "acquisition_method": acq_method_var.get(),
             "acquisition_difficulty": acq_diff_var.get(),
             "skill_type": type_var.get(),

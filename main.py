@@ -88,7 +88,7 @@ def load_character_dialog():
 
 def open_skill_editor():
     # Windows alatt:
-    subprocess.Popen([sys.executable, "data/skills_editor.py"])
+    subprocess.Popen([sys.executable, "skills/skills_editor.py"])
     # Ha máshol van a skills_editor.py, add meg a teljes elérési utat!
 
 root = tk.Tk()
