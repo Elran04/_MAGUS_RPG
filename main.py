@@ -115,5 +115,5 @@ load_button.pack(side=tk.LEFT, padx=10)
 skill_editor_button = tk.Button(root, text="Képzettség szerkesztő", command=open_skill_editor)
 skill_editor_button.pack(side=tk.LEFT, padx=10)
 
-# --- FŐABLAK FUTTATÁSA ---# --- FŐABLAK FUTTATÁSA ---
+# --- FŐABLAK FUTTATÁSA ---
 root.mainloop()
