@@ -1,8 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
-import json
 import os
-from skills import load_skills, save_skills, validate_skill
+from skills.skill_manager import SkillManager
 from tkinter import ttk
 import re
 
@@ -206,9 +205,10 @@ class PrerequisiteManager:
             frame.grid_remove()
         self.parent.update_idletasks()
 
-class SkillEditor:
+class SkillEditor():
     def __init__(self):
-        self.all_skills = load_skills()
+        self.skill_manager = SkillManager()
+        self.all_skills = self.skill_manager.load()
         self.SKILL_NAMES = [s["name"] for s in self.all_skills]
         self.win = tk.Tk()
         self.win.title("Képzettség szerkesztő")
@@ -397,11 +397,11 @@ class SkillEditor:
             skill.pop("kp_costs")
         else:
             skill.pop("kp_per_3_percent")
-        if not validate_skill(skill):
+        if not self.skill_manager.validate(skill):
             self.show_error("Hiányzó vagy hibás mező a képzettségben!")
             return
         try:
-            skills = load_skills()
+            skills = self.skill_manager.load()
         except Exception:
             skills = []
         found_idx = None
@@ -422,7 +422,7 @@ class SkillEditor:
             skills[found_idx] = skill
         else:
             skills.append(skill)
-        save_skills(skills)
+        self.skill_manager.save(skills)
         self.show_info("Képzettség mentve!", "Siker")
         self.win.destroy()
 
@@ -446,7 +446,7 @@ class SkillEditor:
                 self.show_warning("Nincs kiválasztva képzettség.", "Törlés")
                 return
             self.all_skills.pop(idx[0])
-            save_skills(self.all_skills)
+            self.skill_manager.save(self.all_skills)
             self.show_info("Képzettség törölve!", "Törlés")
             loader.destroy()
         tk.Button(loader, text="Törlés", command=do_delete).pack(pady=10)
@@ -587,8 +587,7 @@ class SkillEditor:
             answer = self.ask_yes_no(f"Biztosan törlöd ezt a képzettséget?\n{skills_display[idx[0]]}", "Törlés")
             if answer:
                 self.all_skills.pop(idx[0])
-                with open(SKILLS_PATH, "w", encoding="utf-8") as f:
-                    json.dump(self.all_skills, f, ensure_ascii=False, indent=2)
+                self.skill_manager.save(self.all_skills)
                 self.show_info("Képzettség törölve!", "Törlés")
                 loader.destroy()
         button_frame = tk.Frame(loader)
@@ -598,4 +597,4 @@ class SkillEditor:
 
 # --- Futtatható fő rész ---
 if __name__ == "__main__":
-    SkillEditor()
+    editor = SkillEditor()

@@ -89,7 +89,7 @@ def load_character_dialog():
 
 # --- KÉPZETTSÉG SZERKESZTŐ ABLAK MEGNYITÁSA ---
 def open_skill_editor():
-    subprocess.Popen([sys.executable, "skills/skills_editor.py"])
+    subprocess.Popen([sys.executable, "-m", "skills.skills_editor"])
 
 # --- FŐABLAK ÉS WIDGETEK LÉTREHOZÁSA ---
 root = tk.Tk()
