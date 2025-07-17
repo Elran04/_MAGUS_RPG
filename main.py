@@ -1,5 +1,4 @@
-# main.py
-
+# --- IMPORTOK ÉS KONFIGURÁCIÓ ---
 import tkinter as tk
 from tkinter import simpledialog, messagebox
 from ui.character_creator import open_character_creator
@@ -9,6 +8,7 @@ import sys
 
 last_character = {}
 
+# --- KARAKTER ADATOK MEGJELENÍTÉSE ---
 def display_character(char):
     global last_character
     last_character = char
@@ -32,9 +32,9 @@ def display_character(char):
     kp = char.get("Képzettségpontok", {})
     text_area.insert(tk.END, f"  Alap: {kp.get('Alap', 0)}\n")
     text_area.insert(tk.END, f"  Szintenként: {kp.get('Szintenként', 0)}\n")
-
     text_area.insert(tk.END, "-" * 40 + "\n")
 
+# --- KARAKTER MENTÉSE ---
 def save_last_character():
     if not last_character:
         messagebox.showinfo("Mentés", "Nincs menthető karakter.")
@@ -48,6 +48,7 @@ def save_last_character():
         save_character(last_character, filename)
         messagebox.showinfo("Mentés", f"Sikeres mentés: {filename}")
 
+# --- KARAKTER BETÖLTÉSE ---
 def load_character_dialog():
     import os
     from engine.storage import CHARACTER_DIR
@@ -86,11 +87,11 @@ def load_character_dialog():
     listbox.bind('<Double-1>', lambda event: do_load())
     tk.Button(dialog, text="Betöltés", command=do_load).pack(pady=10)
 
+# --- KÉPZETTSÉG SZERKESZTŐ ABLAK MEGNYITÁSA ---
 def open_skill_editor():
-    # Windows alatt:
     subprocess.Popen([sys.executable, "skills/skills_editor.py"])
-    # Ha máshol van a skills_editor.py, add meg a teljes elérési utat!
 
+# --- FŐABLAK ÉS WIDGETEK LÉTREHOZÁSA ---
 root = tk.Tk()
 root.title("M.A.G.U.S. Szöveges RPG")
 root.geometry("600x400")
@@ -98,6 +99,7 @@ root.geometry("600x400")
 text_area = tk.Text(root, wrap=tk.WORD, height=20, width=70)
 text_area.pack(pady=10)
 
+# --- FŐ GOMBOK ---
 start_button = tk.Button(root, text="Játék indítása", command=lambda: text_area.insert(tk.END, "\nJáték indítása...\n"))
 start_button.pack(side=tk.LEFT, padx=10)
 
@@ -113,4 +115,5 @@ load_button.pack(side=tk.LEFT, padx=10)
 skill_editor_button = tk.Button(root, text="Képzettség szerkesztő", command=open_skill_editor)
 skill_editor_button.pack(side=tk.LEFT, padx=10)
 
+# --- FŐABLAK FUTTATÁSA ---# --- FŐABLAK FUTTATÁSA ---
 root.mainloop()
