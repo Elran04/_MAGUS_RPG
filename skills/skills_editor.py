@@ -266,7 +266,8 @@ class SkillEditor:
         self.main_cat_var.set(list(CATEGORIES.keys())[0])
         row += 1
         tk.Label(self.win, text="Alkategória:").grid(row=row, column=0, **grid_cfg["label"])
-        tk.OptionMenu(self.win, self.sub_cat_var, *CATEGORIES[self.main_cat_var.get()]).grid(row=row, column=1, **grid_cfg["optionmenu"])
+        self.sub_cat_menu = tk.OptionMenu(self.win, self.sub_cat_var, *CATEGORIES[self.main_cat_var.get()])
+        self.sub_cat_menu.grid(row=row, column=1, **grid_cfg["optionmenu"])
         self.sub_cat_var.set(CATEGORIES[self.main_cat_var.get()][0])
         self.main_cat_var.trace_add("write", self.update_subcategories)
         row += 1
@@ -284,13 +285,19 @@ class SkillEditor:
         row += 1
         tk.Label(self.win, text="Típus:").grid(row=row, column=0, **grid_cfg["label"])
         tk.OptionMenu(self.win, self.type_var, "%", "szint").grid(row=row, column=1, **grid_cfg["optionmenu"])
-        row += 1
-        tk.Label(self.win, text="KP/3%:").grid(row=row, column=0, **grid_cfg["label"])
-        tk.Entry(self.win, textvariable=self.kp_per_3_var).grid(row=row, column=1, **grid_cfg["entry"])
-        self.type_var.trace_add("write", self.update_kp_fields)
-        self.update_kp_fields()
+        row_kp_percent = row + 1  # KP/3% mező mindig a következő sorba kerül
 
-        # Szint leírások és KP mezők
+        self.kp_per_3_label = tk.Label(self.win, text="KP/3%:")
+        self.kp_per_3_entry = tk.Entry(self.win, textvariable=self.kp_per_3_var)
+        # A KP/3% mezőt mindig a row_kp_percent sorba grideljük, update_kp_fields-ben is!
+        if self.type_var.get() == "%":
+            self.kp_per_3_label.grid(row=row_kp_percent, column=0, **grid_cfg["label"])
+            self.kp_per_3_entry.grid(row=row_kp_percent, column=1, **grid_cfg["entry"])
+        self.type_var.trace_add("write", lambda *args: self.update_kp_fields(row_kp_percent))
+        self.update_kp_fields(row_kp_percent)
+
+        # Szint leírások a KP/3% mező után kezdődnek
+        row = row_kp_percent
         for i in range(1, 7):
             row += 1
             tk.Label(self.win, text=f"{i}. szint leírás:").grid(row=row, column=0, **grid_cfg["label"])
@@ -316,7 +323,7 @@ class SkillEditor:
         tk.Button(bottom_frame, text="Mentés", command=self.save_skill).pack(side=tk.LEFT, padx=20)
 
     def update_subcategories(self, *args):
-        menu = self.sub_cat_var.master.children['menu']
+        menu = self.sub_cat_menu["menu"]
         menu.delete(0, 'end')
         selected_main = self.main_cat_var.get()
         for sub in CATEGORIES.get(selected_main, []):
@@ -326,13 +333,17 @@ class SkillEditor:
         else:
             self.sub_cat_var.set("")
 
-    def update_kp_fields(self, *args):
+    def update_kp_fields(self, row_kp_percent):
         if self.type_var.get() == "%":
+            self.kp_per_3_label.grid(row=row_kp_percent, column=0, sticky="w", padx=5, pady=2)
+            self.kp_per_3_entry.grid(row=row_kp_percent, column=1, sticky="w", padx=5, pady=2)
             self.kp_per_3_var.set("")
             for lbl, entry in zip(self.kp_cost_labels, self.kp_cost_entries):
                 lbl.grid_remove()
                 entry.grid_remove()
         else:
+            self.kp_per_3_label.grid_remove()
+            self.kp_per_3_entry.grid_remove()
             for lbl, entry in zip(self.kp_cost_labels, self.kp_cost_entries):
                 lbl.grid()
                 entry.grid()
