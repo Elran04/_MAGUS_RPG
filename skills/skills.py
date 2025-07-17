@@ -21,3 +21,16 @@ def get_skill_by_name(name):
         if skill["name"].lower() == name.lower():
             return skill
     return None
+
+def save_skills(skills):
+    with open(SKILLS_PATH, "w", encoding="utf-8") as f:
+        json.dump(skills, f, ensure_ascii=False, indent=2)
+
+def validate_skill(skill):
+    # Minimális validáció: név, kategória, leírás, típus
+    required = ["name", "main_category", "sub_category", "description", "skill_type"]
+    for key in required:
+        if not skill.get(key):
+            return False
+    # További validációk ide jöhetnek
+    return True

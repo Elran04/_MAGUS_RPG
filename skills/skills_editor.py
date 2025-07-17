@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 import json
 import os
-from skills import load_skills
+from skills import load_skills, save_skills, validate_skill
 from tkinter import ttk
 import re
 
@@ -21,17 +21,214 @@ STAT_NAMES = [
     "Egészség", "Intelligencia", "Akaraterő", "Asztrál", "Érzékelés"
 ]
 
+class PrerequisiteManager:
+    def __init__(self, parent, skill_names, all_skills):
+        self.parent = parent
+        self.skill_names = skill_names
+        self.all_skills = all_skills
+        self.stat_vars = [[] for _ in range(6)]
+        self.skill_vars = [[] for _ in range(6)]
+        self.frames = []
+        self.create_frames()
+
+    def create_stat_row_widget(self, frame, stat_var, value_var, remove_callback):
+        row = len([w for w in frame.grid_slaves() if isinstance(w, tk.OptionMenu) or isinstance(w, tk.Entry)]) // 2 + 1
+        stat_menu = tk.OptionMenu(frame, stat_var, *STAT_NAMES)
+        stat_menu.grid(row=row, column=0, padx=(20, 0), sticky="w")
+        entry = tk.Entry(frame, textvariable=value_var, width=5)
+        entry.grid(row=row, column=1, padx=10, sticky="w")
+        btn = tk.Button(frame, text="Törlés", command=remove_callback)
+        btn.grid(row=row, column=1, padx=50, sticky="w")
+        return stat_menu, entry, btn
+
+    def create_skill_row_widget(self, frame, skill_var, level_var, remove_callback):
+        row = len([w for w in frame.grid_slaves() if isinstance(w, ttk.Combobox) or isinstance(w, tk.Entry)]) // 2 + 1
+        skill_combo = ttk.Combobox(frame, textvariable=skill_var, values=self.skill_names, state="readonly", width=30)
+        skill_combo.grid(row=row, column=2, padx=(5, 0), sticky="w")
+        entry = tk.Entry(frame, textvariable=level_var, width=5)
+        entry.grid(row=row, column=3, padx=10, sticky="w")
+        btn = tk.Button(frame, text="Törlés", command=remove_callback)
+        btn.grid(row=row, column=3, padx=50, sticky="w")
+        return skill_combo, entry, btn
+
+    def create_frames(self):
+        for i in range(1, 7):
+            frame = tk.Frame(self.parent)
+            frame.grid(row=7+i, column=4, columnspan=2, sticky="w", padx=40)
+            tk.Label(frame, text=f"{i}. szint előfeltétel:").grid(row=0, column=0, sticky="w", padx=10)
+            tk.Button(
+                frame, text="Tulajdonság hozzáadása",
+                command=lambda idx=i-1, fr=frame: self.add_stat_row(idx, fr)
+            ).grid(row=0, column=1, padx=10)
+            tk.Button(
+                frame, text="Képzettség hozzáadása",
+                command=lambda idx=i-1, fr=frame: self.add_skill_row(idx, fr)
+            ).grid(row=0, column=2, padx=10)
+            self.frames.append(frame)
+
+    def add_stat_row(self, level_idx, frame):
+        stat_var = tk.StringVar(value=STAT_NAMES[0])
+        value_var = tk.StringVar()
+        def remove():
+            stat_menu.destroy()
+            entry.destroy()
+            btn.destroy()
+            self.stat_vars[level_idx].remove((stat_var, value_var))
+        stat_menu, entry, btn = self.create_stat_row_widget(frame, stat_var, value_var, remove)
+        self.stat_vars[level_idx].append((stat_var, value_var))
+
+    def add_skill_row(self, level_idx, frame):
+        dialog = tk.Toplevel(frame)
+        dialog.title("Képzettség keresése")
+        dialog.geometry("400x250")
+        search_var = tk.StringVar()
+        tk.Label(dialog, text="Képzettség keresése:").pack()
+        search_entry = tk.Entry(dialog, textvariable=search_var, width=40)
+        search_entry.pack()
+        filtered_skills = self.skill_names.copy()
+        skill_var = tk.StringVar()
+        skill_combo = ttk.Combobox(dialog, textvariable=skill_var, values=filtered_skills, state="readonly", width=35)
+        skill_combo.pack(pady=5)
+        param_label = tk.Label(dialog, text="Specializáció / típus (pl. Rövid kardok, Elf nyelv):")
+        param_label.pack_forget()
+        param_var = tk.StringVar()
+        param_menu = None
+        def show_param_field(*args):
+            nonlocal param_menu
+            skill_name = skill_var.get()
+            skill_obj = next((s for s in self.all_skills if s["name"] == skill_name), None)
+            if param_menu:
+                param_menu.destroy()
+                param_menu = None
+            if skill_obj and skill_obj.get("is_parametric"):
+                param_label.pack()
+                params = set()
+                for s in self.all_skills:
+                    if s["name"] == skill_name and s.get("parameter"):
+                        params.add(s["parameter"])
+                params = sorted(params)
+                if params:
+                    param_var.set(params[0])
+                    param_menu = tk.OptionMenu(dialog, param_var, *params)
+                    param_menu.pack()
+                else:
+                    param_var.set("")
+                    param_menu = tk.Entry(dialog, textvariable=param_var, width=30)
+                    param_menu.pack()
+            else:
+                param_label.pack_forget()
+                param_var.set("")
+                if param_menu:
+                    param_menu.destroy()
+                    param_menu = None
+        skill_var.trace_add("write", show_param_field)
+        tk.Label(dialog, text="Szükséges szint:").pack()
+        level_var = tk.StringVar()
+        level_entry = tk.Entry(dialog, textvariable=level_var, width=5)
+        level_entry.pack()
+        def update_skill_list(*args):
+            text = search_var.get().lower()
+            filtered = [s for s in self.skill_names if text in s.lower()]
+            skill_combo['values'] = filtered
+            if filtered:
+                skill_var.set(filtered[0])
+            else:
+                skill_var.set("")
+        search_var.trace_add("write", update_skill_list)
+        def add_skill():
+            skill = skill_var.get()
+            level = level_var.get()
+            param = param_var.get().strip()
+            if skill and level:
+                def remove():
+                    skill_combo_widget.destroy()
+                    entry_widget.destroy()
+                    btn_widget.destroy()
+                    self.skill_vars[level_idx].remove((skill_var, level_var, param))
+                skill_combo_widget, entry_widget, btn_widget = self.create_skill_row_widget(frame, skill_var, level_var, remove)
+                self.skill_vars[level_idx].append((skill_var, level_var, param))
+                dialog.destroy()
+        tk.Button(dialog, text="Hozzáadás", command=add_skill).pack(pady=5)
+
+    def clear_all(self):
+        for idx in range(6):
+            for stat_var, value_var in self.stat_vars[idx][:]:
+                stat_var.set("")
+                value_var.set("")
+            self.stat_vars[idx].clear()
+            for skill_var, level_var in self.skill_vars[idx][:]:
+                skill_var.set("")
+                level_var.set("")
+            self.skill_vars[idx].clear()
+
+    def load_prerequisites(self, prerequisites):
+        self.clear_all()
+        for idx in range(6):
+            prereq = prerequisites.get(str(idx+1), {})
+            frame = self.frames[idx]
+            for stat_str in prereq.get("képesség", []):
+                parts = stat_str.split()
+                if len(parts) >= 2:
+                    stat_var = tk.StringVar(value=parts[0])
+                    value_var = tk.StringVar(value=parts[1].replace("+", ""))
+                    def remove_stat(stat_menu=None, entry=None, btn=None):
+                        stat_menu.destroy()
+                        entry.destroy()
+                        if btn:
+                            btn.destroy()
+                        self.stat_vars[idx].remove((stat_var, value_var))
+                    stat_menu, entry, btn = self.create_stat_row_widget(frame, stat_var, value_var, lambda: remove_stat(stat_menu, entry, btn))
+                    self.stat_vars[idx].append((stat_var, value_var))
+            for skill_str in prereq.get("képzettség", []):
+                m = re.match(r"(.+?)(?: \((.+?)\))? (\d+)\. szint", skill_str)
+                if m:
+                    skillname = m.group(1)
+                    param = m.group(2) or ""
+                    level = m.group(3)
+                    skill_var = tk.StringVar(value=skillname)
+                    level_var = tk.StringVar(value=level)
+                    def remove_skill(skill_combo=None, entry=None, btn=None):
+                        skill_combo.destroy()
+                        entry.destroy()
+                        if btn:
+                            btn.destroy()
+                        self.skill_vars[idx].remove((skill_var, level_var))
+                    skill_combo, entry, btn = self.create_skill_row_widget(frame, skill_var, level_var, lambda: remove_skill(skill_combo, entry, btn))
+                    self.skill_vars[idx].append((skill_var, level_var))
+
+    def open_frames(self):
+        for frame in self.frames:
+            frame.grid()
+        self.parent.update_idletasks()
+
+    def close_frames(self):
+        for frame in self.frames:
+            frame.grid_remove()
+        self.parent.update_idletasks()
+
 class SkillEditor:
     def __init__(self):
         self.all_skills = load_skills()
         self.SKILL_NAMES = [s["name"] for s in self.all_skills]
-        self.prereq_stat_vars = [[] for _ in range(6)]
-        self.prereq_skill_vars = [[] for _ in range(6)]
         self.win = tk.Tk()
         self.win.title("Képzettség szerkesztő")
         self.win.geometry("1440x900")
+        self.prereq_manager = PrerequisiteManager(self.win, self.SKILL_NAMES, self.all_skills)
         self.create_widgets()
         self.win.mainloop()
+
+    # Egységes hibakezelő metódusok
+    def show_error(self, message, title="Hiba"):
+        messagebox.showerror(title, message)
+
+    def show_info(self, message, title="Info"):
+        messagebox.showinfo(title, message)
+
+    def show_warning(self, message, title="Figyelem"):
+        messagebox.showwarning(title, message)
+
+    def ask_yes_no(self, message, title="Megerősítés"):
+        return messagebox.askyesno(title, message)
 
     def create_widgets(self):
         self.name_var = tk.StringVar()
@@ -47,62 +244,73 @@ class SkillEditor:
         self.kp_cost_vars = []
         self.kp_cost_labels = []
         self.kp_cost_entries = []
-        self.prereq_frames = []
 
-        tk.Label(self.win, text="Név:").grid(row=0, column=0)
-        tk.Entry(self.win, textvariable=self.name_var).grid(row=0, column=1)
-        tk.Label(self.win, text="Paraméter (pl. Rövid kardok, Elf nyelv, stb.):").grid(row=0, column=2)
-        tk.Entry(self.win, textvariable=self.param_var, width=20).grid(row=0, column=3)
-        tk.Label(self.win, text="Főkategória:").grid(row=1, column=0)
-        tk.OptionMenu(self.win, self.main_cat_var, *CATEGORIES.keys()).grid(row=1, column=1)
+        # Grid sablon paraméterek
+        grid_cfg = {
+            "label": {"sticky": "w", "padx": 5, "pady": 2},
+            "entry": {"sticky": "w", "padx": 5, "pady": 2},
+            "optionmenu": {"sticky": "w", "padx": 5, "pady": 2},
+            "text": {"sticky": "w", "padx": 5, "pady": 2},
+            "kp_entry": {"sticky": "w", "padx": 25, "pady": 2},  # KP mezőhöz nagyobb bal padding
+        }
+
+        # Felső sorok
+        row = 0
+        tk.Label(self.win, text="Név:").grid(row=row, column=0, **grid_cfg["label"])
+        tk.Entry(self.win, textvariable=self.name_var).grid(row=row, column=1, **grid_cfg["entry"])
+        tk.Label(self.win, text="Paraméter (pl. Rövid kardok, Elf nyelv, stb.):").grid(row=row, column=2, **grid_cfg["label"])
+        tk.Entry(self.win, textvariable=self.param_var, width=20).grid(row=row, column=3, **grid_cfg["entry"])
+        row += 1
+        tk.Label(self.win, text="Főkategória:").grid(row=row, column=0, **grid_cfg["label"])
+        tk.OptionMenu(self.win, self.main_cat_var, *CATEGORIES.keys()).grid(row=row, column=1, **grid_cfg["optionmenu"])
         self.main_cat_var.set(list(CATEGORIES.keys())[0])
-        tk.Label(self.win, text="Alkategória:").grid(row=2, column=0)
-        tk.OptionMenu(self.win, self.sub_cat_var, *CATEGORIES[self.main_cat_var.get()]).grid(row=2, column=1)
+        row += 1
+        tk.Label(self.win, text="Alkategória:").grid(row=row, column=0, **grid_cfg["label"])
+        tk.OptionMenu(self.win, self.sub_cat_var, *CATEGORIES[self.main_cat_var.get()]).grid(row=row, column=1, **grid_cfg["optionmenu"])
         self.sub_cat_var.set(CATEGORIES[self.main_cat_var.get()][0])
         self.main_cat_var.trace_add("write", self.update_subcategories)
-        tk.Label(self.win, text="Általános leírás:").grid(row=3, column=0)
-        self.general_desc_text.grid(row=3, column=1)
-        tk.Label(self.win, text="Elsajátítás módja:").grid(row=4, column=0)
-        tk.OptionMenu(self.win, self.acq_method_var, "Gyakorlás", "Tapasztalás", "Tanulás").grid(row=4, column=1)
-        tk.Label(self.win, text="Elsajátítás nehézsége:").grid(row=5, column=0)
+        row += 1
+        tk.Label(self.win, text="Általános leírás:").grid(row=row, column=0, **grid_cfg["label"])
+        self.general_desc_text.grid(row=row, column=1, columnspan=3, **grid_cfg["text"])
+        row += 1
+        tk.Label(self.win, text="Elsajátítás módja:").grid(row=row, column=0, **grid_cfg["label"])
+        tk.OptionMenu(self.win, self.acq_method_var, "Gyakorlás", "Tapasztalás", "Tanulás").grid(row=row, column=1, **grid_cfg["optionmenu"])
+        row += 1
+        tk.Label(self.win, text="Elsajátítás nehézsége:").grid(row=row, column=0, **grid_cfg["label"])
         tk.OptionMenu(
             self.win, self.acq_diff_var,
             "1 - Egyszerű", "2 - Könnyű", "3 - Közepes", "4 - Nehéz", "5 - Szinte lehetetlen"
-        ).grid(row=5, column=1)
-        tk.Label(self.win, text="Típus:").grid(row=6, column=0)
-        tk.OptionMenu(self.win, self.type_var, "%", "szint").grid(row=6, column=1)
-        tk.Label(self.win, text="KP/3% (csak %-os):").grid(row=7, column=0)
-        tk.Entry(self.win, textvariable=self.kp_per_3_var).grid(row=7, column=1)
+        ).grid(row=row, column=1, **grid_cfg["optionmenu"])
+        row += 1
+        tk.Label(self.win, text="Típus:").grid(row=row, column=0, **grid_cfg["label"])
+        tk.OptionMenu(self.win, self.type_var, "%", "szint").grid(row=row, column=1, **grid_cfg["optionmenu"])
+        row += 1
+        tk.Label(self.win, text="KP/3%:").grid(row=row, column=0, **grid_cfg["label"])
+        tk.Entry(self.win, textvariable=self.kp_per_3_var).grid(row=row, column=1, **grid_cfg["entry"])
         self.type_var.trace_add("write", self.update_kp_fields)
         self.update_kp_fields()
+
+        # Szint leírások és KP mezők
         for i in range(1, 7):
-            tk.Label(self.win, text=f"{i}. szint leírás:").grid(row=7+i, column=0)
+            row += 1
+            tk.Label(self.win, text=f"{i}. szint leírás:").grid(row=row, column=0, **grid_cfg["label"])
             desc_text = tk.Text(self.win, height=4, width=50)
-            desc_text.grid(row=7+i, column=1)
+            desc_text.grid(row=row, column=1, columnspan=2, **grid_cfg["text"])
             self.level_desc_texts.append(desc_text)
             kpvar = tk.StringVar()
             self.kp_cost_vars.append(kpvar)
+            # KP label és entry egymás mellett, egy columnban, de entry-nek nagyobb bal padding
             kp_label = tk.Label(self.win, text=f"{i}. szint KP:")
-            kp_label.grid(row=7+i, column=2)
+            kp_label.grid(row=row, column=3, sticky="w", padx=5, pady=2)
             self.kp_cost_labels.append(kp_label)
             kp_entry = tk.Entry(self.win, textvariable=kpvar, width=8)
-            kp_entry.grid(row=7+i, column=3)
+            kp_entry.grid(row=row, column=3, sticky="w", padx=75, pady=2)
             self.kp_cost_entries.append(kp_entry)
-        for i in range(1, 7):
-            prereq_frame = tk.Frame(self.win)
-            prereq_frame.grid(row=7+i, column=4, columnspan=2, sticky="w", padx=40)
-            tk.Label(prereq_frame, text=f"{i}. szint előfeltétel:").grid(row=0, column=0, sticky="w", padx=10)
-            tk.Button(
-                prereq_frame, text="Tulajdonság hozzáadása",
-                command=lambda idx=i-1, fr=prereq_frame: self.add_stat_row(idx, fr)
-            ).grid(row=0, column=1, padx=10)
-            tk.Button(
-                prereq_frame, text="Képzettség hozzáadása",
-                command=lambda idx=i-1, fr=prereq_frame: self.open_skill_search_dialog(idx, fr)
-            ).grid(row=0, column=2, padx=10)
-            self.prereq_frames.append(prereq_frame)
+
+        # Alsó gombok
+        row += 1
         bottom_frame = tk.Frame(self.win)
-        bottom_frame.grid(row=15, column=0, columnspan=6, pady=20)
+        bottom_frame.grid(row=row, column=0, columnspan=5, pady=20)
         tk.Button(bottom_frame, text="Szerkesztés", command=self.open_skill_loader).pack(side=tk.LEFT, padx=20)
         tk.Button(bottom_frame, text="Törlés", command=self.delete_skill).pack(side=tk.LEFT, padx=20)
         tk.Button(bottom_frame, text="Mentés", command=self.save_skill).pack(side=tk.LEFT, padx=20)
@@ -128,40 +336,6 @@ class SkillEditor:
             for lbl, entry in zip(self.kp_cost_labels, self.kp_cost_entries):
                 lbl.grid()
                 entry.grid()
-
-    def add_stat_row(self, level_idx, frame):
-        stat_var = tk.StringVar(value=STAT_NAMES[0])
-        value_var = tk.StringVar()
-        row = len(self.prereq_stat_vars[level_idx]) + 1
-        stat_menu = tk.OptionMenu(frame, stat_var, *STAT_NAMES)
-        stat_menu.grid(row=row, column=0, padx=(20, 0), sticky="w")
-        entry = tk.Entry(frame, textvariable=value_var, width=5)
-        entry.grid(row=row, column=1, padx=10, sticky="w")
-        def remove():
-            stat_menu.destroy()
-            entry.destroy()
-            btn.destroy()
-            self.prereq_stat_vars[level_idx].remove((stat_var, value_var))
-        btn = tk.Button(frame, text="Törlés", command=remove)
-        btn.grid(row=row, column=1, padx=50, sticky="w")
-        self.prereq_stat_vars[level_idx].append((stat_var, value_var))
-
-    def add_skill_row(self, level_idx, frame):
-        skill_var = tk.StringVar(value=self.SKILL_NAMES[0])
-        level_var = tk.StringVar()
-        row = len(self.prereq_skill_vars[level_idx]) + 1
-        skill_combo = ttk.Combobox(frame, textvariable=skill_var, values=self.SKILL_NAMES, state="readonly", width=30)
-        skill_combo.grid(row=row, column=2, padx=(5, 0), sticky="w")
-        entry = tk.Entry(frame, textvariable=level_var, width=5)
-        entry.grid(row=row, column=3, padx=10, sticky="w")
-        def remove():
-            skill_combo.destroy()
-            entry.destroy()
-            btn.destroy()
-            self.prereq_skill_vars[level_idx].remove((skill_var, level_var))
-        btn = tk.Button(frame, text="Törlés", command=remove)
-        btn.grid(row=row, column=3, padx=50, sticky="w")
-        self.prereq_skill_vars[level_idx].append((skill_var, level_var))
 
     def save_skill(self):
         skill = {
@@ -192,13 +366,13 @@ class SkillEditor:
                     skill["kp_costs"][str(i+1)] = kp
         for i in range(1, 7):
             stat_list = []
-            for stat_var, value_var in self.prereq_stat_vars[i-1]:
+            for stat_var, value_var in self.prereq_manager.stat_vars[i-1]:
                 stat = stat_var.get()
                 value = value_var.get()
                 if stat and value:
                     stat_list.append(f"{stat} {value}+")
             skill_list = []
-            for skill_var, level_var, param in self.prereq_skill_vars[i-1]:
+            for skill_var, level_var, param in self.prereq_manager.skill_vars[i-1]:
                 skillname = skill_var.get()
                 level = level_var.get()
                 display_text = skillname
@@ -212,10 +386,12 @@ class SkillEditor:
             skill.pop("kp_costs")
         else:
             skill.pop("kp_per_3_percent")
+        if not validate_skill(skill):
+            self.show_error("Hiányzó vagy hibás mező a képzettségben!")
+            return
         try:
-            with open(SKILLS_PATH, "r", encoding="utf-8") as f:
-                skills = json.load(f)
-        except FileNotFoundError:
+            skills = load_skills()
+        except Exception:
             skills = []
         found_idx = None
         for idx, s in enumerate(skills):
@@ -229,15 +405,14 @@ class SkillEditor:
                         found_idx = idx
                         break
         if found_idx is not None:
-            answer = messagebox.askyesno("Felülírás", "Az adott képzettség már létezik. Felülírja?")
+            answer = self.ask_yes_no("Az adott képzettség már létezik. Felülírja?", "Felülírás")
             if not answer:
                 return
             skills[found_idx] = skill
         else:
             skills.append(skill)
-        with open(SKILLS_PATH, "w", encoding="utf-8") as f:
-            json.dump(skills, f, ensure_ascii=False, indent=2)
-        messagebox.showinfo("Siker", "Képzettség mentve!")
+        save_skills(skills)
+        self.show_info("Képzettség mentve!", "Siker")
         self.win.destroy()
 
     def delete_skill(self):
@@ -257,16 +432,12 @@ class SkillEditor:
         def do_delete():
             idx = listbox.curselection()
             if not idx:
-                messagebox.showwarning("Törlés", "Nincs kiválasztva képzettség.")
+                self.show_warning("Nincs kiválasztva képzettség.", "Törlés")
                 return
-            skill_obj = self.all_skills[idx[0]]
-            answer = messagebox.askyesno("Törlés", f"Biztosan törlöd ezt a képzettséget?\n{skills_display[idx[0]]}")
-            if answer:
-                self.all_skills.pop(idx[0])
-                with open(SKILLS_PATH, "w", encoding="utf-8") as f:
-                    json.dump(self.all_skills, f, ensure_ascii=False, indent=2)
-                messagebox.showinfo("Törlés", "Képzettség törölve!")
-                loader.destroy()
+            self.all_skills.pop(idx[0])
+            save_skills(self.all_skills)
+            self.show_info("Képzettség törölve!", "Törlés")
+            loader.destroy()
         tk.Button(loader, text="Törlés", command=do_delete).pack(pady=10)
 
     def open_skill_search_dialog(self, level_idx, frame):
@@ -333,7 +504,7 @@ class SkillEditor:
             param = param_var.get().strip()
             skill_obj = next((s for s in self.all_skills if s["name"] == skill), None)
             if skill and level:
-                row = len(self.prereq_skill_vars[level_idx]) + 1
+                row = len(self.prereq_manager.skill_vars[level_idx]) + 1
                 display_text = skill
                 if skill_obj and skill_obj.get("is_parametric") and param:
                     display_text += f" ({param})"
@@ -346,10 +517,10 @@ class SkillEditor:
                     skill_label.destroy()
                     entry.destroy()
                     btn.destroy()
-                    self.prereq_skill_vars[level_idx].remove((skill_var, level_var, param))
+                    self.prereq_manager.skill_vars[level_idx].remove((skill_var, level_var, param))
                 btn = tk.Button(frame, text="Törlés", command=remove)
                 btn.grid(row=row, column=4, padx=10, sticky="w")
-                self.prereq_skill_vars[level_idx].append((skill_var, level_var, param))
+                self.prereq_manager.skill_vars[level_idx].append((skill_var, level_var, param))
                 dialog.destroy()
         tk.Button(dialog, text="Hozzáadás", command=add_skill).pack(pady=5)
 
@@ -370,7 +541,7 @@ class SkillEditor:
         def load_selected():
             idx = listbox.curselection()
             if not idx:
-                messagebox.showwarning("Betöltés", "Nincs kiválasztva képzettség.")
+                self.show_warning("Nincs kiválasztva képzettség.", "Betöltés")
                 return
             skill_obj = self.all_skills[idx[0]]
             self.name_var.set(skill_obj["name"])
@@ -394,70 +565,20 @@ class SkillEditor:
                 self.kp_per_3_var.set("")
                 for i, kp_var in enumerate(self.kp_cost_vars):
                     kp_var.set(skill_obj.get("kp_costs", {}).get(str(i+1), ""))
-            for idx2 in range(6):
-                for stat_var, value_var in self.prereq_stat_vars[idx2][:]:
-                    stat_var.set("")
-                    value_var.set("")
-                self.prereq_stat_vars[idx2].clear()
-                for skill_var, level_var, param in self.prereq_skill_vars[idx2][:]:
-                    skill_var.set("")
-                    level_var.set("")
-                self.prereq_skill_vars[idx2].clear()
-                prereq = skill_obj.get("prerequisites", {}).get(str(idx2+1), {})
-                for stat_str in prereq.get("képesség", []):
-                    parts = stat_str.split()
-                    if len(parts) >= 2:
-                        stat_var = tk.StringVar(value=parts[0])
-                        value_var = tk.StringVar(value=parts[1].replace("+", ""))
-                        self.prereq_stat_vars[idx2].append((stat_var, value_var))
-                        frame = self.prereq_frames[idx2]
-                        stat_menu = tk.OptionMenu(frame, stat_var, *STAT_NAMES)
-                        stat_menu.grid(row=len(self.prereq_stat_vars[idx2]), column=0, padx=(20, 0), sticky="w")
-                        entry = tk.Entry(frame, textvariable=value_var, width=5)
-                        entry.grid(row=len(self.prereq_stat_vars[idx2]), column=1, padx=10, sticky="w")
-                        def remove_stat(stat_menu=stat_menu, entry=entry, btn=None):
-                            stat_menu.destroy()
-                            entry.destroy()
-                            if btn:
-                                btn.destroy()
-                            self.prereq_stat_vars[idx2].remove((stat_var, value_var))
-                        btn = tk.Button(frame, text="Törlés", command=remove_stat)
-                        btn.grid(row=len(self.prereq_stat_vars[idx2]), column=1, padx=50, sticky="w")
-                for skill_str in prereq.get("képzettség", []):
-                    m = re.match(r"(.+?)(?: \((.+?)\))? (\d+)\. szint", skill_str)
-                    if m:
-                        skillname = m.group(1)
-                        param = m.group(2) or ""
-                        level = m.group(3)
-                        skill_var = tk.StringVar(value=skillname)
-                        level_var = tk.StringVar(value=level)
-                        self.prereq_skill_vars[idx2].append((skill_var, level_var, param))
-                        frame = self.prereq_frames[idx2]
-                        skill_combo = ttk.Combobox(frame, textvariable=skill_var, values=self.SKILL_NAMES, state="readonly", width=30)
-                        skill_combo.grid(row=len(self.prereq_skill_vars[idx2]), column=2, padx=(5, 0), sticky="w")
-                        entry = tk.Entry(frame, textvariable=level_var, width=5)
-                        entry.grid(row=len(self.prereq_skill_vars[idx2]), column=3, padx=10, sticky="w")
-                        def remove_skill(skill_combo=skill_combo, entry=entry, btn=None):
-                            skill_combo.destroy()
-                            entry.destroy()
-                            if btn:
-                                btn.destroy()
-                            self.prereq_skill_vars[idx2].remove((skill_var, level_var, param))
-                        btn = tk.Button(frame, text="Törlés", command=remove_skill)
-                        btn.grid(row=len(self.prereq_skill_vars[idx2]), column=4, padx=10, sticky="w")
+            self.prereq_manager.load_prerequisites(skill_obj.get("prerequisites", {}))
             loader.destroy()
         def delete_selected():
             idx = listbox.curselection()
             if not idx:
-                messagebox.showwarning("Törlés", "Nincs kiválasztva képzettség.")
+                self.show_warning("Nincs kiválasztva képzettség.", "Törlés")
                 return
             skill_obj = self.all_skills[idx[0]]
-            answer = messagebox.askyesno("Törlés", f"Biztosan törlöd ezt a képzettséget?\n{skills_display[idx[0]]}")
+            answer = self.ask_yes_no(f"Biztosan törlöd ezt a képzettséget?\n{skills_display[idx[0]]}", "Törlés")
             if answer:
                 self.all_skills.pop(idx[0])
                 with open(SKILLS_PATH, "w", encoding="utf-8") as f:
                     json.dump(self.all_skills, f, ensure_ascii=False, indent=2)
-                messagebox.showinfo("Törlés", "Képzettség törölve!")
+                self.show_info("Képzettség törölve!", "Törlés")
                 loader.destroy()
         button_frame = tk.Frame(loader)
         button_frame.pack(pady=10)
