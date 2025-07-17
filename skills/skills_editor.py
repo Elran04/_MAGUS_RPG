@@ -3,6 +3,7 @@ from tkinter import messagebox
 import json
 import os
 from skills import load_skills
+from tkinter import ttk
 
 SKILLS_PATH = os.path.join(os.path.dirname(__file__), "skills.json")
 
@@ -47,15 +48,20 @@ def add_skill_row(level_idx, frame):
     skill_var = tk.StringVar(value=SKILL_NAMES[0])
     level_var = tk.StringVar()
     row = len(prereq_skill_vars[level_idx]) + 1
-    skill_menu = tk.OptionMenu(frame, skill_var, *SKILL_NAMES)
-    skill_menu.grid(row=row, column=2, padx=(5, 0), sticky="w")  
+
+    # Szűrhető legördülő menü a skillekhez
+    skill_combo = ttk.Combobox(frame, textvariable=skill_var, values=SKILL_NAMES, state="readonly", width=30)
+    skill_combo.grid(row=row, column=2, padx=(5, 0), sticky="w")
+
     entry = tk.Entry(frame, textvariable=level_var, width=5)
     entry.grid(row=row, column=3, padx=10, sticky="w")
+
     def remove():
-        skill_menu.destroy()
+        skill_combo.destroy()
         entry.destroy()
         btn.destroy()
         prereq_skill_vars[level_idx].remove((skill_var, level_var))
+
     btn = tk.Button(frame, text="Törlés", command=remove)
     btn.grid(row=row, column=3, padx=50, sticky="w")
     prereq_skill_vars[level_idx].append((skill_var, level_var))
@@ -73,11 +79,19 @@ def add_skill_gui():
 
     win = tk.Tk()
     win.title("Új képzettség hozzáadása")
-    win.geometry("1256x978")  # Nagyobb ablak
+    win.geometry("1440x900")  # Nagyobb ablak
+
 
     tk.Label(win, text="Név:").grid(row=0, column=0)
     name_var = tk.StringVar()
-    tk.Entry(win, textvariable=name_var).grid(row=0, column=1)
+    name_entry = tk.Entry(win, textvariable=name_var)
+    name_entry.grid(row=0, column=1)
+
+    # Paraméterezhetőség input mező a név mellett
+    tk.Label(win, text="Paraméter (pl. Rövid kardok, Elf nyelv, stb.):").grid(row=0, column=2)
+    param_var = tk.StringVar()
+    param_entry = tk.Entry(win, textvariable=param_var, width=20)
+    param_entry.grid(row=0, column=3)
 
     tk.Label(win, text="Főkategória:").grid(row=1, column=0)
     main_cat_var = tk.StringVar()
@@ -173,15 +187,16 @@ def add_skill_gui():
         ).grid(row=0, column=1, padx=10)
         tk.Button(
             prereq_frame, text="Képzettség hozzáadása",
-            command=lambda idx=i-1, fr=prereq_frame: add_skill_row(idx, fr)
+            command=lambda idx=i-1, fr=prereq_frame: open_skill_search_dialog(idx, fr)
         ).grid(row=0, column=2, padx=10)
 
     def save_skill():
+
         skill = {
             "name": name_var.get(),
             "main_category": main_cat_var.get(),
             "sub_category": sub_cat_var.get(),
-            "description": general_desc_text.get("1.0", tk.END).strip(),  # <-- JAVÍTOTT SOR!
+            "description": general_desc_text.get("1.0", tk.END).strip(),
             "acquisition_method": acq_method_var.get(),
             "acquisition_difficulty": acq_diff_var.get(),
             "skill_type": type_var.get(),
@@ -190,18 +205,36 @@ def add_skill_gui():
             "level_descriptions": {},
             "prerequisites": {}
         }
+        # Ha van paraméter, akkor paraméteres skillként mentjük
+        param_value = param_var.get().strip()
+        if param_value:
+            skill["is_parametric"] = True
+            skill["parameter"] = param_value
+
         for i in range(1, 7):
-            desc = level_desc_texts[i-1].get("1.0", tk.END).strip()
-            if desc:
-                skill["level_descriptions"][str(i)] = desc
-            if type_var.get() == "szint":
-                kp = kp_cost_vars[i-1].get()
-                if kp:
-                    skill["kp_costs"][str(i)] = int(kp)
+            stat_list = []
+            for stat_var, value_var in prereq_stat_vars[i-1]:
+                stat = stat_var.get()
+                value = value_var.get()
+                if stat and value:
+                    stat_list.append(f"{stat} {value}+")
+            skill_list = []
+            for skill_var, level_var, param in prereq_skill_vars[i-1]:
+                skillname = skill_var.get()
+                level = level_var.get()
+                if skillname and level:
+                    if param:
+                        skill_list.append(f"{skillname} ({param}) {level}. szint")
+                    else:
+                        skill_list.append(f"{skillname} {level}. szint")
+            if stat_list or skill_list:
+                skill["prerequisites"][str(i)] = {"képesség": stat_list, "képzettség": skill_list}
+        
         if type_var.get() == "%":
             skill.pop("kp_costs")
         else:
             skill.pop("kp_per_3_percent")
+
         try:
             with open(SKILLS_PATH, "r", encoding="utf-8") as f:
                 skills = json.load(f)
@@ -213,8 +246,92 @@ def add_skill_gui():
         messagebox.showinfo("Siker", "Képzettség hozzáadva!")
         win.destroy()
 
+
     tk.Button(win, text="Mentés", command=save_skill).grid(row=14, column=1, pady=10)
     win.mainloop()
 
+
+
+def open_skill_search_dialog(level_idx, frame):
+    dialog = tk.Toplevel(frame)
+    dialog.title("Képzettség keresése")
+    dialog.geometry("400x220")
+
+    search_var = tk.StringVar()
+    tk.Label(dialog, text="Képzettség keresése:").pack()
+    search_entry = tk.Entry(dialog, textvariable=search_var, width=40)
+    search_entry.pack()
+
+    filtered_skills = SKILL_NAMES.copy()
+    skill_var = tk.StringVar()
+    skill_combo = ttk.Combobox(dialog, textvariable=skill_var, values=filtered_skills, state="readonly", width=35)
+    skill_combo.pack(pady=5)
+
+    # Paraméter mező csak ha szükséges
+    param_label = tk.Label(dialog, text="Specializáció / típus (pl. Rövid kardok, Elf nyelv):")
+    param_entry = tk.Entry(dialog, width=30)
+    param_label.pack_forget()
+    param_entry.pack_forget()
+
+    def show_param_field(*args):
+        skill_name = skill_var.get()
+        # Megkeressük a skill objektumot
+        skill_obj = next((s for s in all_skills if s["name"] == skill_name), None)
+        if skill_obj and skill_obj.get("is_parametric"):
+            param_label.pack()
+            param_entry.pack()
+        else:
+            param_label.pack_forget()
+            param_entry.pack_forget()
+
+    skill_var.trace_add("write", show_param_field)
+
+    tk.Label(dialog, text="Szükséges szint:").pack()
+    level_var = tk.StringVar()
+    level_entry = tk.Entry(dialog, textvariable=level_var, width=5)
+    level_entry.pack()
+
+    def update_skill_list(*args):
+        text = search_var.get().lower()
+        filtered = [s for s in SKILL_NAMES if text in s.lower()]
+        skill_combo['values'] = filtered
+        if filtered:
+            skill_var.set(filtered[0])
+        else:
+            skill_var.set("")
+
+    search_var.trace_add("write", update_skill_list)
+
+    def add_skill():
+        skill = skill_var.get()
+        level = level_var.get()
+        param = param_entry.get().strip()
+        skill_obj = next((s for s in all_skills if s["name"] == skill), None)
+        if skill and level:
+            row = len(prereq_skill_vars[level_idx]) + 1
+            # Ha paraméterezhető, mutassuk a paramétert is
+            if skill_obj and skill_obj.get("is_parametric") and param:
+                display_text = f"{skill} ({param})"
+            else:
+                display_text = skill
+            skill_label = tk.Label(frame, text=display_text)
+            skill_label.grid(row=row, column=2, padx=(5, 0), sticky="w")
+            entry = tk.Entry(frame, width=5)
+            entry.insert(0, level)
+            entry.grid(row=row, column=3, padx=10, sticky="w")
+            def remove():
+                skill_label.destroy()
+                entry.destroy()
+                btn.destroy()
+                prereq_skill_vars[level_idx].remove((skill_var, level_var, param))
+            btn = tk.Button(frame, text="Törlés", command=remove)
+            btn.grid(row=row, column=4, padx=10, sticky="w")
+            prereq_skill_vars[level_idx].append((skill_var, level_var, param))
+            dialog.destroy()
+
+    tk.Button(dialog, text="Hozzáadás", command=add_skill).pack(pady=5)
+
+
+# --- Futtatható fő rész ---
 if __name__ == "__main__":
     add_skill_gui()
