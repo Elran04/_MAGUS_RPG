@@ -3,6 +3,7 @@ import random
 from data.Class.class_stat_weights import CLASS_STAT_WEIGHTS , UPGRADABLE_STATS
 from data.Race.race_age_stat_modifiers import apply_age_modifiers , apply_race_modifiers
 from data.Class.class_additional_stats import CLASS_COMBAT_STATS_AND_SKILL_POINTS
+from data.Class.class_level_req import CLASS_LEVEL_REQUIREMENTS, CLASS_LEVEL_EXTRA_XP
 
 
 def generate_stats(klass: str) -> dict:
@@ -68,18 +69,55 @@ def generate_character(name, gender, age, race, klass):
     stats = apply_race_modifiers(stats, race)
     upgradable = UPGRADABLE_STATS.get(klass, [])
 
+    # Kezdeti szint, képzettségek, felszerelés, tapasztalat
+    szint = 1
+    skills = []  # később bővíthető, most üres lista
+    equipment = []  # kezdetben üres, később feltölthető
+    xp = 0
+
     char = {
         "Név": name,
         "Nem": gender,
         "Kor": age,
         "Faj": race,
         "Kaszt": klass,
+        "Szint": szint,
+        "Tapasztalat": xp,
         "Tulajdonságok": stats,
-        "Fejleszthető": upgradable
+        "Fejleszthető": upgradable,
+        "Képzettségek": skills,
+        "Felszerelés": equipment
     }
 
     char = calculate_combat_stats(char)
     return char
+
+
+# Szint meghatározása XP alapján
+def get_level_for_xp(klass, xp):
+    reqs = CLASS_LEVEL_REQUIREMENTS.get(klass, [])
+    for i in range(1, len(reqs)):
+        if xp < reqs[i]:
+            return i - 1
+    # Ha túllépte a max szintet, számoljuk tovább a fix extra XP-vel
+    extra_xp = CLASS_LEVEL_EXTRA_XP.get(klass, 50000)
+    if reqs:
+        max_level = len(reqs) - 1
+        if xp < reqs[-1]:
+            return max_level
+        else:
+            return max_level + ((xp - reqs[-1]) // extra_xp) + 1
+    return 1
+
+# Következő szinthez szükséges XP
+def get_next_level_xp(klass, xp):
+    reqs = CLASS_LEVEL_REQUIREMENTS.get(klass, [])
+    level = get_level_for_xp(klass, xp)
+    if level + 1 < len(reqs):
+        return reqs[level + 1]
+    else:
+        extra_xp = CLASS_LEVEL_EXTRA_XP.get(klass, 50000)
+        return reqs[-1] + (level - (len(reqs) - 1) + 1) * extra_xp
 
 
 # Tiltott kasztok nem szerint
