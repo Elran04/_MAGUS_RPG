@@ -2,7 +2,7 @@
 import tkinter as tk
 from tkinter import simpledialog, messagebox
 from ui.character_creator import open_character_creator
-from engine.storage import save_character, load_character
+from utils.storage import save_character, load_character
 import subprocess
 import sys
 
@@ -51,7 +51,7 @@ def save_last_character():
 # --- KARAKTER BETÖLTÉSE ---
 def load_character_dialog():
     import os
-    from engine.storage import CHARACTER_DIR
+    from utils.storage import CHARACTER_DIR
 
     if not os.path.exists(CHARACTER_DIR):
         messagebox.showinfo("Betöltés", "Nincs elérhető karakter.")
@@ -89,7 +89,7 @@ def load_character_dialog():
 
 # --- KÉPZETTSÉG SZERKESZTŐ ABLAK MEGNYITÁSA ---
 def open_skill_editor():
-    subprocess.Popen([sys.executable, "-m", "skills.skills_editor"])
+    subprocess.Popen([sys.executable, "-m", "ui.skills_editor"])
 
 # --- FŐABLAK ÉS WIDGETEK LÉTREHOZÁSA ---
 root = tk.Tk()

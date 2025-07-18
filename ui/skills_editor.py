@@ -1,11 +1,12 @@
 import tkinter as tk
 from tkinter import messagebox
 import os
-from skills.skill_manager import SkillManager
+
+# Ensure SkillManager uses the correct path to skills.json
+SKILLS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "skills", "skills.json")
+from utils.skill_manager import SkillManager
 from tkinter import ttk
 import re
-
-SKILLS_PATH = os.path.join(os.path.dirname(__file__), "skills.json")
 
 CATEGORIES = {
     "Harci képzettségek": ["Közkeletű", "Szakértő", "Titkos"],

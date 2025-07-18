@@ -1,7 +1,7 @@
-from data.json_manager import JsonManager
+from utils.json_manager import JsonManager
 import os
 
-SKILLS_PATH = os.path.join(os.path.dirname(__file__), "skills.json")
+SKILLS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "skills", "skills.json"))
 
 class SkillManager(JsonManager):
     def __init__(self):
