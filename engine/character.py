@@ -1,8 +1,8 @@
 # engine/character.py
 import random
-from data.class_stat_weights import CLASS_STAT_WEIGHTS , UPGRADABLE_STATS
-from data.race_age_stat_modifiers import apply_age_modifiers , apply_race_modifiers
-from data.class_additional_stats import CLASS_COMBAT_STATS_AND_SKILL_POINTS
+from data.Class.class_stat_weights import CLASS_STAT_WEIGHTS , UPGRADABLE_STATS
+from data.Race.race_age_stat_modifiers import apply_age_modifiers , apply_race_modifiers
+from data.Class.class_additional_stats import CLASS_COMBAT_STATS_AND_SKILL_POINTS
 
 
 def generate_stats(klass: str) -> dict:
