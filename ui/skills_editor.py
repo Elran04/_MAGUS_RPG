@@ -1,12 +1,12 @@
 import tkinter as tk
 from tkinter import messagebox
 import os
-
-# Ensure SkillManager uses the correct path to skills.json
-SKILLS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "skills", "skills.json")
 from utils.skill_manager import SkillManager
 from tkinter import ttk
 import re
+
+# Ensure SkillManager uses the correct path to skills.json
+SKILLS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "skills", "skills.json")
 
 CATEGORIES = {
     "Harci képzettségek": ["Közkeletű", "Szakértő", "Titkos"],
@@ -49,6 +49,12 @@ class PrerequisiteManager:
         btn = tk.Button(frame, text="Törlés", command=remove)
         btn.grid(row=row, column=1, padx=50, sticky="w")
         prereq_dict["widgets"] = (stat_menu, entry, btn)
+        prereq_dict["to_dict"] = lambda: {
+            "type": "stat",
+            "name": stat_var.get(),
+            "param": None,
+            "level": value_var.get()
+        }
         return stat_menu, entry, btn
 
     def create_skill_row_widget(self, frame, prereq_dict):
@@ -56,21 +62,17 @@ class PrerequisiteManager:
         skill_var = prereq_dict["name_var"]
         level_var = prereq_dict["level_var"]
         param_var = prereq_dict.get("param_var", None)
-        # Megjelenítés: csak Label, nem szerkeszthető
-        # Megjelenítés: csak egyszer legyen paraméter zárójelben
-        base_name = skill_var.get()
+        # Egységes skill/paraméter feldolgozás
+        def parse_skill_name(name):
+            m = re.match(r"(.+?)(?: \((.+?)\))?$", name)
+            base = m.group(1) if m else name
+            param = m.group(2) if m and m.group(2) else ""
+            return base, param
+        base_name, param_in_name = parse_skill_name(skill_var.get())
         param = param_var.get() if param_var is not None else ""
-        # Ha a névben már van zárójel, ne fűzzük hozzá újra
-        m = re.match(r"(.+?)(?: \((.+?)\))?$", base_name)
-        name_clean = m.group(1) if m else base_name
-        param_in_name = m.group(2) if m and m.group(2) else ""
+        display_text = base_name
         if param:
-            if param_in_name:
-                display_text = f"{name_clean} ({param})"
-            else:
-                display_text = f"{name_clean} ({param})"
-        else:
-            display_text = name_clean
+            display_text += f" ({param})"
         skill_label = tk.Label(frame, text=display_text, width=30, anchor="w")
         skill_label.grid(row=row, column=2, padx=(5, 0), sticky="w")
         level_label = tk.Label(frame, text=level_var.get(), width=5, anchor="w")
@@ -85,6 +87,12 @@ class PrerequisiteManager:
         btn = tk.Button(frame, text="Törlés", command=remove)
         btn.grid(row=row, column=4, padx=50, sticky="w")
         prereq_dict["widgets"] = (skill_label, level_label, btn)
+        prereq_dict["to_dict"] = lambda: {
+            "type": "skill",
+            "name": base_name,
+            "param": param,
+            "level": level_var.get()
+        }
         return skill_label, level_label, btn
 
     def create_frames(self):
@@ -148,10 +156,8 @@ class PrerequisiteManager:
                 skill_var.set("")
         search_var.trace_add("write", update_skill_list)
         def update_param_field(*args):
-            # Ha a skill névben van paraméter, vegyük ki és állítsuk be a paraméter mezőbe
-            skill_text = skill_var.get()
-            m = re.match(r"(.+?)(?: \((.+?)\))?$", skill_text)
-            base_name = m.group(1) if m else skill_text
+            # Egységes skill/paraméter feldolgozás
+            m = re.match(r"(.+?)(?: \((.+?)\))?$", skill_var.get())
             param_in_name = m.group(2) if m and m.group(2) else ""
             param_var.set(param_in_name)
         skill_var.trace_add("write", update_param_field)
@@ -160,9 +166,7 @@ class PrerequisiteManager:
             level = level_var.get()
             param = param_var.get().strip()
             if skill and level:
-                # Mindig a paraméter mező aktuális értékét mentsük
-                m = re.match(r"(.+?)(?: \((.+?)\))?$", skill)
-                base_name = m.group(1) if m else skill
+                base_name, _ = re.match(r"(.+?)(?: \((.+?)\))?$", skill).groups() if re.match(r"(.+?)(?: \((.+?)\))?$", skill) else (skill, "")
                 prereq_dict = {
                     "type": "skill",
                     "name_var": tk.StringVar(value=base_name),
@@ -204,10 +208,9 @@ class PrerequisiteManager:
                     skillname = m.group(1)
                     param = m.group(2) or ""
                     level = m.group(3)
-                    display = f"{skillname} ({param})" if param else skillname
                     prereq_dict = {
                         "type": "skill",
-                        "name_var": tk.StringVar(value=display),
+                        "name_var": tk.StringVar(value=skillname),
                         "level_var": tk.StringVar(value=level),
                         "param_var": tk.StringVar(value=param),
                     }
@@ -599,66 +602,107 @@ class SkillEditor():
         tk.Button(dialog, text="Hozzáadás", command=add_skill).pack(pady=5)
 
     def open_skill_loader(self):
-        # Frissítsük az all_skills-t minden dialógus megnyitásakor
-        self.all_skills = self.skill_manager.load()
+        SkillLoaderDialog(self)
+
+    def delete_skill(self):
+        SkillDeleteDialog(self)
+
+# --- ÚJ: SkillLoaderDialog osztály ---
+class SkillLoaderDialog:
+    def __init__(self, editor):
+        self.editor = editor
+        self.all_skills = editor.skill_manager.load()
         skills_display = []
         for s in self.all_skills:
             if s.get("is_parametric") and s.get("parameter"):
                 skills_display.append(f"{s['name']} ({s['parameter']})")
             else:
                 skills_display.append(s['name'])
-        loader = tk.Toplevel(self.win)
-        loader.title("Képzettség betöltése")
-        loader.geometry("500x300")
-        listbox = tk.Listbox(loader, width=60, height=15)
+        self.loader = tk.Toplevel(editor.win)
+        self.loader.title("Képzettség betöltése")
+        self.loader.geometry("500x300")
+        self.listbox = tk.Listbox(self.loader, width=60, height=15)
         for item in skills_display:
-            listbox.insert(tk.END, item)
-        listbox.pack(pady=10)
-        def load_selected():
-            idx = listbox.curselection()
-            if not idx:
-                self.show_warning("Nincs kiválasztva képzettség.", "Betöltés")
-                return
-            skill_obj = self.all_skills[idx[0]]
-            self.name_var.set(skill_obj["name"])
-            self.param_var.set(skill_obj.get("parameter", ""))
-            self.general_desc_text.delete("1.0", tk.END)
-            self.general_desc_text.insert(tk.END, skill_obj.get("description", ""))
-            self.main_cat_var.set(skill_obj.get("main_category", ""))
-            self.sub_cat_var.set(skill_obj.get("sub_category", ""))
-            self.acq_method_var.set(skill_obj.get("acquisition_method", ""))
-            self.acq_diff_var.set(skill_obj.get("acquisition_difficulty", ""))
-            self.type_var.set(skill_obj.get("skill_type", "%"))
-            for i, desc_text in enumerate(self.level_desc_texts):
-                desc_text.delete("1.0", tk.END)
-                desc = skill_obj.get("level_descriptions", {}).get(str(i+1), "")
-                desc_text.insert(tk.END, desc)
-            if skill_obj.get("skill_type", "%") == "%":
-                self.kp_per_3_var.set(skill_obj.get("kp_per_3_percent", ""))
-                for kp_var in self.kp_cost_vars:
-                    kp_var.set("")
-            else:
-                self.kp_per_3_var.set("")
-                for i, kp_var in enumerate(self.kp_cost_vars):
-                    kp_var.set(skill_obj.get("kp_costs", {}).get(str(i+1), ""))
-            self.prereq_manager.load_prerequisites(skill_obj.get("prerequisites", {}))
-            loader.destroy()
-        def delete_selected():
-            idx = listbox.curselection()
-            if not idx:
-                self.show_warning("Nincs kiválasztva képzettség.", "Törlés")
-                return
-            skill_obj = self.all_skills[idx[0]]
-            answer = self.ask_yes_no(f"Biztosan törlöd ezt a képzettséget?\n{skills_display[idx[0]]}", "Törlés")
-            if answer:
-                self.all_skills.pop(idx[0])
-                self.skill_manager.save(self.all_skills)
-                self.show_info("Képzettség törölve!", "Törlés")
-                loader.destroy()
-        button_frame = tk.Frame(loader)
+            self.listbox.insert(tk.END, item)
+        self.listbox.pack(pady=10)
+        button_frame = tk.Frame(self.loader)
         button_frame.pack(pady=10)
-        tk.Button(button_frame, text="Betöltés", command=load_selected).pack(side=tk.LEFT, padx=20)
-        tk.Button(button_frame, text="Törlés", command=delete_selected).pack(side=tk.LEFT, padx=20)
+        tk.Button(button_frame, text="Betöltés", command=self.load_selected).pack(side=tk.LEFT, padx=20)
+        tk.Button(button_frame, text="Törlés", command=self.delete_selected).pack(side=tk.LEFT, padx=20)
+
+    def load_selected(self):
+        idx = self.listbox.curselection()
+        if not idx:
+            self.editor.show_warning("Nincs kiválasztva képzettség.", "Betöltés")
+            return
+        skill_obj = self.all_skills[idx[0]]
+        self.editor.name_var.set(skill_obj["name"])
+        self.editor.param_var.set(skill_obj.get("parameter", ""))
+        self.editor.general_desc_text.delete("1.0", tk.END)
+        self.editor.general_desc_text.insert(tk.END, skill_obj.get("description", ""))
+        self.editor.main_cat_var.set(skill_obj.get("main_category", ""))
+        self.editor.sub_cat_var.set(skill_obj.get("sub_category", ""))
+        self.editor.acq_method_var.set(skill_obj.get("acquisition_method", ""))
+        self.editor.acq_diff_var.set(skill_obj.get("acquisition_difficulty", ""))
+        self.editor.type_var.set(skill_obj.get("skill_type", "%"))
+        for i, desc_text in enumerate(self.editor.level_desc_texts):
+            desc_text.delete("1.0", tk.END)
+            desc = skill_obj.get("level_descriptions", {}).get(str(i+1), "")
+            desc_text.insert(tk.END, desc)
+        if skill_obj.get("skill_type", "%") == "%":
+            self.editor.kp_per_3_var.set(skill_obj.get("kp_per_3_percent", ""))
+            for kp_var in self.editor.kp_cost_vars:
+                kp_var.set("")
+        else:
+            self.editor.kp_per_3_var.set("")
+            for i, kp_var in enumerate(self.editor.kp_cost_vars):
+                kp_var.set(skill_obj.get("kp_costs", {}).get(str(i+1), ""))
+        self.editor.prereq_manager.load_prerequisites(skill_obj.get("prerequisites", {}))
+        self.loader.destroy()
+
+    def delete_selected(self):
+        idx = self.listbox.curselection()
+        if not idx:
+            self.editor.show_warning("Nincs kiválasztva képzettség.", "Törlés")
+            return
+        skill_obj = self.all_skills[idx[0]]
+        skills_display = self.listbox.get(0, tk.END)
+        answer = self.editor.ask_yes_no(f"Biztosan törlöd ezt a képzettséget?\n{skills_display[idx[0]]}", "Törlés")
+        if answer:
+            self.all_skills.pop(idx[0])
+            self.editor.skill_manager.save(self.all_skills)
+            self.editor.show_info("Képzettség törölve!", "Törlés")
+            self.loader.destroy()
+
+# --- ÚJ: SkillDeleteDialog osztály ---
+class SkillDeleteDialog:
+    def __init__(self, editor):
+        self.editor = editor
+        self.all_skills = editor.skill_manager.load()
+        skills_display = []
+        for s in self.all_skills:
+            if s.get("is_parametric") and s.get("parameter"):
+                skills_display.append(f"{s['name']} ({s['parameter']})")
+            else:
+                skills_display.append(s['name'])
+        self.loader = tk.Toplevel(editor.win)
+        self.loader.title("Képzettség törlése")
+        self.loader.geometry("500x300")
+        self.listbox = tk.Listbox(self.loader, width=60, height=15)
+        for item in skills_display:
+            self.listbox.insert(tk.END, item)
+        self.listbox.pack(pady=10)
+        tk.Button(self.loader, text="Törlés", command=self.do_delete).pack(pady=10)
+
+    def do_delete(self):
+        idx = self.listbox.curselection()
+        if not idx:
+            self.editor.show_warning("Nincs kiválasztva képzettség.", "Törlés")
+            return
+        self.all_skills.pop(idx[0])
+        self.editor.skill_manager.save(self.all_skills)
+        self.editor.show_info("Képzettség törölve!", "Törlés")
+        self.loader.destroy()
 
 # --- Futtatható fő rész ---
 if __name__ == "__main__":

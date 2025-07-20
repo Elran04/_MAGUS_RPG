@@ -90,8 +90,6 @@ def load_character_dialog():
 # --- KÉPZETTSÉG SZERKESZTŐ ABLAK MEGNYITÁSA ---
 def open_skill_editor():
     subprocess.Popen([sys.executable, "-m", "ui.skills_editor"])
-    # Szerkesztő ablak bezárása után frissítsük a skills adatokat
-    # (Ha van skill lista vagy skill betöltés funkció, ott újra kell tölteni a skills.json-t)
 
 # --- FŐABLAK ÉS WIDGETEK LÉTREHOZÁSA ---
 root = tk.Tk()
