@@ -3,7 +3,7 @@
     "name": "Fegyverhasználat",
     "main_category": "Harci képzettségek",
     "sub_category": "Közkeletű",
-    "description": "Ez már a fegyver használatának legendás szintje. A számszerű bónuszok megduplázódnak.",
+    "description": "Ez a fegyverhasználati képzettség a rövid kardokkal való harci jártasság szintjét írja le.",
     "acquisition_method": "Gyakorlás",
     "acquisition_difficulty": "1 - Egyszerű",
     "skill_type": "szint",
@@ -18,47 +18,63 @@
     "level_descriptions": {
       "1": "A képzetlenségből adódó negatívok már nem súlytják, a karaktert, viszont a körönkénti támadások száma még feleannyi, a normális támadások számához képest.",
       "2": "Ez már alapfokú fegyverhasználat, nincsenek sem pozitívumok, sem negatívumok.",
-      "3": "A karakter már megszokta fegyverének használatát, innentől jelentősen tovább tud vele aktívan harcolni.",
+      "3": "A karakter további 1 támadást kap ha rövid kardokkal harcol",
       "4": "Ezen a szinten már veterán fegyverforgatónak minősül, harcértékei nőnek.",
       "5": "A fegyverforgató mesterszintű felhasználója fegyverének, túlütés küszöb csökken.",
-      "6": "Ez már a fegyver használatának legendás szintje. A számszerű bónuszok megduplázódnak."
+      "6": "Ez már a fegyver használatának legendás szintje. Itt minden sikeres támadás után van lehetőség egy újbóli támadásra a célpont ellen."
     },
     "prerequisites": {
       "1": {
         "képesség": [
+          "Gyorsaság 10+",
           "Ügyesség 10+"
         ],
         "képzettség": []
       },
       "2": {
         "képesség": [
+          "Gyorsaság 12+",
           "Ügyesség 12+"
         ],
-        "képzettség": []
+        "képzettség": [
+          "Fegyverhasználat (Rövid kardok) (Rövid kardok) 1. szint"
+        ]
       },
       "3": {
         "képesség": [
-          "Ügyesség 14+"
+          "Gyorsaság 13+",
+          "Ügyesség 13+"
         ],
-        "képzettség": []
+        "képzettség": [
+          "Fegyverhasználat (Rövid kardok) (Rövid kardok) 2. szint"
+        ]
       },
       "4": {
         "képesség": [
-          "Ügyesség 16+"
+          "Gyorsaság 14+",
+          "Ügyesség 14+"
         ],
-        "képzettség": []
+        "képzettség": [
+          "Fegyverhasználat (Rövid kardok) (Rövid kardok) 3. szint"
+        ]
       },
       "5": {
         "képesség": [
-          "Ügyesség 18+"
+          "Gyorsaság 16+",
+          "Erő 16+"
         ],
-        "képzettség": []
+        "képzettség": [
+          "Fegyverhasználat (Rövid kardok) (Rövid kardok) 4. szint"
+        ]
       },
       "6": {
         "képesség": [
-          "Ügyesség 20+"
+          "Gyorsaság 18+",
+          "Ügyesség 18+"
         ],
-        "képzettség": []
+        "képzettség": [
+          "Fegyverhasználat (Rövid kardok) (Rövid kardok) 5. szint"
+        ]
       }
     },
     "is_parametric": true,

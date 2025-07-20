@@ -43,7 +43,14 @@ class PrerequisiteManager:
 
     def create_skill_row_widget(self, frame, skill_var, level_var, remove_callback):
         row = len([w for w in frame.grid_slaves() if isinstance(w, ttk.Combobox) or isinstance(w, tk.Entry)]) // 2 + 1
-        skill_combo = ttk.Combobox(frame, textvariable=skill_var, values=self.skill_names, state="readonly", width=30)
+        # Képzettség nevek paraméterrel együtt
+        skill_names_with_param = []
+        for s in self.all_skills:
+            if s.get("is_parametric") and s.get("parameter"):
+                skill_names_with_param.append(f"{s['name']} ({s['parameter']})")
+            else:
+                skill_names_with_param.append(s['name'])
+        skill_combo = ttk.Combobox(frame, textvariable=skill_var, values=skill_names_with_param, state="readonly", width=30)
         skill_combo.grid(row=row, column=2, padx=(5, 0), sticky="w")
         entry = tk.Entry(frame, textvariable=level_var, width=5)
         entry.grid(row=row, column=3, padx=10, sticky="w")
@@ -85,50 +92,24 @@ class PrerequisiteManager:
         tk.Label(dialog, text="Képzettség keresése:").pack()
         search_entry = tk.Entry(dialog, textvariable=search_var, width=40)
         search_entry.pack()
-        filtered_skills = self.skill_names.copy()
+        # Képzettség nevek paraméterrel együtt
+        skill_names_with_param = []
+        for s in self.all_skills:
+            if s.get("is_parametric") and s.get("parameter"):
+                skill_names_with_param.append(f"{s['name']} ({s['parameter']})")
+            else:
+                skill_names_with_param.append(s['name'])
+        filtered_skills = skill_names_with_param.copy()
         skill_var = tk.StringVar()
         skill_combo = ttk.Combobox(dialog, textvariable=skill_var, values=filtered_skills, state="readonly", width=35)
         skill_combo.pack(pady=5)
-        param_label = tk.Label(dialog, text="Specializáció / típus (pl. Rövid kardok, Elf nyelv):")
-        param_label.pack_forget()
-        param_var = tk.StringVar()
-        param_menu = None
-        def show_param_field(*args):
-            nonlocal param_menu
-            skill_name = skill_var.get()
-            skill_obj = next((s for s in self.all_skills if s["name"] == skill_name), None)
-            if param_menu:
-                param_menu.destroy()
-                param_menu = None
-            if skill_obj and skill_obj.get("is_parametric"):
-                param_label.pack()
-                params = set()
-                for s in self.all_skills:
-                    if s["name"] == skill_name and s.get("parameter"):
-                        params.add(s["parameter"])
-                params = sorted(params)
-                if params:
-                    param_var.set(params[0])
-                    param_menu = tk.OptionMenu(dialog, param_var, *params)
-                    param_menu.pack()
-                else:
-                    param_var.set("")
-                    param_menu = tk.Entry(dialog, textvariable=param_var, width=30)
-                    param_menu.pack()
-            else:
-                param_label.pack_forget()
-                param_var.set("")
-                if param_menu:
-                    param_menu.destroy()
-                    param_menu = None
-        skill_var.trace_add("write", show_param_field)
         tk.Label(dialog, text="Szükséges szint:").pack()
         level_var = tk.StringVar()
         level_entry = tk.Entry(dialog, textvariable=level_var, width=5)
         level_entry.pack()
         def update_skill_list(*args):
             text = search_var.get().lower()
-            filtered = [s for s in self.skill_names if text in s.lower()]
+            filtered = [s for s in skill_names_with_param if text in s.lower()]
             skill_combo['values'] = filtered
             if filtered:
                 skill_var.set(filtered[0])
@@ -138,15 +119,15 @@ class PrerequisiteManager:
         def add_skill():
             skill = skill_var.get()
             level = level_var.get()
-            param = param_var.get().strip()
+            # paramétert most már a névvel együtt tároljuk, nincs külön mező
             if skill and level:
                 def remove():
                     skill_combo_widget.destroy()
                     entry_widget.destroy()
                     btn_widget.destroy()
-                    self.skill_vars[level_idx].remove((skill_var, level_var, param))
+                    self.skill_vars[level_idx].remove((skill_var, level_var, ""))
                 skill_combo_widget, entry_widget, btn_widget = self.create_skill_row_widget(frame, skill_var, level_var, remove)
-                self.skill_vars[level_idx].append((skill_var, level_var, param))
+                self.skill_vars[level_idx].append((skill_var, level_var, ""))
                 dialog.destroy()
         tk.Button(dialog, text="Hozzáadás", command=add_skill).pack(pady=5)
 
@@ -180,21 +161,33 @@ class PrerequisiteManager:
                     stat_menu, entry, btn = self.create_stat_row_widget(frame, stat_var, value_var, lambda: remove_stat(stat_menu, entry, btn))
                     self.stat_vars[idx].append((stat_var, value_var))
             for skill_str in prereq.get("képzettség", []):
+                # Ez a regex egy képzettség stringből kinyeri:
+                # - a képzettség nevét (pl. "Kardforgatás")
+                # - opcionális paramétert zárójelben (pl. "Kardforgatás (Rövid kardok)")
+                # - a szintet (pl. "3. szint")
+                # Példák:
+                #   "Kardforgatás (Rövid kardok) 3. szint" -> name: "Kardforgatás", param: "Rövid kardok", level: "3"
+                #   "Kardforgatás 2. szint" -> name: "Kardforgatás", param: None, level: "2"
                 m = re.match(r"(.+?)(?: \((.+?)\))? (\d+)\. szint", skill_str)
                 if m:
                     skillname = m.group(1)
                     param = m.group(2) or ""
                     level = m.group(3)
-                    skill_var = tk.StringVar(value=skillname)
+                    # A legördülőben név + paraméter formátumot használunk
+                    if param:
+                        skill_display = f"{skillname} ({param})"
+                    else:
+                        skill_display = skillname
+                    skill_var = tk.StringVar(value=skill_display)
                     level_var = tk.StringVar(value=level)
                     def remove_skill(skill_combo=None, entry=None, btn=None):
                         skill_combo.destroy()
                         entry.destroy()
                         if btn:
                             btn.destroy()
-                        self.skill_vars[idx].remove((skill_var, level_var))
+                        self.skill_vars[idx].remove((skill_var, level_var, param))
                     skill_combo, entry, btn = self.create_skill_row_widget(frame, skill_var, level_var, lambda: remove_skill(skill_combo, entry, btn))
-                    self.skill_vars[idx].append((skill_var, level_var))
+                    self.skill_vars[idx].append((skill_var, level_var, param))
 
     def open_frames(self):
         for frame in self.frames:
