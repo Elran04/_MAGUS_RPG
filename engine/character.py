@@ -138,23 +138,23 @@ RACE_RESTRICTIONS = {
     },
     "Elf": {
         "Lovag", "Amazon", "Barbár", "Bajvívó", "Tolvaj", "Pap", "Paplovag", "Szerzetes", "Sámán",
-        "Harcművész", "Kardművész", "Boszorkány", "Boszorkánymester", "Tűzvarázsló"
+        "Harcművész", "Kardművész", "Boszorkány", "Boszorkánymester", "Tűzvarázsló", "Pszi mester"
     },
     "Félelf": {
         "Amazon", "Barbár","Pap", "Paplovag", "Szerzetes",
         "Tűzvarázsló"
     },
     "Khál": {
-        "Amazon", "Barbár", "Bajvívó", "Tolvaj", "Pap", "Paplovag", "Szerzetes", "Sámán",
-        "Harcművész", "Kardművész", "Boszorkány", "Boszorkánymester", "Tűzvarázsló", "Varázsló"
+        "Amazon", "Barbár", "Bajvívó", "Tolvaj", "Bárd", "Pap", "Paplovag", "Szerzetes", "Sámán",
+        "Harcművész", "Kardművész", "Boszorkány", "Boszorkánymester", "Tűzvarázsló", "Varázsló", "Pszi mester"
     },
     "Törpe": {
         "Fejvadász", "Lovag", "Amazon", "Barbár", "Bajvívó", "Bárd", "Paplovag", "Szerzetes", "Sámán",
-        "Harcművész", "Kardművész", "Boszorkány", "Boszorkánymester", "Tűzvarázsló"
+        "Harcművész", "Kardművész", "Boszorkány", "Boszorkánymester", "Tűzvarázsló", "Pszi mester"
     },
     "Udvari ork": {
         "Lovag", "Amazon", "Barbár", "Bárd", "Pap", "Paplovag", "Szerzetes", "Sámán",
-        "Harcművész", "Kardművész", "Boszorkány", "Tűzvarázsló", "Varázsló"
+        "Harcművész", "Kardművész", "Boszorkány", "Tűzvarázsló", "Varázsló", "Pszi mester"
     },
     "Wier": {
         "Gladiátor", "Amazon", "Barbár", "Bárd", "Pap", "Sámán",
