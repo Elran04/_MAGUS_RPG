@@ -727,5 +727,306 @@
     },
     "is_parametric": true,
     "parameter": "Lovak"
+  },
+  {
+    "name": "Egyensúlyérzék",
+    "main_category": "Túlélő képzettségek",
+    "sub_category": "Atlétikai",
+    "description": "Százalékos képzettség amely arról ad tájékoztatást a karakterről, hogy olyan helyzetekben ahol dinamikus mozgásokat végez, egyensúlyoznia kell vagy stabilan megmaradnia a lábán azt milyen jól tudja végezni.",
+    "acquisition_method": "Gyakorlás",
+    "acquisition_difficulty": "3 - Közepes",
+    "skill_type": "%",
+    "kp_per_3_percent": "1",
+    "level_descriptions": {
+      "1": "0-25%",
+      "2": "26-50%",
+      "3": "51-75%",
+      "4": "76-100%",
+      "5": "101-120%",
+      "6": "120%+"
+    },
+    "prerequisites": {
+      "1": {
+        "képesség": [
+          "Ügyesség 4+"
+        ],
+        "képzettség": []
+      },
+      "2": {
+        "képesség": [
+          "Ügyesség 8+"
+        ],
+        "képzettség": []
+      },
+      "3": {
+        "képesség": [
+          "Ügyesség 12+"
+        ],
+        "képzettség": []
+      },
+      "4": {
+        "képesség": [
+          "Ügyesség 16+"
+        ],
+        "képzettség": []
+      },
+      "5": {
+        "képesség": [
+          "Ügyesség 20+"
+        ],
+        "képzettség": []
+      },
+      "6": {
+        "képesség": [
+          "Ügyesség 21+"
+        ],
+        "képzettség": []
+      }
+    },
+    "is_parametric": false,
+    "parameter": ""
+  },
+  {
+    "name": "Futás",
+    "main_category": "Túlélő képzettségek",
+    "sub_category": "Vadonjáró",
+    "description": "A legtöbb képzettséggel ellentétben nem csak az képes futni aki valamilyen szinten rendelkezik a képzettséggel (most eltekintünk a bénulás, végtaghiány és egyéb hátrányos körülményektől). A képzettség szintjei kifejezetten a hosszútávfutásra vannak kialakítva.",
+    "acquisition_method": "Gyakorlás",
+    "acquisition_difficulty": "1 - Egyszerű",
+    "skill_type": "szint",
+    "kp_costs": {
+      "1": "3",
+      "2": "9",
+      "3": "15",
+      "4": "24",
+      "5": "30",
+      "6": "40"
+    },
+    "level_descriptions": {
+      "1": "1 óra alatt 10 mérföld lefutására képes a karakter kockadobás nélkül. Ezután 10 percenként állóképesség próbát köteles dobni. Az első alkalommal még - nélkül utána viszont halmozódó -2 állóképesség ellenében kell dobnia. Ugyanannyit kell pihenéssel töltenie mint amennyit futott.",
+      "2": "2 órát képes lefutni mialatt 20 mérföldet tesz meg. Ezután állóképességpróbákat 20 percenként kell tennie hasonló halmozódó hátrányokkal az 1. szinthez. Ugyanannyit kell pihenéssel töltenie mint amennyit futott.",
+      "3": "2 órát képes lefutni mialatt 20 mérföldet tesz meg. Viszont ezt egy sikeres akaraterő próbával további 1 órával ki tud tolni. Ezután, vagy ha sikertelen az akaraterőpróba, félóránként kell halmozódó hátrányokkal állóképesség próbát tennie. Két óra pihenő után újra képes futásra.",
+      "4": "3 órát képes lefutni mialatt 30 mérföldet tesz meg. A képzettség többi része megegyezik a 3. szinttel. De csak másfél óra pihenőre van szüksége.",
+      "5": "Itt már választhat a futó, hogy 3 óra alatt 45 mérföldet vagy 5 óra alatt 55 mérföldet fut le. Ha a gyorsabb tempóban fut mind akaraterő és mind állóképesség próbát kell dobnia fél óránként halmozódó hátrányokkal. Ha a lassabban elegendő csak az egyikkel sikeresnek lennie. Másfél óra pihenőt igényel.",
+      "6": "Ez a szint már emberfeletti futóteljesítményt jelent. A 11 mérföld/óra futást szinte végtelenségig tudja tartani a futó vagy 5 óra alatt akár 80 mérföldet képes lefutni, és ezután köteles halmozódó akaraterő és állóképességpróba ellenében félóránként dobni, viszont -2 helyett -1el csökkennek az értékek."
+    },
+    "prerequisites": {
+      "1": {
+        "képesség": [
+          "Állóképesség 12+"
+        ],
+        "képzettség": []
+      },
+      "2": {
+        "képesség": [
+          "Állóképesség 13+"
+        ],
+        "képzettség": []
+      },
+      "3": {
+        "képesség": [
+          "Állóképesség 14+",
+          "Akaraterő 13+"
+        ],
+        "képzettség": []
+      },
+      "4": {
+        "képesség": [
+          "Állóképesség 16+",
+          "Akaraterő 14+"
+        ],
+        "képzettség": []
+      },
+      "5": {
+        "képesség": [
+          "Állóképesség 17+",
+          "Akaraterő 15+"
+        ],
+        "képzettség": []
+      },
+      "6": {
+        "képesség": [
+          "Állóképesség 18+",
+          "Akaraterő 16+"
+        ],
+        "képzettség": []
+      }
+    },
+    "is_parametric": false,
+    "parameter": ""
+  },
+  {
+    "name": "Úszás",
+    "main_category": "Túlélő képzettségek",
+    "sub_category": "Vadonjáró",
+    "description": "A képzettséggel nem rendelkezők úszásnak nem nevezhető módon, az erő értéküknek megfelelő körig tudnak a víz felszínén maradni, majd állóképességük 10 feletti része körig képesek visszatartani lélegzetüket a víz alatt. Ezután a karakter elájul és 1 perc (6 kör) ön belül óhatatlanul is megfullad. Ezen képzettséggel javítható az úsztechnikája a karakternek. Teljes felszerelésben szinte azonnal elmerül és minden körben köteles erőpróbát tenni a vízfelszínen maradáshoz.",
+    "acquisition_method": "Tapasztalás",
+    "acquisition_difficulty": "1 - Egyszerű",
+    "skill_type": "szint",
+    "kp_costs": {
+      "1": "1",
+      "2": "2",
+      "3": "4",
+      "4": "10",
+      "5": "15",
+      "6": "25"
+    },
+    "level_descriptions": {
+      "1": "Itt még nem beszélhetünk képzett úszóról, viszont már állóképességével megegyező percig tud a karakter vízfelszínen maradni, és szépen lassan kievickélni a partra. 1 láb/ kör sebességgel tud úszni. Ha nem ér partot ezidő alatt állóképesség próbát kell tennie halmozódó hátrány(-2) ellenében percenként, ha sikertelen elmerül. Felszerelésben annyi körig tud vízfelszínen maradni amennyi az erő értéke.",
+      "2": "A karakter már valóban tud úszni, de csak felszerelés nélkül. Ha így tesz állóképességének kétszeresét tudja percben folyamatos úszással tölteni. Úszásának sebessége már 2 láb/kör. Ha nem ér partot ezidő alatt állóképesség próbát kell tennie halmozódó hátrány(-1) ellenében percenként, ha sikertelen elmerül. Felszerelésben az állóképességének megegyező percig képes vízfelszínen maradni de úszni még nem tud.",
+      "3": "Itt az úszó már állóképességének ötszöröse percig képes folyamatosan úszni 4 láb/kör sebességgel. Felszereléssel csak az állóképesség kétszeresééig és 1 láb/kör sebességggel. Ezután köteles állóképesség próbákat tenni kétpercenként, halmozódó hátrány ellenében (-1).",
+      "4": "Felszerelés nélkül akár 3 órán keresztül is gond nélkül úszik a karakter akár 10 láb/kör sebességgelés szinte bármeddig képes csendes vízeken lebegni. Felszereléssel állóképességének ötszöröse percig képes 4 láb/kör sebességgel úszni, ezután állóképesség próbákat kell tennie 5 percenként halmozódó hátrány ellenében (-1).",
+      "5": "Ezen a szinten már a karakter tüdőkapacitása is megnőtt, így már víz alatt az állóképességének kétszeresének megfelelő kört képes hátrányok nélkül eltölteni. Ha ezt túllépné akkor halmozódó hátrány(-2) ellenében tehet állóképesség próbákat, eszméletének megtartására. Az úszás sebességé hosszútávon már 15 láb/kör. Felszereléssel 10 láb/kör. A többi tulajdonsága megegyezik a 4-es szinten lévőkkel. Viszont már teljes vértezetben is képes a 2. szinten leírtaknak megfelelően úszni.",
+      "6": "A képzettség ezen szintje már a gyöngyhalászok meghatározó képzettsége, akár állóképességének négyszeresének megfelelő körig tud víz alatt tartózkodni. Felszerelés nélkül 20 láb/kör sebességgel tud szinte akármeddig úszni. Felszereléssel viszont nem javul tovább a képzettség, de már teljes vértezetben is képes a 3-as szintnek megfelelően úszni."
+    },
+    "prerequisites": {
+      "1": {
+        "képesség": [
+          "Erő 6+",
+          "Állóképesség 6+"
+        ],
+        "képzettség": []
+      },
+      "2": {
+        "képesség": [
+          "Erő 9+",
+          "Állóképesség 9+"
+        ],
+        "képzettség": [
+          "Úszás 1. szint"
+        ]
+      },
+      "3": {
+        "képesség": [
+          "Erő 11+",
+          "Állóképesség 12+"
+        ],
+        "képzettség": [
+          "Úszás 2. szint"
+        ]
+      },
+      "4": {
+        "képesség": [
+          "Erő 15+",
+          "Állóképesség 14+"
+        ],
+        "képzettség": [
+          "Úszás 3. szint"
+        ]
+      },
+      "5": {
+        "képesség": [
+          "Erő 16+",
+          "Állóképesség 15+"
+        ],
+        "képzettség": [
+          "Úszás 4. szint"
+        ]
+      },
+      "6": {
+        "képesség": [
+          "Erő 17+",
+          "Állóképesség 16+"
+        ],
+        "képzettség": [
+          "Úszás 5. szint"
+        ]
+      }
+    },
+    "is_parametric": false,
+    "parameter": ""
+  },
+  {
+    "name": "Lovaglás",
+    "main_category": "Szociális képzettségek",
+    "sub_category": "Nemesi",
+    "description": "Széles körben elterjed, s igen hasznos ismeret. Minél magasabb szinten ismeri a kalandozó annál inkább irányítása alá tudja vonni a hátast.",
+    "acquisition_method": "Gyakorlás",
+    "acquisition_difficulty": "2 - Könnyű",
+    "skill_type": "szint",
+    "kp_costs": {
+      "1": "1",
+      "2": "3",
+      "3": "9",
+      "4": "15",
+      "5": "30",
+      "6": "50"
+    },
+    "level_descriptions": {
+      "1": "Ezen a szinten a karakter ugyan képes megülni a lovat, de harcolni csak nagyon súlyos negatívumok mellett tud. Ez azt jelenti,hogy képzetlen fegyverforgatás és harc helyhez kötve negatíviumai is súlytják, függetlenül hogy rendelkezik a fegyver használatával vagy állóharc képzettségekkel.",
+      "2": "Itt már egy fokkal képzettebb lovasról beszélünk, akár vágtára is képes, de ugrásokkal még ne próbálkozzon. Harc közben már csak a képzetlen fegyverforgatás negatívumai súlytják.",
+      "3": "Ezen a szinten már képzett lovasnak számít a karakter, képes vágtázni, ugratni, lovat táncoltatni. Itt már nem súlytják negatívumok, de előnyt még nem tud kovácsolni harci helyzetekben.",
+      "4": "A mesterfokon képzett lovasok, már igen jól ismerik hátasállataikat. Harctéren ez abban jelentkezik, hogy már a harc mozgó lóról előnyeit képesek kihasználni.",
+      "5": "Ez már a nagymesteri szintje a lovaglásnak, itt akkor is megkapja a harc mozgó lóról előnyöket ha a lova nem ugrál, rugkapál és az ellenfelei a harc helyhez kötve negatívumokkal állnak a lovassal szemben.",
+      "6": "Itt már a lovas szinte eggyé válik a hátasával, támadó és védőértékeik összeadódnak."
+    },
+    "prerequisites": {
+      "1": {
+        "képesség": [
+          "Ügyesség 7+",
+          "Érzékelés 9+"
+        ],
+        "képzettség": [
+          "Állatismeret (Lovak) 1. szint",
+          "Egyensúlyérzék 1. szint"
+        ]
+      },
+      "2": {
+        "képesség": [
+          "Ügyesség 9+",
+          "Érzékelés 10+"
+        ],
+        "képzettség": [
+          "Állatismeret (Lovak) 2. szint",
+          "Lovaglás 1. szint"
+        ]
+      },
+      "3": {
+        "képesség": [
+          "Ügyesség 13+",
+          "Érzékelés 11+"
+        ],
+        "képzettség": [
+          "Állatismeret (Lovak) 3. szint",
+          "Egyensúlyérzék 2. szint",
+          "Lovaglás 2. szint"
+        ]
+      },
+      "4": {
+        "képesség": [
+          "Ügyesség 14+",
+          "Érzékelés 13+"
+        ],
+        "képzettség": [
+          "Állatismeret (Lovak) 4. szint",
+          "Egyensúlyérzék 3. szint",
+          "Lovaglás 3. szint"
+        ]
+      },
+      "5": {
+        "képesség": [
+          "Ügyesség 16+",
+          "Érzékelés 14+"
+        ],
+        "képzettség": [
+          "Állatismeret (Lovak) 5. szint",
+          "Egyensúlyérzék 4. szint",
+          "Lovaglás 4. szint"
+        ]
+      },
+      "6": {
+        "képesség": [
+          "Ügyesség 18+",
+          "Érzékelés 15+"
+        ],
+        "képzettség": [
+          "Állatismeret (Lovak) 6. szint",
+          "Egyensúlyérzék 5. szint",
+          "Lovaglás 5. szint"
+        ]
+      }
+    },
+    "is_parametric": false,
+    "parameter": ""
   }
 ]
