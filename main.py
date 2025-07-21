@@ -90,30 +90,44 @@ def load_character_dialog():
 # --- KÉPZETTSÉG SZERKESZTŐ ABLAK MEGNYITÁSA ---
 def open_skill_editor():
     subprocess.Popen([sys.executable, "-m", "ui.skills_editor"])
+# --- FELSZERELÉS SZERKESZTŐ ABLAK MEGNYITÁSA ---
+def open_equipment_editor():
+    subprocess.Popen([sys.executable, "-m", "ui.equipment_editor"])
 
 # --- FŐABLAK ÉS WIDGETEK LÉTREHOZÁSA ---
 root = tk.Tk()
 root.title("M.A.G.U.S. Szöveges RPG")
-root.geometry("600x400")
+root.geometry("800x500")
 
-text_area = tk.Text(root, wrap=tk.WORD, height=20, width=70)
-text_area.pack(pady=10)
+# --- Fő szövegterület ---
+text_area = tk.Text(root, wrap=tk.WORD, height=18, width=90)
+text_area.pack(pady=15)
 
-# --- FŐ GOMBOK ---
-start_button = tk.Button(root, text="Játék indítása", command=lambda: text_area.insert(tk.END, "\nJáték indítása...\n"))
-start_button.pack(side=tk.LEFT, padx=10)
+# --- Gombok elrendezése egy külön frame-ben, egymás alatt ---
+button_frame = tk.Frame(root)
+button_frame.pack(pady=10)
 
-create_char_button = tk.Button(root, text="Karaktergenerálás", command=lambda: open_character_creator(root, display_character))
-create_char_button.pack(side=tk.LEFT, padx=10)
+# 1. sor: Játék indítása
+start_button = tk.Button(button_frame, text="Játék indítása", width=30, command=lambda: text_area.insert(tk.END, "\nJáték indítása...\n"))
+start_button.grid(row=0, column=0, pady=5)
 
-save_button = tk.Button(root, text="Mentés", command=save_last_character)
-save_button.pack(side=tk.LEFT, padx=10)
+# 2. sor: Karaktergenerálás, Mentés, Betöltés
+char_frame = tk.Frame(button_frame)
+char_frame.grid(row=1, column=0, pady=5)
+create_char_button = tk.Button(char_frame, text="Karaktergenerálás", width=20, command=lambda: open_character_creator(root, display_character))
+create_char_button.pack(side=tk.LEFT, padx=5)
+save_button = tk.Button(char_frame, text="Mentés", width=12, command=save_last_character)
+save_button.pack(side=tk.LEFT, padx=5)
+load_button = tk.Button(char_frame, text="Betöltés", width=12, command=load_character_dialog)
+load_button.pack(side=tk.LEFT, padx=5)
 
-load_button = tk.Button(root, text="Betöltés", command=load_character_dialog)
-load_button.pack(side=tk.LEFT, padx=10)
+# 3. sor: Képzettség szerkesztő
+skill_editor_button = tk.Button(button_frame, text="Képzettség szerkesztő", width=30, command=open_skill_editor)
+skill_editor_button.grid(row=2, column=0, pady=5)
 
-skill_editor_button = tk.Button(root, text="Képzettség szerkesztő", command=open_skill_editor)
-skill_editor_button.pack(side=tk.LEFT, padx=10)
+# 4. sor: Felszerelés szerkesztő (Új)
+equipment_editor_button = tk.Button(button_frame, text="Felszerelés szerkesztő", width=30, command=open_equipment_editor)
+equipment_editor_button.grid(row=3, column=0, pady=5)
 
 # --- FŐABLAK FUTTATÁSA ---
 root.mainloop()
