@@ -55,7 +55,10 @@ class ArmorEditor:
         row += 1
         self.parts_vars = {}
         self.parts_sfe_vars = {}
-        parts = list(ArmorManager.PARTS.keys())
+        # Friss parts lista: felkarvédő, alkarvédő, karvédő helyett
+        parts = [
+            "sisak", "mellvért", "vállvédő", "felkarvédő", "alkarvédő", "kesztyű", "combvédő", "lábszárvédő", "csizma"
+        ]
         parts_frame = tk.Frame(edit_frame)
         parts_frame.grid(row=row, column=0, columnspan=3, sticky="w")
         for i, part in enumerate(parts):

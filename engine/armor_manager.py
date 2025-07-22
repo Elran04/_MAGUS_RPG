@@ -10,11 +10,12 @@ class ArmorManager:
             "jobb lapocka", "bal lapocka", "jobb hát", "bal hát", "jobb derék", "bal derék", "ülep", "gerinc"
         ],
         "vállvédő": ["bal váll", "jobb váll"],
-        "karvédő": ["bal felkar", "jobb felkar", "bal könyök", "jobb könyök", "bal alkar", "jobb alkar"],
+        "felkarvédő": ["bal felkar", "jobb felkar", "bal könyök", "jobb könyök"],
+        "alkarvédő": ["bal alkar", "jobb alkar"],
         "kesztyű": ["bal csukló", "jobb csukló", "bal kézfej", "jobb kézfej"],
-        "lábszárvédő": ["bal lábszár", "jobb lábszár", "bal térd", "jobb térd"],
         "combvédő": ["bal comb", "jobb comb"],
-        "csizma": ["bal boka", "jobb boka", "bal lábfej", "jobb lábfej"],
+        "lábszárvédő": ["bal lábszár", "jobb lábszár", "bal térd", "jobb térd"],
+        "csizma": ["bal boka", "jobb boka", "bal lábfej", "jobb lábfej"]
         # ...bővíthető...
     }
 
@@ -49,21 +50,20 @@ class ArmorManager:
         self.modifiers = []  # ideiglenes módosítók listája
 
     def get_zone_protection(self, armor, zone):
-        # override ellenőrzés
+        # 1. protection_overrides előnyben
         if "protection_overrides" in armor and zone in armor["protection_overrides"]:
             base = armor["protection_overrides"][zone]
         else:
-            # főzóna keresés
+            # 2. parts dict alapján keresés
             base = 0
-            for main, subs in self.MAIN_ZONES.items():
-                if zone in subs:
-                    # új szerkezet: protection dict
-                    if isinstance(armor.get("protection"), dict):
-                        base = armor["protection"].get(main, 0)
-                    else:
-                        base = armor.get("protection", 0)
-                    break
-        # ideiglenes módosítók alkalmazása
+            parts = armor.get("parts", {})
+            for part, sfe in parts.items():
+                if sfe > 0:
+                    subzones = self.PARTS.get(part, [])
+                    if zone in subzones:
+                        base = sfe
+                        break
+        # 3. ideiglenes módosítók alkalmazása
         for mod in self.modifiers:
             if mod.get("armor_name") == armor["name"] and (mod.get("zone") == zone or mod.get("zone") == "*"):
                 base += mod.get("value", 0)
