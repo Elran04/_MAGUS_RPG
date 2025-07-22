@@ -1,42 +1,45 @@
 [
-    {
-        "id": "leather_armor",
-        "name": "Bőrvért",
-        "protection": {
-            "fej": 1,
-            "torzó": 2,
-            "kar_jobb": 1,
-            "kar_bal": 1,
-            "láb_jobb": 1,
-            "láb_bal": 1
-        },
-        "protection_overrides": {
-            "nyak": 0,
-            "agy": 0
-        },
-        "mgt": 1,
-        "weight": 4.0,
-        "price": 80,
-        "description": "Mozgást kevéssé akadályozza, alapvető védelem."
+  {
+    "name": "Bőrvért",
+    "id": "leather_armor",
+    "protection": {
+      "fej": 0,
+      "torzó": 2,
+      "kar_jobb": 1,
+      "kar_bal": 1,
+      "láb_jobb": 1,
+      "láb_bal": 1
     },
-    {
-        "id": "chainmail",
-        "name": "Láncvért",
-        "protection": {
-            "fej": 2,
-            "torzó": 4,
-            "kar_jobb": 2,
-            "kar_bal": 2,
-            "láb_jobb": 2,
-            "láb_bal": 2
-        },
-        "protection_overrides": {
-            "nyak": 1,
-            "agy": 0
-        },
-        "mgt": 3,
-        "weight": 10.0,
-        "price": 200,
-        "description": "Jó védelem, nehezebb, a mozgást jobban akadályozza."
-    }
+    "protection_overrides": {
+      "jobb könyök": 0,
+      "jobb alkar": 0,
+      "jobb csukló": 0,
+      "jobb kézfej": 0,
+      "bal könyök": 0,
+      "bal alkar": 0,
+      "bal csukló": 0,
+      "bal kézfej": 0
+    },
+    "mgt": 1,
+    "weight": 4.0,
+    "price": 80,
+    "description": "Mozgást kevéssé akadályozza, alapvető védelem."
+  },
+  {
+    "name": "Láncvért",
+    "id": "chainmail",
+    "protection": {
+      "fej": 0,
+      "torzó": 4,
+      "kar_jobb": 2,
+      "kar_bal": 2,
+      "láb_jobb": 2,
+      "láb_bal": 2
+    },
+    "protection_overrides": {},
+    "mgt": 3,
+    "weight": 10.0,
+    "price": 200,
+    "description": "Jó védelem, nehezebb, a mozgást jobban akadályozza."
+  }
 ]
