@@ -2,6 +2,33 @@ import json
 import os
 
 class ArmorManager:
+    # Páncél részegységek és az általuk védett alzónák
+    PARTS = {
+        "sisak": ["agykoponya", "homlok", "halánték", "arckoponya", "nyak"],
+        "mellvért": [
+            "jobb kulcscsont", "bal kulcscsont", "szegycsont", "bal mellkas", "jobb mellkas", "gyomorszáj", "has jobboldala", "has baloldala", "ágyék",
+            "jobb lapocka", "bal lapocka", "jobb hát", "bal hát", "jobb derék", "bal derék", "ülep", "gerinc"
+        ],
+        "vállvédő": ["bal váll", "jobb váll"],
+        "karvédő": ["bal felkar", "jobb felkar", "bal könyök", "jobb könyök", "bal alkar", "jobb alkar"],
+        "kesztyű": ["bal csukló", "jobb csukló", "bal kézfej", "jobb kézfej"],
+        "lábszárvédő": ["bal lábszár", "jobb lábszár", "bal térd", "jobb térd"],
+        "combvédő": ["bal comb", "jobb comb"],
+        "csizma": ["bal boka", "jobb boka", "bal lábfej", "jobb lábfej"],
+        # ...bővíthető...
+    }
+
+    def get_parts_for_armor(self, armor):
+        """
+        Visszaadja, hogy egy páncél milyen részegységekből áll.
+        """
+        return armor.get("parts", [])
+
+    def get_subzones_for_part(self, part_name):
+        """
+        Visszaadja, hogy egy adott részegység milyen alzónákat véd.
+        """
+        return self.PARTS.get(part_name, [])
     MAIN_ZONES = {
         "fej": ["agykoponya", "homlok", "halánték", "arckoponya", "nyak"],
         "torzó": [

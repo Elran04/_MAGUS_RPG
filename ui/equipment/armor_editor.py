@@ -4,7 +4,7 @@ from utils.json_manager import JsonManager
 
 class ArmorJsonManager(JsonManager):
     def validate(self, item):
-        required = ["id", "name", "protection", "mgt", "weight", "price", "description"]
+        required = ["id", "name", "parts", "mgt", "weight", "price", "description"]
         return all(field in item for field in required)
 
 ARMOR_JSON = os.path.join(os.path.dirname(__file__), "..", "..", "data", "equipment", "armor.json")
@@ -49,17 +49,24 @@ class ArmorEditor:
         self.edit_vars['id'] = tk.StringVar()
         tk.Entry(edit_frame, textvariable=self.edit_vars['id'], width=40).grid(row=row, column=1, sticky="w")
         row += 1
-        # Protection főzónák
-        tk.Label(edit_frame, text="SFÉ főzónák:", font=("Arial", 11, "bold")).grid(row=row, column=0, sticky="w", pady=5)
+        # Páncél részegységek (parts) - SFÉ értékekkel
+        from engine.armor_manager import ArmorManager
+        tk.Label(edit_frame, text="Részegységek és SFÉ:", font=("Arial", 11, "bold")).grid(row=row, column=0, sticky="w", pady=5)
         row += 1
-        self.edit_vars['protection'] = {}
-        zones = ["fej", "torzó", "kar_jobb", "kar_bal", "láb_jobb", "láb_bal"]
-        for z in zones:
-            tk.Label(edit_frame, text=f"{z}").grid(row=row, column=0, sticky="w")
-            var = tk.StringVar()
-            self.edit_vars['protection'][z] = var
-            tk.Entry(edit_frame, textvariable=var, width=8).grid(row=row, column=1, sticky="w")
-            row += 1
+        self.parts_vars = {}
+        self.parts_sfe_vars = {}
+        parts = list(ArmorManager.PARTS.keys())
+        parts_frame = tk.Frame(edit_frame)
+        parts_frame.grid(row=row, column=0, columnspan=3, sticky="w")
+        for i, part in enumerate(parts):
+            var = tk.IntVar()
+            sfe_var = tk.StringVar()
+            self.parts_vars[part] = var
+            self.parts_sfe_vars[part] = sfe_var
+            tk.Checkbutton(parts_frame, text=part, variable=var).grid(row=i, column=0, sticky="w")
+            tk.Label(parts_frame, text="SFÉ:").grid(row=i, column=1, sticky="e")
+            tk.Entry(parts_frame, textvariable=sfe_var, width=6).grid(row=i, column=2, padx=2)
+        row += len(parts)
         # Protection overrides - interaktív panel
         from engine.armor_manager import ArmorManager
         tk.Label(edit_frame, text="SFÉ override-ok (alzónák):", font=("Arial", 11, "bold")).grid(row=row, column=0, sticky="w", pady=5)
@@ -90,11 +97,29 @@ class ArmorEditor:
         self.ov_list_frame.grid(row=row, column=0, columnspan=3, sticky="w")
         row += 1
         # ...existing code for MGT, súly, ár, leírás, mentés gomb...
-        for label, key in [("MGT:", "mgt"), ("Súly (kg):", "weight"), ("Ár:", "price")]:
+        for label, key in [("MGT:", "mgt"), ("Súly (kg):", "weight")]:
             tk.Label(edit_frame, text=label).grid(row=row, column=0, sticky="w")
             self.edit_vars[key] = tk.StringVar()
             tk.Entry(edit_frame, textvariable=self.edit_vars[key], width=12).grid(row=row, column=1, sticky="w")
             row += 1
+        # Ár mezők (currency manager alapján) - egy sorban, egy frame-ben
+        from engine.currency_manager import CurrencyManager
+        tk.Label(edit_frame, text="Ár:").grid(row=row, column=0, sticky="nw")
+        price_frame = tk.Frame(edit_frame)
+        price_frame.grid(row=row, column=1, columnspan=8, sticky="w", pady=2)
+        self.edit_vars['price_réz'] = tk.StringVar()
+        self.edit_vars['price_ezüst'] = tk.StringVar()
+        self.edit_vars['price_arany'] = tk.StringVar()
+        self.edit_vars['price_mithrill'] = tk.StringVar()
+        tk.Label(price_frame, text="réz").grid(row=0, column=0)
+        tk.Entry(price_frame, textvariable=self.edit_vars['price_réz'], width=4).grid(row=0, column=1)
+        tk.Label(price_frame, text="ezüst").grid(row=0, column=2)
+        tk.Entry(price_frame, textvariable=self.edit_vars['price_ezüst'], width=4).grid(row=0, column=3)
+        tk.Label(price_frame, text="arany").grid(row=0, column=4)
+        tk.Entry(price_frame, textvariable=self.edit_vars['price_arany'], width=4).grid(row=0, column=5)
+        tk.Label(price_frame, text="mithrill").grid(row=0, column=6)
+        tk.Entry(price_frame, textvariable=self.edit_vars['price_mithrill'], width=4).grid(row=0, column=7)
+        row += 1
         tk.Label(edit_frame, text="Leírás:").grid(row=row, column=0, sticky="nw")
         self.edit_vars['description'] = tk.Text(edit_frame, width=50, height=4)
         self.edit_vars['description'].grid(row=row, column=1, columnspan=2, sticky="w")
@@ -157,8 +182,15 @@ class ArmorEditor:
         armor = self.armors[idx]
         self.edit_vars['name'].set(armor.get('name', ''))
         self.edit_vars['id'].set(armor.get('id', ''))
-        for z in self.edit_vars['protection']:
-            self.edit_vars['protection'][z].set(str(armor.get('protection', {}).get(z, '')))
+        # parts mező kitöltése és SFÉ értékek
+        for part in self.parts_vars:
+            # SFÉ érték lekérése, ha nincs, akkor 0
+            sfe_val = 0
+            if part in armor.get('parts', {}):
+                sfe_val = armor['parts'][part]
+            self.parts_sfe_vars[part].set(str(sfe_val))
+            # Tickbox csak akkor checked, ha SFÉ > 0
+            self.parts_vars[part].set(1 if sfe_val > 0 else 0)
         # overrides: dict -> interactive list
         overrides = armor.get('protection_overrides', {})
         self.override_vars = []
@@ -170,20 +202,44 @@ class ArmorEditor:
         self.refresh_override_list()
         self.edit_vars['mgt'].set(str(armor.get('mgt', '')))
         self.edit_vars['weight'].set(str(armor.get('weight', '')))
-        self.edit_vars['price'].set(str(armor.get('price', '')))
+        # Ár felbontása currency managerrel
+        from engine.currency_manager import CurrencyManager
+        price = int(armor.get('price', 0))
+        price_parts = CurrencyManager().from_base(price)
+        self.edit_vars['price_réz'].set(str(price_parts.get('réz', 0)))
+        self.edit_vars['price_ezüst'].set(str(price_parts.get('ezüst', 0)))
+        self.edit_vars['price_arany'].set(str(price_parts.get('arany', 0)))
+        self.edit_vars['price_mithrill'].set(str(price_parts.get('mithrill', 0)))
         self.edit_vars['description'].delete("1.0", tk.END)
         self.edit_vars['description'].insert(tk.END, armor.get('description', ''))
 
     def save_armor(self):
         # Gyűjtés
+        from engine.currency_manager import CurrencyManager
+        # Ár összerakása
+        price_total = 0
+        for curr in CurrencyManager.ORDER:
+            val = int(self.edit_vars[f'price_{curr}'].get() or 0)
+            price_total += CurrencyManager().to_base(val, curr)
+        # parts dict: {part: SFÉ} minden parts elemhez, ha nincs tickbox vagy üres SFÉ, akkor 0
+        parts_dict = {}
+        for part, var in self.parts_vars.items():
+            if var.get():
+                try:
+                    sfe_val = int(self.parts_sfe_vars[part].get() or 0)
+                except ValueError:
+                    sfe_val = 0
+                parts_dict[part] = sfe_val
+            else:
+                parts_dict[part] = 0
         armor = {
             'name': self.edit_vars['name'].get(),
             'id': self.edit_vars['id'].get(),
-            'protection': {z: int(self.edit_vars['protection'][z].get() or 0) for z in self.edit_vars['protection']},
+            'parts': parts_dict,
             'protection_overrides': {},
             'mgt': int(self.edit_vars['mgt'].get() or 0),
             'weight': float(self.edit_vars['weight'].get() or 0),
-            'price': int(self.edit_vars['price'].get() or 0),
+            'price': price_total,
             'description': self.edit_vars['description'].get("1.0", tk.END).strip()
         }
         # override list -> dict
@@ -211,13 +267,17 @@ class ArmorEditor:
         self.selected_idx = None
         self.edit_vars['name'].set("")
         self.edit_vars['id'].set("")
-        for z in self.edit_vars['protection']:
-            self.edit_vars['protection'][z].set("")
+        for part in self.parts_vars:
+            self.parts_vars[part].set(0)
+            self.parts_sfe_vars[part].set("")
         self.override_vars = []
         self.refresh_override_list()
         self.edit_vars['mgt'].set("")
         self.edit_vars['weight'].set("")
-        self.edit_vars['price'].set("")
+        self.edit_vars['price_réz'].set("")
+        self.edit_vars['price_ezüst'].set("")
+        self.edit_vars['price_arany'].set("")
+        self.edit_vars['price_mithrill'].set("")
         self.edit_vars['description'].delete("1.0", tk.END)
 
     def delete_armor(self):

@@ -2,24 +2,17 @@
   {
     "name": "Bőrvért",
     "id": "leather_armor",
-    "protection": {
-      "fej": 0,
-      "torzó": 2,
-      "kar_jobb": 1,
-      "kar_bal": 1,
-      "láb_jobb": 1,
-      "láb_bal": 1
+    "parts": {
+      "sisak": 0,
+      "mellvért": 2,
+      "vállvédő": 1,
+      "karvédő": 1,
+      "kesztyű": 0,
+      "lábszárvédő": 0,
+      "combvédő": 1,
+      "csizma": 0
     },
-    "protection_overrides": {
-      "jobb könyök": 0,
-      "jobb alkar": 0,
-      "jobb csukló": 0,
-      "jobb kézfej": 0,
-      "bal könyök": 0,
-      "bal alkar": 0,
-      "bal csukló": 0,
-      "bal kézfej": 0
-    },
+    "protection_overrides": {},
     "mgt": 1,
     "weight": 4.0,
     "price": 80,
@@ -28,13 +21,15 @@
   {
     "name": "Láncvért",
     "id": "chainmail",
-    "protection": {
-      "fej": 0,
-      "torzó": 4,
-      "kar_jobb": 2,
-      "kar_bal": 2,
-      "láb_jobb": 2,
-      "láb_bal": 2
+    "parts": {
+      "sisak": 0,
+      "mellvért": 4,
+      "vállvédő": 2,
+      "karvédő": 2,
+      "kesztyű": 0,
+      "lábszárvédő": 0,
+      "combvédő": 2,
+      "csizma": 0
     },
     "protection_overrides": {},
     "mgt": 3,
