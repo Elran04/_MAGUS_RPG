@@ -1,0 +1,20 @@
+[
+    {
+        "name": "Rövid kard",
+        "type": "fegyver",
+        "category": "kard",
+        "damage": "1k6",
+        "weight": 1.0,
+        "price": 50,
+        "notes": "Könnyű, egykezes"
+    },
+    {
+        "name": "Kerek pajzs",
+        "type": "pajzs",
+        "category": "pajzs",
+        "defense": 2,
+        "weight": 2.5,
+        "price": 30,
+        "notes": "Alap védelem"
+    }
+]

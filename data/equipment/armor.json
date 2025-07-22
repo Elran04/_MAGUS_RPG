@@ -1,0 +1,42 @@
+[
+    {
+        "id": "leather_armor",
+        "name": "Bőrvért",
+        "protection": {
+            "fej": 1,
+            "torzó": 2,
+            "kar_jobb": 1,
+            "kar_bal": 1,
+            "láb_jobb": 1,
+            "láb_bal": 1
+        },
+        "protection_overrides": {
+            "nyak": 0,
+            "agy": 0
+        },
+        "mgt": 1,
+        "weight": 4.0,
+        "price": 80,
+        "description": "Mozgást kevéssé akadályozza, alapvető védelem."
+    },
+    {
+        "id": "chainmail",
+        "name": "Láncvért",
+        "protection": {
+            "fej": 2,
+            "torzó": 4,
+            "kar_jobb": 2,
+            "kar_bal": 2,
+            "láb_jobb": 2,
+            "láb_bal": 2
+        },
+        "protection_overrides": {
+            "nyak": 1,
+            "agy": 0
+        },
+        "mgt": 3,
+        "weight": 10.0,
+        "price": 200,
+        "description": "Jó védelem, nehezebb, a mozgást jobban akadályozza."
+    }
+]
