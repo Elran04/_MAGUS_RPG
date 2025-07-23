@@ -107,6 +107,8 @@ class SkillLoaderDialog:
                     for i, kp_var in enumerate(self.editor.kp_cost_vars):
                         kp_var.set(skill_obj.get("kp_costs", {}).get(str(i+1), ""))
                 self.editor.prereq_manager.load_prerequisites(skill_obj.get("prerequisites", {}))
+                if hasattr(self.editor, "update_prereq_summary"):
+                    self.editor.update_prereq_summary()
                 self.loader.destroy()
                 return
         self.editor.show_error("Nem található a kiválasztott képzettség.")

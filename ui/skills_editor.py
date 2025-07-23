@@ -159,14 +159,13 @@ class SkillEditor():
 
         button_frame = tk.Frame(self.scroll_frame)
         button_frame.grid(row=row+1, column=0, columnspan=5, pady=20)
-        load_btn = tk.Button(button_frame, text="Szerkesztés (Betöltés)", width=18, command=self.open_skill_loader)
+        load_btn = tk.Button(button_frame, text="Szerkesztés", width=18, command=self.open_skill_loader)
         load_btn.pack(side=tk.LEFT, padx=10)
         prereq_btn = tk.Button(button_frame, text="Előfeltételek szerkesztése", width=22, command=self.open_prerequisite_editor)
         prereq_btn.pack(side=tk.LEFT, padx=10)
         save_btn = tk.Button(button_frame, text="Mentés", width=18, command=self.save_skill)
         save_btn.pack(side=tk.LEFT, padx=10)
-        delete_btn = tk.Button(button_frame, text="Törlés", width=18, command=self.delete_skill)
-        delete_btn.pack(side=tk.LEFT, padx=10)
+        # Törlés gomb eltávolítva, törlés funkció csak szerkesztőből
 
     def update_subcategories(self, *args):
         menu = self.sub_cat_menu["menu"]
