@@ -20,6 +20,14 @@ CATEGORIES = {
     "Elméleti képzettségek": ["Közkeletű", "Szakértő", "Titkos elméleti", "Titkos szervezeti"]
 }
 
+GRID_CFG = {
+    "label": {"sticky": "w", "padx": 5, "pady": 2},
+    "entry": {"sticky": "w", "padx": 5, "pady": 2},
+    "optionmenu": {"sticky": "w", "padx": 5, "pady": 2},
+    "text": {"sticky": "w", "padx": 5, "pady": 2},
+    "kp_entry": {"sticky": "w", "padx": 25, "pady": 2},
+}
+
 class SkillEditor():
     def __init__(self):
         self.skill_manager = SkillManager()
@@ -56,7 +64,16 @@ class SkillEditor():
         return messagebox.askyesno(title, message)
 
     def create_widgets(self):
-        # Csak akkor inicializáljuk, ha még nem létezik
+        self._init_vars()
+        self._create_header()
+        self._create_category_selectors()
+        self._create_description_section()
+        self._create_acquisition_section()
+        self._create_type_section()
+        self._create_level_sections()
+        self._create_action_buttons()
+
+    def _init_vars(self):
         if not hasattr(self, "name_var"):
             self.name_var = tk.StringVar()
         if not hasattr(self, "param_var"):
@@ -84,56 +101,56 @@ class SkillEditor():
         if not hasattr(self, "kp_cost_entries") or not self.kp_cost_entries:
             self.kp_cost_entries = []
 
-        # Grid config
-        grid_cfg = {
-            "label": {"sticky": "w", "padx": 5, "pady": 2},
-            "entry": {"sticky": "w", "padx": 5, "pady": 2},
-            "optionmenu": {"sticky": "w", "padx": 5, "pady": 2},
-            "text": {"sticky": "w", "padx": 5, "pady": 2},
-            "kp_entry": {"sticky": "w", "padx": 25, "pady": 2},
-        }
-
+    def _create_header(self):
         row = 0
-        tk.Label(self.scroll_frame, text="Név:").grid(row=row, column=0, **grid_cfg["label"])
-        tk.Entry(self.scroll_frame, textvariable=self.name_var).grid(row=row, column=1, **grid_cfg["entry"])
-        tk.Label(self.scroll_frame, text="Paraméter (pl. Rövid kardok, Elf nyelv, stb.):").grid(row=row, column=2, **grid_cfg["label"])
-        tk.Entry(self.scroll_frame, textvariable=self.param_var, width=20).grid(row=row, column=3, **grid_cfg["entry"])
-        row += 1
-        tk.Label(self.scroll_frame, text="Főkategória:").grid(row=row, column=0, **grid_cfg["label"])
-        tk.OptionMenu(self.scroll_frame, self.main_cat_var, *CATEGORIES.keys()).grid(row=row, column=1, **grid_cfg["optionmenu"])
+        tk.Label(self.scroll_frame, text="Név:").grid(row=row, column=0, **GRID_CFG["label"])
+        tk.Entry(self.scroll_frame, textvariable=self.name_var).grid(row=row, column=1, **GRID_CFG["entry"])
+        tk.Label(self.scroll_frame, text="Paraméter (pl. Rövid kardok, Elf nyelv, stb.):").grid(row=row, column=2, **GRID_CFG["label"])
+        tk.Entry(self.scroll_frame, textvariable=self.param_var, width=20).grid(row=row, column=3, **GRID_CFG["entry"])
+
+    def _create_category_selectors(self):
+        row = 1
+        tk.Label(self.scroll_frame, text="Főkategória:").grid(row=row, column=0, **GRID_CFG["label"])
+        tk.OptionMenu(self.scroll_frame, self.main_cat_var, *CATEGORIES.keys()).grid(row=row, column=1, **GRID_CFG["optionmenu"])
         self.main_cat_var.set(list(CATEGORIES.keys())[0])
         row += 1
-        tk.Label(self.scroll_frame, text="Alkategória:").grid(row=row, column=0, **grid_cfg["label"])
+        tk.Label(self.scroll_frame, text="Alkategória:").grid(row=row, column=0, **GRID_CFG["label"])
         self.sub_cat_menu = tk.OptionMenu(self.scroll_frame, self.sub_cat_var, *CATEGORIES[self.main_cat_var.get()])
-        self.sub_cat_menu.grid(row=row, column=1, **grid_cfg["optionmenu"])
+        self.sub_cat_menu.grid(row=row, column=1, **GRID_CFG["optionmenu"])
         self.sub_cat_var.set(CATEGORIES[self.main_cat_var.get()][0])
         self.main_cat_var.trace_add("write", self.update_subcategories)
-        row += 1
-        tk.Label(self.scroll_frame, text="Általános leírás:").grid(row=row, column=0, **grid_cfg["label"])
+
+    def _create_description_section(self):
+        row = 3
+        tk.Label(self.scroll_frame, text="Általános leírás:").grid(row=row, column=0, **GRID_CFG["label"])
         edit_desc_btn = tk.Button(self.scroll_frame, text="Leírás szerkesztése", command=self.open_description_editor)
         edit_desc_btn.grid(row=row, column=1, padx=5, pady=2, sticky="w")
+
+    def _create_acquisition_section(self):
+        row = 4
+        tk.Label(self.scroll_frame, text="Elsajátítás módja:").grid(row=row, column=0, **GRID_CFG["label"])
+        tk.OptionMenu(self.scroll_frame, self.acq_method_var, "Gyakorlás", "Tapasztalás", "Tanulás").grid(row=row, column=1, **GRID_CFG["optionmenu"])
         row += 1
-        tk.Label(self.scroll_frame, text="Elsajátítás módja:").grid(row=row, column=0, **grid_cfg["label"])
-        tk.OptionMenu(self.scroll_frame, self.acq_method_var, "Gyakorlás", "Tapasztalás", "Tanulás").grid(row=row, column=1, **grid_cfg["optionmenu"])
-        row += 1
-        tk.Label(self.scroll_frame, text="Elsajátítás nehézsége:").grid(row=row, column=0, **grid_cfg["label"])
+        tk.Label(self.scroll_frame, text="Elsajátítás nehézsége:").grid(row=row, column=0, **GRID_CFG["label"])
         tk.OptionMenu(
             self.scroll_frame, self.acq_diff_var,
             "1 - Egyszerű", "2 - Könnyű", "3 - Közepes", "4 - Nehéz", "5 - Szinte lehetetlen"
-        ).grid(row=row, column=1, **grid_cfg["optionmenu"])
-        row += 1
-        tk.Label(self.scroll_frame, text="Típus:").grid(row=row, column=0, **grid_cfg["label"])
-        tk.OptionMenu(self.scroll_frame, self.type_var, "%", "szint").grid(row=row, column=1, **grid_cfg["optionmenu"])
-        self.row_kp_percent = row + 1
+        ).grid(row=row, column=1, **GRID_CFG["optionmenu"])
 
+    def _create_type_section(self):
+        row = 6
+        tk.Label(self.scroll_frame, text="Típus:").grid(row=row, column=0, **GRID_CFG["label"])
+        tk.OptionMenu(self.scroll_frame, self.type_var, "%", "szint").grid(row=row, column=1, **GRID_CFG["optionmenu"])
+        self.row_kp_percent = row + 1
         self.kp_per_3_label = tk.Label(self.scroll_frame, text="KP/3%:")
         self.kp_per_3_entry = tk.Entry(self.scroll_frame, textvariable=self.kp_per_3_var)
         if self.type_var.get() == "%":
-            self.kp_per_3_label.grid(row=self.row_kp_percent, column=0, **grid_cfg["label"])
-            self.kp_per_3_entry.grid(row=self.row_kp_percent, column=1, **grid_cfg["entry"])
+            self.kp_per_3_label.grid(row=self.row_kp_percent, column=0, **GRID_CFG["label"])
+            self.kp_per_3_entry.grid(row=self.row_kp_percent, column=1, **GRID_CFG["entry"])
         self.type_var.trace_add("write", lambda *args: self.update_kp_fields(self.row_kp_percent))
         self.update_kp_fields(self.row_kp_percent)
 
+    def _create_level_sections(self):
         row = self.row_kp_percent
         self.level_frames = []
         for i in range(1, 7):
@@ -144,7 +161,6 @@ class SkillEditor():
             tk.Label(level_frame, text=f"{i}. szint leírás:").grid(row=0, column=0, sticky="nw", padx=5)
             edit_btn = tk.Button(level_frame, text="Leírás szerkesztése", command=lambda idx=i-1: self.open_level_description_editor(idx))
             edit_btn.grid(row=0, column=1, sticky="ne", padx=(5, 0))
-            # kp_cost_vars már létezik, csak a label/entry-t kell létrehozni
             kp_label = tk.Label(level_frame, text=f"{i}. szint KP:")
             kp_label.grid(row=0, column=2, sticky="nw", padx=5)
             self.kp_cost_labels.append(kp_label)
@@ -157,15 +173,17 @@ class SkillEditor():
                 self.prereq_summary_labels = []
             self.prereq_summary_labels.append(prereq_summary)
 
+    def _create_action_buttons(self):
+        row = self.row_kp_percent + 7
         button_frame = tk.Frame(self.scroll_frame)
-        button_frame.grid(row=row+1, column=0, columnspan=5, pady=20)
+        button_frame.grid(row=row, column=0, columnspan=5, pady=20)
         load_btn = tk.Button(button_frame, text="Szerkesztés", width=18, command=self.open_skill_loader)
         load_btn.pack(side=tk.LEFT, padx=10)
         prereq_btn = tk.Button(button_frame, text="Előfeltételek szerkesztése", width=22, command=self.open_prerequisite_editor)
         prereq_btn.pack(side=tk.LEFT, padx=10)
         save_btn = tk.Button(button_frame, text="Mentés", width=18, command=self.save_skill)
         save_btn.pack(side=tk.LEFT, padx=10)
-        # Törlés gomb eltávolítva, törlés funkció csak szerkesztőből
+        # Delete button removed
 
     def update_subcategories(self, *args):
         menu = self.sub_cat_menu["menu"]
@@ -230,7 +248,7 @@ class SkillEditor():
         idx: 0-alapú index a szinthez
         """
         editor_win = tk.Toplevel(self.win)
-        editor_win.title(f"{idx+1}. szint leírás szerkesztése (Markdown támogatott)")
+        editor_win.title(f"{idx+1}. szint leírás szerkesztése")
         editor_win.geometry("800x600")
         tk.Label(editor_win, text="Használhatsz Markdown szintaxist: **félkövér**, *dőlt*, - lista, stb.").pack(pady=5)
         desc_text = tk.Text(editor_win, wrap=tk.WORD, font=("Consolas", 12))
@@ -245,7 +263,7 @@ class SkillEditor():
 
     def open_description_editor(self):
         editor_win = tk.Toplevel(self.win)
-        editor_win.title("Leírás szerkesztése (Markdown támogatott)")
+        editor_win.title("Leírás szerkesztése")
         editor_win.geometry("800x600")
         tk.Label(editor_win, text="Használhatsz Markdown szintaxist: **félkövér**, *dőlt*, - lista, stb.").pack(pady=5)
         desc_text = tk.Text(editor_win, wrap=tk.WORD, font=("Consolas", 12))
