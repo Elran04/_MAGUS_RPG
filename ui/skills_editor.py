@@ -1,4 +1,5 @@
 import tkinter as tk
+from utils.reopen_prevention import WindowSingleton
 from tkinter import messagebox
 import os
 from utils.skill_manager import SkillManager
@@ -28,10 +29,13 @@ GRID_CFG = {
 
 class SkillEditor():
     def __init__(self):
+
+        self.win, created = WindowSingleton.get('skills_editor', lambda: tk.Toplevel())
+        if not created:
+            return
         self.skill_manager = SkillManager()
         self.all_skills = self.skill_manager.load()
         self.SKILL_NAMES = [s["name"] for s in self.all_skills]
-        self.win = tk.Tk()
         self.win.title("Képzettség szerkesztő")
         self.win.geometry("800x600")
         # --- Scrollable frame setup ---
@@ -47,6 +51,7 @@ class SkillEditor():
         self.prereq_manager = PrerequisiteManager(self.scroll_frame, self.SKILL_NAMES, self.all_skills)
         self.create_widgets()
         self.win.mainloop()
+
 
     # Egységes hibakezelő metódusok
     def show_error(self, message, title="Hiba"):

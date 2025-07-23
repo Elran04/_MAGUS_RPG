@@ -31,15 +31,19 @@ WEAPONS_JSON = os.path.join(os.path.dirname(__file__), "..", "..", "data", "equi
 
 class WeaponsAndShieldsEditor:
     def __init__(self):
+        from utils.reopen_prevention import WindowSingleton
+        self.win, created = WindowSingleton.get('weapons_and_shields_editor', lambda: tk.Toplevel())
+        if not created:
+            return
         self.manager = WeaponsAndShieldsJsonManager(WEAPONS_JSON)
         self.items = self.manager.load()
         self.selected_idx = None
-        # --- Kategória opciók típus szerint ---
         self.category_options = []
-        self.win = tk.Toplevel()
         self.win.title("Fegyverek és pajzsok szerkesztője")
         self.win.geometry("1100x700")
         self.create_widgets()
+
+    # nincs szükség külön _on_close metódusra, WindowSingleton kezeli
 
     def _get_weapon_categories(self, type_value):
         import json

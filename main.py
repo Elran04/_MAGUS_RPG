@@ -89,10 +89,12 @@ def load_character_dialog():
 
 # --- KÉPZETTSÉG SZERKESZTŐ ABLAK MEGNYITÁSA ---
 def open_skill_editor():
-    subprocess.Popen([sys.executable, "-m", "ui.skills_editor"])
+    from ui.skills_editor import SkillEditor
+    SkillEditor()
 # --- FELSZERELÉS SZERKESZTŐ ABLAK MEGNYITÁSA ---
 def open_equipment_editor():
-    subprocess.Popen([sys.executable, "-m", "ui.equipment_editor"])
+    from ui.equipment_editor import EquipmentEditor
+    EquipmentEditor()
 
 # --- FŐABLAK ÉS WIDGETEK LÉTREHOZÁSA ---
 root = tk.Tk()

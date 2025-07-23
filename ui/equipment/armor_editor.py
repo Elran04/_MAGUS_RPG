@@ -11,7 +11,10 @@ ARMOR_JSON = os.path.join(os.path.dirname(__file__), "..", "..", "data", "equipm
 
 class ArmorEditor:
     def __init__(self):
-        self.win = tk.Toplevel()
+        from utils.reopen_prevention import WindowSingleton
+        self.win, created = WindowSingleton.get('armor_editor', lambda: tk.Toplevel())
+        if not created:
+            return
         self.win.title("Páncél szerkesztő")
         self.win.geometry("1100x700")
         self.manager = ArmorJsonManager(ARMOR_JSON)
@@ -20,6 +23,8 @@ class ArmorEditor:
         self.abc_sort_asc = True
         self.sfe_sort_asc = False
         self.create_widgets()
+
+    # nincs szükség külön _on_close metódusra, WindowSingleton kezeli
 
     def sort_abc(self):
         self.armors.sort(key=lambda a: a.get('name', '').lower(), reverse=not self.abc_sort_asc)

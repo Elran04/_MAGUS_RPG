@@ -3,7 +3,10 @@ from tkinter import messagebox
 
 class EquipmentEditor:
     def __init__(self):
-        self.win = tk.Tk()
+        from utils.reopen_prevention import WindowSingleton
+        self.win, created = WindowSingleton.get('equipment_editor', lambda: tk.Toplevel())
+        if not created:
+            return
         self.win.title("Felszerelés szerkesztő")
         self.win.geometry("900x600")
         self.create_widgets()
