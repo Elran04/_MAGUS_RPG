@@ -24,13 +24,13 @@ class SkillLoaderDialog:
             else:
                 skill_name = skill['name']
             if main_cat not in self.tree_nodes:
-                main_id = self.tree.insert("", "end", text=main_cat, open=False)
+                main_id = self.tree.insert("", "end", text=main_cat, open=True)
                 self.tree_nodes[main_cat] = main_id
             else:
                 main_id = self.tree_nodes[main_cat]
             sub_key = (main_cat, sub_cat)
             if sub_key not in self.tree_nodes:
-                sub_id = self.tree.insert(main_id, "end", text=sub_cat, open=False)
+                sub_id = self.tree.insert(main_id, "end", text=sub_cat, open=True)
                 self.tree_nodes[sub_key] = sub_id
             else:
                 sub_id = self.tree_nodes[sub_key]
@@ -54,13 +54,13 @@ class SkillLoaderDialog:
                 if text and text not in skill_name.lower():
                     continue
                 if main_cat not in tree_nodes:
-                    main_id = self.tree.insert("", "end", text=main_cat, open=False)
+                    main_id = self.tree.insert("", "end", text=main_cat, open=True)
                     tree_nodes[main_cat] = main_id
                 else:
                     main_id = tree_nodes[main_cat]
                 sub_key = (main_cat, sub_cat)
                 if sub_key not in tree_nodes:
-                    sub_id = self.tree.insert(main_id, "end", text=sub_cat, open=False)
+                    sub_id = self.tree.insert(main_id, "end", text=sub_cat, open=True)
                     tree_nodes[sub_key] = sub_id
                 else:
                     sub_id = tree_nodes[sub_key]

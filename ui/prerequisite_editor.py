@@ -111,14 +111,20 @@ class PrerequisiteEditorDialog:
         self.refresh_all_rows()
 
     def add_skill_row(self, level_idx):
-        prereq_dict = {
-            "type": "skill",
-            "name_var": tk.StringVar(),
-            "level_var": tk.StringVar(),
-            "param_var": tk.StringVar(),
-        }
-        self.prereq_vars[level_idx].append(prereq_dict)
-        self.refresh_all_rows()
+        # SkillSelectorDialog import csak itt, hogy ne legyen körkörös import
+        from ui.skill_dialogs.skill_selector_dialog import SkillSelectorDialog
+        # Skill listát az editor.skill_manager-ből vesszük
+        skill_list = self.editor.skill_manager.load()
+        def on_skill_selected(skill):
+            prereq_dict = {
+                "type": "skill",
+                "name_var": tk.StringVar(value=skill["name"]),
+                "level_var": tk.StringVar(),
+                "param_var": tk.StringVar(value=skill.get("parameter", "")),
+            }
+            self.prereq_vars[level_idx].append(prereq_dict)
+            self.refresh_all_rows()
+        SkillSelectorDialog(self.win, skill_list, on_skill_selected)
 
     def save_and_close(self):
         # Visszaírjuk az adatokat az editor.prereq_manager-be
