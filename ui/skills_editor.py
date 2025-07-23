@@ -290,7 +290,7 @@ class SkillEditor():
         }
         # Szintleírások
         for i, desc_text in enumerate(self.level_desc_texts):
-            desc = desc_text.get("1.0", tk.END).strip()
+            desc = desc_text.strip()
             if desc:
                 ui_data["level_descriptions"][str(i+1)] = desc
         # KP költségek

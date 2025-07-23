@@ -9,6 +9,15 @@ class PrerequisiteEditorDialog:
         self.win.title("Előfeltételek szerkesztése")
         self.win.geometry("1024x768")
         tk.Label(self.win, text="Itt szerkesztheted az összes szint előfeltételeit (tulajdonságok és képzettségek)", font=("Arial", 12)).pack(pady=10)
+        # Görgethető panel
+        self.canvas = tk.Canvas(self.win, borderwidth=0, background="#f0f0f0")
+        self.scroll_frame = tk.Frame(self.canvas, background="#f0f0f0")
+        self.vsb = tk.Scrollbar(self.win, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=self.vsb.set)
+        self.vsb.pack(side="right", fill="y")
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.canvas.create_window((0,0), window=self.scroll_frame, anchor="nw")
+        self.scroll_frame.bind("<Configure>", lambda event: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
         self.prereq_vars = [[] for _ in range(6)]
         self.stat_frames = []
         self.skill_frames = []
@@ -33,7 +42,7 @@ class PrerequisiteEditorDialog:
                     })
         # UI: minden szinthez külön frame, gombok, lista
         for i in range(1, 7):
-            main_frame = tk.LabelFrame(self.win, text=f"{i}. szint előfeltételek", padx=10, pady=5)
+            main_frame = tk.LabelFrame(self.scroll_frame, text=f"{i}. szint előfeltételek", padx=10, pady=5)
             main_frame.pack(fill="x", padx=10, pady=5)
             btn_row = tk.Frame(main_frame)
             btn_row.pack(anchor="w")
@@ -44,7 +53,7 @@ class PrerequisiteEditorDialog:
             tk.Button(
                 btn_row, text="Képzettség hozzáadása",
                 command=lambda idx=i-1: self.add_skill_row(idx)
-            ).pack(side="left", padx=(0,10))
+            ).pack(side="left", padx=(60,10))
             stat_frame = tk.Frame(main_frame)
             stat_frame.pack(side="left", fill="y", padx=5)
             skill_frame = tk.Frame(main_frame)
@@ -53,7 +62,7 @@ class PrerequisiteEditorDialog:
             self.skill_frames.append(skill_frame)
             self.frames.append(main_frame)
         self.refresh_all_rows()
-        save_btn = tk.Button(self.win, text="Mentés", command=self.save_and_close)
+        save_btn = tk.Button(self.scroll_frame, text="Mentés", command=self.save_and_close)
         save_btn.pack(pady=20)
 
     def refresh_all_rows(self):
@@ -90,16 +99,32 @@ class PrerequisiteEditorDialog:
         def remove():
             self.prereq_vars[level_idx].remove(prereq_dict)
             self.refresh_all_rows()
-        skill_entry = tk.Entry(frame, textvariable=skill_var, width=25)
-        skill_entry.grid(row=row, column=0, padx=5, sticky="w")
-        param_entry = None
-        if param_var is not None:
-            param_entry = tk.Entry(frame, textvariable=param_var, width=12)
-            param_entry.grid(row=row, column=1, padx=5, sticky="w")
-        level_entry = tk.Entry(frame, textvariable=level_var, width=5)
-        level_entry.grid(row=row, column=2, padx=5, sticky="w")
+        # Skill gomb: kattintásra új skill választható
+        def select_new_skill():
+            from ui.skill_dialogs.skill_selector_dialog import SkillSelectorDialog
+            skill_list = self.editor.skill_manager.load()
+            def on_skill_selected(skill):
+                skill_var.set(skill["name"])
+                if param_var is not None:
+                    param_var.set(skill.get("parameter", ""))
+                self.refresh_all_rows()
+            SkillSelectorDialog(self.win, skill_list, on_skill_selected)
+        # Gomb felirata: név (paraméter)
+        display_name = skill_var.get()
+        param_value = param_var.get() if param_var is not None else ""
+        if param_value:
+            display_name = f"{display_name} ({param_value})"
+        skill_btn = tk.Button(frame, text=display_name or "Képzettség kiválasztása", command=select_new_skill, width=28)
+        skill_btn.grid(row=row, column=0, padx=5, sticky="w")
+        # Szint választó OptionMenu
+        level_choices = [str(i) for i in range(1,7)]
+        if level_var.get() not in level_choices:
+            level_var.set(level_choices[0])
+        level_menu = tk.OptionMenu(frame, level_var, *level_choices)
+        level_menu.grid(row=row, column=1, padx=5, sticky="w")
+        # Törlés gomb
         btn = tk.Button(frame, text="Törlés", command=remove)
-        btn.grid(row=row, column=3, padx=10, sticky="w")
+        btn.grid(row=row, column=2, padx=10, sticky="w")
 
     def add_stat_row(self, level_idx):
         prereq_dict = {
