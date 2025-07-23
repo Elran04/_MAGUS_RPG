@@ -1,5 +1,348 @@
 [
   {
+    "name": "Félvértezet",
+    "id": "half_plate",
+    "parts": {
+      "sisak": 8,
+      "mellvért": 8,
+      "vállvédő": 8,
+      "felkarvédő": 8,
+      "alkarvédő": 8,
+      "kesztyű": 8,
+      "combvédő": 7,
+      "lábszárvédő": 0,
+      "csizma": 0
+    },
+    "protection_overrides": {},
+    "mgt": 6,
+    "weight": 30.0,
+    "price": 120000,
+    "description": "A félvértezet mellvértből, teljes karvértből, vaskesztyűből, nyakvédőből, acélsisakból, és csataszoknyából áll. A csataszoknya a a mellvért alsó részéhez szíjakkal kapcsolódó lemezek összessége."
+  },
+  {
+    "name": "Mellvért",
+    "id": "plated_cuirass",
+    "parts": {
+      "sisak": 0,
+      "mellvért": 8,
+      "vállvédő": 0,
+      "felkarvédő": 0,
+      "alkarvédő": 0,
+      "kesztyű": 0,
+      "combvédő": 0,
+      "lábszárvédő": 0,
+      "csizma": 0
+    },
+    "protection_overrides": {},
+    "mgt": 2,
+    "weight": 18.0,
+    "price": 80000,
+    "description": "Mellvért egyetlen lemezből kovácsolt páncél, amely többé kevésbé illeszkedik a testhez. Csak a felsőtestet védi de azt nagyon hatásosan."
+  },
+  {
+    "name": "Páncélcsizma",
+    "id": "plated_gloves",
+    "parts": {
+      "sisak": 0,
+      "mellvért": 0,
+      "vállvédő": 0,
+      "felkarvédő": 0,
+      "alkarvédő": 0,
+      "kesztyű": 0,
+      "combvédő": 0,
+      "lábszárvédő": 8,
+      "csizma": 8
+    },
+    "protection_overrides": {},
+    "mgt": 2,
+    "weight": 5.0,
+    "price": 40000,
+    "description": "Vaslemezekből készült páncélozott csizmák."
+  },
+  {
+    "name": "Páncélkesztyű",
+    "id": "plated_gloves",
+    "parts": {
+      "sisak": 0,
+      "mellvért": 0,
+      "vállvédő": 0,
+      "felkarvédő": 0,
+      "alkarvédő": 8,
+      "kesztyű": 8,
+      "combvédő": 0,
+      "lábszárvédő": 0,
+      "csizma": 0
+    },
+    "protection_overrides": {},
+    "mgt": 2,
+    "weight": 4.0,
+    "price": 60000,
+    "description": "Lemezből készült kesztyű, jelentősebben csökkenti a mozgékonyságot, de a kéz és alkar teljeskörű védelmét biztosítja."
+  },
+  {
+    "name": "Teljes vértezet",
+    "id": "full_plate",
+    "parts": {
+      "sisak": 8,
+      "mellvért": 8,
+      "vállvédő": 8,
+      "felkarvédő": 8,
+      "alkarvédő": 8,
+      "kesztyű": 8,
+      "combvédő": 8,
+      "lábszárvédő": 8,
+      "csizma": 8
+    },
+    "protection_overrides": {},
+    "mgt": 8,
+    "weight": 35.0,
+    "price": 200000,
+    "description": "A teljes vértezet az egész testet beborító fémlemezekből áll. A sisak pontosan illeszkedik a nyekvérthez, az arcot rostély védi."
+  },
+  {
+    "name": "Lemezvért",
+    "id": "banded_armor",
+    "parts": {
+      "sisak": 0,
+      "mellvért": 7,
+      "vállvédő": 7,
+      "felkarvédő": 7,
+      "alkarvédő": 7,
+      "kesztyű": 0,
+      "combvédő": 7,
+      "lábszárvédő": 0,
+      "csizma": 0
+    },
+    "protection_overrides": {},
+    "mgt": 4,
+    "weight": 16.0,
+    "price": 40000,
+    "description": "A lemezvért egy átmeneti típus a láncvért és a teljes lemezvért között. Lényegében széles acélcsíkokból (lemezsávokból) áll, amelyeket bőrrétegre vagy posztóra rögzítenek, hogy rugalmasságot biztosítsanak, de mégis jelentős merevséget adjanak.\n\nEz a típus rugalmasabb, mint a teljes lemezvért, de védelmi szintje már magasabb a láncingnél vagy pikkelyvértnél. Gyakran alkalmazták kombinált páncélzatként, láncinggel kiegészítve a kevésbé védett helyeken, például a hónaljnál vagy térdnél."
+  },
+  {
+    "name": "Brigantin",
+    "id": "brigadine_armor",
+    "parts": {
+      "sisak": 0,
+      "mellvért": 6,
+      "vállvédő": 0,
+      "felkarvédő": 0,
+      "alkarvédő": 0,
+      "kesztyű": 0,
+      "combvédő": 0,
+      "lábszárvédő": 0,
+      "csizma": 0
+    },
+    "protection_overrides": {},
+    "mgt": 2,
+    "weight": 15.0,
+    "price": 4000,
+    "description": "Alap posztóvért, de itt két vékonyabb bőrrétegek közé varrnak fém lapocskákat, felsőtestet védi."
+  },
+  {
+    "name": "Pikkelyvért",
+    "id": "scale_armor",
+    "parts": {
+      "sisak": 0,
+      "mellvért": 6,
+      "vállvédő": 6,
+      "felkarvédő": 6,
+      "alkarvédő": 0,
+      "kesztyű": 0,
+      "combvédő": 6,
+      "lábszárvédő": 0,
+      "csizma": 0
+    },
+    "protection_overrides": {},
+    "mgt": 3,
+    "weight": 16.0,
+    "price": 20000,
+    "description": "Kis kör vagy félkör alakú lemezekből áll amelyeket egymáshoz vagy egy posztóvérthez erősítenek. Jellemzően csak a felsőtestet és felkart védik. Csataszoknyával kiegészítve."
+  },
+  {
+    "name": "Lánccsizma",
+    "id": "chain_boots",
+    "parts": {
+      "sisak": 0,
+      "mellvért": 0,
+      "vállvédő": 0,
+      "felkarvédő": 0,
+      "alkarvédő": 0,
+      "kesztyű": 0,
+      "combvédő": 0,
+      "lábszárvédő": 5,
+      "csizma": 5
+    },
+    "protection_overrides": {},
+    "mgt": 2,
+    "weight": 4.0,
+    "price": 4000,
+    "description": "A lánc páncélzat csizma része."
+  },
+  {
+    "name": "Lánccsuklya",
+    "id": "chain_hood",
+    "parts": {
+      "sisak": 5,
+      "mellvért": 0,
+      "vállvédő": 0,
+      "felkarvédő": 0,
+      "alkarvédő": 0,
+      "kesztyű": 0,
+      "combvédő": 0,
+      "lábszárvédő": 0,
+      "csizma": 0
+    },
+    "protection_overrides": {
+      "homlok": 0,
+      "arckoponya": 0
+    },
+    "mgt": 0,
+    "weight": 1.0,
+    "price": 1000,
+    "description": "A fejet védő lánc csuklya."
+  },
+  {
+    "name": "Láncing",
+    "id": "chainmail",
+    "parts": {
+      "sisak": 0,
+      "mellvért": 5,
+      "vállvédő": 5,
+      "felkarvédő": 5,
+      "alkarvédő": 5,
+      "kesztyű": 0,
+      "combvédő": 5,
+      "lábszárvédő": 0,
+      "csizma": 0
+    },
+    "protection_overrides": {},
+    "mgt": 2,
+    "weight": 20.0,
+    "price": 10000,
+    "description": "A láncing egymásba bújtatott kis fémkarikák összessége, mintha csak valaki láncból készített volna szövetet. Csuklóig és térdig lenyúlik."
+  },
+  {
+    "name": "Lánckesztyű",
+    "id": "chain_gloves",
+    "parts": {
+      "sisak": 0,
+      "mellvért": 0,
+      "vállvédő": 0,
+      "felkarvédő": 0,
+      "alkarvédő": 0,
+      "kesztyű": 5,
+      "combvédő": 0,
+      "lábszárvédő": 0,
+      "csizma": 0
+    },
+    "protection_overrides": {},
+    "mgt": 1,
+    "weight": 2.0,
+    "price": 1000,
+    "description": "A láncing kesztyű része."
+  },
+  {
+    "name": "Brigantin csizma",
+    "id": "brigadine_boots",
+    "parts": {
+      "sisak": 0,
+      "mellvért": 0,
+      "vállvédő": 0,
+      "felkarvédő": 0,
+      "alkarvédő": 0,
+      "kesztyű": 0,
+      "combvédő": 0,
+      "lábszárvédő": 4,
+      "csizma": 4
+    },
+    "protection_overrides": {},
+    "mgt": 2,
+    "weight": 3.5,
+    "price": 1000,
+    "description": "Brigantin lemezelt hosszúszárú csizma."
+  },
+  {
+    "name": "Fém alkarvédő",
+    "id": "vambrace",
+    "parts": {
+      "sisak": 0,
+      "mellvért": 0,
+      "vállvédő": 0,
+      "felkarvédő": 0,
+      "alkarvédő": 4,
+      "kesztyű": 0,
+      "combvédő": 0,
+      "lábszárvédő": 0,
+      "csizma": 0
+    },
+    "protection_overrides": {},
+    "mgt": 1,
+    "weight": 2.0,
+    "price": 1000,
+    "description": "Egyszerű fém alkarvédő, jó kiegészítő védelmet nyújt bőrpáncélokhoz."
+  },
+  {
+    "name": "Keményített bőrpáncél",
+    "id": "hardened_leather_armor",
+    "parts": {
+      "sisak": 0,
+      "mellvért": 4,
+      "vállvédő": 0,
+      "felkarvédő": 0,
+      "alkarvédő": 0,
+      "kesztyű": 0,
+      "combvédő": 0,
+      "lábszárvédő": 0,
+      "csizma": 0
+    },
+    "protection_overrides": {},
+    "mgt": 2,
+    "weight": 7.0,
+    "price": 500,
+    "description": "Olajban kifőzött vastag börből készült, jellemzően csak a felső testet védi mivel nagyon merev."
+  },
+  {
+    "name": "Gyűrűs páncél",
+    "id": "ring_armor",
+    "parts": {
+      "sisak": 0,
+      "mellvért": 3,
+      "vállvédő": 3,
+      "felkarvédő": 1,
+      "alkarvédő": 0,
+      "kesztyű": 0,
+      "combvédő": 2,
+      "lábszárvédő": 0,
+      "csizma": 0
+    },
+    "protection_overrides": {},
+    "mgt": 1,
+    "weight": 12.0,
+    "price": 2000,
+    "description": "A posztóvért továbbfejlesztett változata, a posztóra kívülről fémkarikákat varrnak."
+  },
+  {
+    "name": "Bőr alkarvédő",
+    "id": "leather_vambrace",
+    "parts": {
+      "sisak": 0,
+      "mellvért": 0,
+      "vállvédő": 0,
+      "felkarvédő": 0,
+      "alkarvédő": 2,
+      "kesztyű": 0,
+      "combvédő": 0,
+      "lábszárvédő": 0,
+      "csizma": 0
+    },
+    "protection_overrides": {},
+    "mgt": 0,
+    "weight": 1.0,
+    "price": 800,
+    "description": "Kemény bőr alkarvédő, valamennyi védelmet már nyújt, de legalább nem akadályoz a mozgásban."
+  },
+  {
     "name": "Bőrvért",
     "id": "leather_armor",
     "parts": {
@@ -9,34 +352,94 @@
       "felkarvédő": 1,
       "alkarvédő": 0,
       "kesztyű": 0,
-      "combvédő": 1,
-      "lábszárvédő": 0,
-      "csizma": 0
-    },
-    "protection_overrides": {},
-    "mgt": 1,
-    "weight": 4.0,
-    "price": 80,
-    "description": "Mozgást kevéssé akadályozza, alapvető védelem."
-  },
-  {
-    "name": "Láncvért",
-    "id": "chainmail",
-    "parts": {
-      "sisak": 0,
-      "mellvért": 4,
-      "vállvédő": 2,
-      "felkarvédő": 2,
-      "alkarvédő": 2,
-      "kesztyű": 0,
       "combvédő": 2,
       "lábszárvédő": 0,
       "csizma": 0
     },
     "protection_overrides": {},
-    "mgt": 3,
-    "weight": 10.0,
+    "mgt": 0,
+    "weight": 8.0,
+    "price": 400,
+    "description": "Vastag bőrből készült amit szegecsekkel vertek,ki. Nem sokkal jobb védelem mint a posztó."
+  },
+  {
+    "name": "Keményített bőrcsizma",
+    "id": "hardened_leather_boots",
+    "parts": {
+      "sisak": 0,
+      "mellvért": 0,
+      "vállvédő": 0,
+      "felkarvédő": 0,
+      "alkarvédő": 0,
+      "kesztyű": 0,
+      "combvédő": 0,
+      "lábszárvédő": 2,
+      "csizma": 2
+    },
+    "protection_overrides": {},
+    "mgt": 1,
+    "weight": 4.0,
     "price": 200,
-    "description": "Jó védelem, nehezebb, a mozgást jobban akadályozza."
+    "description": "Keményített bőrcsizma. Hasonlóan készül a keményített bőrpáncélhoz, kicsit kellemetlenebb már benne a mozgás, de nagyobb védelmet is ad."
+  },
+  {
+    "name": "Bőrkesztyű",
+    "id": "leather_gloves",
+    "parts": {
+      "sisak": 0,
+      "mellvért": 0,
+      "vállvédő": 0,
+      "felkarvédő": 0,
+      "alkarvédő": 0,
+      "kesztyű": 1,
+      "combvédő": 0,
+      "lábszárvédő": 0,
+      "csizma": 0
+    },
+    "protection_overrides": {},
+    "mgt": 0,
+    "weight": 0.5,
+    "price": 60,
+    "description": "Egyszerű bőrkesztyű"
+  },
+  {
+    "name": "Csizma",
+    "id": "boots",
+    "parts": {
+      "sisak": 0,
+      "mellvért": 0,
+      "vállvédő": 0,
+      "felkarvédő": 0,
+      "alkarvédő": 0,
+      "kesztyű": 0,
+      "combvédő": 0,
+      "lábszárvédő": 1,
+      "csizma": 1
+    },
+    "protection_overrides": {},
+    "mgt": 0,
+    "weight": 2.0,
+    "price": 80,
+    "description": "Egyszerű utazó bőrcsizma."
+  },
+  {
+    "name": "Posztóvért",
+    "id": "cloth_armor",
+    "parts": {
+      "sisak": 0,
+      "mellvért": 1,
+      "vállvédő": 1,
+      "felkarvédő": 1,
+      "alkarvédő": 0,
+      "kesztyű": 0,
+      "combvédő": 1,
+      "lábszárvédő": 0,
+      "csizma": 0
+    },
+    "protection_overrides": {},
+    "mgt": 0,
+    "weight": 5.0,
+    "price": 100,
+    "description": "A posztóvért a szegényebb gyalogosok öltözete. Valamennyire felfogja az ütéseket."
   }
 ]

@@ -17,7 +17,29 @@ class ArmorEditor:
         self.manager = ArmorJsonManager(ARMOR_JSON)
         self.armors = self.manager.load()
         self.selected_idx = None
+        self.abc_sort_asc = True
+        self.sfe_sort_asc = False
         self.create_widgets()
+
+    def sort_abc(self):
+        self.armors.sort(key=lambda a: a.get('name', '').lower(), reverse=not self.abc_sort_asc)
+        self.abc_sort_asc = not self.abc_sort_asc
+        self.update_sort_btn_labels()
+        self.refresh_list()
+
+    def sort_sfe(self):
+        def max_sfe(armor):
+            parts = armor.get('parts', {})
+            return max(parts.values()) if parts else 0
+        self.armors.sort(key=max_sfe, reverse=not self.sfe_sort_asc)
+        self.sfe_sort_asc = not self.sfe_sort_asc
+        self.update_sort_btn_labels()
+        self.refresh_list()
+
+    def update_sort_btn_labels(self):
+        if hasattr(self, 'abc_btn') and hasattr(self, 'sfe_btn'):
+            self.abc_btn.config(text=f"ABC {'▲' if self.abc_sort_asc else '▼'}")
+            self.sfe_btn.config(text=f"SFÉ {'▲' if self.sfe_sort_asc else '▼'}")
 
     def create_widgets(self):
         main_frame = tk.Frame(self.win)
@@ -35,6 +57,13 @@ class ArmorEditor:
 
         tk.Button(list_frame, text="Új páncél", command=self.new_armor).pack(pady=5)
         tk.Button(list_frame, text="Törlés", command=self.delete_armor).pack(pady=5)
+        # Rendezés gombok (ikonokkal és irányváltással)
+        sort_btn_frame = tk.Frame(list_frame)
+        sort_btn_frame.pack(pady=5)
+        self.abc_btn = tk.Button(sort_btn_frame, text="ABC ▲", command=self.sort_abc)
+        self.abc_btn.pack(side=tk.LEFT, padx=2)
+        self.sfe_btn = tk.Button(sort_btn_frame, text="SFÉ ▼", command=self.sort_sfe)
+        self.sfe_btn.pack(side=tk.LEFT, padx=2)
 
         # Jobb oldali szerkesztő panel
         edit_frame = tk.Frame(main_frame)
