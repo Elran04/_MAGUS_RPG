@@ -4,17 +4,19 @@ from utils.json_manager import JsonManager
 
 class WeaponsAndShieldsJsonManager(JsonManager):
     def validate(self, item):
-        required = ["id", "name", "type", "category", "weight", "price", "stp", "armor_penetration", "can_disarm", "can_break_weapon"]
+        required = ["id", "name", "type", "category", "weight", "price", "stp", "armor_penetration", "can_disarm", "can_break_weapon", "damage_min", "damage_max"]
         for field in required:
             if field not in item:
                 return False
         # Típusfüggő mezők
-        if item["type"] in ["közelharci", "hajító"]:
+        if item["type"] == "közelharci":
             for f in ["KE", "TE", "VE", "size_category"]:
                 if f not in item:
                     return False
-            if item["type"] == "hajító" and "range" not in item:
-                return False
+        elif item["type"] == "hajító":
+            for f in ["KE", "TE", "VE", "range"]:
+                if f not in item:
+                    return False
         elif item["type"] == "távolsági":
             for f in ["KE", "CE", "range"]:
                 if f not in item:
@@ -32,23 +34,29 @@ class WeaponsAndShieldsEditor:
         self.manager = WeaponsAndShieldsJsonManager(WEAPONS_JSON)
         self.items = self.manager.load()
         self.selected_idx = None
-        # --- Kategória opciók skills.json alapján ---
-        self.category_options = self._get_weapon_categories()
+        # --- Kategória opciók típus szerint ---
+        self.category_options = []
         self.win = tk.Toplevel()
         self.win.title("Fegyverek és pajzsok szerkesztője")
         self.win.geometry("1100x700")
         self.create_widgets()
 
-    def _get_weapon_categories(self):
+    def _get_weapon_categories(self, type_value):
         import json
         skills_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "skills", "skills.json")
         try:
             with open(skills_path, encoding="utf-8") as f:
                 skills = json.load(f)
             categories = set()
-            for skill in skills:
-                if skill.get("name") == "Fegyverhasználat" and skill.get("parameter"):
-                    categories.add(skill["parameter"])
+            if type_value in ["közelharci", "távolsági"]:
+                for skill in skills:
+                    if skill.get("name") == "Fegyverhasználat" and skill.get("parameter"):
+                        categories.add(skill["parameter"])
+            elif type_value == "hajító":
+                for skill in skills:
+                    if skill.get("name") == "Fegyverdobás" and skill.get("parameter"):
+                        categories.add(skill["parameter"])
+            # pajzs esetén üres
             return sorted(categories)
         except Exception:
             return []
@@ -88,24 +96,29 @@ class WeaponsAndShieldsEditor:
         type_options = ["közelharci", "hajító", "távolsági", "pajzs"]
         tk.OptionMenu(edit_frame, self.edit_vars['type'], *type_options, command=self.update_type_fields).grid(row=row, column=1, sticky="w")
         row += 1
-        tk.Label(edit_frame, text="Kategória:").grid(row=row, column=0, sticky="w")
+        self.category_label = tk.Label(edit_frame, text="Kategória:")
+        self.category_label.grid(row=row, column=0, sticky="w")
         self.edit_vars['category'] = tk.StringVar()
-        self.category_menu = tk.OptionMenu(edit_frame, self.edit_vars['category'], *self.category_options)
+        self.category_menu = tk.OptionMenu(edit_frame, self.edit_vars['category'], "")
         self.category_menu.grid(row=row, column=1, sticky="w")
+        self.category_row = row
         row += 1
         tk.Label(edit_frame, text="Támadás ideje (mp):").grid(row=row, column=0, sticky="w")
         self.edit_vars['attack_time'] = tk.StringVar()
         tk.Entry(edit_frame, textvariable=self.edit_vars['attack_time'], width=8).grid(row=row, column=1, sticky="w")
         row += 1
-        tk.Label(edit_frame, text="Sebzés:").grid(row=row, column=0, sticky="w")
-        self.edit_vars['damage'] = tk.StringVar()
-        tk.Entry(edit_frame, textvariable=self.edit_vars['damage'], width=12).grid(row=row, column=1, sticky="w")
+        tk.Label(edit_frame, text="Sebzés (alsó határ):").grid(row=row, column=0, sticky="w")
+        self.edit_vars['damage_min'] = tk.StringVar()
+        tk.Entry(edit_frame, textvariable=self.edit_vars['damage_min'], width=6).grid(row=row, column=1, sticky="w")
+        row += 1
+        tk.Label(edit_frame, text="Sebzés (felső határ):").grid(row=row, column=0, sticky="w")
+        self.edit_vars['damage_max'] = tk.StringVar()
+        tk.Entry(edit_frame, textvariable=self.edit_vars['damage_max'], width=6).grid(row=row, column=1, sticky="w")
         row += 1
         tk.Label(edit_frame, text="Súly (kg):").grid(row=row, column=0, sticky="w")
         self.edit_vars['weight'] = tk.StringVar()
         tk.Entry(edit_frame, textvariable=self.edit_vars['weight'], width=8).grid(row=row, column=1, sticky="w")
         row += 1
-        # Ár mezők (currency manager alapján)
         tk.Label(edit_frame, text="Ár:").grid(row=row, column=0, sticky="nw")
         price_frame = tk.Frame(edit_frame)
         price_frame.grid(row=row, column=1, columnspan=8, sticky="w", pady=2)
@@ -130,18 +143,35 @@ class WeaponsAndShieldsEditor:
         self.edit_vars['armor_penetration'] = tk.StringVar()
         tk.Entry(edit_frame, textvariable=self.edit_vars['armor_penetration'], width=8).grid(row=row, column=1, sticky="w")
         row += 1
-        # Boolean mezők
         self.edit_vars['can_disarm'] = tk.IntVar()
         tk.Checkbutton(edit_frame, text="Alkalmas lefegyverzésre", variable=self.edit_vars['can_disarm']).grid(row=row, column=0, sticky="w")
         self.edit_vars['can_break_weapon'] = tk.IntVar()
         tk.Checkbutton(edit_frame, text="Alkalmas fegyvertörésre", variable=self.edit_vars['can_break_weapon']).grid(row=row, column=1, sticky="w")
         row += 1
-        # Típusfüggő mezők
         self.type_fields_frame = tk.Frame(edit_frame)
         self.type_fields_frame.grid(row=row, column=0, columnspan=3, sticky="w")
         self.type_fields_widgets = []
         row += 1
         tk.Button(edit_frame, text="Mentés", command=self.save_item).grid(row=row, column=1, pady=15, sticky="w")
+
+    def update_category_menu(self, type_value):
+        options = self._get_weapon_categories(type_value)
+        menu = self.category_menu["menu"]
+        menu.delete(0, "end")
+        for opt in options:
+            menu.add_command(label=opt, command=lambda v=opt: self.edit_vars['category'].set(v))
+        if options:
+            current = self.edit_vars['category'].get()
+            if current in options:
+                self.edit_vars['category'].set(current)
+            else:
+                self.edit_vars['category'].set(options[0])
+            self.category_label.grid(row=self.category_row, column=0, sticky="w")
+            self.category_menu.grid(row=self.category_row, column=1, sticky="w")
+        else:
+            self.edit_vars['category'].set("")
+            self.category_label.grid_remove()
+            self.category_menu.grid_remove()
 
     def update_type_fields(self, selected_type):
         # Töröld a régi mezőket
@@ -150,7 +180,8 @@ class WeaponsAndShieldsEditor:
         self.type_fields_widgets = []
         row = 0
         t = self.edit_vars['type'].get()
-        if t in ["közelharci", "hajító"]:
+        self.update_category_menu(t)
+        if t == "közelharci":
             for label, key in [("KE:", "KE"), ("TE:", "TE"), ("VE:", "VE"), ("Méretkategória:", "size_category")]:
                 var = self.edit_vars.setdefault(key, tk.StringVar())
                 l = tk.Label(self.type_fields_frame, text=label)
@@ -159,9 +190,10 @@ class WeaponsAndShieldsEditor:
                 e.grid(row=row, column=1, sticky="w")
                 self.type_fields_widgets.extend([l, e])
                 row += 1
-            if t == "hajító":
-                var = self.edit_vars.setdefault("range", tk.StringVar())
-                l = tk.Label(self.type_fields_frame, text="Táv (m):")
+        elif t == "hajító":
+            for label, key in [("KE:", "KE"), ("TE:", "TE"), ("VE:", "VE"), ("Táv (m):", "range")]:
+                var = self.edit_vars.setdefault(key, tk.StringVar())
+                l = tk.Label(self.type_fields_frame, text=label)
                 l.grid(row=row, column=0, sticky="w")
                 e = tk.Entry(self.type_fields_frame, textvariable=var, width=8)
                 e.grid(row=row, column=1, sticky="w")
@@ -193,8 +225,10 @@ class WeaponsAndShieldsEditor:
         idx = idxs[0]
         self.selected_idx = idx
         item = self.items[idx]
-        for key in ["name", "id", "type", "category", "attack_time", "damage", "weight", "stp", "armor_penetration"]:
+        for key in ["name", "id", "type", "category", "attack_time", "weight", "stp", "armor_penetration"]:
             self.edit_vars[key].set(str(item.get(key, "")))
+        self.edit_vars['damage_min'].set(str(item.get('damage_min', "")))
+        self.edit_vars['damage_max'].set(str(item.get('damage_max', "")))
         # Ár felbontása currency managerrel
         try:
             from engine.currency_manager import CurrencyManager
@@ -243,7 +277,8 @@ class WeaponsAndShieldsEditor:
             'type': self.edit_vars['type'].get(),
             'category': self.edit_vars['category'].get(),
             'attack_time': int(self.edit_vars['attack_time'].get() or 0),
-            'damage': self.edit_vars['damage'].get(),
+            'damage_min': int(self.edit_vars['damage_min'].get() or 0),
+            'damage_max': int(self.edit_vars['damage_max'].get() or 0),
             'weight': float(self.edit_vars['weight'].get() or 0),
             'price': price_total,
             'stp': int(self.edit_vars['stp'].get() or 0),
@@ -287,7 +322,7 @@ class WeaponsAndShieldsEditor:
 
     def new_item(self):
         self.selected_idx = None
-        for key in ["name", "id", "type", "category", "attack_time", "damage", "weight", "stp", "armor_penetration"]:
+        for key in ["name", "id", "type", "category", "attack_time", "weight", "stp", "armor_penetration", "damage_min", "damage_max"]:
             self.edit_vars[key].set("")
         for key in ["KE", "TE", "VE", "size_category", "range", "CE", "MGT"]:
             if key in self.edit_vars:
