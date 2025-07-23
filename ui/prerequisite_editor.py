@@ -1,5 +1,4 @@
 import tkinter as tk
-from tkinter import ttk
 from utils.prerequisite_manager import STAT_NAMES
 
 class PrerequisiteEditorDialog:

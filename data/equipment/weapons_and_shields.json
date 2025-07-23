@@ -1,20 +1,35 @@
 [
     {
+        "id": "short_sword",
         "name": "Rövid kard",
-        "type": "fegyver",
-        "category": "kard",
+        "type": "közelharci",
+        "category": "Rövid kardok",
+        "attack_time": 3,
         "damage": "1k6",
         "weight": 1.0,
         "price": 50,
-        "notes": "Könnyű, egykezes"
+        "stp": 8,
+        "armor_penetration": 2,
+        "can_disarm": true,
+        "can_break_weapon": true,
+        "KE": 2,
+        "TE": 5,
+        "VE": 3,
+        "size_category": 2
     },
     {
-        "name": "Kerek pajzs",
-        "type": "pajzs",
-        "category": "pajzs",
-        "defense": 2,
-        "weight": 2.5,
-        "price": 30,
-        "notes": "Alap védelem"
+    "id": "round_shield",
+    "name": "Kerek pajzs",
+    "type": "pajzs",
+    "category": "Pajzsok",
+    "weight": 2.5,
+    "price": 30,
+    "stp": 12,
+    "armor_penetration": 0,
+    "can_disarm": false,
+    "can_break_weapon": false,
+    "KE": 0,
+    "VE": 15,
+    "MGT": 0
     }
 ]

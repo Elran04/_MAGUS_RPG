@@ -2,7 +2,7 @@
 import tkinter as tk
 from tkinter import simpledialog, messagebox
 from ui.character_creator import open_character_creator
-from utils.storage import save_character, load_character
+from utils.character_storage import save_character, load_character
 import subprocess
 import sys
 
@@ -51,7 +51,7 @@ def save_last_character():
 # --- KARAKTER BETÖLTÉSE ---
 def load_character_dialog():
     import os
-    from utils.storage import CHARACTER_DIR
+    from utils.character_storage import CHARACTER_DIR
 
     if not os.path.exists(CHARACTER_DIR):
         messagebox.showinfo("Betöltés", "Nincs elérhető karakter.")

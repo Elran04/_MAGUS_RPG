@@ -2,11 +2,9 @@ import tkinter as tk
 from tkinter import messagebox
 import os
 from utils.skill_manager import SkillManager
-from tkinter import ttk
 import re
 from ui.prerequisite_editor import PrerequisiteEditorDialog
 from ui.skill_dialogs.skill_loader_dialog import SkillLoaderDialog
-from ui.skill_dialogs.skill_delete_dialog import SkillDeleteDialog
 from utils.prerequisite_manager import PrerequisiteManager
 
 # Ensure SkillManager uses the correct path to skills.json
@@ -350,14 +348,10 @@ class SkillEditor():
         skills.append(skill)
         self.skill_manager.save(skills)
         self.show_info("Képzettség mentve!", "Siker")
-        self.win.destroy()
+        #self.win.destroy()
 
     def open_skill_loader(self):
         SkillLoaderDialog(self)
-
-    def delete_skill(self):
-        SkillDeleteDialog(self)
-
 
 # --- Futtatható fő rész ---
 if __name__ == "__main__":
