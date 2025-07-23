@@ -3,8 +3,6 @@ import tkinter as tk
 from tkinter import simpledialog, messagebox
 from ui.character_creator import open_character_creator
 from utils.character_storage import save_character, load_character
-import subprocess
-import sys
 
 last_character = {}
 

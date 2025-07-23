@@ -5,7 +5,7 @@ import os
 from utils.skill_manager import SkillManager
 import re
 from ui.prerequisite_editor import PrerequisiteEditorDialog
-from ui.skill_dialogs.skill_loader_dialog import SkillLoaderDialog
+from ui.dialogs.skill_loader_dialog import SkillLoaderDialog
 from utils.prerequisite_manager import PrerequisiteManager
 
 # Ensure SkillManager uses the correct path to skills.json
