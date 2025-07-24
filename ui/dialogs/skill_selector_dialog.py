@@ -1,11 +1,14 @@
 import tkinter as tk
 from tkinter import ttk
+from utils.reopen_prevention import WindowSingleton
 
 class SkillSelectorDialog:
     def __init__(self, parent, skill_list, callback):
         self.parent = parent
         self.callback = callback
-        self.win = tk.Toplevel(parent)
+        self.win, created = WindowSingleton.get('skill_selector_dialog', lambda: tk.Toplevel(parent))
+        if not created:
+            return
         self.win.title("Képzettség kiválasztása")
         self.win.geometry("500x600")
         tk.Label(self.win, text="Válassz egy képzettséget előfeltételként:", font=("Arial", 12)).pack(pady=10)

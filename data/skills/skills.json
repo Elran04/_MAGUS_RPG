@@ -480,93 +480,6 @@
     "parameter": "Szablyák"
   },
   {
-    "name": "Öklözés",
-    "main_category": "Harci képzettségek",
-    "sub_category": "Közkeletű",
-    "description": "Az ökölharc alapformájában való jártasságot fejezi ki.Különböző specializált fegyverek ezen képzettség szintjét veszik alapul. Nem összetévesztendő a harcművészetekkel, továbbá automatikusan kétkezes harcnak minősül.",
-    "acquisition_method": "Gyakorlás",
-    "acquisition_difficulty": "1 - Egyszerű",
-    "skill_type": "szint",
-    "kp_costs": {
-      "1": "1",
-      "2": "5",
-      "3": "8",
-      "4": "15",
-      "5": "25",
-      "6": "35"
-    },
-    "level_descriptions": {
-      "1": "Körönként 1 támadás és 1 SP seb okozható + erő bónusz, az is túlütéssel. Képzetlen fegyverforgatásból származó minuszok legalább már nem súlytják az ilyen szintű ökölözőt.",
-      "2": "A sebzés már normál módon működik és 1-2 SP-t+ erőbónusz sebzést tud okozni. Továbbra is csak 1x támadhat körönként.",
-      "3": "Az ilyen szinten képzett ökölharcos már körönként 2x támadhat. Viszont közelkerülési kísérlete továbbra is csak 1 van.",
-      "4": "A veterán ökölvívó harci értékei nőnek. 1-3 SP + erő bónusz a sebzése.",
-      "5": "Ezen a szinten már mesteri szintre emelte a karakter az ökölvívást. A sebzés 1-6 SP  + erő bónuszra nő és körönként 3 támadást tesz lehetővé. Továbbá mindhárom támadás használható közelkerülésre.",
-      "6": "Az ökölvívás legendás szintje. Sebzés tovább nő 1-10 SP + erő bónuszra, és körönként már 4 támadás is lehetséges és mindegyik használható közelkerülésre. Ezen a szinten már komoly ellenfélnek minősül fegyver nélkül is a karakter."
-    },
-    "prerequisites": {
-      "1": {
-        "képesség": [
-          "Erő 12+",
-          "Ügyesség 11+",
-          "Gyorsaság 10+"
-        ],
-        "képzettség": []
-      },
-      "2": {
-        "képesség": [
-          "Erő 13+",
-          "Ügyesség 12+",
-          "Gyorsaság 11+"
-        ],
-        "képzettség": [
-          "Öklözés 1. szint"
-        ]
-      },
-      "3": {
-        "képesség": [
-          "Erő 14+",
-          "Ügyesség 14+",
-          "Gyorsaság 13+"
-        ],
-        "képzettség": [
-          "Öklözés 2. szint"
-        ]
-      },
-      "4": {
-        "képesség": [
-          "Erő 15+",
-          "Ügyesség 16+",
-          "Gyorsaság 14+"
-        ],
-        "képzettség": [
-          "Öklözés 3. szint"
-        ]
-      },
-      "5": {
-        "képesség": [
-          "Erő 16+",
-          "Ügyesség 17+",
-          "Gyorsaság 15+"
-        ],
-        "képzettség": [
-          "Öklözés 4. szint"
-        ]
-      },
-      "6": {
-        "képesség": [
-          "Erő 17+",
-          "Ügyesség 18+",
-          "Gyorsaság 16+"
-        ],
-        "képzettség": [
-          "Öklözés 5. szint"
-        ]
-      }
-    },
-    "is_parametric": false,
-    "parameter": ""
-  },
-  {
     "name": "Fegyverhasználat",
     "main_category": "Harci képzettségek",
     "sub_category": "Közkeletű",
@@ -1542,5 +1455,93 @@
     },
     "is_parametric": true,
     "parameter": "Dobótőr"
+  },
+  {
+    "name": "Pusztakezes harc",
+    "main_category": "Harci képzettségek",
+    "sub_category": "Közkeletű",
+    "description": "Az ökölharc alapformájában való jártasságot fejezi ki.Különböző specializált fegyverek ezen képzettség szintjét veszik alapul. Nem összetévesztendő a harcművészetekkel, továbbá automatikusan kétkezes harcnak minősül.",
+    "acquisition_method": "Gyakorlás",
+    "acquisition_difficulty": "1 - Egyszerű",
+    "skill_type": "szint",
+    "kp_per_3_percent": null,
+    "kp_costs": {
+      "1": "1",
+      "2": "5",
+      "3": "8",
+      "4": "15",
+      "5": "25",
+      "6": "35"
+    },
+    "level_descriptions": {
+      "1": "Körönként 1 támadás és 1 SP seb okozható + erő bónusz, az is túlütéssel. Képzetlen fegyverforgatásból származó minuszok legalább már nem súlytják az ilyen szintű ökölözőt.",
+      "2": "A sebzés már normál módon működik és 1-2 SP-t+ erőbónusz sebzést tud okozni. Továbbra is csak 1x támadhat körönként.",
+      "3": "Az ilyen szinten képzett ökölharcos már körönként 2x támadhat. Viszont közelkerülési kísérlete továbbra is csak 1 van.",
+      "4": "A veterán ökölvívó harci értékei nőnek. 1-3 SP + erő bónusz a sebzése.",
+      "5": "Ezen a szinten már mesteri szintre emelte a karakter az ökölvívást. A sebzés 1-6 SP  + erő bónuszra nő és körönként 3 támadást tesz lehetővé. Továbbá mindhárom támadás használható közelkerülésre.",
+      "6": "Az ökölvívás legendás szintje. Sebzés tovább nő 1-10 SP + erő bónuszra, és körönként már 4 támadás is lehetséges és mindegyik használható közelkerülésre. Ezen a szinten már komoly ellenfélnek minősül fegyver nélkül is a karakter."
+    },
+    "prerequisites": {
+      "1": {
+        "képesség": [
+          "Erő 12+",
+          "Ügyesség 11+",
+          "Gyorsaság 10+"
+        ],
+        "képzettség": []
+      },
+      "2": {
+        "képesség": [
+          "Erő 13+",
+          "Ügyesség 12+",
+          "Gyorsaság 11+"
+        ],
+        "képzettség": [
+          "Pusztakezes harc 1. szint"
+        ]
+      },
+      "3": {
+        "képesség": [
+          "Erő 14+",
+          "Ügyesség 14+",
+          "Gyorsaság 13+"
+        ],
+        "képzettség": [
+          "Pusztakezes harc 2. szint"
+        ]
+      },
+      "4": {
+        "képesség": [
+          "Erő 15+",
+          "Ügyesség 16+",
+          "Gyorsaság 14+"
+        ],
+        "képzettség": [
+          "Pusztakezes harc 3. szint"
+        ]
+      },
+      "5": {
+        "képesség": [
+          "Erő 16+",
+          "Ügyesség 17+",
+          "Gyorsaság 15+"
+        ],
+        "képzettség": [
+          "Pusztakezes harc 4. szint"
+        ]
+      },
+      "6": {
+        "képesség": [
+          "Erő 17+",
+          "Ügyesség 18+",
+          "Gyorsaság 16+"
+        ],
+        "képzettség": [
+          "Pusztakezes harc 5. szint"
+        ]
+      }
+    },
+    "is_parametric": false,
+    "parameter": ""
   }
 ]

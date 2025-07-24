@@ -1,10 +1,13 @@
 import tkinter as tk
 from utils.prerequisite_manager import STAT_NAMES
+from utils.reopen_prevention import WindowSingleton
 
 class PrerequisiteEditorDialog:
     def __init__(self, editor):
         self.editor = editor
-        self.win = tk.Toplevel(editor.win)
+        self.win, created = WindowSingleton.get('prerequisite_editor', lambda: tk.Toplevel(editor.win))
+        if not created:
+            return
         self.win.title("Előfeltételek szerkesztése")
         self.win.geometry("1024x768")
         tk.Label(self.win, text="Itt szerkesztheted az összes szint előfeltételeit (tulajdonságok és képzettségek)", font=("Arial", 12)).pack(pady=10)
@@ -100,7 +103,7 @@ class PrerequisiteEditorDialog:
             self.refresh_all_rows()
         # Skill gomb: kattintásra új skill választható
         def select_new_skill():
-            from ui.skill_dialogs.skill_selector_dialog import SkillSelectorDialog
+            from ui.dialogs.skill_selector_dialog import SkillSelectorDialog
             skill_list = self.editor.skill_manager.load()
             def on_skill_selected(skill):
                 skill_var.set(skill["name"])
@@ -136,7 +139,7 @@ class PrerequisiteEditorDialog:
 
     def add_skill_row(self, level_idx):
         # SkillSelectorDialog import csak itt, hogy ne legyen körkörös import
-        from ui.skill_dialogs.skill_selector_dialog import SkillSelectorDialog
+        from ui.dialogs.skill_selector_dialog import SkillSelectorDialog
         # Skill listát az editor.skill_manager-ből vesszük
         skill_list = self.editor.skill_manager.load()
         def on_skill_selected(skill):

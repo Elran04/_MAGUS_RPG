@@ -1,11 +1,14 @@
 import tkinter as tk
 from tkinter import ttk
+from utils.reopen_prevention import WindowSingleton
 
 class SkillLoaderDialog:
     def __init__(self, editor):
         self.editor = editor
         self.all_skills = editor.skill_manager.load()
-        self.loader = tk.Toplevel(editor.win)
+        self.loader, created = WindowSingleton.get('skill_loader_dialog', lambda: tk.Toplevel(editor.win))
+        if not created:
+            return
         self.loader.title("Képzettség betöltése")
         self.loader.geometry("600x500")
         search_var = tk.StringVar()

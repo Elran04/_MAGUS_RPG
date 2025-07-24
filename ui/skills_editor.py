@@ -6,6 +6,7 @@ from utils.skill_manager import SkillManager
 import re
 from ui.prerequisite_editor import PrerequisiteEditorDialog
 from ui.dialogs.skill_loader_dialog import SkillLoaderDialog
+from ui.description_editor import DescriptionEditorDialog
 from utils.prerequisite_manager import PrerequisiteManager
 
 # Ensure SkillManager uses the correct path to skills.json
@@ -184,9 +185,13 @@ class SkillEditor():
         load_btn.pack(side=tk.LEFT, padx=10)
         prereq_btn = tk.Button(button_frame, text="Előfeltételek szerkesztése", width=22, command=self.open_prerequisite_editor)
         prereq_btn.pack(side=tk.LEFT, padx=10)
+        desc_btn = tk.Button(button_frame, text="Leírások szerkesztése", width=22, command=self.open_all_description_editor)
+        desc_btn.pack(side=tk.LEFT, padx=10)
         save_btn = tk.Button(button_frame, text="Mentés", width=18, command=self.save_skill)
         save_btn.pack(side=tk.LEFT, padx=10)
         # Delete button removed
+    def open_all_description_editor(self):
+        DescriptionEditorDialog(self)
 
     def update_subcategories(self, *args):
         menu = self.sub_cat_menu["menu"]
