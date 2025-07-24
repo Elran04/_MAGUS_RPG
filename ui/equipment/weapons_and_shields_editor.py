@@ -90,28 +90,36 @@ class WeaponsAndShieldsEditor:
     def populate_treeview(self):
         self.tree.delete(*self.tree.get_children())
         self.tree_nodes = {}
+        # Collect all types and categories
+        type_order = ["közelharci", "hajító", "távolsági", "pajzs"]
+        type_items = {}
         for idx, item in enumerate(self.items):
             type_val = item.get('type', 'Egyéb')
             cat_val = item.get('category', '') or 'Egyéb'
-            # Type node
-            if type_val not in self.tree_nodes:
-                type_id = self.tree.insert('', 'end', text=type_val, open=True)
-                self.tree_nodes[type_val] = type_id
-            else:
-                type_id = self.tree_nodes[type_val]
-            # Category node
-            cat_key = (type_val, cat_val)
-            if cat_val and cat_key not in self.tree_nodes:
-                cat_id = self.tree.insert(type_id, 'end', text=cat_val, open=True)
-                self.tree_nodes[cat_key] = cat_id
-            elif cat_val:
-                cat_id = self.tree_nodes[cat_key]
-            else:
-                cat_id = type_id
-            # Item node
-            item_text = f"{item['name']} (ID: {item.get('id', '-')})"
-            item_id = self.tree.insert(cat_id, 'end', text=item_text)
-            # No need to call set() since no columns are defined
+            type_items.setdefault(type_val, []).append((cat_val, idx, item))
+        # Insert types in preferred order, then any others
+        inserted_types = set()
+        for t in type_order + [t for t in type_items if t not in type_order]:
+            if t not in type_items:
+                continue
+            type_id = self.tree.insert('', 'end', text=t, open=True)
+            self.tree_nodes[t] = type_id
+            # Collect categories for this type
+            cat_map = {}
+            for cat_val, idx, item in type_items[t]:
+                cat_map.setdefault(cat_val, []).append((idx, item))
+            for cat_val in sorted(cat_map.keys()):
+                cat_key = (t, cat_val)
+                if cat_val and cat_key not in self.tree_nodes:
+                    cat_id = self.tree.insert(type_id, 'end', text=cat_val, open=True)
+                    self.tree_nodes[cat_key] = cat_id
+                elif cat_val:
+                    cat_id = self.tree_nodes[cat_key]
+                else:
+                    cat_id = type_id
+                for idx, item in cat_map[cat_val]:
+                    item_text = f"{item['name']} (ID: {item.get('id', '-')})"
+                    item_id = self.tree.insert(cat_id, 'end', text=item_text)
         # Szerkesztő panel újrarajzolása
         for w in getattr(self, 'edit_frame_widgets', []):
             w.destroy()
