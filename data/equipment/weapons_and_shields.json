@@ -13,6 +13,13 @@
     "armor_penetration": 2,
     "can_disarm": true,
     "can_break_weapon": true,
+    "damage_types": [
+      "szúró",
+      "vágó"
+    ],
+    "damage_bonus_attributes": [
+      "ügyesség"
+    ],
     "KE": 2,
     "TE": 5,
     "VE": 3,
@@ -32,6 +39,12 @@
     "armor_penetration": 0,
     "can_disarm": false,
     "can_break_weapon": false,
+    "damage_types": [
+      "zúzó"
+    ],
+    "damage_bonus_attributes": [
+      "erő"
+    ],
     "KE": 5,
     "VE": 20,
     "MGT": 0
@@ -50,6 +63,12 @@
     "armor_penetration": 0,
     "can_disarm": false,
     "can_break_weapon": false,
+    "damage_types": [
+      "zúzó"
+    ],
+    "damage_bonus_attributes": [
+      "erő"
+    ],
     "KE": 0,
     "VE": 35,
     "MGT": 1
@@ -68,8 +87,195 @@
     "armor_penetration": 0,
     "can_disarm": false,
     "can_break_weapon": false,
+    "damage_types": [
+      "zúzó"
+    ],
+    "damage_bonus_attributes": [
+      "erő"
+    ],
     "KE": 0,
     "VE": 50,
     "MGT": 3
+  },
+  {
+    "name": "Tőr",
+    "id": "dagger",
+    "type": "közelharci",
+    "category": "Tőrök",
+    "attack_time": 3,
+    "damage_min": 1,
+    "damage_max": 10,
+    "weight": 0.5,
+    "price": 100,
+    "stp": 10,
+    "armor_penetration": 0,
+    "can_disarm": false,
+    "can_break_weapon": false,
+    "damage_types": [
+      "szúró"
+    ],
+    "damage_bonus_attributes": [
+      "ügyesség"
+    ],
+    "KE": 6,
+    "TE": 10,
+    "VE": 4,
+    "size_category": 1
+  },
+  {
+    "name": "Kés",
+    "id": "knife",
+    "type": "közelharci",
+    "category": "Tőrök",
+    "attack_time": 3,
+    "damage_min": 1,
+    "damage_max": 6,
+    "weight": 0.3,
+    "price": 50,
+    "stp": 15,
+    "armor_penetration": 0,
+    "can_disarm": false,
+    "can_break_weapon": false,
+    "damage_types": [
+      "szúró"
+    ],
+    "damage_bonus_attributes": [
+      "ügyesség"
+    ],
+    "KE": 5,
+    "TE": 8,
+    "VE": 2,
+    "size_category": 1
+  },
+  {
+    "name": "Fejvadász kard",
+    "id": "assassin_sword",
+    "type": "közelharci",
+    "category": "Ívelt kardok",
+    "attack_time": 5,
+    "damage_min": 1,
+    "damage_max": 10,
+    "weight": 0.8,
+    "price": 2000,
+    "stp": 20,
+    "armor_penetration": 0,
+    "can_disarm": false,
+    "can_break_weapon": false,
+    "damage_types": [
+      "szúró",
+      "vágó"
+    ],
+    "damage_bonus_attributes": [
+      "erő",
+      "ügyesség"
+    ],
+    "KE": 6,
+    "TE": 14,
+    "VE": 10,
+    "size_category": 3
+  },
+  {
+    "name": "Hosszú kard",
+    "id": "longsword",
+    "type": "közelharci",
+    "category": "Hosszú kardok",
+    "attack_time": 5,
+    "damage_min": 2,
+    "damage_max": 12,
+    "weight": 0.0,
+    "price": 1500,
+    "stp": 20,
+    "armor_penetration": 0,
+    "can_disarm": true,
+    "can_break_weapon": true,
+    "damage_types": [
+      "szúró",
+      "vágó"
+    ],
+    "damage_bonus_attributes": [
+      "erő",
+      "ügyesség"
+    ],
+    "KE": 5,
+    "TE": 10,
+    "VE": 10,
+    "size_category": 3
+  },
+  {
+    "name": "Hárítótőr",
+    "id": "parry_dagger",
+    "type": "közelharci",
+    "category": "Tőrök",
+    "attack_time": 3,
+    "damage_min": 2,
+    "damage_max": 7,
+    "weight": 1.0,
+    "price": 2000,
+    "stp": 20,
+    "armor_penetration": 0,
+    "can_disarm": false,
+    "can_break_weapon": false,
+    "damage_types": [
+      "szúró"
+    ],
+    "damage_bonus_attributes": [
+      "ügyesség"
+    ],
+    "KE": 5,
+    "TE": 8,
+    "VE": 20,
+    "size_category": 1
+  },
+  {
+    "name": "Mesterkard",
+    "id": "master_sword",
+    "type": "közelharci",
+    "category": "Ívelt kardok",
+    "attack_time": 5,
+    "damage_min": 2,
+    "damage_max": 16,
+    "weight": 1.2,
+    "price": 8000,
+    "stp": 20,
+    "armor_penetration": 0,
+    "can_disarm": true,
+    "can_break_weapon": true,
+    "damage_types": [
+      "szúró",
+      "vágó"
+    ],
+    "damage_bonus_attributes": [
+      "erő",
+      "ügyesség"
+    ],
+    "KE": 5,
+    "TE": 13,
+    "VE": 7,
+    "size_category": 3
+  },
+  {
+    "name": "Rapír",
+    "id": "rapier",
+    "type": "közelharci",
+    "category": "Tőrkardok",
+    "attack_time": 3,
+    "damage_min": 1,
+    "damage_max": 10,
+    "weight": 0.8,
+    "price": 5000,
+    "stp": 20,
+    "armor_penetration": 0,
+    "can_disarm": false,
+    "can_break_weapon": false,
+    "damage_types": [
+      "szúró"
+    ],
+    "damage_bonus_attributes": [
+      "ügyesség"
+    ],
+    "KE": 7,
+    "TE": 10,
+    "VE": 13,
+    "size_category": 3
   }
 ]

@@ -123,6 +123,22 @@ class WeaponsAndShieldsEditor:
         self.edit_vars['weight'] = tk.StringVar()
         tk.Entry(edit_frame, textvariable=self.edit_vars['weight'], width=8).grid(row=row, column=1, sticky="w")
         row += 1
+        # Sebzés típus(ok) külön sorban, balra igazítva
+        tk.Label(edit_frame, text="Sebzés típus:").grid(row=row, column=0, sticky="w")
+        self.damage_type_vars = {typ: tk.IntVar() for typ in ["szúró", "vágó", "zúzó"]}
+        type_cb_frame = tk.Frame(edit_frame)
+        type_cb_frame.grid(row=row, column=1, sticky="w")
+        for typ, var in self.damage_type_vars.items():
+            tk.Checkbutton(type_cb_frame, text=typ.capitalize(), variable=var).pack(side=tk.LEFT, padx=(2,2))
+        row += 1
+        # Sebzés bónusz tulajdonság(ok) külön sorban, balra igazítva
+        tk.Label(edit_frame, text="Sebzés bónusz:").grid(row=row, column=0, sticky="w")
+        self.damage_bonus_attr_vars = {attr: tk.IntVar() for attr in ["erő", "ügyesség"]}
+        bonus_cb_frame = tk.Frame(edit_frame)
+        bonus_cb_frame.grid(row=row, column=1, sticky="w")
+        for attr, var in self.damage_bonus_attr_vars.items():
+            tk.Checkbutton(bonus_cb_frame, text=attr.capitalize(), variable=var).pack(side=tk.LEFT, padx=(2,2))
+        row += 1
         tk.Label(edit_frame, text="Ár:").grid(row=row, column=0, sticky="nw")
         price_frame = tk.Frame(edit_frame)
         price_frame.grid(row=row, column=1, columnspan=8, sticky="w", pady=2)
@@ -233,6 +249,12 @@ class WeaponsAndShieldsEditor:
             self.edit_vars[key].set(str(item.get(key, "")))
         self.edit_vars['damage_min'].set(str(item.get('damage_min', "")))
         self.edit_vars['damage_max'].set(str(item.get('damage_max', "")))
+        # Sebzés típusok
+        for typ, var in self.damage_type_vars.items():
+            var.set(1 if typ in item.get('damage_types', []) else 0)
+        # Sebzés bónusz attribútumok
+        for attr, var in self.damage_bonus_attr_vars.items():
+            var.set(1 if attr in item.get('damage_bonus_attributes', []) else 0)
         # Ár felbontása currency managerrel
         try:
             from engine.currency_manager import CurrencyManager
@@ -275,6 +297,10 @@ class WeaponsAndShieldsEditor:
                 price_total += CurrencyManager().to_base(val, curr)
         except Exception:
             price_total = int(self.edit_vars['price_réz'].get() or 0)
+        # Sebzés típusok
+        damage_types = [typ for typ, var in self.damage_type_vars.items() if var.get()]
+        # Sebzés bónusz attribútumok
+        damage_bonus_attributes = [attr for attr, var in self.damage_bonus_attr_vars.items() if var.get()]
         item = {
             'name': self.edit_vars['name'].get(),
             'id': self.edit_vars['id'].get(),
@@ -288,7 +314,9 @@ class WeaponsAndShieldsEditor:
             'stp': int(self.edit_vars['stp'].get() or 0),
             'armor_penetration': int(self.edit_vars['armor_penetration'].get() or 0),
             'can_disarm': bool(self.edit_vars['can_disarm'].get()),
-            'can_break_weapon': bool(self.edit_vars['can_break_weapon'].get())
+            'can_break_weapon': bool(self.edit_vars['can_break_weapon'].get()),
+            'damage_types': damage_types,
+            'damage_bonus_attributes': damage_bonus_attributes
         }
         t = self.edit_vars['type'].get()
         if t in ["közelharci", "hajító"]:
@@ -337,6 +365,10 @@ class WeaponsAndShieldsEditor:
         self.edit_vars['price_mithrill'].set("")
         self.edit_vars['can_disarm'].set(0)
         self.edit_vars['can_break_weapon'].set(0)
+        for var in self.damage_type_vars.values():
+            var.set(0)
+        for var in self.damage_bonus_attr_vars.values():
+            var.set(0)
         self.update_type_fields(self.edit_vars['type'].get())
 
     def delete_item(self):
