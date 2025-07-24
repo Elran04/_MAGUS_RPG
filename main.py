@@ -32,6 +32,10 @@ def display_character(char):
     text_area.insert(tk.END, f"  Szintenként: {kp.get('Szintenként', 0)}\n")
     text_area.insert(tk.END, "-" * 40 + "\n")
 
+    # Open character page window
+    from ui.character_page import CharacterPage
+    CharacterPage(root, char)
+
 # --- KARAKTER MENTÉSE ---
 def save_last_character():
     if not last_character:

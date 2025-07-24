@@ -133,9 +133,9 @@ AGE_CATEGORY_EFFECTS = {
     1: {"Erő": -3, "Állóképesség": -3, "Ügyesség": -1, "Intelligencia":-1, "Akaraterő":-1, "Karizma": -1},
     2: {},
     3: {"Gyorsaság": -1, "Ügyesség": -1, "Intelligencia":+1, "Akaraterő":+1, "Karizma": +1},
-    4: {"Erő": -1, "Állóképesség":-1, "Gyorsaság": -3, "Ügyesség": -1, "Egészség":-1, "Intelligencia":+1, "Akaraterő":+1, "Karizma": +1},
-    5: {"Erő": -2, "Állóképesség":-2, "Gyorsaság": -5, "Ügyesség": -2, "Egészség":-2, "Intelligencia":+1, "Akaraterő":+1},
-    6: {"Erő": -4, "Állóképesség":-4, "Gyorsaság": -7, "Ügyesség": -4, "Egészség":-4},
+    4: {"Erő": -1, "Állóképesség":-1, "Gyorsaság": -1, "Ügyesség": -1, "Egészség":-1, "Intelligencia":+1, "Akaraterő":+1, "Karizma": +1},
+    5: {"Erő": -2, "Állóképesség":-2, "Gyorsaság": -2, "Ügyesség": -2, "Egészség":-2, "Intelligencia":+1, "Akaraterő":+1},
+    6: {"Erő": -4, "Állóképesség":-4, "Gyorsaság": -4, "Ügyesség": -4, "Egészség":-4},
 }
 
 AGE_LIMITS_BY_RACE = {
