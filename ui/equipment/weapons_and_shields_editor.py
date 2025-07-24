@@ -69,78 +69,128 @@ class WeaponsAndShieldsEditor:
         main_frame = tk.Frame(self.win)
         main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Bal oldali lista
+        # Bal oldali Treeview lista
+        from tkinter import ttk
         list_frame = tk.Frame(main_frame)
         list_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
         tk.Label(list_frame, text="Fegyverek és pajzsok listája", font=("Arial", 14, "bold")).pack(pady=5)
-        self.listbox = tk.Listbox(list_frame, width=35, height=30)
-        for item in self.items:
-            self.listbox.insert(tk.END, f"{item['name']} (ID: {item.get('id', '-')})")
-        self.listbox.pack(pady=5)
-        self.listbox.bind('<<ListboxSelect>>', self.on_select)
-
+        self.tree = ttk.Treeview(list_frame, show="tree", selectmode="browse", height=30)
+        self.tree.pack(pady=5, fill=tk.Y, expand=True, ipadx=100)  # Increase width
+        self.tree.bind('<<TreeviewSelect>>', self.on_tree_select)
+        self.tree_nodes = {}
+        # Jobb oldali szerkesztő panel
+        self.edit_frame = tk.Frame(main_frame)
+        self.edit_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+        self.edit_vars = {}
+        self.edit_frame_widgets = []
+        self.populate_treeview()
         tk.Button(list_frame, text="Új fegyver/pajzs", command=self.new_item).pack(pady=5)
         tk.Button(list_frame, text="Törlés", command=self.delete_item).pack(pady=5)
 
-        # Jobb oldali szerkesztő panel
-        edit_frame = tk.Frame(main_frame)
-        edit_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
-        self.edit_vars = {}
+    def populate_treeview(self):
+        self.tree.delete(*self.tree.get_children())
+        self.tree_nodes = {}
+        for idx, item in enumerate(self.items):
+            type_val = item.get('type', 'Egyéb')
+            cat_val = item.get('category', '') or 'Egyéb'
+            # Type node
+            if type_val not in self.tree_nodes:
+                type_id = self.tree.insert('', 'end', text=type_val, open=True)
+                self.tree_nodes[type_val] = type_id
+            else:
+                type_id = self.tree_nodes[type_val]
+            # Category node
+            cat_key = (type_val, cat_val)
+            if cat_val and cat_key not in self.tree_nodes:
+                cat_id = self.tree.insert(type_id, 'end', text=cat_val, open=True)
+                self.tree_nodes[cat_key] = cat_id
+            elif cat_val:
+                cat_id = self.tree_nodes[cat_key]
+            else:
+                cat_id = type_id
+            # Item node
+            item_text = f"{item['name']} (ID: {item.get('id', '-')})"
+            item_id = self.tree.insert(cat_id, 'end', text=item_text)
+            # No need to call set() since no columns are defined
+        # Szerkesztő panel újrarajzolása
+        for w in getattr(self, 'edit_frame_widgets', []):
+            w.destroy()
+        self.edit_frame_widgets = []
         row = 0
-        tk.Label(edit_frame, text="Név:").grid(row=row, column=0, sticky="w")
+        ef = self.edit_frame
+        tk.Label(ef, text="Név:").grid(row=row, column=0, sticky="w")
         self.edit_vars['name'] = tk.StringVar()
-        tk.Entry(edit_frame, textvariable=self.edit_vars['name'], width=40).grid(row=row, column=1, sticky="w")
+        e = tk.Entry(ef, textvariable=self.edit_vars['name'], width=40)
+        e.grid(row=row, column=1, sticky="w")
+        self.edit_frame_widgets.extend([e])
         row += 1
-        tk.Label(edit_frame, text="Azonosító:").grid(row=row, column=0, sticky="w")
+        tk.Label(ef, text="Azonosító:").grid(row=row, column=0, sticky="w")
         self.edit_vars['id'] = tk.StringVar()
-        tk.Entry(edit_frame, textvariable=self.edit_vars['id'], width=40).grid(row=row, column=1, sticky="w")
+        e = tk.Entry(ef, textvariable=self.edit_vars['id'], width=40)
+        e.grid(row=row, column=1, sticky="w")
+        self.edit_frame_widgets.extend([e])
         row += 1
-        tk.Label(edit_frame, text="Típus:").grid(row=row, column=0, sticky="w")
+        tk.Label(ef, text="Típus:").grid(row=row, column=0, sticky="w")
         self.edit_vars['type'] = tk.StringVar()
         type_options = ["közelharci", "hajító", "távolsági", "pajzs"]
-        tk.OptionMenu(edit_frame, self.edit_vars['type'], *type_options, command=self.update_type_fields).grid(row=row, column=1, sticky="w")
+        om = tk.OptionMenu(ef, self.edit_vars['type'], *type_options, command=self.update_type_fields)
+        om.grid(row=row, column=1, sticky="w")
+        self.edit_frame_widgets.extend([om])
         row += 1
-        self.category_label = tk.Label(edit_frame, text="Kategória:")
+        self.category_label = tk.Label(ef, text="Kategória:")
         self.category_label.grid(row=row, column=0, sticky="w")
         self.edit_vars['category'] = tk.StringVar()
-        self.category_menu = tk.OptionMenu(edit_frame, self.edit_vars['category'], "")
+        self.category_menu = tk.OptionMenu(ef, self.edit_vars['category'], "")
         self.category_menu.grid(row=row, column=1, sticky="w")
         self.category_row = row
+        self.edit_frame_widgets.extend([self.category_label, self.category_menu])
         row += 1
-        tk.Label(edit_frame, text="Támadás ideje (mp):").grid(row=row, column=0, sticky="w")
+        tk.Label(ef, text="Támadás ideje (mp):").grid(row=row, column=0, sticky="w")
         self.edit_vars['attack_time'] = tk.StringVar()
-        tk.Entry(edit_frame, textvariable=self.edit_vars['attack_time'], width=8).grid(row=row, column=1, sticky="w")
+        e = tk.Entry(ef, textvariable=self.edit_vars['attack_time'], width=8)
+        e.grid(row=row, column=1, sticky="w")
+        self.edit_frame_widgets.extend([e])
         row += 1
-        tk.Label(edit_frame, text="Sebzés (alsó határ):").grid(row=row, column=0, sticky="w")
+        tk.Label(ef, text="Sebzés (alsó határ):").grid(row=row, column=0, sticky="w")
         self.edit_vars['damage_min'] = tk.StringVar()
-        tk.Entry(edit_frame, textvariable=self.edit_vars['damage_min'], width=6).grid(row=row, column=1, sticky="w")
+        e = tk.Entry(ef, textvariable=self.edit_vars['damage_min'], width=6)
+        e.grid(row=row, column=1, sticky="w")
+        self.edit_frame_widgets.extend([e])
         row += 1
-        tk.Label(edit_frame, text="Sebzés (felső határ):").grid(row=row, column=0, sticky="w")
+        tk.Label(ef, text="Sebzés (felső határ):").grid(row=row, column=0, sticky="w")
         self.edit_vars['damage_max'] = tk.StringVar()
-        tk.Entry(edit_frame, textvariable=self.edit_vars['damage_max'], width=6).grid(row=row, column=1, sticky="w")
+        e = tk.Entry(ef, textvariable=self.edit_vars['damage_max'], width=6)
+        e.grid(row=row, column=1, sticky="w")
+        self.edit_frame_widgets.extend([e])
         row += 1
-        tk.Label(edit_frame, text="Súly (kg):").grid(row=row, column=0, sticky="w")
+        tk.Label(ef, text="Súly (kg):").grid(row=row, column=0, sticky="w")
         self.edit_vars['weight'] = tk.StringVar()
-        tk.Entry(edit_frame, textvariable=self.edit_vars['weight'], width=8).grid(row=row, column=1, sticky="w")
+        e = tk.Entry(ef, textvariable=self.edit_vars['weight'], width=8)
+        e.grid(row=row, column=1, sticky="w")
+        self.edit_frame_widgets.extend([e])
         row += 1
-        # Sebzés típus(ok) külön sorban, balra igazítva
-        tk.Label(edit_frame, text="Sebzés típus:").grid(row=row, column=0, sticky="w")
+        tk.Label(ef, text="Sebzés típus:").grid(row=row, column=0, sticky="w")
         self.damage_type_vars = {typ: tk.IntVar() for typ in ["szúró", "vágó", "zúzó"]}
-        type_cb_frame = tk.Frame(edit_frame)
+        type_cb_frame = tk.Frame(ef)
         type_cb_frame.grid(row=row, column=1, sticky="w")
         for typ, var in self.damage_type_vars.items():
-            tk.Checkbutton(type_cb_frame, text=typ.capitalize(), variable=var).pack(side=tk.LEFT, padx=(2,2))
+            cb = tk.Checkbutton(type_cb_frame, text=typ.capitalize(), variable=var)
+            cb.pack(side=tk.LEFT, padx=(2,2))
+            self.edit_frame_widgets.append(cb)
+        self.edit_frame_widgets.append(type_cb_frame)
         row += 1
-        # Sebzés bónusz tulajdonság(ok) külön sorban, balra igazítva
-        tk.Label(edit_frame, text="Sebzés bónusz:").grid(row=row, column=0, sticky="w")
+        tk.Label(ef, text="Sebzés bónusz:").grid(row=row, column=0, sticky="w")
         self.damage_bonus_attr_vars = {attr: tk.IntVar() for attr in ["erő", "ügyesség"]}
-        bonus_cb_frame = tk.Frame(edit_frame)
+        bonus_cb_frame = tk.Frame(ef)
         bonus_cb_frame.grid(row=row, column=1, sticky="w")
         for attr, var in self.damage_bonus_attr_vars.items():
-            tk.Checkbutton(bonus_cb_frame, text=attr.capitalize(), variable=var).pack(side=tk.LEFT, padx=(2,2))
+            cb = tk.Checkbutton(bonus_cb_frame, text=attr.capitalize(), variable=var)
+            cb.pack(side=tk.LEFT, padx=(2,2))
+            self.edit_frame_widgets.append(cb)
+        self.edit_frame_widgets.append(bonus_cb_frame)
         row += 1
-        tk.Label(edit_frame, text="Ár:").grid(row=row, column=0, sticky="nw")
-        price_frame = tk.Frame(edit_frame)
+        tk.Label(ef, text="Ár:").grid(row=row, column=0, sticky="nw")
+        price_frame = tk.Frame(ef)
         price_frame.grid(row=row, column=1, columnspan=8, sticky="w", pady=2)
         self.edit_vars['price_réz'] = tk.StringVar()
         self.edit_vars['price_ezüst'] = tk.StringVar()
@@ -154,25 +204,37 @@ class WeaponsAndShieldsEditor:
         tk.Entry(price_frame, textvariable=self.edit_vars['price_arany'], width=4).grid(row=0, column=5)
         tk.Label(price_frame, text="mithrill").grid(row=0, column=6)
         tk.Entry(price_frame, textvariable=self.edit_vars['price_mithrill'], width=4).grid(row=0, column=7)
+        self.edit_frame_widgets.append(price_frame)
         row += 1
-        tk.Label(edit_frame, text="STP (ellenálló képesség):").grid(row=row, column=0, sticky="w")
+        tk.Label(ef, text="STP (ellenálló képesség):").grid(row=row, column=0, sticky="w")
         self.edit_vars['stp'] = tk.StringVar()
-        tk.Entry(edit_frame, textvariable=self.edit_vars['stp'], width=8).grid(row=row, column=1, sticky="w")
+        e = tk.Entry(ef, textvariable=self.edit_vars['stp'], width=8)
+        e.grid(row=row, column=1, sticky="w")
+        self.edit_frame_widgets.append(e)
         row += 1
-        tk.Label(edit_frame, text="SFÉ átütőképesség:").grid(row=row, column=0, sticky="w")
+        tk.Label(ef, text="SFÉ átütőképesség:").grid(row=row, column=0, sticky="w")
         self.edit_vars['armor_penetration'] = tk.StringVar()
-        tk.Entry(edit_frame, textvariable=self.edit_vars['armor_penetration'], width=8).grid(row=row, column=1, sticky="w")
+        e = tk.Entry(ef, textvariable=self.edit_vars['armor_penetration'], width=8)
+        e.grid(row=row, column=1, sticky="w")
+        self.edit_frame_widgets.append(e)
         row += 1
         self.edit_vars['can_disarm'] = tk.IntVar()
-        tk.Checkbutton(edit_frame, text="Alkalmas lefegyverzésre", variable=self.edit_vars['can_disarm']).grid(row=row, column=0, sticky="w")
+        cb = tk.Checkbutton(ef, text="Alkalmas lefegyverzésre", variable=self.edit_vars['can_disarm'])
+        cb.grid(row=row, column=0, sticky="w")
+        self.edit_frame_widgets.append(cb)
         self.edit_vars['can_break_weapon'] = tk.IntVar()
-        tk.Checkbutton(edit_frame, text="Alkalmas fegyvertörésre", variable=self.edit_vars['can_break_weapon']).grid(row=row, column=1, sticky="w")
+        cb = tk.Checkbutton(ef, text="Alkalmas fegyvertörésre", variable=self.edit_vars['can_break_weapon'])
+        cb.grid(row=row, column=1, sticky="w")
+        self.edit_frame_widgets.append(cb)
         row += 1
-        self.type_fields_frame = tk.Frame(edit_frame)
+        self.type_fields_frame = tk.Frame(ef)
         self.type_fields_frame.grid(row=row, column=0, columnspan=3, sticky="w")
         self.type_fields_widgets = []
+        self.edit_frame_widgets.append(self.type_fields_frame)
         row += 1
-        tk.Button(edit_frame, text="Mentés", command=self.save_item).grid(row=row, column=1, pady=15, sticky="w")
+        btn = tk.Button(ef, text="Mentés", command=self.save_item)
+        btn.grid(row=row, column=1, pady=15, sticky="w")
+        self.edit_frame_widgets.append(btn)
 
     def update_category_menu(self, type_value):
         options = self._get_weapon_categories(type_value)
@@ -238,24 +300,48 @@ class WeaponsAndShieldsEditor:
                 self.type_fields_widgets.extend([l, e])
                 row += 1
 
-    def on_select(self, event):
-        idxs = self.listbox.curselection()
-        if not idxs:
+    def on_tree_select(self, event):
+        selected = self.tree.focus()
+        if not selected:
             return
-        idx = idxs[0]
+        # Only allow selection of item nodes (not type/category)
+        parent = self.tree.parent(selected)
+        grandparent = self.tree.parent(parent)
+        if not parent or not grandparent:
+            return
+        item_text = self.tree.item(selected, 'text')
+        idx = None
+        for i, item in enumerate(self.items):
+            if item_text.startswith(item['name']):
+                idx = i
+                break
+        if idx is None:
+            return
         self.selected_idx = idx
         item = self.items[idx]
+        # Reinitialize edit_vars if needed
         for key in ["name", "id", "type", "category", "attack_time", "weight", "stp", "armor_penetration"]:
+            if key not in self.edit_vars:
+                self.edit_vars[key] = tk.StringVar()
             self.edit_vars[key].set(str(item.get(key, "")))
+        if 'damage_min' not in self.edit_vars:
+            self.edit_vars['damage_min'] = tk.StringVar()
+        if 'damage_max' not in self.edit_vars:
+            self.edit_vars['damage_max'] = tk.StringVar()
         self.edit_vars['damage_min'].set(str(item.get('damage_min', "")))
         self.edit_vars['damage_max'].set(str(item.get('damage_max', "")))
-        # Sebzés típusok
         for typ, var in self.damage_type_vars.items():
             var.set(1 if typ in item.get('damage_types', []) else 0)
-        # Sebzés bónusz attribútumok
         for attr, var in self.damage_bonus_attr_vars.items():
             var.set(1 if attr in item.get('damage_bonus_attributes', []) else 0)
-        # Ár felbontása currency managerrel
+        if 'price_réz' not in self.edit_vars:
+            self.edit_vars['price_réz'] = tk.StringVar()
+        if 'price_ezüst' not in self.edit_vars:
+            self.edit_vars['price_ezüst'] = tk.StringVar()
+        if 'price_arany' not in self.edit_vars:
+            self.edit_vars['price_arany'] = tk.StringVar()
+        if 'price_mithrill' not in self.edit_vars:
+            self.edit_vars['price_mithrill'] = tk.StringVar()
         try:
             from engine.currency_manager import CurrencyManager
             price = int(item.get('price', 0))
@@ -269,12 +355,18 @@ class WeaponsAndShieldsEditor:
             self.edit_vars['price_ezüst'].set("")
             self.edit_vars['price_arany'].set("")
             self.edit_vars['price_mithrill'].set("")
+        if 'can_disarm' not in self.edit_vars:
+            self.edit_vars['can_disarm'] = tk.IntVar()
+        if 'can_break_weapon' not in self.edit_vars:
+            self.edit_vars['can_break_weapon'] = tk.IntVar()
         self.edit_vars['can_disarm'].set(1 if item.get('can_disarm', False) else 0)
         self.edit_vars['can_break_weapon'].set(1 if item.get('can_break_weapon', False) else 0)
-        # Típusfüggő mezők
         self.edit_vars['type'].set(item.get('type', ''))
         self.update_type_fields(item.get('type', ''))
         t = item.get('type', '')
+        for key in ["KE", "TE", "VE", "size_category", "range", "CE", "MGT"]:
+            if key not in self.edit_vars:
+                self.edit_vars[key] = tk.StringVar()
         if t in ["közelharci", "hajító"]:
             for key in ["KE", "TE", "VE", "size_category"]:
                 self.edit_vars[key].set(str(item.get(key, "")))
@@ -348,9 +440,7 @@ class WeaponsAndShieldsEditor:
         tk.messagebox.showinfo("Mentés", "Fegyver/pajzs mentve!")
 
     def refresh_list(self):
-        self.listbox.delete(0, tk.END)
-        for item in self.items:
-            self.listbox.insert(tk.END, f"{item['name']} (ID: {item.get('id', '-')})")
+        self.populate_treeview()
 
     def new_item(self):
         self.selected_idx = None

@@ -4,14 +4,14 @@
     "id": "short_sword",
     "type": "közelharci",
     "category": "Rövid kardok",
-    "attack_time": 3,
-    "damage_min": 1,
-    "damage_max": 6,
+    "attack_time": 5,
+    "damage_min": 2,
+    "damage_max": 11,
     "weight": 1.0,
-    "price": 50,
-    "stp": 8,
+    "price": 1000,
+    "stp": 25,
     "armor_penetration": 2,
-    "can_disarm": true,
+    "can_disarm": false,
     "can_break_weapon": true,
     "damage_types": [
       "szúró",
@@ -20,9 +20,9 @@
     "damage_bonus_attributes": [
       "ügyesség"
     ],
-    "KE": 2,
-    "TE": 5,
-    "VE": 3,
+    "KE": 5,
+    "TE": 10,
+    "VE": 8,
     "size_category": 2
   },
   {
@@ -75,7 +75,7 @@
   },
   {
     "name": "Nagy pajzs",
-    "id": "huge_shield",
+    "id": "large_shield",
     "type": "pajzs",
     "category": "",
     "attack_time": 10,
@@ -277,5 +277,158 @@
     "TE": 10,
     "VE": 13,
     "size_category": 3
+  },
+  {
+    "name": "Rövid íj",
+    "id": "shortbow",
+    "type": "távolsági",
+    "category": "Íjak",
+    "attack_time": 3,
+    "damage_min": 1,
+    "damage_max": 6,
+    "weight": 0.5,
+    "price": 2000,
+    "stp": 5,
+    "armor_penetration": 0,
+    "can_disarm": false,
+    "can_break_weapon": false,
+    "damage_types": [
+      "szúró"
+    ],
+    "damage_bonus_attributes": [
+      "ügyesség"
+    ],
+    "KE": 5,
+    "CE": 5,
+    "range": 50
+  },
+  {
+    "name": "Jatagán",
+    "id": "yatagan",
+    "type": "közelharci",
+    "category": "Rövid kardok",
+    "attack_time": 5,
+    "damage_min": 3,
+    "damage_max": 8,
+    "weight": 0.8,
+    "price": 3000,
+    "stp": 20,
+    "armor_penetration": 0,
+    "can_disarm": true,
+    "can_break_weapon": true,
+    "damage_types": [
+      "szúró",
+      "vágó"
+    ],
+    "damage_bonus_attributes": [
+      "erő",
+      "ügyesség"
+    ],
+    "KE": 9,
+    "TE": 14,
+    "VE": 8,
+    "size_category": 2
+  },
+  {
+    "name": "Szablya",
+    "id": "saber",
+    "type": "közelharci",
+    "category": "Szablyák",
+    "attack_time": 5,
+    "damage_min": 2,
+    "damage_max": 11,
+    "weight": 1.2,
+    "price": 3000,
+    "stp": 20,
+    "armor_penetration": 0,
+    "can_disarm": true,
+    "can_break_weapon": false,
+    "damage_types": [
+      "vágó"
+    ],
+    "damage_bonus_attributes": [
+      "erő",
+      "ügyesség"
+    ],
+    "KE": 6,
+    "TE": 10,
+    "VE": 12,
+    "size_category": 3
+  },
+  {
+    "name": "Dobótőr",
+    "id": "throwing_dagger",
+    "type": "hajító",
+    "category": "Dobótőr",
+    "attack_time": 3,
+    "damage_min": 1,
+    "damage_max": 6,
+    "weight": 0.5,
+    "price": 150,
+    "stp": 10,
+    "armor_penetration": 0,
+    "can_disarm": false,
+    "can_break_weapon": false,
+    "damage_types": [
+      "szúró"
+    ],
+    "damage_bonus_attributes": [
+      "ügyesség"
+    ],
+    "KE": 10,
+    "TE": 5,
+    "VE": 2,
+    "size_category": 0,
+    "range": 20
+  },
+  {
+    "name": "Pallos",
+    "id": "greatsword",
+    "type": "közelharci",
+    "category": "Nehéz kardok",
+    "attack_time": 10,
+    "damage_min": 6,
+    "damage_max": 26,
+    "weight": 4.0,
+    "price": 5000,
+    "stp": 25,
+    "armor_penetration": 2,
+    "can_disarm": false,
+    "can_break_weapon": true,
+    "damage_types": [
+      "szúró",
+      "vágó"
+    ],
+    "damage_bonus_attributes": [
+      "erő"
+    ],
+    "KE": 2,
+    "TE": 16,
+    "VE": 8,
+    "size_category": 4
+  },
+  {
+    "name": "Hosszú íj",
+    "id": "longbow",
+    "type": "távolsági",
+    "category": "Íjak",
+    "attack_time": 3,
+    "damage_min": 3,
+    "damage_max": 13,
+    "weight": 1.0,
+    "price": 3500,
+    "stp": 15,
+    "armor_penetration": 0,
+    "can_disarm": false,
+    "can_break_weapon": false,
+    "damage_types": [
+      "szúró"
+    ],
+    "damage_bonus_attributes": [
+      "ügyesség"
+    ],
+    "KE": 4,
+    "CE": 4,
+    "range": 150
   }
 ]
