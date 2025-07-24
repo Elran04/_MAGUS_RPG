@@ -1,12 +1,19 @@
+def open_character_page(root, character):
+    CharacterPage(root, character)
 # ui/character_page.py
 import tkinter as tk
 from tkinter import ttk
+from ttkthemes import ThemedStyle
 
 class CharacterPage:
     def __init__(self, root, character):
         self.win = tk.Toplevel(root)
         self.win.title(f"Karakterlap: {character.get('Név', '')}")
         self.win.geometry("700x600")
+        # Apply ttkthemes 'keramik' style to this window
+        style = ThemedStyle(self.win)
+        style.set_theme("keramik")
+
         notebook = ttk.Notebook(self.win)
         notebook.pack(fill=tk.BOTH, expand=True)
 

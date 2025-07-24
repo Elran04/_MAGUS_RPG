@@ -6,6 +6,52 @@ from tkinter import ttk
 from engine.character import generate_character, is_valid_character, GENDER_RESTRICTIONS, RACE_RESTRICTIONS
 
 def open_character_creator(root, on_character_created):
+    from tkinter import simpledialog, messagebox
+    from utils.character_storage import save_character, load_character, CHARACTER_DIR
+
+    # --- Karakter mentése ---
+    def save_character_dialog(char):
+        default_name = char.get("Név", "karakter").replace(" ", "_")
+        filename = simpledialog.askstring("Mentés", "Fájlnév:", initialvalue=default_name, parent=creator)
+        if filename:
+            if not filename.lower().endswith(".json"):
+                filename += ".json"
+            save_character(char, filename)
+            messagebox.showinfo("Mentés", f"Sikeres mentés: {filename}", parent=creator)
+
+    # --- Karakter betöltése ---
+    def load_character_dialog():
+        import os
+        if not os.path.exists(CHARACTER_DIR):
+            messagebox.showinfo("Betöltés", "Nincs elérhető karakter.", parent=creator)
+            return
+        files = [f for f in os.listdir(CHARACTER_DIR) if f.endswith(".json")]
+        if not files:
+            messagebox.showinfo("Betöltés", "Nincs elérhető karakter.", parent=creator)
+            return
+        dialog = tk.Toplevel(creator)
+        dialog.title("Karakter betöltése")
+        tk.Label(dialog, text="Válassz karaktert:").pack(pady=5)
+        listbox = tk.Listbox(dialog, height=10, width=40)
+        for f in files:
+            listbox.insert(tk.END, f)
+        listbox.pack(pady=5)
+        def do_load():
+            selection = listbox.curselection()
+            if not selection:
+                messagebox.showwarning("Betöltés", "Nincs kiválasztva karakter.", parent=dialog)
+                return
+            filename = files[selection[0]]
+            char = load_character(filename)
+            if char:
+                on_character_created(char)
+                messagebox.showinfo("Betöltés", f"Sikeres betöltés: {filename}", parent=dialog)
+                dialog.destroy()
+                creator.destroy()
+            else:
+                messagebox.showerror("Betöltés", "Nem található ilyen karakterfájl.", parent=dialog)
+        listbox.bind('<Double-1>', lambda event: do_load())
+        tk.Button(dialog, text="Betöltés", command=do_load).pack(pady=10)
     # --- SEGÉDFÜGGVÉNY: Korhatár label frissítése faj szerint ---
     def update_age_limits(*args):
         race = race_var.get()
@@ -60,6 +106,14 @@ def open_character_creator(root, on_character_created):
         char = generate_character(name, gender, age, race, klass)
         on_character_created(char)
         creator.destroy()
+
+        # --- Karakterlap megjelenítése ---
+        try:
+            from ui.character_page import open_character_page
+            open_character_page(root, char)
+        except Exception as e:
+            import tkinter.messagebox as messagebox
+            messagebox.showerror("Hiba", f"Nem sikerült megnyitni a karakterlapot:\n{e}")
 
     # --- KONFIGURÁCIÓS ADATOK ---
     AGE_LIMITS = {
@@ -125,7 +179,17 @@ def open_character_creator(root, on_character_created):
     update_age_limits()
     update_class_options()
 
-    # --- Létrehozás gomb és eredmény label ---
-    tk.Button(creator, text="Létrehozás", command=create).pack(pady=10)
+    # --- Létrehozás, Mentés, Betöltés gombok és eredmény label ---
+    btn_frame = tk.Frame(creator)
+    btn_frame.pack(pady=10)
+    tk.Button(btn_frame, text="Létrehozás", command=create, width=12).pack(side=tk.LEFT, padx=5)
+    tk.Button(btn_frame, text="Mentés", command=lambda: save_character_dialog({
+        "Név": name_entry.get(),
+        "Nem": gender_var.get(),
+        "Kor": age_entry.get(),
+        "Faj": race_var.get(),
+        "Kaszt": class_var.get()
+    }), width=12).pack(side=tk.LEFT, padx=5)
+    tk.Button(btn_frame, text="Betöltés", command=load_character_dialog, width=12).pack(side=tk.LEFT, padx=5)
     result_label = tk.Label(creator, text="")
     result_label.pack()
