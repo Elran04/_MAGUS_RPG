@@ -1,4 +1,5 @@
-DEFAULT_STAT_LIMITS = (1, 18)
+DEFAULT_STAT_LIMITS = (3, 18)
+DEFAULT_HARD_LIMITS = (1, 20)
 ALL_STATS = [
     "Erő", "Állóképesség", "Gyorsaság", "Ügyesség", "Karizma",
     "Egészség", "Intelligencia", "Akaraterő", "Asztrál", "Érzékelés"
@@ -11,25 +12,35 @@ RACE_MODIFIERS = {
             "Állóképesség": +1,
             "Karizma": +2,
             "Asztrál": -1
-        },  
+        },
         "limits": {
-            "Erő": (2,19),
-            "Állóképesség": (2,19),
-            "Karizma": (3,20),
-            "Asztrál": (1,17)
-        }    
+            "Erő": (4, 19),
+            "Állóképesség": (4, 19),
+            "Karizma": (5, 20),
+            "Asztrál": (2, 17)
+        },
+        "hard_limits": {
+            "Erő": (1, 20),
+            "Állóképesség": (1, 20),
+            "Karizma": (1, 22),
+            "Asztrál": (1, 17)
+        }
     },
     "Dzsenn": {
         "modifiers": {
             "Intelligencia": +2
-        }, 
+        },
         "limits": {
-            "Intelligencia": (3,20)
-        }      
+            "Intelligencia": (3, 20)
+        },
+        "hard_limits": {
+            "Intelligencia": (1, 22)
+        }
     },
     "Ember": {
-        "modifiers": {},  
-        "limits": {}      
+        "modifiers": {},
+        "limits": {},
+        "hard_limits": {}
     },
     "Elf": {
         "modifiers": {
@@ -38,23 +49,33 @@ RACE_MODIFIERS = {
             "Gyorsaság": +1,
             "Ügyesség": +1,
             "Karizma": +1
-
-        },  
+        },
         "limits": {
-            "Gyorsaság": (2,19),
-            "Ügyesség": (2,19),
-            "Karizma": (3,21),
-            "Asztrál": (1,17)
-        }    
+            "Erő": (3, 18),
+            "Állóképesség": (3, 18),
+            "Gyorsaság": (4, 19),
+            "Ügyesség": (4, 19),
+            "Karizma": (5, 21)
+        },
+        "hard_limits": {
+            "Erő": (1, 18),
+            "Állóképesség": (1, 18),
+            "Gyorsaság": (1, 21),
+            "Ügyesség": (1, 21),
+            "Karizma": (1, 21)
+        }
     },
     "Félelf": {
         "modifiers": {
             "Erő": -1,
             "Gyorsaság": +1
-        },  
+        },
         "limits": {
-            "Gyorsaság": (2,19)
-        }    
+            "Gyorsaság": (4, 19)
+        },
+        "hard_limits": {
+            "Gyorsaság": (1, 21)
+        }
     },
     "Khál": {
         "modifiers": {
@@ -65,17 +86,25 @@ RACE_MODIFIERS = {
             "Egészség": +3,
             "Intelligencia": -1,
             "Asztrál": -5
-
-        },  
+        },
         "limits": {
-            "Erő": (4,21),
-            "Állóképesség": (3,20),
-            "Gyorsaság": (3,20),
-            "Ügyesség": (2,19),
-            "Egészség": (4,21),
-            "Intelligencia": (1,17),
-            "Asztrál": (1,13)
-        }    
+            "Erő": (6, 21),
+            "Állóképesség": (5, 20),
+            "Gyorsaság": (5, 20),
+            "Ügyesség": (4, 19),
+            "Egészség": (6, 21),
+            "Intelligencia": (2, 17),
+            "Asztrál": (1, 13)
+        },
+        "hard_limits": {
+            "Erő": (1, 22),
+            "Állóképesség": (1, 22),
+            "Gyorsaság": (1, 22),
+            "Ügyesség": (1, 21),
+            "Egészség": (1, 23),
+            "Intelligencia": (1, 17),
+            "Asztrál": (1, 13)
+        }
     },
     "Törpe": {
         "modifiers": {
@@ -85,15 +114,23 @@ RACE_MODIFIERS = {
             "Karizma": -2,
             "Intelligencia": -1,
             "Asztrál": -1
-
-        },  
+        },
         "limits": {
-            "Erő": (2,19),
-            "Állóképesség": (2,19),
-            "Egészség": (4,21),
-            "Karizma": (1,15),
-            "Asztrál": (1,16)
-        }    
+            "Erő": (4, 19),
+            "Állóképesség": (4, 19),
+            "Egészség": (4, 21),
+            "Karizma": (1, 15),
+            "Intelligencia": (2, 18),
+            "Asztrál": (1, 16)
+        },
+        "hard_limits": {
+            "Erő": (1, 21),
+            "Állóképesség": (1, 21),
+            "Egészség": (1, 21),
+            "Karizma": (1, 15),
+            "Intelligencia": (1, 18),
+            "Asztrál": (1, 16)
+        }
     },
     "Udvari ork": {
         "modifiers": {
@@ -103,16 +140,23 @@ RACE_MODIFIERS = {
             "Karizma": -3,
             "Intelligencia": -1,
             "Asztrál": -3
-
-        },  
+        },
         "limits": {
-            "Erő": (3,20),
-            "Állóképesség": (2,19),
-            "Egészség": (4,22),
-            "Karizma": (1,13),
-            "Intelligencia": (1,16),
-            "Asztrál": (1,15)
-        }    
+            "Erő": (5, 20),
+            "Állóképesség": (4, 19),
+            "Egészség": (6, 22),
+            "Karizma": (1, 13),
+            "Intelligencia": (1, 16),
+            "Asztrál": (1, 15)
+        },
+        "hard_limits": {
+            "Erő": (1, 22),
+            "Állóképesség": (1, 21),
+            "Egészség": (1, 22),
+            "Karizma": (1, 13),
+            "Intelligencia": (1, 16),
+            "Asztrál": (1, 15)
+        }
     },
     # többi faj...
 }
@@ -185,4 +229,16 @@ def apply_age_modifiers(stats: dict, race: str, age: int) -> dict:
     modified_stats = stats.copy()
     for stat, mod in age_mods.items():
         modified_stats[stat] = modified_stats.get(stat, 0) + mod
-    return modified_stats
+
+    # Statok limitálása a fajhoz tartozó határokhoz
+    return enforce_stat_limits(modified_stats, race)
+
+
+# Statok limitálása a fajhoz tartozó határokhoz
+def enforce_stat_limits(stats: dict, race: str) -> dict:
+    limits = get_full_stat_limits(race)
+    limited_stats = stats.copy()
+    for stat, (min_val, max_val) in limits.items():
+        if stat in limited_stats:
+            limited_stats[stat] = max(min(limited_stats[stat], max_val), min_val)
+    return limited_stats
