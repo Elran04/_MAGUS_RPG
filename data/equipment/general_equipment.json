@@ -1,18 +1,60 @@
 [
-    {
-        "name": "Kötél",
-        "type": "általános",
-        "category": "túlélő",
-        "weight": 1.0,
-        "price": 5,
-        "notes": "10 méter hosszú"
-    },
-    {
-        "name": "Fáklya",
-        "type": "általános",
-        "category": "világítás",
-        "weight": 0.2,
-        "price": 2,
-        "notes": "Kb. 1 óra égési idő"
-    }
+  {
+    "id": "rope",
+    "name": "Kötél",
+    "description": "10 méter hosszú erős kötél.",
+    "weight": 1.0,
+    "price": 5,
+    "category": "eszköz",
+    "space": 2
+  },
+  {
+    "id": "torch",
+    "name": "Fáklya",
+    "description": "Kb. 1 óra égési idő.",
+    "weight": 0.2,
+    "price": 2,
+    "category": "eszköz",
+    "space": 1
+  },
+  {
+    "id": "canteen",
+    "name": "Kulacs",
+    "description": "Folyadék tárolására alkalmas tároló.",
+    "weight": 0.5,
+    "price": 8,
+    "category": "tároló",
+    "capacity": 10
+  },
+  {
+    "id": "bread",
+    "name": "Kenyér",
+    "description": "Friss, ropogós cipó.",
+    "weight": 0.3,
+    "price": 1,
+    "category": "élelem",
+    "space": 1,
+    "freshness": 10,
+    "durability": 5,
+    "nutritional_value": 1
+  },
+  {
+    "id": "alchemy_kit",
+    "name": "Alkímiai készlet",
+    "description": "Speciális eszköz alkímiai műveletekhez.",
+    "weight": 2.0,
+    "price": 50,
+    "category": "speciális",
+    "space": 3,
+    "subcategory": "Alkímia"
+  },
+  {
+    "id": "small_bag",
+    "name": "Kis hátizsák",
+    "description": "Tárolásra alkalmas kis hátizsák",
+    "weight": 1.0,
+    "price": 70,
+    "category": "tároló",
+    "capacity": 100
+  }
 ]
