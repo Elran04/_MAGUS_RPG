@@ -1,5 +1,5 @@
 # Kezdő tőke (alsó és felső határ) kasztonként
-# Értékek: (min, max) - pl. rézben vagy aranyban, egységesen
+# Értékek: (min, max) - aranyban
 CLASS_STARTING_CURRENCY = {
     "Harcos": (3, 18),
     "Gladiátor": (3, 18),
@@ -22,4 +22,3 @@ CLASS_STARTING_CURRENCY = {
     "Varázsló": (3, 18),
     "Pszi mester": (3, 18),
 }
-# Töltsd ki a megfelelő értékekkel!

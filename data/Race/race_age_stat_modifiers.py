@@ -193,6 +193,17 @@ AGE_LIMITS_BY_RACE = {
     "Khál":        [6, 12, 29, 39, 44],
     # fajok bővíthetők
 }
+AGE_LIMITS = {
+    "Ember": (13, 100),
+    "Elf": (30, 3000),
+    "Félelf": (16, 200),
+    "Törpe": (25, 800),
+    "Udvari ork": (9, 80),
+    "Amund": (30, 120),
+    "Dzsenn": (15, 250),
+    "Khál": (1, 50),
+    "Wier": (10, 130),
+}
 
 def get_age_category(race: str, age) -> int:
     try:
