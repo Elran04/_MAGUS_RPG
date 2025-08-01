@@ -29,32 +29,39 @@ class SkillSelectorDialog:
     def populate_tree(self, skill_list):
         self.tree.delete(*self.tree.get_children())
         self.skill_items = []
+        # Főkategóriák fix sorrendje
+        MAIN_CATEGORY_ORDER = [
+            "Harci képzettségek",
+            "Szociális képzettségek",
+            "Alvilági képzettségek",
+            "Túlélő képzettségek",
+            "Elméleti képzettségek"
+        ]
         # Csoportosítás főkategória és alkategória szerint
-        main_nodes = {}
-        sub_nodes = {}
+        from collections import defaultdict
+        cat_map = defaultdict(lambda: defaultdict(list))
         for skill in skill_list:
             main_cat = skill.get("main_category", "Egyéb")
             sub_cat = skill.get("sub_category", "Egyéb")
-            if skill.get("is_parametric") and skill.get("parameter"):
-                display_name = f"{skill['name']} ({skill['parameter']})"
-            else:
-                display_name = skill['name']
-            # Főkategória node
-            if main_cat not in main_nodes:
-                main_id = self.tree.insert("", "end", text=main_cat, open=True)  # open=True: alapból lenyitva
-                main_nodes[main_cat] = main_id
-            else:
-                main_id = main_nodes[main_cat]
-            # Alkategória node
-            sub_key = (main_cat, sub_cat)
-            if sub_key not in sub_nodes:
+            cat_map[main_cat][sub_cat].append(skill)
+        # Főkategóriák sorrendben, majd az "Egyéb" a végén
+        all_main_cats = [cat for cat in MAIN_CATEGORY_ORDER if cat in cat_map] + [cat for cat in cat_map if cat not in MAIN_CATEGORY_ORDER]
+        main_nodes = {}
+        sub_nodes = {}
+        for main_cat in all_main_cats:
+            main_id = self.tree.insert("", "end", text=main_cat, open=True)
+            main_nodes[main_cat] = main_id
+            subcats = sorted(cat_map[main_cat].keys())
+            for sub_cat in subcats:
                 sub_id = self.tree.insert(main_id, "end", text=sub_cat, open=True)
-                sub_nodes[sub_key] = sub_id
-            else:
-                sub_id = sub_nodes[sub_key]
-            # Skill node
-            item_id = self.tree.insert(sub_id, "end", text=display_name)
-            self.skill_items.append((item_id, skill))
+                sub_nodes[(main_cat, sub_cat)] = sub_id
+                for skill in cat_map[main_cat][sub_cat]:
+                    if skill.get("is_parametric") and skill.get("parameter"):
+                        display_name = f"{skill['name']} ({skill['parameter']})"
+                    else:
+                        display_name = skill['name']
+                    item_id = self.tree.insert(sub_id, "end", text=display_name)
+                    self.skill_items.append((item_id, skill))
 
     def filter_tree(self, skill_list):
         text = self.search_var.get().lower()

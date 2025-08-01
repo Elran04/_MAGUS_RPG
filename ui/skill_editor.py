@@ -78,6 +78,8 @@ class SkillEditor():
         self._create_action_buttons()
 
     def _init_vars(self):
+        if not hasattr(self, "id_var"):
+            self.id_var = tk.StringVar()
         if not hasattr(self, "name_var"):
             self.name_var = tk.StringVar()
         if not hasattr(self, "param_var"):
@@ -109,8 +111,10 @@ class SkillEditor():
         row = 0
         tk.Label(self.scroll_frame, text="Név:").grid(row=row, column=0, **GRID_CFG["label"])
         tk.Entry(self.scroll_frame, textvariable=self.name_var).grid(row=row, column=1, **GRID_CFG["entry"])
-        tk.Label(self.scroll_frame, text="Paraméter (pl. Rövid kardok, Elf nyelv, stb.):").grid(row=row, column=2, **GRID_CFG["label"])
-        tk.Entry(self.scroll_frame, textvariable=self.param_var, width=20).grid(row=row, column=3, **GRID_CFG["entry"])
+        tk.Label(self.scroll_frame, text="Azonosító:").grid(row=row, column=2, **GRID_CFG["label"])
+        tk.Entry(self.scroll_frame, textvariable=self.id_var, width=20).grid(row=row, column=3, **GRID_CFG["entry"])
+        tk.Label(self.scroll_frame, text="Paraméter (pl. Rövid kardok, Elf nyelv, stb.):").grid(row=row, column=4, **GRID_CFG["label"])
+        tk.Entry(self.scroll_frame, textvariable=self.param_var, width=20).grid(row=row, column=5, **GRID_CFG["entry"])
 
     def _create_category_selectors(self):
         row = 1
@@ -328,6 +332,7 @@ class SkillEditor():
     def save_skill(self):
         # UI adatok összegyűjtése
         ui_data = {
+            "id": self.id_var.get().strip(),
             "name": self.name_var.get(),
             "main_category": self.main_cat_var.get(),
             "sub_category": self.sub_cat_var.get(),
@@ -366,22 +371,14 @@ class SkillEditor():
             skills = self.skill_manager.load()
         except Exception:
             skills = []
-        # Egységes név+paraméter összehasonlítás
-        def normalize(name, param):
-            name = name.strip().lower()
-            param = param.strip().lower() if param else ""
-            m = re.match(r"(.+?)(?: \((.+?)\))?$", name)
-            base_name = m.group(1) if m else name
-            return base_name, param
-        skill_name, skill_param = normalize(skill.get("name", ""), skill.get("parameter", ""))
+        # ID alapú keresés és felülírás
         found_idx = None
         for idx, s in enumerate(skills):
-            s_name, s_param = normalize(s.get("name", ""), s.get("parameter", ""))
-            if skill_name == s_name and skill_param == s_param:
+            if s.get("id", "") == skill.get("id", "") and skill.get("id", "") != "":
                 found_idx = idx
                 break
         if found_idx is not None:
-            answer = self.ask_yes_no("Az adott képzettség már létezik. Felülírja?", "Felülírás")
+            answer = self.ask_yes_no("Az adott azonosítóval már létezik képzettség. Felülírja?", "Felülírás")
             if not answer:
                 return
             del skills[found_idx]

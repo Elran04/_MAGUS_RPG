@@ -18,26 +18,35 @@ class SkillLoaderDialog:
         self.tree = ttk.Treeview(self.loader)
         self.tree.pack(fill="both", expand=True, pady=10)
         self.tree.heading("#0", text="Kategória / Képzettség", anchor="w")
-        self.tree_nodes = {}
+        # Főkategóriák fix sorrendje
+        MAIN_CATEGORY_ORDER = [
+            "Harci képzettségek",
+            "Szociális képzettségek",
+            "Alvilági képzettségek",
+            "Túlélő képzettségek",
+            "Elméleti képzettségek"
+        ]
+        from collections import defaultdict
+        cat_map = defaultdict(lambda: defaultdict(list))
         for skill in self.all_skills:
             main_cat = skill.get("main_category", "Egyéb")
             sub_cat = skill.get("sub_category", "Egyéb")
-            if skill.get("is_parametric") and skill.get("parameter"):
-                skill_name = f"{skill['name']} ({skill['parameter']})"
-            else:
-                skill_name = skill['name']
-            if main_cat not in self.tree_nodes:
-                main_id = self.tree.insert("", "end", text=main_cat, open=True)
-                self.tree_nodes[main_cat] = main_id
-            else:
-                main_id = self.tree_nodes[main_cat]
-            sub_key = (main_cat, sub_cat)
-            if sub_key not in self.tree_nodes:
+            cat_map[main_cat][sub_cat].append(skill)
+        all_main_cats = [cat for cat in MAIN_CATEGORY_ORDER if cat in cat_map] + [cat for cat in cat_map if cat not in MAIN_CATEGORY_ORDER]
+        self.tree_nodes = {}
+        for main_cat in all_main_cats:
+            main_id = self.tree.insert("", "end", text=main_cat, open=True)
+            self.tree_nodes[main_cat] = main_id
+            subcats = sorted(cat_map[main_cat].keys())
+            for sub_cat in subcats:
                 sub_id = self.tree.insert(main_id, "end", text=sub_cat, open=True)
-                self.tree_nodes[sub_key] = sub_id
-            else:
-                sub_id = self.tree_nodes[sub_key]
-            self.tree.insert(sub_id, "end", text=skill_name, open=False)
+                self.tree_nodes[(main_cat, sub_cat)] = sub_id
+                for skill in cat_map[main_cat][sub_cat]:
+                    if skill.get("is_parametric") and skill.get("parameter"):
+                        skill_name = f"{skill['name']} ({skill['parameter']})"
+                    else:
+                        skill_name = skill['name']
+                    self.tree.insert(sub_id, "end", text=skill_name, open=False)
         button_frame = tk.Frame(self.loader)
         button_frame.pack(pady=10)
         tk.Button(button_frame, text="Betöltés", command=self.load_selected).pack(side=tk.LEFT, padx=20)
@@ -46,28 +55,36 @@ class SkillLoaderDialog:
             text = search_var.get().lower()
             for item in self.tree.get_children():
                 self.tree.delete(item)
-            tree_nodes = {}
+            MAIN_CATEGORY_ORDER = [
+                "Harci képzettségek",
+                "Szociális képzettségek",
+                "Alvilági képzettségek",
+                "Túlélő képzettségek",
+                "Elméleti képzettségek"
+            ]
+            from collections import defaultdict
+            cat_map = defaultdict(lambda: defaultdict(list))
             for skill in self.all_skills:
                 main_cat = skill.get("main_category", "Egyéb")
                 sub_cat = skill.get("sub_category", "Egyéb")
-                if skill.get("is_parametric") and skill.get("parameter"):
-                    skill_name = f"{skill['name']} ({skill['parameter']})"
-                else:
-                    skill_name = skill['name']
-                if text and text not in skill_name.lower():
+                if text and text not in (f"{skill['name']} ({skill['parameter']})".lower() if skill.get("is_parametric") and skill.get("parameter") else skill['name'].lower()):
                     continue
-                if main_cat not in tree_nodes:
-                    main_id = self.tree.insert("", "end", text=main_cat, open=True)
-                    tree_nodes[main_cat] = main_id
-                else:
-                    main_id = tree_nodes[main_cat]
-                sub_key = (main_cat, sub_cat)
-                if sub_key not in tree_nodes:
+                cat_map[main_cat][sub_cat].append(skill)
+            all_main_cats = [cat for cat in MAIN_CATEGORY_ORDER if cat in cat_map] + [cat for cat in cat_map if cat not in MAIN_CATEGORY_ORDER]
+            tree_nodes = {}
+            for main_cat in all_main_cats:
+                main_id = self.tree.insert("", "end", text=main_cat, open=True)
+                tree_nodes[main_cat] = main_id
+                subcats = sorted(cat_map[main_cat].keys())
+                for sub_cat in subcats:
                     sub_id = self.tree.insert(main_id, "end", text=sub_cat, open=True)
-                    tree_nodes[sub_key] = sub_id
-                else:
-                    sub_id = tree_nodes[sub_key]
-                self.tree.insert(sub_id, "end", text=skill_name, open=False)
+                    tree_nodes[(main_cat, sub_cat)] = sub_id
+                    for skill in cat_map[main_cat][sub_cat]:
+                        if skill.get("is_parametric") and skill.get("parameter"):
+                            skill_name = f"{skill['name']} ({skill['parameter']})"
+                        else:
+                            skill_name = skill['name']
+                        self.tree.insert(sub_id, "end", text=skill_name, open=False)
         search_var.trace_add("write", update_skill_list)
     def load_selected(self):
         selected = self.tree.focus()

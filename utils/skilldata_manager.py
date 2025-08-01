@@ -25,6 +25,7 @@ class SkillManager(JsonManager):
         if hasattr(level_six_available, 'get'):
             level_six_available = bool(level_six_available.get())
         skill = {
+            "id": ui_data.get("id", ""),
             "name": ui_data["name"],
             "main_category": ui_data["main_category"],
             "sub_category": ui_data["sub_category"],
@@ -53,6 +54,7 @@ class SkillManager(JsonManager):
         Skill dict-ből UI adatok (SkillEditor) generálása.
         """
         ui_data = {
+            "id": skill.get("id", ""),
             "name": skill.get("name", ""),
             "main_category": skill.get("main_category", ""),
             "sub_category": skill.get("sub_category", ""),

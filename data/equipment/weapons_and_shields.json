@@ -431,5 +431,58 @@
     "KE": 4,
     "CE": 4,
     "range": 150
+  },
+  {
+    "name": "Lándzsa",
+    "id": "spear",
+    "type": "közelharci",
+    "category": "Szálfegyverek",
+    "attack_time": 5,
+    "damage_min": 4,
+    "damage_max": 14,
+    "weight": 2.3,
+    "price": 800,
+    "stp": 40,
+    "armor_penetration": 0,
+    "can_disarm": true,
+    "can_break_weapon": false,
+    "damage_types": [
+      "szúró"
+    ],
+    "damage_bonus_attributes": [
+      "erő",
+      "ügyesség"
+    ],
+    "KE": 13,
+    "TE": 15,
+    "VE": 13,
+    "size_category": 5
+  },
+  {
+    "name": "Alabárd",
+    "id": "halberd",
+    "type": "közelharci",
+    "category": "Szálfegyverek",
+    "attack_time": 10,
+    "damage_min": 5,
+    "damage_max": 30,
+    "weight": 4.0,
+    "price": 5000,
+    "stp": 30,
+    "armor_penetration": 0,
+    "can_disarm": true,
+    "can_break_weapon": true,
+    "damage_types": [
+      "szúró",
+      "vágó",
+      "zúzó"
+    ],
+    "damage_bonus_attributes": [
+      "erő"
+    ],
+    "KE": 10,
+    "TE": 15,
+    "VE": 15,
+    "size_category": 5
   }
 ]
