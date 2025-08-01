@@ -252,6 +252,7 @@ def open_character_wizard(root, on_character_created):
     # Indító ablak
     start_win = tk.Toplevel(root)
     start_win.title("Karakteralkotás indítása")
+    start_win.geometry("400x250")
     tk.Label(start_win, text="Mit szeretnél?").pack(pady=10)
     tk.Button(start_win, text="Új karakter", command=lambda: [start_win.destroy(), start_new()]).pack(pady=5)
     tk.Button(start_win, text="Meglévő karakter betöltése", command=lambda: [start_win.destroy(), load_existing()]).pack(pady=5)

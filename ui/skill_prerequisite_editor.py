@@ -1,8 +1,8 @@
 import tkinter as tk
-from utils.prerequisite_manager import STAT_NAMES
+from utils.skill_prerequisite_manager import STAT_NAMES
 from utils.reopen_prevention import WindowSingleton
 
-class PrerequisiteEditorDialog:
+class SkillPrerequisiteEditorDialog:
     def __init__(self, editor):
         self.editor = editor
         self.win, created = WindowSingleton.get('prerequisite_editor', lambda: tk.Toplevel(editor.win))

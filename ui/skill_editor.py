@@ -2,12 +2,12 @@ import tkinter as tk
 from utils.reopen_prevention import WindowSingleton
 from tkinter import messagebox
 import os
-from utils.skill_manager import SkillManager
+from utils.skilldata_manager import SkillManager
 import re
-from ui.prerequisite_editor import PrerequisiteEditorDialog
+from ui.skill_prerequisite_editor import SkillPrerequisiteEditorDialog
 from ui.dialogs.skill_loader_dialog import SkillLoaderDialog
 from ui.description_editor import DescriptionEditorDialog
-from utils.prerequisite_manager import PrerequisiteManager
+from utils.skill_prerequisite_manager import PrerequisiteManager
 
 # Ensure SkillManager uses the correct path to skills.json
 SKILLS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "skills", "skills.json")
@@ -243,7 +243,7 @@ class SkillEditor():
 
  
     def open_prerequisite_editor(self):
-        PrerequisiteEditorDialog(self)
+        SkillPrerequisiteEditorDialog(self)
 
 
     def save_and_close(self):

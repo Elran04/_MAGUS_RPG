@@ -9,7 +9,7 @@ last_character = {}
 
 # --- KÉPZETTSÉG SZERKESZTŐ ABLAK MEGNYITÁSA ---
 def open_skill_editor():
-    from ui.skills_editor import SkillEditor
+    from ui.skill_editor import SkillEditor
     SkillEditor()
 # --- FELSZERELÉS SZERKESZTŐ ABLAK MEGNYITÁSA ---
 def open_equipment_editor():
