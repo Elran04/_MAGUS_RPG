@@ -176,9 +176,28 @@ class SkillEditor():
             if not hasattr(self, "prereq_summary_labels"):
                 self.prereq_summary_labels = []
             self.prereq_summary_labels.append(prereq_summary)
+        # 6. szint frame tiltása/engedélyezése tickbox alapján (ha már létezik a var)
+        if hasattr(self, "level_six_available_var") and len(self.level_frames) >= 6:
+            state = tk.NORMAL if self.level_six_available_var.get() else tk.DISABLED
+            for widget in self.level_frames[5].winfo_children():
+                try:
+                    widget.configure(state=state)
+                except Exception:
+                    pass
 
     def _create_action_buttons(self):
         row = self.row_kp_percent + 7
+        # Tickbox a gombok fölé
+        if not hasattr(self, "level_six_available_var"):
+            self.level_six_available_var = tk.BooleanVar(value=True)
+        self.level_six_checkbox = tk.Checkbutton(
+            self.scroll_frame,
+            text="6. szint elérhető",
+            variable=self.level_six_available_var,
+            command=self.update_level_six_state
+        )
+        self.level_six_checkbox.grid(row=row, column=0, sticky="w", padx=10, pady=5)
+        row += 1
         button_frame = tk.Frame(self.scroll_frame)
         button_frame.grid(row=row, column=0, columnspan=5, pady=20)
         load_btn = tk.Button(button_frame, text="Szerkesztés", width=18, command=self.open_skill_loader)
@@ -190,6 +209,15 @@ class SkillEditor():
         save_btn = tk.Button(button_frame, text="Mentés", width=18, command=self.save_skill)
         save_btn.pack(side=tk.LEFT, padx=10)
         # Delete button removed
+    def update_level_six_state(self):
+        # 6. szint frame tiltása/engedélyezése a tickbox alapján
+        if hasattr(self, "level_frames") and len(self.level_frames) >= 6:
+            state = tk.NORMAL if self.level_six_available_var.get() else tk.DISABLED
+            for widget in self.level_frames[5].winfo_children():
+                try:
+                    widget.configure(state=state)
+                except Exception:
+                    pass
     def open_all_description_editor(self):
         DescriptionEditorDialog(self)
 
@@ -311,7 +339,9 @@ class SkillEditor():
             "kp_costs": {},
             "level_descriptions": {},
             "is_parametric": bool(self.param_var.get().strip()),
-            "parameter": self.param_var.get().strip()
+            "parameter": self.param_var.get().strip(),
+            # ÚJ: 6. szint elérhetőség
+            "level_six_available": bool(self.level_six_available_var.get())
         }
         # Szintleírások
         for i, desc_text in enumerate(self.level_desc_texts):

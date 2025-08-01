@@ -20,6 +20,10 @@ class SkillManager(JsonManager):
         """
         UI adatokból (SkillEditor) készít menthető skill dict-et.
         """
+        # level_six_available lehet bool vagy BooleanVar, mindig bool-t írjunk ki
+        level_six_available = ui_data.get("level_six_available", True)
+        if hasattr(level_six_available, 'get'):
+            level_six_available = bool(level_six_available.get())
         skill = {
             "name": ui_data["name"],
             "main_category": ui_data["main_category"],
@@ -33,7 +37,9 @@ class SkillManager(JsonManager):
             "level_descriptions": ui_data.get("level_descriptions", {}),
             "prerequisites": ui_data.get("prerequisites", {}),
             "is_parametric": ui_data.get("is_parametric", False),
-            "parameter": ui_data.get("parameter", "")
+            "parameter": ui_data.get("parameter", ""),
+            # ÚJ: 6. szint elérhetőség
+            "level_six_available": level_six_available
         }
         # Tisztítsuk a paramétert
         if skill["is_parametric"] and skill["parameter"]:
@@ -59,7 +65,9 @@ class SkillManager(JsonManager):
             "level_descriptions": skill.get("level_descriptions", {}),
             "prerequisites": skill.get("prerequisites", {}),
             "is_parametric": skill.get("is_parametric", False),
-            "parameter": skill.get("parameter", "")
+            "parameter": skill.get("parameter", ""),
+            # ÚJ: 6. szint elérhetőség
+            "level_six_available": skill.get("level_six_available", True)
         }
         return ui_data
 
