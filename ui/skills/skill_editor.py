@@ -112,8 +112,8 @@ class SkillEditor():
         tk.Label(self.scroll_frame, text="Név:").grid(row=row, column=0, **GRID_CFG["label"])
         tk.Entry(self.scroll_frame, textvariable=self.name_var).grid(row=row, column=1, **GRID_CFG["entry"])
         tk.Label(self.scroll_frame, text="Azonosító:").grid(row=row, column=2, **GRID_CFG["label"])
-        tk.Entry(self.scroll_frame, textvariable=self.id_var, width=20).grid(row=row, column=3, **GRID_CFG["entry"])
-        tk.Label(self.scroll_frame, text="Paraméter (pl. Rövid kardok, Elf nyelv, stb.):").grid(row=row, column=4, **GRID_CFG["label"])
+        tk.Entry(self.scroll_frame, textvariable=self.id_var, width=25).grid(row=row, column=3, **GRID_CFG["entry"])
+        tk.Label(self.scroll_frame, text="Paraméter (Rövid kardok, Dobótőr...):").grid(row=row, column=4, **GRID_CFG["label"])
         tk.Entry(self.scroll_frame, textvariable=self.param_var, width=20).grid(row=row, column=5, **GRID_CFG["entry"])
 
     def _create_category_selectors(self):

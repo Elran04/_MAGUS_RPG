@@ -104,6 +104,7 @@ class SkillLoaderDialog:
                 name = skill_obj['name']
             if name == skill_name:
                 self.editor.name_var.set(skill_obj["name"])
+                self.editor.id_var.set(skill_obj.get("id", ""))
                 self.editor.param_var.set(skill_obj.get("parameter", ""))
                 self.editor.general_desc = skill_obj.get("description", "")
                 if hasattr(self.editor, "general_desc_label"):

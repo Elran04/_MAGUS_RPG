@@ -1681,5 +1681,89 @@
     "is_parametric": true,
     "parameter": "Lovak",
     "level_six_available": true
+  },
+  {
+    "id": "throwing_spears",
+    "name": "Fegyverdobás",
+    "main_category": "Harci képzettségek",
+    "sub_category": "Szakértő",
+    "description": "A hajítódárda célbadobásáért felelős képzettség.",
+    "acquisition_method": "Gyakorlás",
+    "acquisition_difficulty": "1 - Egyszerű",
+    "skill_type": "szint",
+    "kp_per_3_percent": null,
+    "kp_costs": {
+      "1": "1",
+      "2": "3",
+      "3": "20",
+      "4": "30",
+      "5": "40",
+      "6": "50"
+    },
+    "level_descriptions": {
+      "1": "A képzetlenségből adódó negatívok már nem súlytják, a karaktert, viszont a körönkénti támadások száma még feleannyi, a normális támadások számához képest.",
+      "2": "Ez már alapfokú fegyverhasználat, nincsenek sem pozitívumok, sem negatívumok.",
+      "3": "Az íjász szabály alkalmazása már lehetséggel ezzel a dobófegyverrel.",
+      "4": "Ezen a szinten már veterán fegyverforgatónak minősül, harcértékei nőnek.",
+      "5": "A fegyverforgató mesterszintű felhasználója fegyverének, túlütés küszöb csökken.",
+      "6": "Tökéletes dobás: Körönként egy dobás a fegyver hatótávján belül automatikusan talál."
+    },
+    "prerequisites": {
+      "1": {
+        "képesség": [
+          "Ügyesség 12+",
+          "Érzékelés 12+"
+        ],
+        "képzettség": []
+      },
+      "2": {
+        "képesség": [
+          "Ügyesség 13+",
+          "Érzékelés 13+"
+        ],
+        "képzettség": [
+          "Fegyverdobás (Hajítódárda) 1. szint"
+        ]
+      },
+      "3": {
+        "képesség": [
+          "Ügyesség 14+",
+          "Érzékelés 14+"
+        ],
+        "képzettség": [
+          "Fegyverdobás (Hajítódárda) 2. szint"
+        ]
+      },
+      "4": {
+        "képesség": [
+          "Ügyesség 15+",
+          "Érzékelés 15+"
+        ],
+        "képzettség": [
+          "Fegyverdobás (Hajítódárda) 3. szint"
+        ]
+      },
+      "5": {
+        "képesség": [
+          "Ügyesség 16+",
+          "Érzékelés 16+"
+        ],
+        "képzettség": [
+          "Fegyverdobás (Hajítódárda) 4. szint"
+        ]
+      },
+      "6": {
+        "képesség": [
+          "Ügyesség 18+",
+          "Érzékelés 18+"
+        ],
+        "képzettség": [
+          "Fegyverdobás (Hajítódárda) 5. szint"
+        ]
+      }
+    },
+    "is_parametric": true,
+    "parameter": "Hajítódárda",
+    "level_six_available": true
   }
 ]

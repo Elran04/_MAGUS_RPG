@@ -208,10 +208,10 @@
     "wield_mode": "Változó",
     "variable_strength_req": 14,
     "variable_dex_req": 12,
-    "variable_dual_wield": true,
-    "variable_bonus_KE": 5,
-    "variable_bonus_TE": 5,
-    "variable_bonus_VE": 5
+    "variable_dual_wield": false,
+    "variable_bonus_KE": 4,
+    "variable_bonus_TE": 8,
+    "variable_bonus_VE": 8
   },
   {
     "name": "Hárítótőr",
@@ -476,7 +476,7 @@
     "wield_mode": "Változó",
     "variable_strength_req": 12,
     "variable_dex_req": 12,
-    "variable_dual_wield": false,
+    "variable_dual_wield": true,
     "variable_bonus_KE": 13,
     "variable_bonus_TE": 15,
     "variable_bonus_VE": 13
