@@ -5,6 +5,11 @@ from utils.weapondata_manager import WeaponDataManager
 WEAPONS_JSON = os.path.join(os.path.dirname(__file__), "..", "..", "data", "equipment", "weapons_and_shields.json")
 
 class WeaponsAndShieldsEditor:
+    """
+    Fegyverek és pajzsok szerkesztője (Weapons and Shields Editor)
+    - UI logika, minden adatkezelés a WeaponDataManager-en keresztül
+    - Minden meződefiníció, validáció, mentés, stb. a managerben
+    """
     # Field definitions from manager (class-level, always available)
     BASE_FIELDS = WeaponDataManager.BASE_FIELDS
     PRICE_FIELDS = WeaponDataManager.PRICE_FIELDS
@@ -16,6 +21,9 @@ class WeaponsAndShieldsEditor:
     DAMAGE_BONUS_ATTRS = WeaponDataManager.DAMAGE_BONUS_ATTRS
 
     def __init__(self):
+        """
+        Inicializálja az ablakot, betölti az adatokat, létrehozza a fő UI elemeket.
+        """
         from utils.reopen_prevention import WindowSingleton
         self.win, created = WindowSingleton.get('weapons_and_shields_editor', lambda: tk.Toplevel())
         if not created:
@@ -34,13 +42,17 @@ class WeaponsAndShieldsEditor:
         self.create_widgets()
 
     def destroy_edit_widgets(self):
-        # Egységes widget destroy, csak edit_frame_widgets listából
+        """
+        Elpusztítja az összes szerkesztő widgetet az edit_frame_widgets listából.
+        """
         for w in self.edit_frame_widgets:
             w.destroy()
         self.edit_frame_widgets = []
 
     def _init_edit_vars(self):
-        # Központi meződefiníciók alapján, csak class-level/managerből
+        """
+        Inicializálja az edit_vars dictionary-t minden szükséges mezővel.
+        """
         for key in self.BASE_FIELDS + self.PRICE_FIELDS + self.TYPE_FIELDS + self.VARIABLE_FIELDS:
             if key not in self.edit_vars:
                 self.edit_vars[key] = tk.StringVar()
@@ -53,6 +65,9 @@ class WeaponsAndShieldsEditor:
                 self.edit_vars[key] = tk.IntVar()
 
     def _fill_edit_vars(self, item):
+        """
+        Kitölti az edit_vars-t egy meglévő item adataival.
+        """
         # Alap mezők
         for key in self.BASE_FIELDS:
             self.edit_vars[key].set(str(item.get(key, "")))
@@ -101,6 +116,9 @@ class WeaponsAndShieldsEditor:
     # nincs szükség külön _on_close metódusra, WindowSingleton kezeli
 
     def create_widgets(self):
+        """
+        Létrehozza a fő UI elemeket: lista, szerkesztő panel, gombok.
+        """
         main_frame = tk.Frame(self.win)
         main_frame.pack(fill=tk.BOTH, expand=True)
 
@@ -123,6 +141,9 @@ class WeaponsAndShieldsEditor:
         tk.Button(list_frame, text="Törlés", command=self.delete_item).pack(pady=5)
 
     def populate_treeview(self):
+        """
+        Feltölti a bal oldali Treeview-t a fegyverek/pajzsok listájával, újrarajzolja a szerkesztő panelt.
+        """
         self.tree.delete(*self.tree.get_children())
         self.tree_nodes = {}
         # Collect all types and categories
@@ -275,6 +296,9 @@ class WeaponsAndShieldsEditor:
         self.edit_frame_widgets.append(btn)
 
     def update_category_menu(self, type_value):
+        """
+        Frissíti a kategória legördülő menüt a kiválasztott típus alapján.
+        """
         options = self.manager.get_weapon_categories(type_value)
         menu = self.category_menu["menu"]
         menu.delete(0, "end")
@@ -294,6 +318,9 @@ class WeaponsAndShieldsEditor:
             self.category_menu.grid_remove()
 
     def add_labeled_entry(self, parent, label_text, var, row, width=8):
+        """
+        Hozzáad egy feliratos Entry mezőt a parent widgethez.
+        """
         l = tk.Label(parent, text=label_text)
         l.grid(row=row, column=0, sticky="w")
         e = tk.Entry(parent, textvariable=var, width=width)
@@ -302,12 +329,18 @@ class WeaponsAndShieldsEditor:
         return row + 1
 
     def add_checkbutton(self, parent, text, var, row, col=0, colspan=1):
+        """
+        Hozzáad egy Checkbutton-t a parent widgethez.
+        """
         cb = tk.Checkbutton(parent, text=text, variable=var)
         cb.grid(row=row, column=col, columnspan=colspan, sticky="w")
         self.type_fields_widgets.append(cb)
         return row + 1
 
     def update_type_fields(self, selected_type):
+        """
+        Frissíti a típusfüggő mezőket a szerkesztő panelen a kiválasztott típus alapján.
+        """
         # Töröld a régi mezőket
         for w in self.type_fields_widgets:
             w.destroy()
@@ -345,6 +378,9 @@ class WeaponsAndShieldsEditor:
             row = self.add_checkbutton(self.type_fields_frame, "Kétkezes harc lehetséges", self.edit_vars['variable_dual_wield'], row)
 
     def on_tree_select(self, event):
+        """
+        Treeview elem kiválasztásakor betölti az adott item adatait a szerkesztő panelre.
+        """
         selected = self.tree.focus()
         if not selected:
             return
@@ -370,6 +406,9 @@ class WeaponsAndShieldsEditor:
         # Régi típusfüggő mezőkitöltés törölve, csak az _fill_edit_vars használatos
 
     def save_item(self):
+        """
+        Mentés gomb: összegyűjti a mezőket, validál, ment, visszajelzést ad.
+        """
         # Collect field values from edit_vars
         fields = {key: var.get() for key, var in self.edit_vars.items()}
         # Collect damage types and bonus attributes
@@ -395,24 +434,34 @@ class WeaponsAndShieldsEditor:
         tk.messagebox.showinfo("Mentés", "Fegyver/pajzs mentve!")
 
     def refresh_list(self):
+        """
+        Frissíti a listát (Treeview) mentés vagy törlés után.
+        """
         self.populate_treeview()
 
     def new_item(self):
+        """
+        Új item létrehozása: szerkesztő mezők reset, típusmezők frissítése.
+        """
         self.selected_idx = None
         self.reset_edit_vars()
         self.update_type_fields(self.edit_vars['type'].get())
 
     def delete_item(self):
+        """
+        Kiválasztott item törlése a listából és adatfájlból.
+        """
         idxs = self.listbox.curselection()
         if not idxs:
             tk.messagebox.showwarning("Törlés", "Nincs kiválasztva fegyver/pajzs.")
             return
         idx = idxs[0]
-        answer = tk.messagebox.askyesno("Törlés", f"Biztosan törlöd ezt?\n{self.items[idx]['name']}")
+        answer = tk.messagebox.askyesno("Törlés", f"Biztosan törlöd ezt?\n{self.items[idx]['name']}" )
         if answer:
             self.items.pop(idx)
             self.manager.save(self.items)
             self.refresh_list()
 
 if __name__ == "__main__":
+    # Futtatás önállóan: szerkesztő ablak megnyitása
     WeaponsAndShieldsEditor()
