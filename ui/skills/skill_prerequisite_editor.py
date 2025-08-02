@@ -103,7 +103,7 @@ class SkillPrerequisiteEditorDialog:
             self.refresh_all_rows()
         # Skill gomb: kattintásra új skill választható
         def select_new_skill():
-            from ui.dialogs.skill_selector_dialog import SkillSelectorDialog
+            from ui.skills.dialogs.skill_selector_dialog import SkillSelectorDialog
             skill_list = self.editor.skill_manager.load()
             def on_skill_selected(skill):
                 skill_var.set(skill["name"])
@@ -139,7 +139,7 @@ class SkillPrerequisiteEditorDialog:
 
     def add_skill_row(self, level_idx):
         # SkillSelectorDialog import csak itt, hogy ne legyen körkörös import
-        from ui.dialogs.skill_selector_dialog import SkillSelectorDialog
+        from ui.skills.dialogs.skill_selector_dialog import SkillSelectorDialog
         # Skill listát az editor.skill_manager-ből vesszük
         skill_list = self.editor.skill_manager.load()
         def on_skill_selected(skill):

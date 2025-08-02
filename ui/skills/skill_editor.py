@@ -4,9 +4,9 @@ from tkinter import messagebox
 import os
 from utils.skilldata_manager import SkillManager
 import re
-from ui.skill_prerequisite_editor import SkillPrerequisiteEditorDialog
-from ui.dialogs.skill_loader_dialog import SkillLoaderDialog
-from ui.description_editor import DescriptionEditorDialog
+from ui.skills.skill_prerequisite_editor import SkillPrerequisiteEditorDialog
+from ui.skills.dialogs.skill_loader_dialog import SkillLoaderDialog
+from ui.skills.skill_description_editor import DescriptionEditorDialog
 from utils.skill_prerequisite_manager import PrerequisiteManager
 
 # Ensure SkillManager uses the correct path to skills.json

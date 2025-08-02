@@ -9,11 +9,11 @@ last_character = {}
 
 # --- KÉPZETTSÉG SZERKESZTŐ ABLAK MEGNYITÁSA ---
 def open_skill_editor():
-    from ui.skill_editor import SkillEditor
+    from ui.skills.skill_editor import SkillEditor
     SkillEditor()
 # --- FELSZERELÉS SZERKESZTŐ ABLAK MEGNYITÁSA ---
 def open_equipment_editor():
-    from ui.equipment_editor import EquipmentEditor
+    from ui.equipment.equipment_editor import EquipmentEditor
     EquipmentEditor()
 
 # --- FŐABLAK ÉS WIDGETEK LÉTREHOZÁSA ---
