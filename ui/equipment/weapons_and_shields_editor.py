@@ -5,60 +5,75 @@ from utils.weapondata_manager import WeaponDataManager
 WEAPONS_JSON = os.path.join(os.path.dirname(__file__), "..", "..", "data", "equipment", "weapons_and_shields.json")
 
 class WeaponsAndShieldsEditor:
+    # Központi meződefiníciók
+    BASE_FIELDS = ["name", "id", "type", "category", "attack_time", "weight", "stp", "armor_penetration", "damage_min", "damage_max"]
+    PRICE_FIELDS = ["price_réz", "price_ezüst", "price_arany", "price_mithrill"]
+    TYPE_FIELDS = ["KE", "TE", "VE", "size_category", "range", "CE", "MGT"]
+    VARIABLE_FIELDS = ["variable_strength_req", "variable_dex_req", "variable_bonus_KE", "variable_bonus_TE", "variable_bonus_VE"]
+    CHECKBOX_FIELDS = ["can_disarm", "can_break_weapon"]
+
+    # Típusfüggő mezők definíciója
+    TYPE_FIELD_DEFS = {
+        "közelharci": [
+            ("KE:", "KE"),
+            ("TE:", "TE"),
+            ("VE:", "VE"),
+            ("Méretkategória:", "size_category"),
+        ],
+        "hajító": [
+            ("KE:", "KE"),
+            ("TE:", "TE"),
+            ("VE:", "VE"),
+            ("Táv (m):", "range"),
+        ],
+        "távolsági": [
+            ("KE:", "KE"),
+            ("CE:", "CE"),
+            ("Táv (m):", "range"),
+        ],
+        "pajzs": [
+            ("KE:", "KE"),
+            ("VE:", "VE"),
+            ("MGT:", "MGT"),
+        ],
+    }
+
     def _init_edit_vars(self):
-        # Alap mezők
-        base_fields = ["name", "id", "type", "category", "attack_time", "weight", "stp", "armor_penetration", "damage_min", "damage_max"]
-        for key in base_fields:
+        # Központi meződefiníciók alapján
+        for key in self.BASE_FIELDS + self.PRICE_FIELDS + self.TYPE_FIELDS + self.VARIABLE_FIELDS:
             if key not in self.edit_vars:
                 self.edit_vars[key] = tk.StringVar()
-        # Ár mezők
-        for key in ["price_réz", "price_ezüst", "price_arany", "price_mithrill"]:
-            if key not in self.edit_vars:
-                self.edit_vars[key] = tk.StringVar()
-        # Típusfüggő mezők
-        for key in ["KE", "TE", "VE", "size_category", "range", "CE", "MGT"]:
-            if key not in self.edit_vars:
-                self.edit_vars[key] = tk.StringVar()
-        # Wield mode
         if 'wield_mode' not in self.edit_vars:
             self.edit_vars['wield_mode'] = tk.StringVar()
-        # Változó extra mezők
-        for key in ["variable_strength_req", "variable_dex_req", "variable_bonus_KE", "variable_bonus_TE", "variable_bonus_VE"]:
-            if key not in self.edit_vars:
-                self.edit_vars[key] = tk.StringVar()
         if 'variable_dual_wield' not in self.edit_vars:
             self.edit_vars['variable_dual_wield'] = tk.IntVar()
-        # Checkboxes
-        if 'can_disarm' not in self.edit_vars:
-            self.edit_vars['can_disarm'] = tk.IntVar()
-        if 'can_break_weapon' not in self.edit_vars:
-            self.edit_vars['can_break_weapon'] = tk.IntVar()
+        for key in self.CHECKBOX_FIELDS:
+            if key not in self.edit_vars:
+                self.edit_vars[key] = tk.IntVar()
 
     def _fill_edit_vars(self, item):
         # Alap mezők
-        for key in ["name", "id", "type", "category", "attack_time", "weight", "stp", "armor_penetration", "damage_min", "damage_max"]:
+        for key in self.BASE_FIELDS:
             self.edit_vars[key].set(str(item.get(key, "")))
         # Ár mezők
         try:
             from engine.currency_manager import CurrencyManager
             price = int(item.get('price', 0))
             price_parts = CurrencyManager().from_base(price)
-            self.edit_vars['price_réz'].set(str(price_parts.get('réz', 0)))
-            self.edit_vars['price_ezüst'].set(str(price_parts.get('ezüst', 0)))
-            self.edit_vars['price_arany'].set(str(price_parts.get('arany', 0)))
-            self.edit_vars['price_mithrill'].set(str(price_parts.get('mithrill', 0)))
+            for key in self.PRICE_FIELDS:
+                curr = key.split('_')[1]  # 'réz', 'ezüst', stb.
+                self.edit_vars[key].set(str(price_parts.get(curr, 0)))
         except Exception:
-            self.edit_vars['price_réz'].set("")
-            self.edit_vars['price_ezüst'].set("")
-            self.edit_vars['price_arany'].set("")
-            self.edit_vars['price_mithrill'].set("")
+            for key in self.PRICE_FIELDS:
+                self.edit_vars[key].set("")
         # Típusfüggő mezők
         t = item.get('type', '')
-        if t in ["közelharci", "hajító"]:
+        if t in ["közelharci"]:
             for key in ["KE", "TE", "VE", "size_category"]:
                 self.edit_vars[key].set(str(item.get(key, "")))
-            if t == "hajító":
-                self.edit_vars["range"].set(str(item.get("range", "")))
+        elif t == "hajító":
+            for key in ["KE", "TE", "VE", "range"]:
+                self.edit_vars[key].set(str(item.get(key, "")))
         elif t == "távolsági":
             for key in ["KE", "CE", "range"]:
                 self.edit_vars[key].set(str(item.get(key, "")))
@@ -69,12 +84,12 @@ class WeaponsAndShieldsEditor:
         if t == "közelharci":
             self.edit_vars['wield_mode'].set(item.get('wield_mode', 'Egykezes'))
             if item.get('wield_mode') == "Változó":
-                for key in ["variable_strength_req", "variable_dex_req", "variable_bonus_KE", "variable_bonus_TE", "variable_bonus_VE"]:
+                for key in self.VARIABLE_FIELDS:
                     self.edit_vars[key].set(str(item.get(key, 0)))
                 self.edit_vars['variable_dual_wield'].set(1 if item.get('variable_dual_wield', False) else 0)
         # Checkboxes
-        self.edit_vars['can_disarm'].set(1 if item.get('can_disarm', False) else 0)
-        self.edit_vars['can_break_weapon'].set(1 if item.get('can_break_weapon', False) else 0)
+        for key in self.CHECKBOX_FIELDS:
+            self.edit_vars[key].set(1 if item.get(key, False) else 0)
         # Damage types
         for typ, var in self.damage_type_vars.items():
             var.set(1 if typ in item.get('damage_types', []) else 0)
@@ -296,6 +311,20 @@ class WeaponsAndShieldsEditor:
             self.category_label.grid_remove()
             self.category_menu.grid_remove()
 
+    def add_labeled_entry(self, parent, label_text, var, row, width=8):
+        l = tk.Label(parent, text=label_text)
+        l.grid(row=row, column=0, sticky="w")
+        e = tk.Entry(parent, textvariable=var, width=width)
+        e.grid(row=row, column=1, sticky="w")
+        self.type_fields_widgets.extend([l, e])
+        return row + 1
+
+    def add_checkbutton(self, parent, text, var, row, col=0, colspan=1):
+        cb = tk.Checkbutton(parent, text=text, variable=var)
+        cb.grid(row=row, column=col, columnspan=colspan, sticky="w")
+        self.type_fields_widgets.append(cb)
+        return row + 1
+
     def update_type_fields(self, selected_type):
         # Töröld a régi mezőket
         for w in self.type_fields_widgets:
@@ -304,107 +333,34 @@ class WeaponsAndShieldsEditor:
         row = 0
         t = self.edit_vars['type'].get()
         self.update_category_menu(t)
+
+        # Wield mode (csak közelharci)
         if t == "közelharci":
-            # Wield mode OptionMenu
             wield_options = ["Egykezes", "Kétkezes", "Változó"]
-            if 'wield_mode' not in self.edit_vars:
-                self.edit_vars['wield_mode'] = tk.StringVar(value=wield_options[0])
             l = tk.Label(self.type_fields_frame, text="Használati mód:")
             l.grid(row=row, column=0, sticky="w")
             om = tk.OptionMenu(self.type_fields_frame, self.edit_vars['wield_mode'], *wield_options, command=lambda _: self.update_type_fields(t))
             om.grid(row=row, column=1, sticky="w")
             self.type_fields_widgets.extend([l, om])
             row += 1
-            # Alap mezők
-            for label, key in [("KE:", "KE"), ("TE:", "TE"), ("VE:", "VE"), ("Méretkategória:", "size_category")]:
+
+        # Típusfüggő mezők generikusan
+        for label, key in self.TYPE_FIELD_DEFS.get(t, []):
+            var = self.edit_vars.setdefault(key, tk.StringVar())
+            row = self.add_labeled_entry(self.type_fields_frame, label, var, row)
+
+        # Változó extra mezők (csak közelharci, Változó)
+        if t == "közelharci" and self.edit_vars['wield_mode'].get() == "Változó":
+            for label, key in [
+                ("Erő szükséglet:", "variable_strength_req"),
+                ("Ügyesség szükséglet:", "variable_dex_req"),
+                ("Bonus KÉ:", "variable_bonus_KE"),
+                ("Bonus TÉ:", "variable_bonus_TE"),
+                ("Bonus VÉ:", "variable_bonus_VE"),
+            ]:
                 var = self.edit_vars.setdefault(key, tk.StringVar())
-                l = tk.Label(self.type_fields_frame, text=label)
-                l.grid(row=row, column=0, sticky="w")
-                e = tk.Entry(self.type_fields_frame, textvariable=var, width=8)
-                e.grid(row=row, column=1, sticky="w")
-                self.type_fields_widgets.extend([l, e])
-                row += 1
-            # Ha Változó, jelenjenek meg extra mezők
-            if self.edit_vars['wield_mode'].get() == "Változó":
-                # Erő szükséglet
-                if 'variable_strength_req' not in self.edit_vars:
-                    self.edit_vars['variable_strength_req'] = tk.StringVar()
-                l = tk.Label(self.type_fields_frame, text="Erő szükséglet:")
-                l.grid(row=row, column=0, sticky="w")
-                e = tk.Entry(self.type_fields_frame, textvariable=self.edit_vars['variable_strength_req'], width=8)
-                e.grid(row=row, column=1, sticky="w")
-                self.type_fields_widgets.extend([l, e])
-                row += 1
-                # Ügyesség szükséglet
-                if 'variable_dex_req' not in self.edit_vars:
-                    self.edit_vars['variable_dex_req'] = tk.StringVar()
-                l = tk.Label(self.type_fields_frame, text="Ügyesség szükséglet:")
-                l.grid(row=row, column=0, sticky="w")
-                e = tk.Entry(self.type_fields_frame, textvariable=self.edit_vars['variable_dex_req'], width=8)
-                e.grid(row=row, column=1, sticky="w")
-                self.type_fields_widgets.extend([l, e])
-                row += 1
-                # Kétkezes harc lehetséges (tickbox)
-                if 'variable_dual_wield' not in self.edit_vars:
-                    self.edit_vars['variable_dual_wield'] = tk.IntVar()
-                cb = tk.Checkbutton(self.type_fields_frame, text="Kétkezes harc lehetséges", variable=self.edit_vars['variable_dual_wield'])
-                cb.grid(row=row, column=0, columnspan=2, sticky="w")
-                self.type_fields_widgets.append(cb)
-                row += 1
-                # Bonus KE
-                if 'variable_bonus_KE' not in self.edit_vars:
-                    self.edit_vars['variable_bonus_KE'] = tk.StringVar()
-                l = tk.Label(self.type_fields_frame, text="Bonus KÉ:")
-                l.grid(row=row, column=0, sticky="w")
-                e = tk.Entry(self.type_fields_frame, textvariable=self.edit_vars['variable_bonus_KE'], width=8)
-                e.grid(row=row, column=1, sticky="w")
-                self.type_fields_widgets.extend([l, e])
-                row += 1
-                # Bonus TE
-                if 'variable_bonus_TE' not in self.edit_vars:
-                    self.edit_vars['variable_bonus_TE'] = tk.StringVar()
-                l = tk.Label(self.type_fields_frame, text="Bonus TÉ:")
-                l.grid(row=row, column=0, sticky="w")
-                e = tk.Entry(self.type_fields_frame, textvariable=self.edit_vars['variable_bonus_TE'], width=8)
-                e.grid(row=row, column=1, sticky="w")
-                self.type_fields_widgets.extend([l, e])
-                row += 1
-                # Bonus VE
-                if 'variable_bonus_VE' not in self.edit_vars:
-                    self.edit_vars['variable_bonus_VE'] = tk.StringVar()
-                l = tk.Label(self.type_fields_frame, text="Bonus VÉ:")
-                l.grid(row=row, column=0, sticky="w")
-                e = tk.Entry(self.type_fields_frame, textvariable=self.edit_vars['variable_bonus_VE'], width=8)
-                e.grid(row=row, column=1, sticky="w")
-                self.type_fields_widgets.extend([l, e])
-                row += 1
-        if t == "hajító":
-            for label, key in [("KE:", "KE"), ("TE:", "TE"), ("VE:", "VE"), ("Táv (m):", "range")]:
-                var = self.edit_vars.setdefault(key, tk.StringVar())
-                l = tk.Label(self.type_fields_frame, text=label)
-                l.grid(row=row, column=0, sticky="w")
-                e = tk.Entry(self.type_fields_frame, textvariable=var, width=8)
-                e.grid(row=row, column=1, sticky="w")
-                self.type_fields_widgets.extend([l, e])
-                row += 1
-        elif t == "távolsági":
-            for label, key in [("KE:", "KE"), ("CE:", "CE"), ("Táv (m):", "range")]:
-                var = self.edit_vars.setdefault(key, tk.StringVar())
-                l = tk.Label(self.type_fields_frame, text=label)
-                l.grid(row=row, column=0, sticky="w")
-                e = tk.Entry(self.type_fields_frame, textvariable=var, width=8)
-                e.grid(row=row, column=1, sticky="w")
-                self.type_fields_widgets.extend([l, e])
-                row += 1
-        elif t == "pajzs":
-            for label, key in [("KE:", "KE"), ("VE:", "VE"), ("MGT:", "MGT")]:
-                var = self.edit_vars.setdefault(key, tk.StringVar())
-                l = tk.Label(self.type_fields_frame, text=label)
-                l.grid(row=row, column=0, sticky="w")
-                e = tk.Entry(self.type_fields_frame, textvariable=var, width=8)
-                e.grid(row=row, column=1, sticky="w")
-                self.type_fields_widgets.extend([l, e])
-                row += 1
+                row = self.add_labeled_entry(self.type_fields_frame, label, var, row)
+            row = self.add_checkbutton(self.type_fields_frame, "Kétkezes harc lehetséges", self.edit_vars['variable_dual_wield'], row)
 
     def on_tree_select(self, event):
         selected = self.tree.focus()
@@ -509,21 +465,7 @@ class WeaponsAndShieldsEditor:
 
     def new_item(self):
         self.selected_idx = None
-        for key in ["name", "id", "type", "category", "attack_time", "weight", "stp", "armor_penetration", "damage_min", "damage_max"]:
-            self.edit_vars[key].set("")
-        for key in ["KE", "TE", "VE", "size_category", "range", "CE", "MGT"]:
-            if key in self.edit_vars:
-                self.edit_vars[key].set("")
-        self.edit_vars['price_réz'].set("")
-        self.edit_vars['price_ezüst'].set("")
-        self.edit_vars['price_arany'].set("")
-        self.edit_vars['price_mithrill'].set("")
-        self.edit_vars['can_disarm'].set(0)
-        self.edit_vars['can_break_weapon'].set(0)
-        for var in self.damage_type_vars.values():
-            var.set(0)
-        for var in self.damage_bonus_attr_vars.values():
-            var.set(0)
+        self.reset_edit_vars()
         self.update_type_fields(self.edit_vars['type'].get())
 
     def delete_item(self):
