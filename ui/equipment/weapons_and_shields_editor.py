@@ -1,45 +1,46 @@
 import tkinter as tk
 import os
-
 from utils.weapondata_manager import WeaponDataManager
+
 WEAPONS_JSON = os.path.join(os.path.dirname(__file__), "..", "..", "data", "equipment", "weapons_and_shields.json")
 
 class WeaponsAndShieldsEditor:
-    # Központi meződefiníciók
-    BASE_FIELDS = ["name", "id", "type", "category", "attack_time", "weight", "stp", "armor_penetration", "damage_min", "damage_max"]
-    PRICE_FIELDS = ["price_réz", "price_ezüst", "price_arany", "price_mithrill"]
-    TYPE_FIELDS = ["KE", "TE", "VE", "size_category", "range", "CE", "MGT"]
-    VARIABLE_FIELDS = ["variable_strength_req", "variable_dex_req", "variable_bonus_KE", "variable_bonus_TE", "variable_bonus_VE"]
-    CHECKBOX_FIELDS = ["can_disarm", "can_break_weapon"]
+    # Field definitions from manager (class-level, always available)
+    BASE_FIELDS = WeaponDataManager.BASE_FIELDS
+    PRICE_FIELDS = WeaponDataManager.PRICE_FIELDS
+    TYPE_FIELDS = WeaponDataManager.TYPE_FIELDS
+    VARIABLE_FIELDS = WeaponDataManager.VARIABLE_FIELDS
+    CHECKBOX_FIELDS = WeaponDataManager.CHECKBOX_FIELDS
+    TYPE_FIELD_DEFS = WeaponDataManager.TYPE_FIELD_DEFS
+    DAMAGE_TYPES = WeaponDataManager.DAMAGE_TYPES
+    DAMAGE_BONUS_ATTRS = WeaponDataManager.DAMAGE_BONUS_ATTRS
 
-    # Típusfüggő mezők definíciója
-    TYPE_FIELD_DEFS = {
-        "közelharci": [
-            ("KE:", "KE"),
-            ("TE:", "TE"),
-            ("VE:", "VE"),
-            ("Méretkategória:", "size_category"),
-        ],
-        "hajító": [
-            ("KE:", "KE"),
-            ("TE:", "TE"),
-            ("VE:", "VE"),
-            ("Táv (m):", "range"),
-        ],
-        "távolsági": [
-            ("KE:", "KE"),
-            ("CE:", "CE"),
-            ("Táv (m):", "range"),
-        ],
-        "pajzs": [
-            ("KE:", "KE"),
-            ("VE:", "VE"),
-            ("MGT:", "MGT"),
-        ],
-    }
+    def __init__(self):
+        from utils.reopen_prevention import WindowSingleton
+        self.win, created = WindowSingleton.get('weapons_and_shields_editor', lambda: tk.Toplevel())
+        if not created:
+            return
+        self.manager = WeaponDataManager(WEAPONS_JSON)
+        self.items = self.manager.load()
+        self.selected_idx = None
+        self.category_options = []
+        self.type_fields_widgets = []  # Mindig legyen inicializálva!
+        self.type_fields_frame = tk.Frame()  # Inicializáljuk, hogy mindig létezzen
+        # Damage types és bonus attributes csak egyszer, managerből!
+        self.damage_type_vars = {typ: tk.IntVar() for typ in self.DAMAGE_TYPES}
+        self.damage_bonus_attr_vars = {attr: tk.IntVar() for attr in self.DAMAGE_BONUS_ATTRS}
+        self.win.title("Fegyverek és pajzsok szerkesztője")
+        self.win.geometry("1100x700")
+        self.create_widgets()
+
+    def destroy_edit_widgets(self):
+        # Egységes widget destroy, csak edit_frame_widgets listából
+        for w in self.edit_frame_widgets:
+            w.destroy()
+        self.edit_frame_widgets = []
 
     def _init_edit_vars(self):
-        # Központi meződefiníciók alapján
+        # Központi meződefiníciók alapján, csak class-level/managerből
         for key in self.BASE_FIELDS + self.PRICE_FIELDS + self.TYPE_FIELDS + self.VARIABLE_FIELDS:
             if key not in self.edit_vars:
                 self.edit_vars[key] = tk.StringVar()
@@ -95,23 +96,7 @@ class WeaponsAndShieldsEditor:
             var.set(1 if typ in item.get('damage_types', []) else 0)
         for attr, var in self.damage_bonus_attr_vars.items():
             var.set(1 if attr in item.get('damage_bonus_attributes', []) else 0)
-    def __init__(self):
-        from utils.reopen_prevention import WindowSingleton
-        self.win, created = WindowSingleton.get('weapons_and_shields_editor', lambda: tk.Toplevel())
-        if not created:
-            return
-        self.manager = WeaponDataManager(WEAPONS_JSON)
-        self.items = self.manager.load()
-        self.selected_idx = None
-        self.category_options = []
-        self.type_fields_widgets = []  # Mindig legyen inicializálva!
-        self.type_fields_frame = tk.Frame()  # Inicializáljuk, hogy mindig létezzen
-        # Damage types és bonus attributes csak egyszer!
-        self.damage_type_vars = {typ: tk.IntVar() for typ in ["szúró", "vágó", "zúzó"]}
-        self.damage_bonus_attr_vars = {attr: tk.IntVar() for attr in ["erő", "ügyesség"]}
-        self.win.title("Fegyverek és pajzsok szerkesztője")
-        self.win.geometry("1100x700")
-        self.create_widgets()
+    # ...existing code...
 
     # nincs szükség külön _on_close metódusra, WindowSingleton kezeli
 
@@ -141,14 +126,13 @@ class WeaponsAndShieldsEditor:
         self.tree.delete(*self.tree.get_children())
         self.tree_nodes = {}
         # Collect all types and categories
-        type_order = ["közelharci", "hajító", "távolsági", "pajzs"]
+        type_order = self.manager.get_weapon_types()
         type_items = {}
         for idx, item in enumerate(self.items):
             type_val = item.get('type', 'Egyéb')
             cat_val = item.get('category', '') or 'Egyéb'
             type_items.setdefault(type_val, []).append((cat_val, idx, item))
         # Insert types in preferred order, then any others
-        inserted_types = set()
         for t in type_order + [t for t in type_items if t not in type_order]:
             if t not in type_items:
                 continue
@@ -171,9 +155,7 @@ class WeaponsAndShieldsEditor:
                     item_text = f"{item['name']} (ID: {item.get('id', '-')})"
                     item_id = self.tree.insert(cat_id, 'end', text=item_text)
         # Szerkesztő panel újrarajzolása
-        for w in getattr(self, 'edit_frame_widgets', []):
-            w.destroy()
-        self.edit_frame_widgets = []
+        self.destroy_edit_widgets()
         row = 0
         ef = self.edit_frame
         tk.Label(ef, text="Név:").grid(row=row, column=0, sticky="w")
@@ -190,7 +172,7 @@ class WeaponsAndShieldsEditor:
         row += 1
         tk.Label(ef, text="Típus:").grid(row=row, column=0, sticky="w")
         self.edit_vars['type'] = tk.StringVar()
-        type_options = ["közelharci", "hajító", "távolsági", "pajzs"]
+        type_options = self.manager.get_weapon_types()
         om = tk.OptionMenu(ef, self.edit_vars['type'], *type_options, command=self.update_type_fields)
         om.grid(row=row, column=1, sticky="w")
         self.edit_frame_widgets.extend([om])
@@ -388,65 +370,17 @@ class WeaponsAndShieldsEditor:
         # Régi típusfüggő mezőkitöltés törölve, csak az _fill_edit_vars használatos
 
     def save_item(self):
-        # Ár összerakása
+        # Collect field values from edit_vars
+        fields = {key: var.get() for key, var in self.edit_vars.items()}
+        # Collect damage types and bonus attributes
+        fields['damage_types'] = [typ for typ, var in self.damage_type_vars.items() if var.get()]
+        fields['damage_bonus_attributes'] = [attr for attr, var in self.damage_bonus_attr_vars.items() if var.get()]
+        # Build item dict using manager logic
         try:
-            from engine.currency_manager import CurrencyManager
-            price_total = 0
-            for curr in CurrencyManager.ORDER:
-                val = int(self.edit_vars[f'price_{curr}'].get() or 0)
-                price_total += CurrencyManager().to_base(val, curr)
-        except Exception:
-            price_total = int(self.edit_vars['price_réz'].get() or 0)
-        # Sebzés típusok
-        damage_types = [typ for typ, var in self.damage_type_vars.items() if var.get()]
-        # Sebzés bónusz attribútumok
-        damage_bonus_attributes = [attr for attr, var in self.damage_bonus_attr_vars.items() if var.get()]
-        item = {
-            'name': self.edit_vars['name'].get(),
-            'id': self.edit_vars['id'].get(),
-            'type': self.edit_vars['type'].get(),
-            'category': self.edit_vars['category'].get(),
-            'attack_time': int(self.edit_vars['attack_time'].get() or 0),
-            'damage_min': int(self.edit_vars['damage_min'].get() or 0),
-            'damage_max': int(self.edit_vars['damage_max'].get() or 0),
-            'weight': float(self.edit_vars['weight'].get() or 0),
-            'price': price_total,
-            'stp': int(self.edit_vars['stp'].get() or 0),
-            'armor_penetration': int(self.edit_vars['armor_penetration'].get() or 0),
-            'can_disarm': bool(self.edit_vars['can_disarm'].get()),
-            'can_break_weapon': bool(self.edit_vars['can_break_weapon'].get()),
-            'damage_types': damage_types,
-            'damage_bonus_attributes': damage_bonus_attributes
-        }
-        t = self.edit_vars['type'].get()
-        if t == "közelharci":
-            item['KE'] = int(self.edit_vars['KE'].get() or 0)
-            item['TE'] = int(self.edit_vars['TE'].get() or 0)
-            item['VE'] = int(self.edit_vars['VE'].get() or 0)
-            item['size_category'] = int(self.edit_vars['size_category'].get() or 0)
-            # Wield mode mentése
-            item['wield_mode'] = self.edit_vars['wield_mode'].get()
-            if item['wield_mode'] == "Változó":
-                item['variable_strength_req'] = int(self.edit_vars['variable_strength_req'].get() or 0)
-                item['variable_dex_req'] = int(self.edit_vars['variable_dex_req'].get() or 0)
-                item['variable_dual_wield'] = bool(self.edit_vars['variable_dual_wield'].get())
-                item['variable_bonus_KE'] = int(self.edit_vars['variable_bonus_KE'].get() or 0)
-                item['variable_bonus_TE'] = int(self.edit_vars['variable_bonus_TE'].get() or 0)
-                item['variable_bonus_VE'] = int(self.edit_vars['variable_bonus_VE'].get() or 0)
-            # Hajító fegyvereknél size_category is van, de range csak ott
-        if t == "hajító":
-            item['KE'] = int(self.edit_vars['KE'].get() or 0)
-            item['TE'] = int(self.edit_vars['TE'].get() or 0)
-            item['VE'] = int(self.edit_vars['VE'].get() or 0)
-            item['range'] = int(self.edit_vars['range'].get() or 0)
-        elif t == "távolsági":
-            item['KE'] = int(self.edit_vars['KE'].get() or 0)
-            item['CE'] = int(self.edit_vars['CE'].get() or 0)
-            item['range'] = int(self.edit_vars['range'].get() or 0)
-        elif t == "pajzs":
-            item['KE'] = int(self.edit_vars['KE'].get() or 0)
-            item['VE'] = int(self.edit_vars['VE'].get() or 0)
-            item['MGT'] = int(self.edit_vars['MGT'].get() or 0)
+            item = self.manager.build_item_from_fields(fields)
+        except Exception as e:
+            tk.messagebox.showerror("Hiba", f"Hibás adat: {e}")
+            return
         # Validáció
         if not self.manager.validate(item):
             tk.messagebox.showerror("Hiba", "Hiányzó vagy hibás mező!")
