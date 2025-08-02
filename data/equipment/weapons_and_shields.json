@@ -10,7 +10,7 @@
     "weight": 1.0,
     "price": 1000,
     "stp": 25,
-    "armor_penetration": 2,
+    "armor_penetration": 0,
     "can_disarm": false,
     "can_break_weapon": true,
     "damage_types": [
@@ -279,7 +279,7 @@
     "price": 5000,
     "stp": 20,
     "armor_penetration": 0,
-    "can_disarm": false,
+    "can_disarm": true,
     "can_break_weapon": false,
     "damage_types": [
       "szúró"
@@ -492,7 +492,7 @@
     "weight": 4.0,
     "price": 5000,
     "stp": 30,
-    "armor_penetration": 0,
+    "armor_penetration": 3,
     "can_disarm": true,
     "can_break_weapon": true,
     "damage_types": [
@@ -520,7 +520,7 @@
     "weight": 2.5,
     "price": 2500,
     "stp": 30,
-    "armor_penetration": 0,
+    "armor_penetration": 1,
     "can_disarm": true,
     "can_break_weapon": true,
     "damage_types": [
@@ -553,7 +553,7 @@
     "weight": 2.0,
     "price": 3000,
     "stp": 30,
-    "armor_penetration": 0,
+    "armor_penetration": 1,
     "can_disarm": true,
     "can_break_weapon": true,
     "damage_types": [
@@ -574,5 +574,57 @@
     "variable_bonus_KE": 3,
     "variable_bonus_TE": 5,
     "variable_bonus_VE": 10
+  },
+  {
+    "name": "Egykezes csatabárd",
+    "id": "battleaxe_1h",
+    "type": "közelharci",
+    "category": "Csatabárdok",
+    "attack_time": 5,
+    "damage_min": 3,
+    "damage_max": 13,
+    "weight": 1.0,
+    "price": 600,
+    "stp": 25,
+    "armor_penetration": 1,
+    "can_disarm": true,
+    "can_break_weapon": true,
+    "damage_types": [
+      "vágó"
+    ],
+    "damage_bonus_attributes": [
+      "erő"
+    ],
+    "KE": 3,
+    "TE": 10,
+    "VE": 5,
+    "size_category": 3,
+    "wield_mode": "Egykezes"
+  },
+  {
+    "name": "Kétkezes csatabárd",
+    "id": "battleaxe_2h",
+    "type": "közelharci",
+    "category": "Csatabárdok",
+    "attack_time": 10,
+    "damage_min": 5,
+    "damage_max": 30,
+    "weight": 5.0,
+    "price": 2000,
+    "stp": 30,
+    "armor_penetration": 5,
+    "can_disarm": false,
+    "can_break_weapon": true,
+    "damage_types": [
+      "vágó"
+    ],
+    "damage_bonus_attributes": [
+      "erő"
+    ],
+    "KE": 0,
+    "TE": 15,
+    "VE": 5,
+    "size_category": 4,
+    "wield_mode": "Kétkezes"
   }
 ]

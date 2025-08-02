@@ -1,32 +1,7 @@
 import tkinter as tk
 import os
-from utils.json_manager import JsonManager
 
-class WeaponsAndShieldsJsonManager(JsonManager):
-    def validate(self, item):
-        required = ["id", "name", "type", "category", "weight", "price", "stp", "armor_penetration", "can_disarm", "can_break_weapon", "damage_min", "damage_max"]
-        for field in required:
-            if field not in item:
-                return False
-        # Típusfüggő mezők
-        if item["type"] == "közelharci":
-            for f in ["KE", "TE", "VE", "size_category"]:
-                if f not in item:
-                    return False
-        elif item["type"] == "hajító":
-            for f in ["KE", "TE", "VE", "range"]:
-                if f not in item:
-                    return False
-        elif item["type"] == "távolsági":
-            for f in ["KE", "CE", "range"]:
-                if f not in item:
-                    return False
-        elif item["type"] == "pajzs":
-            for f in ["KE", "VE", "MGT"]:
-                if f not in item:
-                    return False
-        return True
-
+from utils.weapondata_manager import WeaponDataManager
 WEAPONS_JSON = os.path.join(os.path.dirname(__file__), "..", "..", "data", "equipment", "weapons_and_shields.json")
 
 class WeaponsAndShieldsEditor:
@@ -110,7 +85,7 @@ class WeaponsAndShieldsEditor:
         self.win, created = WindowSingleton.get('weapons_and_shields_editor', lambda: tk.Toplevel())
         if not created:
             return
-        self.manager = WeaponsAndShieldsJsonManager(WEAPONS_JSON)
+        self.manager = WeaponDataManager(WEAPONS_JSON)
         self.items = self.manager.load()
         self.selected_idx = None
         self.category_options = []
@@ -124,26 +99,6 @@ class WeaponsAndShieldsEditor:
         self.create_widgets()
 
     # nincs szükség külön _on_close metódusra, WindowSingleton kezeli
-
-    def _get_weapon_categories(self, type_value):
-        import json
-        skills_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "skills", "skills.json")
-        try:
-            with open(skills_path, encoding="utf-8") as f:
-                skills = json.load(f)
-            categories = set()
-            if type_value in ["közelharci", "távolsági"]:
-                for skill in skills:
-                    if skill.get("name") == "Fegyverhasználat" and skill.get("parameter"):
-                        categories.add(skill["parameter"])
-            elif type_value == "hajító":
-                for skill in skills:
-                    if skill.get("name") == "Fegyverdobás" and skill.get("parameter"):
-                        categories.add(skill["parameter"])
-            # pajzs esetén üres
-            return sorted(categories)
-        except Exception:
-            return []
 
     def create_widgets(self):
         main_frame = tk.Frame(self.win)
@@ -323,7 +278,7 @@ class WeaponsAndShieldsEditor:
         self.edit_frame_widgets.append(btn)
 
     def update_category_menu(self, type_value):
-        options = self._get_weapon_categories(type_value)
+        options = self.manager.get_weapon_categories(type_value)
         menu = self.category_menu["menu"]
         menu.delete(0, "end")
         for opt in options:
