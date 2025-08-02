@@ -24,7 +24,8 @@
     "KE": 5,
     "TE": 10,
     "VE": 8,
-    "size_category": 2
+    "size_category": 2,
+    "wield_mode": "Egykezes"
   },
   {
     "name": "Kis pajzs",
@@ -121,7 +122,8 @@
     "KE": 6,
     "TE": 10,
     "VE": 4,
-    "size_category": 1
+    "size_category": 1,
+    "wield_mode": "Egykezes"
   },
   {
     "name": "Kés",
@@ -146,7 +148,8 @@
     "KE": 5,
     "TE": 8,
     "VE": 2,
-    "size_category": 1
+    "size_category": 1,
+    "wield_mode": "Egykezes"
   },
   {
     "name": "Fejvadász kard",
@@ -173,7 +176,8 @@
     "KE": 6,
     "TE": 14,
     "VE": 10,
-    "size_category": 3
+    "size_category": 3,
+    "wield_mode": "Egykezes"
   },
   {
     "name": "Hosszú kard",
@@ -183,7 +187,7 @@
     "attack_time": 5,
     "damage_min": 2,
     "damage_max": 12,
-    "weight": 0.0,
+    "weight": 1.5,
     "price": 1500,
     "stp": 20,
     "armor_penetration": 0,
@@ -200,7 +204,14 @@
     "KE": 5,
     "TE": 10,
     "VE": 10,
-    "size_category": 3
+    "size_category": 3,
+    "wield_mode": "Változó",
+    "variable_strength_req": 14,
+    "variable_dex_req": 12,
+    "variable_dual_wield": true,
+    "variable_bonus_KE": 5,
+    "variable_bonus_TE": 5,
+    "variable_bonus_VE": 5
   },
   {
     "name": "Hárítótőr",
@@ -225,7 +236,8 @@
     "KE": 5,
     "TE": 8,
     "VE": 20,
-    "size_category": 1
+    "size_category": 1,
+    "wield_mode": "Egykezes"
   },
   {
     "name": "Mesterkard",
@@ -252,7 +264,8 @@
     "KE": 5,
     "TE": 13,
     "VE": 7,
-    "size_category": 3
+    "size_category": 3,
+    "wield_mode": "Egykezes"
   },
   {
     "name": "Rapír",
@@ -277,7 +290,8 @@
     "KE": 7,
     "TE": 10,
     "VE": 13,
-    "size_category": 3
+    "size_category": 3,
+    "wield_mode": "Egykezes"
   },
   {
     "name": "Rövid íj",
@@ -328,7 +342,8 @@
     "KE": 9,
     "TE": 14,
     "VE": 8,
-    "size_category": 2
+    "size_category": 2,
+    "wield_mode": "Egykezes"
   },
   {
     "name": "Szablya",
@@ -354,7 +369,8 @@
     "KE": 6,
     "TE": 10,
     "VE": 12,
-    "size_category": 3
+    "size_category": 3,
+    "wield_mode": "Egykezes"
   },
   {
     "name": "Dobótőr",
@@ -379,7 +395,6 @@
     "KE": 10,
     "TE": 5,
     "VE": 2,
-    "size_category": 0,
     "range": 20
   },
   {
@@ -406,7 +421,8 @@
     "KE": 2,
     "TE": 16,
     "VE": 8,
-    "size_category": 4
+    "size_category": 4,
+    "wield_mode": "Kétkezes"
   },
   {
     "name": "Hosszú íj",
@@ -456,7 +472,14 @@
     "KE": 13,
     "TE": 15,
     "VE": 13,
-    "size_category": 5
+    "size_category": 5,
+    "wield_mode": "Változó",
+    "variable_strength_req": 12,
+    "variable_dex_req": 12,
+    "variable_dual_wield": false,
+    "variable_bonus_KE": 13,
+    "variable_bonus_TE": 15,
+    "variable_bonus_VE": 13
   },
   {
     "name": "Alabárd",
@@ -483,6 +506,73 @@
     "KE": 10,
     "TE": 15,
     "VE": 15,
-    "size_category": 5
+    "size_category": 5,
+    "wield_mode": "Kétkezes"
+  },
+  {
+    "name": "Másfélkezes kard",
+    "id": "broadsword",
+    "type": "közelharci",
+    "category": "Nehéz kardok",
+    "attack_time": 5,
+    "damage_min": 3,
+    "damage_max": 18,
+    "weight": 2.5,
+    "price": 2500,
+    "stp": 30,
+    "armor_penetration": 0,
+    "can_disarm": true,
+    "can_break_weapon": true,
+    "damage_types": [
+      "szúró",
+      "vágó"
+    ],
+    "damage_bonus_attributes": [
+      "erő"
+    ],
+    "KE": 4,
+    "TE": 15,
+    "VE": 11,
+    "size_category": 4,
+    "wield_mode": "Változó",
+    "variable_strength_req": 16,
+    "variable_dex_req": 13,
+    "variable_dual_wield": false,
+    "variable_bonus_KE": 4,
+    "variable_bonus_TE": 10,
+    "variable_bonus_VE": 5
+  },
+  {
+    "name": "Lovagkard",
+    "id": "knights_sword",
+    "type": "közelharci",
+    "category": "Nehéz kardok",
+    "attack_time": 5,
+    "damage_min": 3,
+    "damage_max": 18,
+    "weight": 2.0,
+    "price": 3000,
+    "stp": 30,
+    "armor_penetration": 0,
+    "can_disarm": true,
+    "can_break_weapon": true,
+    "damage_types": [
+      "szúró",
+      "vágó"
+    ],
+    "damage_bonus_attributes": [
+      "erő"
+    ],
+    "KE": 3,
+    "TE": 12,
+    "VE": 15,
+    "size_category": 4,
+    "wield_mode": "Változó",
+    "variable_strength_req": 15,
+    "variable_dex_req": 12,
+    "variable_dual_wield": false,
+    "variable_bonus_KE": 3,
+    "variable_bonus_TE": 5,
+    "variable_bonus_VE": 10
   }
 ]
