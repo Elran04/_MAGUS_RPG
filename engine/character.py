@@ -1,21 +1,27 @@
 # engine/character.py
 import random
-from data.Class.class_stats import CLASS_STAT_WEIGHTS , UPGRADABLE_STATS
+from utils.class_db_manager import ClassDBManager
 from data.Race.race_age_stat_modifiers import apply_age_modifiers , apply_race_modifiers
-from data.Class.class_stats import CLASS_COMBAT_STATS_AND_SKILL_POINTS
-from data.Class.class_stats import CLASS_LEVEL_REQUIREMENTS, CLASS_LEVEL_EXTRA_XP
+
+class_db = ClassDBManager()
 
 
 def generate_stats(klass: str) -> dict:
     default_range = (8, 18)
-    class_data = CLASS_STAT_WEIGHTS.get(klass, {})
-    weights = class_data.get("statok", {})
-    dupla_dobas = set(class_data.get("dupla_dobas", []))
+    # Get class_id from name
+    classes = class_db.list_classes()
+    class_id = next((cid for cid, name in classes if name == klass), None)
+    if class_id is None:
+        raise ValueError(f"Class '{klass}' not found in DB")
+    details = class_db.get_class_details(class_id)
+    stat_ranges = {stat: (minv, maxv) for stat, minv, maxv in details["stats"]}
+    # For now, dupla_dobas is not in DB, so fallback to empty set
+    dupla_dobas = set()
 
     stats = {}
     for stat in ["Erő", "Gyorsaság", "Ügyesség", "Állóképesség", "Karizma",
                  "Egészség", "Intelligencia", "Akaraterő", "Asztrál", "Érzékelés"]:
-        low, high = weights.get(stat, default_range)
+        low, high = stat_ranges.get(stat, default_range)
         if stat in dupla_dobas:
             val1 = random.randint(low, high)
             val2 = random.randint(low, high)
@@ -28,22 +34,30 @@ def generate_stats(klass: str) -> dict:
 def calculate_combat_stats(character):
     klass = character["Kaszt"]
     stats = character["Tulajdonságok"]
-    data = CLASS_COMBAT_STATS_AND_SKILL_POINTS.get(klass, {})
+    # Get class_id from name
+    classes = class_db.list_classes()
+    class_id = next((cid for cid, name in classes if name == klass), None)
+    if class_id is None:
+        raise ValueError(f"Class '{klass}' not found in DB")
+    details = class_db.get_class_details(class_id)
+    data = details["combat_stats"]
+    if not data:
+        data = {}
 
     # Véletlenszerű FP bónusz első szintre
-    fp_bonus = random.randint(*data.get("FP_per_level", (0, 0)))
+    fp_min = data[2] if len(data) > 2 else 0
+    fp_max = data[3] if len(data) > 3 else 0
+    fp_bonus = random.randint(fp_min, fp_max)
 
-
-    # További stat alapú bónuszok kiszámítása
     def bonus(val):
         return max(0, val - 10)
 
-    fp = data.get("FP", 0) + fp_bonus + bonus(stats["Akaraterő"]) + bonus(stats["Állóképesség"])
-    ep = data.get("ÉP", 0) + bonus(stats["Egészség"])
-    ke = data.get("KÉ", 0) + bonus(stats["Gyorsaság"]) + bonus(stats["Ügyesség"])
-    te = data.get("TÉ", 0) + bonus(stats["Erő"]) + bonus(stats["Gyorsaság"]) + bonus(stats["Ügyesség"])
-    ve = data.get("VÉ", 0) + bonus(stats["Gyorsaság"]) + bonus(stats["Ügyesség"])
-    ce = data.get("CÉ", 0) + bonus(stats["Ügyesség"])
+    fp = (data[1] if len(data) > 1 else 0) + fp_bonus + bonus(stats["Akaraterő"]) + bonus(stats["Állóképesség"])
+    ep = (data[4] if len(data) > 4 else 0) + bonus(stats["Egészség"])
+    ke = (data[7] if len(data) > 7 else 0) + bonus(stats["Gyorsaság"]) + bonus(stats["Ügyesség"])
+    te = (data[8] if len(data) > 8 else 0) + bonus(stats["Erő"]) + bonus(stats["Gyorsaság"]) + bonus(stats["Ügyesség"])
+    ve = (data[9] if len(data) > 9 else 0) + bonus(stats["Gyorsaság"]) + bonus(stats["Ügyesség"])
+    ce = (data[10] if len(data) > 10 else 0) + bonus(stats["Ügyesség"])
 
     character["Harci értékek"] = {
         "FP": fp,
@@ -52,12 +66,15 @@ def calculate_combat_stats(character):
         "TÉ": te,
         "VÉ": ve,
         "CÉ": ce,
-        "HM/szint": data.get("HM_per_level", {"total": 0, "mandatory": {}}),
+        "HM/szint": {
+            "total": data[11] if len(data) > 11 else 0,
+            "mandatory": {"TÉ": data[12] if len(data) > 12 else 0, "VÉ": data[13] if len(data) > 13 else 0}
+        },
     }
 
     character["Képzettségpontok"] = {
-        "Alap": data.get("KP", 0),
-        "Szintenként": data.get("KP_per_level", 0)
+        "Alap": data[5] if len(data) > 5 else 0,
+        "Szintenként": data[6] if len(data) > 6 else 0
     }
 
     return character
@@ -67,12 +84,12 @@ def generate_character(name, gender, age, race, klass):
     stats = generate_stats(klass)
     stats = apply_age_modifiers(stats, race, age)
     stats = apply_race_modifiers(stats, race)
-    upgradable = UPGRADABLE_STATS.get(klass, [])
+    # For now, upgradable stats are not in DB, fallback to empty list
+    upgradable = []
 
-    # Kezdeti szint, képzettségek, felszerelés, tapasztalat
     szint = 1
-    skills = []  # később bővíthető, most üres lista
-    equipment = []  # kezdetben üres, később feltölthető
+    skills = []
+    equipment = []
     xp = 0
 
     char = {
@@ -93,14 +110,18 @@ def generate_character(name, gender, age, race, klass):
     return char
 
 
-# Szint meghatározása XP alapján
 def get_level_for_xp(klass, xp):
-    reqs = CLASS_LEVEL_REQUIREMENTS.get(klass, [])
+    # Get class_id from name
+    classes = class_db.list_classes()
+    class_id = next((cid for cid, name in classes if name == klass), None)
+    if class_id is None:
+        raise ValueError(f"Class '{klass}' not found in DB")
+    details = class_db.get_class_details(class_id)
+    reqs = [r[1] for r in details["level_requirements"]]
     for i in range(1, len(reqs)):
         if xp < reqs[i]:
             return i - 1
-    # Ha túllépte a max szintet, számoljuk tovább a fix extra XP-vel
-    extra_xp = CLASS_LEVEL_EXTRA_XP.get(klass, 50000)
+    extra_xp = details["extra_xp"] if details["extra_xp"] else 50000
     if reqs:
         max_level = len(reqs) - 1
         if xp < reqs[-1]:
@@ -109,14 +130,20 @@ def get_level_for_xp(klass, xp):
             return max_level + ((xp - reqs[-1]) // extra_xp) + 1
     return 1
 
-# Következő szinthez szükséges XP
+
 def get_next_level_xp(klass, xp):
-    reqs = CLASS_LEVEL_REQUIREMENTS.get(klass, [])
+    # Get class_id from name
+    classes = class_db.list_classes()
+    class_id = next((cid for cid, name in classes if name == klass), None)
+    if class_id is None:
+        raise ValueError(f"Class '{klass}' not found in DB")
+    details = class_db.get_class_details(class_id)
+    reqs = [r[1] for r in details["level_requirements"]]
     level = get_level_for_xp(klass, xp)
     if level + 1 < len(reqs):
         return reqs[level + 1]
     else:
-        extra_xp = CLASS_LEVEL_EXTRA_XP.get(klass, 50000)
+        extra_xp = details["extra_xp"] if details["extra_xp"] else 50000
         return reqs[-1] + (level - (len(reqs) - 1) + 1) * extra_xp
 
 

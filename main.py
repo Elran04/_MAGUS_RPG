@@ -1,6 +1,8 @@
 # --- IMPORTOK ÉS KONFIGURÁCIÓ ---
 import tkinter as tk
-
+import subprocess
+import sys
+import os
 
 last_character = {}
 
@@ -38,11 +40,13 @@ start_button = tk.Button(button_frame, text="Játék indítása", width=30, comm
 start_button.grid(row=0, column=0, pady=5)
 
 # 2. sor: Karaktergenerálás
-def open_character_creator():
-    from ui.character_creator import open_character_creator
-    open_character_creator(root, lambda char: None)
 
-create_char_button = tk.Button(button_frame, text="Karaktergenerálás", width=30, command=open_character_creator)
+def open_character_creator():
+    # Run the PyQt character creator as a subprocess
+    script_path = os.path.join(os.path.dirname(__file__), "ui", "character_creator_qt.py")
+    subprocess.Popen([sys.executable, script_path])
+
+create_char_button = tk.Button(button_frame, text="Karaktergenerálás (QT)", width=30, command=open_character_creator)
 create_char_button.grid(row=1, column=0, pady=5)
 
 
