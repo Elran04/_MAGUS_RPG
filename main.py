@@ -21,7 +21,7 @@ def open_equipment_editor():
 # --- FŐABLAK ÉS WIDGETEK LÉTREHOZÁSA ---
 root = tk.Tk()
 root.title("M.A.G.U.S. Szöveges RPG")
-root.geometry("800x500")
+root.geometry("800x600")
 # --- Egyedi ikon beállítása ---
 
 root.iconbitmap("MAGUS.ico")
@@ -43,7 +43,7 @@ start_button.grid(row=0, column=0, pady=5)
 
 def open_character_creator():
     # Run the PyQt character creator as a subprocess
-    script_path = os.path.join(os.path.dirname(__file__), "ui", "character_creator_qt.py")
+    script_path = os.path.join(os.path.dirname(__file__), "ui", "character_creator.py")
     subprocess.Popen([sys.executable, script_path])
 
 create_char_button = tk.Button(button_frame, text="Karaktergenerálás (QT)", width=30, command=open_character_creator)
@@ -57,6 +57,14 @@ skill_editor_button.grid(row=2, column=0, pady=5)
 # 4. sor: Felszerelés szerkesztő (Új)
 equipment_editor_button = tk.Button(button_frame, text="Felszerelés szerkesztő", width=30, command=open_equipment_editor)
 equipment_editor_button.grid(row=3, column=0, pady=5)
+
+# 5. sor: Kaszt szerkesztő (QT)
+def open_class_editor():
+    script_path = os.path.join(os.path.dirname(__file__), "ui", "class_editor.py")
+    subprocess.Popen([sys.executable, script_path])
+
+class_editor_button = tk.Button(button_frame, text="Kaszt szerkesztő (QT)", width=30, command=open_class_editor)
+class_editor_button.grid(row=4, column=0, pady=5)
 
 # --- FŐABLAK FUTTATÁSA ---
 root.mainloop()
