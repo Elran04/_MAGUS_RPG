@@ -131,10 +131,12 @@ class ClassEditorQt(QtWidgets.QDialog):
                 cursor = conn.cursor()
                 for row in range(stats_table.rowCount()):
                     stat_name = stats_table.item(row, 0).text()
+                    min_value = int(stats_table.item(row, 1).text())
+                    max_value = int(stats_table.item(row, 2).text())
                     double_chance = 1 if stats_table.item(row, 3).checkState() == QtCore.Qt.Checked else 0
                     cursor.execute(
-                        "UPDATE stats SET double_chance = ? WHERE class_id = ? AND stat_name = ?",
-                        (double_chance, self.current_class_id, stat_name)
+                        "UPDATE stats SET min_value = ?, max_value = ?, double_chance = ? WHERE class_id = ? AND stat_name = ?",
+                        (min_value, max_value, double_chance, self.current_class_id, stat_name)
                     )
                 conn.commit()
         QtWidgets.QMessageBox.information(self, "Mentés", "Kaszt adatok mentve!")
