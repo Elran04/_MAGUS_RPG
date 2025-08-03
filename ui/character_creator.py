@@ -3,8 +3,8 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils.class_db_manager import ClassDBManager
-from data.Race.race_list import ALL_RACES
-from data.Race.race_age_stat_modifiers import AGE_LIMITS
+from data.race.race_list import ALL_RACES
+from data.race.race_age_stat_modifiers import AGE_LIMITS
 from engine.character import generate_character, is_valid_character, GENDER_RESTRICTIONS, RACE_RESTRICTIONS
 
 class CharacterWizardQt(QtWidgets.QDialog):
