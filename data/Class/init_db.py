@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS stats (
 """)
 
 # Harci értékek tábla
+
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS combat_stats (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

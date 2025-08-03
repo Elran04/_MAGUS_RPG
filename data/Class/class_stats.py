@@ -271,6 +271,31 @@ CLASS_LEVEL_REQUIREMENTS = {
     "Varázsló": [0, 230, 500, 1000, 2200, 5000, 10000, 18000, 35000, 70000, 150000, 200000, 300000],
     "Pszi mester": [0, 220, 442, 950, 2000, 4500, 9000, 16000, 32000, 65000, 120000, 170000, 240000],
 }
+
+# Kasztonkénti fix extra XP a maximális szint után
+CLASS_LEVEL_EXTRA_XP = {
+    "Harcos": 31200,
+    "Gladiátor": 40000,
+    "Fejvadász": 60000,
+    "Lovag": 35000,
+    "Bajvívó": 40000,
+    "Amazon": 40500,
+    "Barbár": 32500,
+    "Tolvaj": 33500,
+    "Bárd": 40000,
+    "Harcművész": 65000,
+    "Kardművész": 62000,
+    "Pap": 50000,
+    "Szerzetes": 55000,
+    "Sámán": 55000,
+    "Paplovag": 38000,
+    "Boszorkány": 31500,
+    "Boszorkánymester": 55000,
+    "Tűzvarázsló": 58500,
+    "Varázsló": 80000,
+    "Pszi mester": 65000,
+}
+
 # Kezdő tőke (alsó és felső határ) kasztonként
 # Értékek: (min, max) - aranyban
 CLASS_STARTING_CURRENCY = {
