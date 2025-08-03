@@ -21,8 +21,8 @@ class ClassDBManager:
             # Get class name
             cursor.execute("SELECT name FROM classes WHERE id = ?", (class_id,))
             name = cursor.fetchone()[0]
-            # Get stat ranges
-            cursor.execute("SELECT stat_name, min_value, max_value FROM stats WHERE class_id = ?", (class_id,))
+            # Get stat ranges, including double_chance
+            cursor.execute("SELECT stat_name, min_value, max_value, double_chance FROM stats WHERE class_id = ?", (class_id,))
             stats = cursor.fetchall()
             # Get combat stats
             cursor.execute("SELECT * FROM combat_stats WHERE class_id = ?", (class_id,))

@@ -9,9 +9,14 @@ class ClassEditorQt(QtWidgets.QDialog):
         super().__init__(parent)
         self.setWindowTitle("Kaszt szerkesztő (PyQt)")
         self.resize(600, 500)
+        # Standard ablakvezérlők (min/max/close)
+        self.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowMinimizeButtonHint | QtCore.Qt.WindowMaximizeButtonHint | QtCore.Qt.WindowCloseButtonHint)
         self.class_db = ClassDBManager()
         self.init_ui()
         self.load_classes()
+        # Ha van kaszt, automatikusan megjelenítjük az első kaszt részleteit
+        if self.class_items:
+            self.display_class_details(self.class_list.currentItem(), None)
 
     def init_ui(self):
         self.layout = QtWidgets.QVBoxLayout(self)
@@ -28,13 +33,15 @@ class ClassEditorQt(QtWidgets.QDialog):
 
     def load_classes(self):
         self.class_list.clear()
-        self.class_items = self.class_db.list_classes()
+        # Sort by ID (not alphabetically)
+        self.class_items = sorted(self.class_db.list_classes(), key=lambda x: x[0])
         for cid, name in self.class_items:
             self.class_list.addItem(f"{name} (ID: {cid})")
         if self.class_items:
             self.class_list.setCurrentRow(0)
 
     def display_class_details(self, current, previous):
+
         if not current:
             return
         idx = self.class_list.currentRow()
@@ -49,13 +56,25 @@ class ClassEditorQt(QtWidgets.QDialog):
         # Editable name
         self.name_edit = QtWidgets.QLineEdit(details["name"])
         self.details_layout.addRow("Név:", self.name_edit)
-        # Stats
-        stats_table = QtWidgets.QTableWidget(len(details["stats"]), 3)
-        stats_table.setHorizontalHeaderLabels(["Tulajdonság", "Min", "Max"])
-        for i, (stat, minv, maxv) in enumerate(details["stats"]):
+        # Stats with double_chance
+        stats_table = QtWidgets.QTableWidget(len(details["stats"]), 4)
+        stats_table.setHorizontalHeaderLabels(["Tulajdonság", "Min", "Max", "Duplázási esély"])
+        for i, stat_row in enumerate(details["stats"]):
+            stat = stat_row[0]
+            minv = stat_row[1]
+            maxv = stat_row[2]
+            # double_chance lehet None vagy nem 0/1, ilyenkor legyen 0
+            double_chance = stat_row[3]
+            if double_chance not in (0, 1):
+                double_chance = 0
             stats_table.setItem(i, 0, QtWidgets.QTableWidgetItem(stat))
             stats_table.setItem(i, 1, QtWidgets.QTableWidgetItem(str(minv)))
             stats_table.setItem(i, 2, QtWidgets.QTableWidgetItem(str(maxv)))
+            # Checkbox for double_chance
+            chk = QtWidgets.QTableWidgetItem()
+            chk.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
+            chk.setCheckState(QtCore.Qt.Checked if double_chance == 1 else QtCore.Qt.Unchecked)
+            stats_table.setItem(i, 3, chk)
         self.details_layout.addRow("Tulajdonságok:", stats_table)
         # Starting currency
         min_gold, max_gold = details["starting_currency"] if details["starting_currency"] else (0, 0)
@@ -99,8 +118,35 @@ class ClassEditorQt(QtWidgets.QDialog):
             cursor = conn.cursor()
             cursor.execute("UPDATE further_level_requirements SET extra_xp = ? WHERE class_id = ?", (extra_xp, self.current_class_id))
             conn.commit()
+        # Save double_chance for stats
+        stats_table = None
+        for i in range(self.details_layout.count()):
+            item = self.details_layout.itemAt(i)
+            widget = item.widget()
+            if isinstance(widget, QtWidgets.QTableWidget):
+                stats_table = widget
+                break
+        if stats_table:
+            with self.class_db.get_connection() as conn:
+                cursor = conn.cursor()
+                for row in range(stats_table.rowCount()):
+                    stat_name = stats_table.item(row, 0).text()
+                    double_chance = 1 if stats_table.item(row, 3).checkState() == QtCore.Qt.Checked else 0
+                    cursor.execute(
+                        "UPDATE stats SET double_chance = ? WHERE class_id = ? AND stat_name = ?",
+                        (double_chance, self.current_class_id, stat_name)
+                    )
+                conn.commit()
         QtWidgets.QMessageBox.information(self, "Mentés", "Kaszt adatok mentve!")
+        # Frissítsük a kaszt listát és a részleteket is
         self.load_classes()
+        # Válasszuk ki újra az aktuális kasztot, hogy a részletek is frissüljenek
+        for idx, (cid, _) in enumerate(self.class_items):
+            if cid == self.current_class_id:
+                self.class_list.setCurrentRow(idx)
+                # A részletek frissítését explicit meghívjuk, hogy a tickboxok is biztosan frissüljenek
+                self.display_class_details(self.class_list.currentItem(), None)
+                break
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
