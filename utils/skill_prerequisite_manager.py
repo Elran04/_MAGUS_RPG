@@ -7,6 +7,34 @@ STAT_NAMES = [
 ]
 
 class PrerequisiteManager:
+    def load_from_string(self, prereq_str):
+        """
+        Parses a prerequisite string and loads it using load_prerequisites.
+        """
+        # If already dict, just forward
+        if isinstance(prereq_str, dict):
+            self.load_prerequisites(prereq_str)
+            return
+        # Otherwise, parse string format
+        import re
+        result = {str(i+1): {"képesség": [], "képzettség": []} for i in range(6)}
+        # Example format: "1: Tulajdonság: Erő 10+, Képzettség: Kardforgatás (Rövid kardok) 2. szint"
+        lines = prereq_str.splitlines()
+        for line in lines:
+            m = re.match(r"(\d+): (.*)", line)
+            if not m:
+                continue
+            idx = m.group(1)
+            rest = m.group(2)
+            stat_part = re.search(r"Tulajdonság: ([^,]*)", rest)
+            skill_part = re.search(r"Képzettség: (.*)", rest)
+            if stat_part:
+                stats = [s.strip() for s in stat_part.group(1).split(",") if s.strip()]
+                result[idx]["képesség"].extend(stats)
+            if skill_part:
+                skills = [s.strip() for s in skill_part.group(1).split(",") if s.strip()]
+                result[idx]["képzettség"].extend(skills)
+        self.load_prerequisites(result)
     def __init__(self, parent, skill_names, all_skills):
         self.parent = parent
         self.skill_names = skill_names

@@ -42,8 +42,9 @@ class SkillLoaderDialog:
                 sub_id = self.tree.insert(main_id, "end", text=sub_cat, open=True)
                 self.tree_nodes[(main_cat, sub_cat)] = sub_id
                 for skill in cat_map[main_cat][sub_cat]:
-                    if skill.get("is_parametric") and skill.get("parameter"):
-                        skill_name = f"{skill['name']} ({skill['parameter']})"
+                    param = skill.get("parameter", "")
+                    if param:
+                        skill_name = f"{skill['name']} ({param})"
                     else:
                         skill_name = skill['name']
                     self.tree.insert(sub_id, "end", text=skill_name, open=False)
@@ -67,7 +68,9 @@ class SkillLoaderDialog:
             for skill in self.all_skills:
                 main_cat = skill.get("main_category", "Egyéb")
                 sub_cat = skill.get("sub_category", "Egyéb")
-                if text and text not in (f"{skill['name']} ({skill['parameter']})".lower() if skill.get("is_parametric") and skill.get("parameter") else skill['name'].lower()):
+                param = skill.get("parameter", "")
+                skill_name = f"{skill['name']} ({param})" if param else skill['name']
+                if text and text not in skill_name.lower():
                     continue
                 cat_map[main_cat][sub_cat].append(skill)
             all_main_cats = [cat for cat in MAIN_CATEGORY_ORDER if cat in cat_map] + [cat for cat in cat_map if cat not in MAIN_CATEGORY_ORDER]
@@ -80,10 +83,8 @@ class SkillLoaderDialog:
                     sub_id = self.tree.insert(main_id, "end", text=sub_cat, open=True)
                     tree_nodes[(main_cat, sub_cat)] = sub_id
                     for skill in cat_map[main_cat][sub_cat]:
-                        if skill.get("is_parametric") and skill.get("parameter"):
-                            skill_name = f"{skill['name']} ({skill['parameter']})"
-                        else:
-                            skill_name = skill['name']
+                        param = skill.get("parameter", "")
+                        skill_name = f"{skill['name']} ({param})" if param else skill['name']
                         self.tree.insert(sub_id, "end", text=skill_name, open=False)
         search_var.trace_add("write", update_skill_list)
     def load_selected(self):
@@ -98,38 +99,11 @@ class SkillLoaderDialog:
             return
         skill_name = self.tree.item(selected, "text")
         for skill_obj in self.all_skills:
-            if skill_obj.get("is_parametric") and skill_obj.get("parameter"):
-                name = f"{skill_obj['name']} ({skill_obj['parameter']})"
-            else:
-                name = skill_obj['name']
+            param = skill_obj.get("parameter", "")
+            name = f"{skill_obj['name']} ({param})" if param else skill_obj['name']
             if name == skill_name:
-                self.editor.name_var.set(skill_obj["name"])
-                self.editor.id_var.set(skill_obj.get("id", ""))
-                self.editor.param_var.set(skill_obj.get("parameter", ""))
-                self.editor.general_desc = skill_obj.get("description", "")
-                if hasattr(self.editor, "general_desc_label"):
-                    self.editor.general_desc_label.config(text=self.editor.general_desc)
-                self.editor.main_cat_var.set(skill_obj.get("main_category", ""))
-                self.editor.sub_cat_var.set(skill_obj.get("sub_category", ""))
-                self.editor.acq_method_var.set(skill_obj.get("acquisition_method", ""))
-                self.editor.acq_diff_var.set(skill_obj.get("acquisition_difficulty", ""))
-                self.editor.type_var.set(skill_obj.get("skill_type", "%"))
-                loaded_level_descs = []
-                for i in range(1, 7):
-                    desc = skill_obj.get("level_descriptions", {}).get(str(i), "")
-                    loaded_level_descs.append(desc)
-                self.editor.level_desc_texts = loaded_level_descs
-                if skill_obj.get("skill_type", "%") == "%":
-                    self.editor.kp_per_3_var.set(skill_obj.get("kp_per_3_percent", ""))
-                    for kp_var in self.editor.kp_cost_vars:
-                        kp_var.set("")
-                else:
-                    self.editor.kp_per_3_var.set("")
-                    for i, kp_var in enumerate(self.editor.kp_cost_vars):
-                        kp_var.set(skill_obj.get("kp_costs", {}).get(str(i+1), ""))
-                self.editor.prereq_manager.load_prerequisites(skill_obj.get("prerequisites", {}))
-                if hasattr(self.editor, "update_prereq_summary"):
-                    self.editor.update_prereq_summary()
+                # Use SkillEditor's load_skill_to_ui for proper mapping and UI refresh
+                self.editor.load_skill_to_ui(skill_obj)
                 self.loader.destroy()
                 return
         self.editor.show_error("Nem található a kiválasztott képzettség.")
@@ -145,10 +119,8 @@ class SkillLoaderDialog:
             return
         skill_name = self.tree.item(selected, "text")
         for idx, skill_obj in enumerate(self.all_skills):
-            if skill_obj.get("is_parametric") and skill_obj.get("parameter"):
-                name = f"{skill_obj['name']} ({skill_obj['parameter']})"
-            else:
-                name = skill_obj['name']
+            param = skill_obj.get("parameter", "")
+            name = f"{skill_obj['name']} ({param})" if param else skill_obj['name']
             if name == skill_name:
                 answer = self.editor.ask_yes_no(f"Biztosan törlöd ezt a képzettséget?\n{name}", "Törlés")
                 if answer:

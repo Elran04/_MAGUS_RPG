@@ -1,7 +1,6 @@
 import tkinter as tk
 from utils.reopen_prevention import WindowSingleton
 from tkinter import messagebox
-import os
 from utils.skilldata_manager import SkillManager
 import re
 from ui.skills.skill_prerequisite_editor import SkillPrerequisiteEditorDialog
@@ -9,8 +8,6 @@ from ui.skills.dialogs.skill_loader_dialog import SkillLoaderDialog
 from ui.skills.skill_description_editor import DescriptionEditorDialog
 from utils.skill_prerequisite_manager import PrerequisiteManager
 
-# Ensure SkillManager uses the correct path to skills.json
-SKILLS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "skills", "skills.json")
 
 CATEGORIES = {
     "Harci képzettségek": ["Közkeletű", "Szakértő", "Titkos"],
@@ -19,6 +16,12 @@ CATEGORIES = {
     "Túlélő képzettségek": ["Vadonjáró", "Atlétikai"],
     "Elméleti képzettségek": ["Közkeletű", "Szakértő", "Titkos elméleti", "Titkos szervezeti"]
 }
+ACQ_METHOD_MAP = {1: "Gyakorlás", 2: "Tapasztalás", 3: "Tanulás"}
+ACQ_METHOD_MAP_REV = {v: k for k, v in ACQ_METHOD_MAP.items()}
+ACQ_DIFF_MAP = {1: "Egyszerű", 2: "Könnyű", 3: "Közepes", 4: "Nehéz", 5: "Szinte lehetetlen"}
+ACQ_DIFF_MAP_REV = {v: k for k, v in ACQ_DIFF_MAP.items()}
+TYPE_MAP = {1: "szint", 2: "%"}
+TYPE_MAP_REV = {v: k for k, v in TYPE_MAP.items()}
 
 GRID_CFG = {
     "label": {"sticky": "w", "padx": 5, "pady": 2},
@@ -71,7 +74,7 @@ class SkillEditor():
         self._init_vars()
         self._create_header()
         self._create_category_selectors()
-        self._create_description_section()
+        # Leírás szekció eltávolítva, a leírás szerkesztő gombot helyezd át az akciógombokhoz, ha szükséges
         self._create_acquisition_section()
         self._create_type_section()
         self._create_level_sections()
@@ -89,11 +92,11 @@ class SkillEditor():
         if not hasattr(self, "sub_cat_var"):
             self.sub_cat_var = tk.StringVar()
         if not hasattr(self, "acq_method_var"):
-            self.acq_method_var = tk.StringVar(value="Gyakorlás")
+            self.acq_method_var = tk.StringVar(value=ACQ_METHOD_MAP[1])
         if not hasattr(self, "acq_diff_var"):
-            self.acq_diff_var = tk.StringVar(value="3 - Közepes")
+            self.acq_diff_var = tk.StringVar(value=ACQ_DIFF_MAP[3])
         if not hasattr(self, "type_var"):
-            self.type_var = tk.StringVar(value="szint")
+            self.type_var = tk.StringVar(value=TYPE_MAP[1])
         if not hasattr(self, "kp_per_3_var"):
             self.kp_per_3_var = tk.StringVar()
         if not hasattr(self, "general_desc"):
@@ -128,31 +131,25 @@ class SkillEditor():
         self.sub_cat_var.set(CATEGORIES[self.main_cat_var.get()][0])
         self.main_cat_var.trace_add("write", self.update_subcategories)
 
-    def _create_description_section(self):
-        row = 3
-        tk.Label(self.scroll_frame, text="Általános leírás:").grid(row=row, column=0, **GRID_CFG["label"])
-        edit_desc_btn = tk.Button(self.scroll_frame, text="Leírás szerkesztése", command=self.open_description_editor)
-        edit_desc_btn.grid(row=row, column=1, padx=5, pady=2, sticky="w")
-
     def _create_acquisition_section(self):
-        row = 4
+        row = 3
         tk.Label(self.scroll_frame, text="Elsajátítás módja:").grid(row=row, column=0, **GRID_CFG["label"])
-        tk.OptionMenu(self.scroll_frame, self.acq_method_var, "Gyakorlás", "Tapasztalás", "Tanulás").grid(row=row, column=1, **GRID_CFG["optionmenu"])
+        tk.OptionMenu(self.scroll_frame, self.acq_method_var, *ACQ_METHOD_MAP.values()).grid(row=row, column=1, **GRID_CFG["optionmenu"])
         row += 1
         tk.Label(self.scroll_frame, text="Elsajátítás nehézsége:").grid(row=row, column=0, **GRID_CFG["label"])
         tk.OptionMenu(
             self.scroll_frame, self.acq_diff_var,
-            "1 - Egyszerű", "2 - Könnyű", "3 - Közepes", "4 - Nehéz", "5 - Szinte lehetetlen"
+            *ACQ_DIFF_MAP.values()
         ).grid(row=row, column=1, **GRID_CFG["optionmenu"])
 
     def _create_type_section(self):
-        row = 6
+        row = 5
         tk.Label(self.scroll_frame, text="Típus:").grid(row=row, column=0, **GRID_CFG["label"])
-        tk.OptionMenu(self.scroll_frame, self.type_var, "%", "szint").grid(row=row, column=1, **GRID_CFG["optionmenu"])
+        tk.OptionMenu(self.scroll_frame, self.type_var, *TYPE_MAP.values()).grid(row=row, column=1, **GRID_CFG["optionmenu"])
         self.row_kp_percent = row + 1
         self.kp_per_3_label = tk.Label(self.scroll_frame, text="KP/3%:")
         self.kp_per_3_entry = tk.Entry(self.scroll_frame, textvariable=self.kp_per_3_var)
-        if self.type_var.get() == "%":
+        if self.type_var.get() == TYPE_MAP[2]:
             self.kp_per_3_label.grid(row=self.row_kp_percent, column=0, **GRID_CFG["label"])
             self.kp_per_3_entry.grid(row=self.row_kp_percent, column=1, **GRID_CFG["entry"])
         self.type_var.trace_add("write", lambda *args: self.update_kp_fields(self.row_kp_percent))
@@ -166,17 +163,14 @@ class SkillEditor():
             level_frame = tk.Frame(self.scroll_frame)
             level_frame.grid(row=row, column=0, columnspan=5, sticky="w", pady=2)
             self.level_frames.append(level_frame)
-            tk.Label(level_frame, text=f"{i}. szint leírás:").grid(row=0, column=0, sticky="nw", padx=5)
-            edit_btn = tk.Button(level_frame, text="Leírás szerkesztése", command=lambda idx=i-1: self.open_level_description_editor(idx))
-            edit_btn.grid(row=0, column=1, sticky="ne", padx=(5, 0))
             kp_label = tk.Label(level_frame, text=f"{i}. szint KP:")
-            kp_label.grid(row=0, column=2, sticky="nw", padx=5)
+            kp_label.grid(row=0, column=0, sticky="nw", padx=5)
             self.kp_cost_labels.append(kp_label)
             kp_entry = tk.Entry(level_frame, textvariable=self.kp_cost_vars[i-1], width=8)
-            kp_entry.grid(row=0, column=3, sticky="nw", padx=5)
+            kp_entry.grid(row=0, column=1, sticky="nw", padx=5)
             self.kp_cost_entries.append(kp_entry)
             prereq_summary = tk.Label(level_frame, text="", anchor="nw", justify="left", font=("Consolas", 10), fg="#444")
-            prereq_summary.grid(row=0, column=4, sticky="nw", padx=5)
+            prereq_summary.grid(row=0, column=2, sticky="nw", padx=5)
             if not hasattr(self, "prereq_summary_labels"):
                 self.prereq_summary_labels = []
             self.prereq_summary_labels.append(prereq_summary)
@@ -223,7 +217,7 @@ class SkillEditor():
                 except Exception:
                     pass
     def open_all_description_editor(self):
-        DescriptionEditorDialog(self)
+        self.open_description_editor()
 
     def update_subcategories(self, *args):
         menu = self.sub_cat_menu["menu"]
@@ -315,7 +309,7 @@ class SkillEditor():
         tk.Button(editor_win, text="Mentés", command=save_and_close).pack(pady=10)
 
     def update_kp_fields(self, row_kp_percent):
-        if self.type_var.get() == "%":
+        if self.type_var.get() == TYPE_MAP[2]:
             self.kp_per_3_label.grid(row=row_kp_percent, column=0, sticky="w", padx=5, pady=2)
             self.kp_per_3_entry.grid(row=row_kp_percent, column=1, sticky="w", padx=5, pady=2)
             # Ne állítsd újra a kp_per_3_var értékét, csak ha skillt töltünk be!
@@ -337,10 +331,10 @@ class SkillEditor():
             "main_category": self.main_cat_var.get(),
             "sub_category": self.sub_cat_var.get(),
             "description": self.general_desc,
-            "acquisition_method": self.acq_method_var.get(),
-            "acquisition_difficulty": self.acq_diff_var.get(),
-            "skill_type": self.type_var.get(),
-            "kp_per_3_percent": self.kp_per_3_var.get() if self.type_var.get() == "%" else None,
+            "acquisition_method": ACQ_METHOD_MAP_REV.get(self.acq_method_var.get(), 1),
+            "acquisition_difficulty": ACQ_DIFF_MAP_REV.get(self.acq_diff_var.get(), 3),
+            "skill_type": TYPE_MAP_REV.get(self.type_var.get(), 1),
+            "kp_per_3_percent": self.kp_per_3_var.get() if self.type_var.get() == TYPE_MAP[2] else None,
             "kp_costs": {},
             "level_descriptions": {},
             "is_parametric": bool(self.param_var.get().strip()),
@@ -354,7 +348,7 @@ class SkillEditor():
             if desc:
                 ui_data["level_descriptions"][str(i+1)] = desc
         # KP költségek
-        if self.type_var.get() != "%":
+        if self.type_var.get() != TYPE_MAP[2]:
             for i, kp_var in enumerate(self.kp_cost_vars):
                 kp = kp_var.get().strip()
                 if kp:
@@ -389,6 +383,65 @@ class SkillEditor():
 
     def open_skill_loader(self):
         SkillLoaderDialog(self)
+
+    def load_skill_to_ui(self, skill):
+        """
+        Betölt egy skill dict-et az editor UI-ba, a megfelelő szöveges értékekkel.
+        """
+        self.id_var.set(skill.get("id", ""))
+        self.name_var.set(skill.get("name", ""))
+        self.param_var.set(skill.get("parameter", ""))
+        self.main_cat_var.set(skill.get("main_category", list(CATEGORIES.keys())[0]))
+        self.sub_cat_var.set(skill.get("sub_category", ""))
+        # Map integer to string for enums and recreate OptionMenus
+        acq_method_val = skill.get("acquisition_method", 1)
+        self.acq_method_var.set(ACQ_METHOD_MAP.get(acq_method_val, "Gyakorlás"))
+        self._recreate_optionmenu("acq_method_var", self.acq_method_var, list(ACQ_METHOD_MAP.values()))
+
+        acq_diff_val = skill.get("acquisition_difficulty", 3)
+        self.acq_diff_var.set(ACQ_DIFF_MAP.get(acq_diff_val, "Közepes"))
+        self._recreate_optionmenu("acq_diff_var", self.acq_diff_var, list(ACQ_DIFF_MAP.values()))
+
+        type_val = skill.get("skill_type", 1)
+        self.type_var.set(TYPE_MAP.get(type_val, "szint"))
+        self._recreate_optionmenu("type_var", self.type_var, list(TYPE_MAP.values()))
+        self.kp_per_3_var.set(skill.get("kp_per_3_percent", ""))
+        self.general_desc = skill.get("description", "")
+        self.level_six_available_var.set(bool(skill.get("level_six_available", True)))
+        # Szintleírások
+        self.level_desc_texts = [skill.get("level_descriptions", {}).get(str(i+1), "") for i in range(6)]
+        # KP költségek
+        for i in range(6):
+            kp_val = skill.get("kp_costs", {}).get(str(i+1), "")
+            self.kp_cost_vars[i].set(kp_val)
+        # Előfeltételek
+        if hasattr(self, "prereq_manager"):
+            self.prereq_manager.load_from_string(skill.get("prerequisites", ""))
+        self.update_kp_fields(self.row_kp_percent)
+        self.update_prereq_summary()
+
+    def _recreate_optionmenu(self, var_name, var, values):
+        """
+        Teljesen újraépíti az OptionMenu-t, hogy a helyes szöveg jelenjen meg.
+        """
+        # Find and destroy the old OptionMenu
+        for child in self.scroll_frame.winfo_children():
+            if isinstance(child, tk.OptionMenu) and child.cget('textvariable') == str(var):
+                child.destroy()
+        # Find the row for this OptionMenu
+        if var_name == "acq_method_var":
+            row = 3
+        elif var_name == "acq_diff_var":
+            row = 4
+        elif var_name == "type_var":
+            row = 5
+        else:
+            return
+        # Recreate OptionMenu
+        new_menu = tk.OptionMenu(self.scroll_frame, var, *values)
+        new_menu.grid(row=row, column=1, **GRID_CFG["optionmenu"])
+
+    # _refresh_optionmenu removed, replaced by _recreate_optionmenu
 
 # --- Futtatható fő rész ---
 if __name__ == "__main__":

@@ -1,13 +1,162 @@
-from utils.json_manager import JsonManager
+import sqlite3
 import os
-
-SKILLS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "skills", "skills.json"))
-
 import re
 
-class SkillManager(JsonManager):
+DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "skills", "skills_data.db"))
+DESC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "skills", "descriptions"))
+
+class SkillManager:
     def __init__(self):
-        super().__init__(SKILLS_PATH)
+        self.db_path = DB_PATH
+        self.desc_dir = DESC_DIR
+
+    def load(self):
+        """
+        Betölti az összes képzettséget az adatbázisból, minden metaadatot, költséget, előfeltételt.
+        """
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        c.execute("SELECT * FROM skills")
+        skills = []
+        for row in c.fetchall():
+            skill = {
+                "id": row[0],
+                "name": row[1],
+                "parameter": row[2],
+                "main_category": row[3],
+                "sub_category": row[4],
+                "acquisition_method": row[5],
+                "acquisition_difficulty": row[6],
+                "skill_type": row[7],
+                "description_file": row[8],
+            }
+            # Leírás betöltése .md-ből
+            desc_path = os.path.join(self.desc_dir, skill["description_file"])
+            if os.path.exists(desc_path):
+                with open(desc_path, "r", encoding="utf-8") as f:
+                    skill["description"] = f.read()
+            else:
+                skill["description"] = ""
+            # KP költségek
+            if skill["skill_type"] == 1:
+                c.execute("SELECT level, kp_cost FROM skill_level_costs WHERE skill_id=? ORDER BY level", (skill["id"],))
+                skill["kp_costs"] = {str(lvl): kp for lvl, kp in c.fetchall()}
+            elif skill["skill_type"] == 2:
+                c.execute("SELECT kp_per_3percent FROM skill_percent_costs WHERE skill_id=?", (skill["id"],))
+                res = c.fetchone()
+                skill["kp_per_3_percent"] = res[0] if res else None
+            # Szintenkénti leírások
+            skill["level_descriptions"] = self._load_level_descriptions(skill["description"])
+            # Előfeltételek
+            skill["prerequisites"] = self._load_prerequisites(c, skill["id"])
+            skills.append(skill)
+        conn.close()
+        return skills
+
+    def _load_level_descriptions(self, desc_text):
+        """
+        Szintenkénti leírásokat kinyer .md szövegből (## Szint X ...)
+        """
+        result = {}
+        for i in range(1, 7):
+            m = re.search(rf"## Szint {i}\\s*(.+?)(?=(## Szint|$))", desc_text, re.DOTALL)
+            if m:
+                result[str(i)] = m.group(1).strip()
+        return result
+
+    def _load_prerequisites(self, c, skill_id):
+        """
+        Előfeltételek betöltése az adatbázisból szintenként.
+        """
+        result = {}
+        for lvl in range(1, 7):
+            # Képességek
+            c.execute("SELECT attribute, min_value FROM skill_prerequisites_attributes WHERE skill_id=? AND level=?", (skill_id, lvl))
+            stat_list = [f"{attr} {min_val}+" for attr, min_val in c.fetchall()]
+            # Képzettségek
+            c.execute("SELECT required_skill_id, min_level FROM skill_prerequisites_skills WHERE skill_id=? AND level=?", (skill_id, lvl))
+            skill_list = []
+            for req_id, min_lvl in c.fetchall():
+                # Skill név/id visszakeresése
+                c.execute("SELECT name, parameter FROM skills WHERE id=?", (req_id,))
+                res = c.fetchone()
+                if res:
+                    name, param = res
+                    if param:
+                        display = f"{name} ({param}) {min_lvl}. szint"
+                    else:
+                        display = f"{name} {min_lvl}. szint"
+                    skill_list.append(display)
+            if stat_list or skill_list:
+                result[str(lvl)] = {"képesség": stat_list, "képzettség": skill_list}
+        return result
+
+    def save(self, skills):
+        """
+        Képzettségek mentése az adatbázisba (tömeges mentés, pl. szerkesztőből).
+        """
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        for skill in skills:
+            # skills tábla
+            c.execute("""
+                INSERT OR REPLACE INTO skills (id, name, parameter, category, subcategory, acquisition, difficulty, type, description_file)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                skill.get("id"),
+                skill.get("name"),
+                skill.get("parameter", ""),
+                skill.get("main_category", ""),
+                skill.get("sub_category", ""),
+                skill.get("acquisition_method", ""),
+                skill.get("acquisition_difficulty", ""),
+                skill.get("skill_type", 1 if skill.get("skill_type") == "szint" else 2),
+                skill.get("description_file", f"{skill.get('id')}.md")
+            ))
+            # KP költségek
+            if skill.get("skill_type") == "szint":
+                for lvl, kp in skill.get("kp_costs", {}).items():
+                    c.execute("""
+                        INSERT OR REPLACE INTO skill_level_costs (skill_id, level, kp_cost) VALUES (?, ?, ?)
+                    """, (skill.get("id"), int(lvl), int(kp)))
+            elif skill.get("skill_type") == "%":
+                kp3 = skill.get("kp_per_3_percent")
+                if kp3 is not None:
+                    c.execute("""
+                        INSERT OR REPLACE INTO skill_percent_costs (skill_id, kp_per_3percent) VALUES (?, ?)
+                    """, (skill.get("id"), int(kp3)))
+            # Előfeltételek
+            for lvl, prereq in skill.get("prerequisites", {}).items():
+                for stat_str in prereq.get("képesség", []):
+                    parts = stat_str.split()
+                    if len(parts) == 2 and parts[1].endswith("+"):
+                        attr = parts[0]
+                        min_val = int(parts[1][:-1])
+                        c.execute("""
+                            INSERT OR REPLACE INTO skill_prerequisites_attributes (skill_id, level, attribute, min_value) VALUES (?, ?, ?, ?)
+                        """, (skill.get("id"), int(lvl), attr, min_val))
+                for skill_str in prereq.get("képzettség", []):
+                    m = re.match(r"(.+?)(?: \((.+?)\))? (\d+)\. szint", skill_str)
+                    if m:
+                        name = m.group(1)
+                        param = m.group(2) or ""
+                        min_lvl = int(m.group(3))
+                        # Skill id keresése név+param alapján
+                        c.execute("SELECT id FROM skills WHERE name=? AND parameter=?", (name, param))
+                        res = c.fetchone()
+                        req_id = res[0] if res else name
+                        c.execute("""
+                            INSERT OR REPLACE INTO skill_prerequisites_skills (skill_id, level, required_skill_id, min_level) VALUES (?, ?, ?, ?)
+                        """, (skill.get("id"), int(lvl), req_id, min_lvl))
+            # Leírás mentése .md-be
+            desc_file = skill.get("description_file", f"{skill.get('id')}.md")
+            desc_path = os.path.join(self.desc_dir, desc_file)
+            with open(desc_path, "w", encoding="utf-8") as f:
+                f.write(skill.get("description", ""))
+                for lvl, txt in skill.get("level_descriptions", {}).items():
+                    f.write(f"\n\n## Szint {lvl}\n{txt}")
+        conn.commit()
+        conn.close()
 
     def validate(self, skill):
         required = ["name", "main_category", "sub_category", "description", "skill_type"]
@@ -17,9 +166,7 @@ class SkillManager(JsonManager):
         return True
 
     def serialize_skill(self, ui_data):
-        """
-        UI adatokból (SkillEditor) készít menthető skill dict-et.
-        """
+        # ...existing code...
         # level_six_available lehet bool vagy BooleanVar, mindig bool-t írjunk ki
         level_six_available = ui_data.get("level_six_available", True)
         if hasattr(level_six_available, 'get'):
@@ -39,8 +186,8 @@ class SkillManager(JsonManager):
             "prerequisites": ui_data.get("prerequisites", {}),
             "is_parametric": ui_data.get("is_parametric", False),
             "parameter": ui_data.get("parameter", ""),
-            # ÚJ: 6. szint elérhetőség
-            "level_six_available": level_six_available
+            "level_six_available": level_six_available,
+            "description_file": f"{ui_data.get('id','')}.md"
         }
         # Tisztítsuk a paramétert
         if skill["is_parametric"] and skill["parameter"]:
@@ -50,9 +197,7 @@ class SkillManager(JsonManager):
         return skill
 
     def deserialize_skill(self, skill):
-        """
-        Skill dict-ből UI adatok (SkillEditor) generálása.
-        """
+        # ...existing code...
         ui_data = {
             "id": skill.get("id", ""),
             "name": skill.get("name", ""),
@@ -68,15 +213,12 @@ class SkillManager(JsonManager):
             "prerequisites": skill.get("prerequisites", {}),
             "is_parametric": skill.get("is_parametric", False),
             "parameter": skill.get("parameter", ""),
-            # ÚJ: 6. szint elérhetőség
             "level_six_available": skill.get("level_six_available", True)
         }
         return ui_data
 
     def prereq_to_string(self, prereq_vars):
-        """
-        Előfeltételek (prereq_vars) -> menthető dict (stringekkel)
-        """
+        # ...existing code...
         result = {}
         for i in range(6):
             stat_list = []
@@ -108,9 +250,7 @@ class SkillManager(JsonManager):
         return result
 
     def prereq_from_string(self, prerequisites):
-        """
-        Mentett dictből (stringek) -> UI prereq_vars (list of dicts)
-        """
+        # ...existing code...
         prereq_vars = [[] for _ in range(6)]
         for idx in range(6):
             prereq = prerequisites.get(str(idx+1), {})
