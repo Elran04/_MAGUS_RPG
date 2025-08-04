@@ -186,15 +186,7 @@ class SkillEditor():
     def _create_action_buttons(self):
         row = self.row_kp_percent + 7
         # Tickbox a gombok fölé
-        if not hasattr(self, "level_six_available_var"):
-            self.level_six_available_var = tk.BooleanVar(value=True)
-        self.level_six_checkbox = tk.Checkbutton(
-            self.scroll_frame,
-            text="6. szint elérhető",
-            variable=self.level_six_available_var,
-            command=self.update_level_six_state
-        )
-        self.level_six_checkbox.grid(row=row, column=0, sticky="w", padx=10, pady=5)
+        # 6. szint tickbox és logika eltávolítva
         row += 1
         button_frame = tk.Frame(self.scroll_frame)
         button_frame.grid(row=row, column=0, columnspan=5, pady=20)
@@ -207,15 +199,7 @@ class SkillEditor():
         save_btn = tk.Button(button_frame, text="Mentés", width=18, command=self.save_skill)
         save_btn.pack(side=tk.LEFT, padx=10)
         # Delete button removed
-    def update_level_six_state(self):
-        # 6. szint frame tiltása/engedélyezése a tickbox alapján
-        if hasattr(self, "level_frames") and len(self.level_frames) >= 6:
-            state = tk.NORMAL if self.level_six_available_var.get() else tk.DISABLED
-            for widget in self.level_frames[5].winfo_children():
-                try:
-                    widget.configure(state=state)
-                except Exception:
-                    pass
+    # 6. szint tickbox logika eltávolítva
     def open_all_description_editor(self):
         self.open_description_editor()
 
@@ -266,6 +250,15 @@ class SkillEditor():
             if skill_list:
                 summary += "Képzettség: " + ", ".join(skill_list)
             self.prereq_summary_labels[i].config(text=summary.strip())
+
+    def validate_skill_levels(self, level_kp_dict):
+        if not level_kp_dict:
+            return False, "Nem adtál meg egy szintet sem."
+        valid_levels = sorted(int(lvl) for lvl in level_kp_dict.keys())
+        expected_levels = list(range(1, max(valid_levels) + 1))
+        if valid_levels != expected_levels:
+            return False, f"Hibás szintfelépítés: hiányzó szintek észlelve: {valid_levels}"
+        return True, None
 
  
     def open_prerequisite_editor(self):
@@ -339,8 +332,7 @@ class SkillEditor():
             "level_descriptions": {},
             "is_parametric": bool(self.param_var.get().strip()),
             "parameter": self.param_var.get().strip(),
-            # ÚJ: 6. szint elérhetőség
-            "level_six_available": bool(self.level_six_available_var.get())
+        # "level_six_available" mező eltávolítva
         }
         # Szintleírások
         for i, desc_text in enumerate(self.level_desc_texts):
@@ -348,11 +340,23 @@ class SkillEditor():
             if desc:
                 ui_data["level_descriptions"][str(i+1)] = desc
         # KP költségek
+        valid_levels = []
         if self.type_var.get() != TYPE_MAP[2]:
             for i, kp_var in enumerate(self.kp_cost_vars):
                 kp = kp_var.get().strip()
                 if kp:
-                    ui_data["kp_costs"][str(i+1)] = kp
+                    try:
+                        if int(kp) > 0:
+                            ui_data["kp_costs"][str(i+1)] = kp
+                            valid_levels.append(i+1)
+                    except ValueError:
+                        continue
+        # Validáció: csak szint-alapú skilleknél
+        if ui_data.get("skill_type", 1) == 1:
+            is_valid, err_msg = self.validate_skill_levels(ui_data["kp_costs"])
+            if not is_valid:
+                self.show_error(err_msg)
+                return
         # Előfeltételek
         ui_data["prerequisites"] = self.skill_manager.prereq_to_string(self.prereq_manager.prereq_vars)
 
@@ -365,7 +369,7 @@ class SkillEditor():
             skills = self.skill_manager.load()
         except Exception:
             skills = []
-        # ID alapú keresés és felülírás
+        # ID alapú keresés és felülírás (csak egyszer)
         found_idx = None
         for idx, s in enumerate(skills):
             if s.get("id", "") == skill.get("id", "") and skill.get("id", "") != "":
@@ -377,9 +381,11 @@ class SkillEditor():
                 return
             del skills[found_idx]
         skills.append(skill)
-        self.skill_manager.save(skills)
+        valid_levels_dict = None
+        if skill.get("skill_type", 1) == 1:
+            valid_levels_dict = {skill.get("id"): valid_levels}
+        self.skill_manager.save(skills, valid_levels_dict=valid_levels_dict)
         self.show_info("Képzettség mentve!", "Siker")
-        #self.win.destroy()
 
     def open_skill_loader(self):
         SkillLoaderDialog(self)
@@ -407,7 +413,7 @@ class SkillEditor():
         self._recreate_optionmenu("type_var", self.type_var, list(TYPE_MAP.values()))
         self.kp_per_3_var.set(skill.get("kp_per_3_percent", ""))
         self.general_desc = skill.get("description", "")
-        self.level_six_available_var.set(bool(skill.get("level_six_available", True)))
+        # 6. szint elérhetőség logika eltávolítva
         # Szintleírások
         self.level_desc_texts = [skill.get("level_descriptions", {}).get(str(i+1), "") for i in range(6)]
         # KP költségek

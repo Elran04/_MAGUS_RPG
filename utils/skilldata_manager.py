@@ -91,9 +91,10 @@ class SkillManager:
                 result[str(lvl)] = {"képesség": stat_list, "képzettség": skill_list}
         return result
 
-    def save(self, skills):
+    def save(self, skills, valid_levels_dict=None):
         """
         Képzettségek mentése az adatbázisba (tömeges mentés, pl. szerkesztőből).
+        valid_levels_dict: {skill_id: [valid_levels]} - csak szint alapú skilleknél szükséges
         """
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
@@ -115,10 +116,36 @@ class SkillManager:
             ))
             # KP költségek
             if skill.get("skill_type") == 1:
-                for lvl, kp in skill.get("kp_costs", {}).items():
-                    c.execute("""
-                        INSERT OR REPLACE INTO skill_level_costs (skill_id, level, kp_cost) VALUES (?, ?, ?)
-                    """, (skill.get("id"), int(lvl), int(kp)))
+                kp_costs = skill.get("kp_costs", {})
+                valid_levels = None
+                if valid_levels_dict and skill.get("id") in valid_levels_dict:
+                    valid_levels = valid_levels_dict[skill.get("id")]
+                else:
+                    valid_levels = sorted(int(lvl) for lvl in kp_costs.keys())
+                # Validáció: folytonos szintek
+                if valid_levels:
+                    if valid_levels != list(range(1, max(valid_levels) + 1)):
+                        raise ValueError(f"Hibás szintfelépítés: a megadott szintek között hiányzik legalább egy. Szintek: {valid_levels}")
+                    # Törlés: csak valid_levels maradjon
+                    placeholders = ','.join('?' for _ in valid_levels)
+                    c.execute(
+                        f'''
+                        DELETE FROM skill_level_costs
+                        WHERE skill_id = ?
+                        AND level NOT IN ({placeholders})
+                        ''',
+                        (skill.get("id"), *valid_levels)
+                    )
+                # Beszúrás/frissítés
+                for lvl, kp in kp_costs.items():
+                    c.execute(
+                        '''
+                        INSERT INTO skill_level_costs (skill_id, level, kp_cost)
+                        VALUES (?, ?, ?)
+                        ON CONFLICT(skill_id, level) DO UPDATE SET kp_cost=excluded.kp_cost
+                        ''',
+                        (skill.get("id"), int(lvl), int(kp))
+                    )
             elif skill.get("skill_type") == 2:
                 kp3 = skill.get("kp_per_3_percent")
                 if kp3 is not None:
