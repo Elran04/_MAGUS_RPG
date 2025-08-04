@@ -29,8 +29,9 @@ class EquipmentEditor:
         ArmorEditor()
 
     def open_weapons_editor(self):
-        from ui.equipment.weapons_and_shields_editor import WeaponsAndShieldsEditor
-        WeaponsAndShieldsEditor()
+        import subprocess, sys, os
+        script_path = os.path.join(os.path.dirname(__file__), "weapons_and_shields_editor.py")
+        subprocess.Popen([sys.executable, script_path])
 
     def open_general_editor(self):
         from ui.equipment.general_equipment_editor import GeneralEquipmentEditor

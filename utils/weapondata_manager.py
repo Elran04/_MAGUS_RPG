@@ -1,6 +1,7 @@
 import os
-import json
+import sqlite3
 from utils.json_manager import JsonManager
+
 
 class WeaponDataManager(JsonManager):
     # Központi meződefiníciók
@@ -79,20 +80,22 @@ class WeaponDataManager(JsonManager):
         return True
 
     def get_weapon_categories(self, type_value):
-        skills_path = os.path.join(os.path.dirname(__file__), "..", "data", "skills", "skills.json")
+        """
+        Lekérdezi a fegyverkategóriákat a skills_data.db adatbázisból, a típus alapján.
+        """
+        db_path = os.path.join(os.path.dirname(__file__), "..", "data", "skills", "skills_data.db")
+        categories = set()
         try:
-            with open(skills_path, encoding="utf-8") as f:
-                skills = json.load(f)
-            categories = set()
+            conn = sqlite3.connect(db_path)
+            c = conn.cursor()
             if type_value in ["közelharci", "távolsági"]:
-                for skill in skills:
-                    if skill.get("name") == "Fegyverhasználat" and skill.get("parameter"):
-                        categories.add(skill["parameter"])
+                c.execute("SELECT parameter FROM skills WHERE name='Fegyverhasználat' AND parameter IS NOT NULL AND parameter != ''")
+                categories.update(row[0] for row in c.fetchall())
             elif type_value == "hajító":
-                for skill in skills:
-                    if skill.get("name") == "Fegyverdobás" and skill.get("parameter"):
-                        categories.add(skill["parameter"])
+                c.execute("SELECT parameter FROM skills WHERE name='Fegyverdobás' AND parameter IS NOT NULL AND parameter != ''")
+                categories.update(row[0] for row in c.fetchall())
             # pajzs esetén üres
+            conn.close()
             return sorted(categories)
         except Exception:
             return []
