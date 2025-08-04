@@ -114,12 +114,12 @@ class SkillManager:
                 skill.get("description_file", f"{skill.get('id')}.md")
             ))
             # KP költségek
-            if skill.get("skill_type") == "szint":
+            if skill.get("skill_type") == 1:
                 for lvl, kp in skill.get("kp_costs", {}).items():
                     c.execute("""
                         INSERT OR REPLACE INTO skill_level_costs (skill_id, level, kp_cost) VALUES (?, ?, ?)
                     """, (skill.get("id"), int(lvl), int(kp)))
-            elif skill.get("skill_type") == "%":
+            elif skill.get("skill_type") == 2:
                 kp3 = skill.get("kp_per_3_percent")
                 if kp3 is not None:
                     c.execute("""
