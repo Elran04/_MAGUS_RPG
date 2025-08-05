@@ -154,14 +154,9 @@ class SkillManager:
                     """, (skill.get("id"), int(kp3)))
             # Előfeltételek
             for lvl, prereq in skill.get("prerequisites", {}).items():
-                for stat_str in prereq.get("képesség", []):
-                    parts = stat_str.split()
-                    if len(parts) == 2 and parts[1].endswith("+"):
-                        attr = parts[0]
-                        min_val = int(parts[1][:-1])
-                        c.execute("""
-                            INSERT OR REPLACE INTO skill_prerequisites_attributes (skill_id, level, attribute, min_value) VALUES (?, ?, ?, ?)
-                        """, (skill.get("id"), int(lvl), attr, min_val))
+                # --- Képzettség előfeltételek: először törlés, majd beszúrás ---
+                c.execute("DELETE FROM skill_prerequisites_skills WHERE skill_id=? AND level=?", (skill.get("id"), int(lvl)))
+                skill_prereqs = []
                 for skill_str in prereq.get("képzettség", []):
                     m = re.match(r"(.+?)(?: \((.+?)\))? (\d+)\. szint", skill_str)
                     if m:
@@ -172,9 +167,17 @@ class SkillManager:
                         c.execute("SELECT id FROM skills WHERE name=? AND parameter=?", (name, param))
                         res = c.fetchone()
                         req_id = res[0] if res else name
-                        c.execute("""
-                            INSERT OR REPLACE INTO skill_prerequisites_skills (skill_id, level, required_skill_id, min_level) VALUES (?, ?, ?, ?)
-                        """, (skill.get("id"), int(lvl), req_id, min_lvl))
+                        skill_prereqs.append((req_id, min_lvl))
+                for req_id, min_lvl in skill_prereqs:
+                    c.execute("INSERT INTO skill_prerequisites_skills (skill_id, level, required_skill_id, min_level) VALUES (?, ?, ?, ?)", (skill.get("id"), int(lvl), req_id, min_lvl))
+                # --- Képesség előfeltételek: először törlés, majd beszúrás ---
+                c.execute("DELETE FROM skill_prerequisites_attributes WHERE skill_id=? AND level=?", (skill.get("id"), int(lvl)))
+                for stat_str in prereq.get("képesség", []):
+                    parts = stat_str.split()
+                    if len(parts) == 2 and parts[1].endswith("+"):
+                        attr = parts[0]
+                        min_val = int(parts[1][:-1])
+                        c.execute("INSERT INTO skill_prerequisites_attributes (skill_id, level, attribute, min_value) VALUES (?, ?, ?, ?)", (skill.get("id"), int(lvl), attr, min_val))
             # Leírás mentése .md-be
             desc_file = skill.get("description_file", f"{skill.get('id')}.md")
             desc_path = os.path.join(self.desc_dir, desc_file)
