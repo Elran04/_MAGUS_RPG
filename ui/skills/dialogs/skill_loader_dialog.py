@@ -124,8 +124,11 @@ class SkillLoaderDialog:
             if name == skill_name:
                 answer = self.editor.ask_yes_no(f"Biztosan törlöd ezt a képzettséget?\n{name}", "Törlés")
                 if answer:
-                    self.all_skills.pop(idx)
-                    self.editor.skill_manager.save(self.all_skills)
+                    skill_id = skill_obj.get("id")
+                    if skill_id:
+                        self.editor.skill_manager.delete_skill_by_id(skill_id)
+                    # Frissítsük a listát a DB-ből
+                    self.all_skills = self.editor.skill_manager.load()
                     self.editor.show_info("Képzettség törölve!", "Törlés")
                     self.loader.destroy()
                 return

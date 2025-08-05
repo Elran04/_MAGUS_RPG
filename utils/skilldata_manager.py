@@ -9,6 +9,31 @@ class SkillManager:
     def __init__(self):
         self.db_path = DB_PATH
         self.desc_dir = DESC_DIR
+    def delete_skill_by_id(self, skill_id):
+        """
+        Törli a megadott skill-t és minden hivatkozását az adatbázisból.
+        """
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        # Fő skill törlése
+        c.execute("DELETE FROM skills WHERE id=?", (skill_id,))
+        # KP költségek törlése
+        c.execute("DELETE FROM skill_level_costs WHERE skill_id=?", (skill_id,))
+        c.execute("DELETE FROM skill_percent_costs WHERE skill_id=?", (skill_id,))
+        # Előfeltételek törlése
+        c.execute("DELETE FROM skill_prerequisites_skills WHERE skill_id=?", (skill_id,))
+        c.execute("DELETE FROM skill_prerequisites_attributes WHERE skill_id=?", (skill_id,))
+        # Más skillek előfeltételeiben hivatkozás törlése
+        c.execute("DELETE FROM skill_prerequisites_skills WHERE required_skill_id=?", (skill_id,))
+        conn.commit()
+        conn.close()
+        # Leírás törlése a descriptions mappából
+        desc_file = os.path.join(self.desc_dir, f"{skill_id}.md")
+        if os.path.exists(desc_file):
+            try:
+                os.remove(desc_file)
+            except Exception as e:
+                print(f"Leírás törlése sikertelen: {desc_file}, hiba: {e}")
 
     def load(self):
         """
