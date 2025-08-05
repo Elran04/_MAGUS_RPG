@@ -111,15 +111,20 @@ class SkillEditor():
 
     def _create_header(self):
         row = 0
+        # Név
         tk.Label(self.scroll_frame, text="Név:").grid(row=row, column=0, **GRID_CFG["label"])
-        tk.Entry(self.scroll_frame, textvariable=self.name_var).grid(row=row, column=1, **GRID_CFG["entry"])
-        tk.Label(self.scroll_frame, text="Azonosító:").grid(row=row, column=2, **GRID_CFG["label"])
-        tk.Entry(self.scroll_frame, textvariable=self.id_var, width=25).grid(row=row, column=3, **GRID_CFG["entry"])
-        tk.Label(self.scroll_frame, text="Paraméter (Rövid kardok, Dobótőr...):").grid(row=row, column=4, **GRID_CFG["label"])
-        tk.Entry(self.scroll_frame, textvariable=self.param_var, width=20).grid(row=row, column=5, **GRID_CFG["entry"])
-
+        tk.Entry(self.scroll_frame, textvariable=self.name_var, width=30).grid(row=row, column=1, columnspan=4, **GRID_CFG["entry"])
+        row += 1
+        # Azonosító
+        tk.Label(self.scroll_frame, text="Azonosító:").grid(row=row, column=0, **GRID_CFG["label"])
+        tk.Entry(self.scroll_frame, textvariable=self.id_var, width=30).grid(row=row, column=1, columnspan=4, **GRID_CFG["entry"])
+        row += 1
+        # Paraméter
+        tk.Label(self.scroll_frame, text="Paraméter:").grid(row=row, column=0, **GRID_CFG["label"])
+        tk.Entry(self.scroll_frame, textvariable=self.param_var, width=30).grid(row=row, column=1, columnspan=4, **GRID_CFG["entry"])
+        tk.Label(self.scroll_frame, text="Rövid kardok, Elf nyelv, Dobótőr stb...").grid(row=row, column=2, **GRID_CFG["label"])
     def _create_category_selectors(self):
-        row = 1
+        row = 3
         tk.Label(self.scroll_frame, text="Főkategória:").grid(row=row, column=0, **GRID_CFG["label"])
         tk.OptionMenu(self.scroll_frame, self.main_cat_var, *CATEGORIES.keys()).grid(row=row, column=1, **GRID_CFG["optionmenu"])
         self.main_cat_var.set(list(CATEGORIES.keys())[0])
@@ -131,7 +136,7 @@ class SkillEditor():
         self.main_cat_var.trace_add("write", self.update_subcategories)
 
     def _create_acquisition_section(self):
-        row = 3
+        row = 5
         tk.Label(self.scroll_frame, text="Elsajátítás módja:").grid(row=row, column=0, **GRID_CFG["label"])
         tk.OptionMenu(self.scroll_frame, self.acq_method_var, *ACQ_METHOD_MAP.values()).grid(row=row, column=1, **GRID_CFG["optionmenu"])
         row += 1
@@ -142,7 +147,7 @@ class SkillEditor():
         ).grid(row=row, column=1, **GRID_CFG["optionmenu"])
 
     def _create_type_section(self):
-        row = 5
+        row = 7
         tk.Label(self.scroll_frame, text="Típus:").grid(row=row, column=0, **GRID_CFG["label"])
         tk.OptionMenu(self.scroll_frame, self.type_var, *TYPE_MAP.values()).grid(row=row, column=1, **GRID_CFG["optionmenu"])
         self.row_kp_percent = row + 1
@@ -443,7 +448,7 @@ class SkillEditor():
         else:
             return
         # Recreate OptionMenu
-        new_menu = tk.OptionMenu(self.scroll_frame, var, *values)
+        new_menu = tk.OptionMenu(self.scroll_frame, var, *values, width=30)
         new_menu.grid(row=row, column=1, **GRID_CFG["optionmenu"])
 
     # _refresh_optionmenu removed, replaced by _recreate_optionmenu
