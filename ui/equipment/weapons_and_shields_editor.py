@@ -324,24 +324,55 @@ class WeaponsAndShieldsEditor(QMainWindow):
         default_categories = self.manager.get_weapon_categories(default_type)
         self.fields['category'].addItems(default_categories)
         self.edit_layout.addRow(QLabel("Kategória:"), self.fields['category'])
-        # Damage types
+        # Damage types egy sorban, Sebzés típus: label bal oldali oszlopban
+        from PySide6.QtWidgets import QHBoxLayout, QWidget
         self.damage_type_checks = {}
+        damage_row = QHBoxLayout()
+        damage_row.setSpacing(4)
         for typ in self.manager.DAMAGE_TYPES:
             cb = QCheckBox(typ.capitalize())
+            cb.setSizePolicy(cb.sizePolicy().horizontalPolicy(), QWidget().sizePolicy().verticalPolicy())
+            cb.setStyleSheet("QCheckBox { margin-top: 0px; margin-bottom: 0px; }")
             self.damage_type_checks[typ] = cb
-            self.edit_layout.addRow(cb)
+            damage_row.addWidget(cb, alignment=Qt.AlignVCenter)
+        damage_row.addStretch(1)
+        damage_row_widget = QWidget()
+        damage_row_widget.setLayout(damage_row)
+        damage_label = QLabel("Sebzés típus:")
+        damage_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.edit_layout.addRow(damage_label, damage_row_widget)
         # Damage bonus attributes
         self.damage_bonus_checks = {}
         for attr in self.manager.DAMAGE_BONUS_ATTRS:
             cb = QCheckBox(attr.capitalize())
             self.damage_bonus_checks[attr] = cb
             self.edit_layout.addRow(cb)
-        # Ár mezők
-        for key in self.manager.PRICE_FIELDS:
+        # Ár mezők: egy sorban, rövid QSpinBox mezőkkel, egyszerű feliratok, label bal oldali oszlopban
+        from PySide6.QtWidgets import QHBoxLayout, QWidget
+        price_row = QHBoxLayout()
+        price_row.setSpacing(4)
+        price_labels = ["Réz:", "Ezüst:", "Arany:", "Mithrill:"]
+        for i, key in enumerate(self.manager.PRICE_FIELDS):
+            h = QHBoxLayout()
+            h.setSpacing(2)
+            label = QLabel(price_labels[i])
+            label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            label.setStyleSheet("QLabel { margin-top: 0px; margin-bottom: 0px; }")
             sb = QSpinBox()
             sb.setMaximum(999999)
+            sb.setFixedWidth(40)
             self.fields[key] = sb
-            self.edit_layout.addRow(QLabel(key.replace('_', ' ').capitalize() + ":"), sb)
+            h.addWidget(label, alignment=Qt.AlignVCenter)
+            h.addWidget(sb, alignment=Qt.AlignVCenter)
+            w = QWidget()
+            w.setLayout(h)
+            price_row.addWidget(w, alignment=Qt.AlignVCenter)
+        price_row.addStretch(1)
+        price_row_widget = QWidget()
+        price_row_widget.setLayout(price_row)
+        ar_label = QLabel("Ár:")
+        ar_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.edit_layout.addRow(ar_label, price_row_widget)
         # Egyéb mezők, checkboxok
         for key in self.manager.CHECKBOX_FIELDS:
             cb = QCheckBox(key.replace('_', ' ').capitalize())
