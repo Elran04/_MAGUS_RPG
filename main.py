@@ -46,7 +46,7 @@ def open_character_creator():
     script_path = os.path.join(os.path.dirname(__file__), "ui", "character_creator.py")
     subprocess.Popen([sys.executable, script_path])
 
-create_char_button = tk.Button(button_frame, text="Karaktergenerálás (QT)", width=30, command=open_character_creator)
+create_char_button = tk.Button(button_frame, text="Karaktergenerálás", width=30, command=open_character_creator)
 create_char_button.grid(row=1, column=0, pady=5)
 
 
@@ -63,7 +63,7 @@ def open_class_editor():
     script_path = os.path.join(os.path.dirname(__file__), "ui", "class_editor.py")
     subprocess.Popen([sys.executable, script_path])
 
-class_editor_button = tk.Button(button_frame, text="Kaszt szerkesztő (QT)", width=30, command=open_class_editor)
+class_editor_button = tk.Button(button_frame, text="Kaszt szerkesztő", width=30, command=open_class_editor)
 class_editor_button.grid(row=4, column=0, pady=5)
 
 # --- FŐABLAK FUTTATÁSA ---

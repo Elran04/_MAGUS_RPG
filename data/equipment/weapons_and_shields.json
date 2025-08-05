@@ -626,5 +626,31 @@
     "VE": 5,
     "size_category": 4,
     "wield_mode": "Kétkezes"
+  },
+  {
+    "name": "Harci kalapács",
+    "id": "warhammer_1h",
+    "type": "közelharci",
+    "category": "Harci kalapácsok",
+    "attack_time": 5,
+    "damage_min": 3,
+    "damage_max": 13,
+    "weight": 1.5,
+    "price": 1000,
+    "stp": 25,
+    "armor_penetration": 3,
+    "can_disarm": true,
+    "can_break_weapon": true,
+    "damage_types": [
+      "zúzó"
+    ],
+    "damage_bonus_attributes": [
+      "erő"
+    ],
+    "KE": 2,
+    "TE": 11,
+    "VE": 5,
+    "size_category": 3,
+    "wield_mode": "Egykezes"
   }
 ]
