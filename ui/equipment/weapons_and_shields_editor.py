@@ -266,7 +266,7 @@ class WeaponsAndShieldsEditor(QMainWindow):
         Fő ablak inicializálása, manager példány, itemek betöltése, UI felépítése
         """
         super().__init__()
-        self.setWindowTitle("Fegyverek és pajzsok szerkesztője (Qt)")
+        self.setWindowTitle("Fegyverek és pajzsok szerkesztője")
         self.resize(1100, 700)
         self.manager = WeaponDataManager(WEAPONS_JSON)
         self.items = self.manager.load()
@@ -285,18 +285,26 @@ class WeaponsAndShieldsEditor(QMainWindow):
         # TreeView (lista) panel
         self.setup_treeview(main_layout)
 
-        # Szerkesztő panel
+        # Szerkesztő panel új layouttal: QVBoxLayout, legalul Mentés gomb
         self.edit_panel = QWidget()
-        self.edit_layout = QFormLayout()
-        self.edit_panel.setLayout(self.edit_layout)
+        editor_vbox = QVBoxLayout()
+        self.edit_panel.setLayout(editor_vbox)
         main_layout.addWidget(self.edit_panel, 2)
 
         # Mezők
         self.fields = {}
+        self.edit_layout = QFormLayout()
+        # Az edit_layout-ot egy widgetbe csomagoljuk
+        edit_fields_widget = QWidget()
+        edit_fields_widget.setLayout(self.edit_layout)
+        editor_vbox.addWidget(edit_fields_widget)
         self.build_edit_fields()
+        # Mentés gomb legalul
         btn_save = QPushButton("Mentés")
         btn_save.clicked.connect(self.save_item)
-        self.edit_layout.addRow(btn_save)
+        editor_vbox.addWidget(btn_save, alignment=Qt.AlignBottom)
+        # Típusfüggő mezők generálása induláskor is
+        self.update_type_fields(self.fields['type'].currentText())
 
     def build_edit_fields(self):
         """
@@ -325,54 +333,127 @@ class WeaponsAndShieldsEditor(QMainWindow):
         self.fields['category'].addItems(default_categories)
         self.edit_layout.addRow(QLabel("Kategória:"), self.fields['category'])
         # Damage types egy sorban, Sebzés típus: label bal oldali oszlopban
-        from PySide6.QtWidgets import QHBoxLayout, QWidget
+        from PySide6.QtWidgets import QGridLayout, QWidget, QSpacerItem, QSizePolicy
         self.damage_type_checks = {}
-        damage_row = QHBoxLayout()
-        damage_row.setSpacing(4)
-        for typ in self.manager.DAMAGE_TYPES:
+        damage_grid = QGridLayout()
+        damage_grid.setSpacing(4)
+        for i, typ in enumerate(self.manager.DAMAGE_TYPES):
             cb = QCheckBox(typ.capitalize())
             cb.setSizePolicy(cb.sizePolicy().horizontalPolicy(), QWidget().sizePolicy().verticalPolicy())
             cb.setStyleSheet("QCheckBox { margin-top: 0px; margin-bottom: 0px; }")
             self.damage_type_checks[typ] = cb
-            damage_row.addWidget(cb, alignment=Qt.AlignVCenter)
-        damage_row.addStretch(1)
-        damage_row_widget = QWidget()
-        damage_row_widget.setLayout(damage_row)
-        damage_label = QLabel("Sebzés típus:")
-        damage_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.edit_layout.addRow(damage_label, damage_row_widget)
-        # Damage bonus attributes
+            damage_grid.addWidget(cb, 0, i, alignment=Qt.AlignBottom)
+        # Add a horizontal spacer to fill remaining space
+        damage_grid.addItem(QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum), 0, len(self.manager.DAMAGE_TYPES))
+        damage_grid_widget = QWidget()
+        damage_grid_widget.setLayout(damage_grid)
+        # Sebzés típus, Sebzés bónusz tulajdonsága, Ár: egy közös grid layoutban, három sorban
+        from PySide6.QtWidgets import QGridLayout, QSpacerItem, QSizePolicy
+        self.damage_type_checks = {}
         self.damage_bonus_checks = {}
-        for attr in self.manager.DAMAGE_BONUS_ATTRS:
+        self.price_fields = {}
+        combined_grid = QGridLayout()
+        combined_grid.setSpacing(4)
+        # Első sor: Sebzés típus
+        damage_label = QLabel("Sebzés típus:")
+        damage_label.setAlignment(Qt.AlignLeft | Qt.AlignBottom)
+        combined_grid.addWidget(damage_label, 0, 0, alignment=Qt.AlignLeft | Qt.AlignBottom)
+        for i, typ in enumerate(self.manager.DAMAGE_TYPES):
+            cb = QCheckBox(typ.capitalize())
+            cb.setSizePolicy(cb.sizePolicy().horizontalPolicy(), QWidget().sizePolicy().verticalPolicy())
+            cb.setStyleSheet("QCheckBox { margin-top: 0px; margin-bottom: 0px; }")
+            self.damage_type_checks[typ] = cb
+            combined_grid.addWidget(cb, 0, i + 1, alignment=Qt.AlignBottom)
+        combined_grid.addItem(QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum), 0, len(self.manager.DAMAGE_TYPES) + 1)
+        # Második sor: Sebzés bónusz tulajdonsága
+        bonus_label = QLabel("Sebzés bónusz tulajdonsága:")
+        bonus_label.setAlignment(Qt.AlignLeft | Qt.AlignBottom)
+        bonus_label.setMinimumWidth(90)
+        combined_grid.addWidget(bonus_label, 1, 0, alignment=Qt.AlignLeft | Qt.AlignBottom)
+        for i, attr in enumerate(self.manager.DAMAGE_BONUS_ATTRS):
             cb = QCheckBox(attr.capitalize())
+            cb.setStyleSheet("QCheckBox { margin-top: 0px; margin-bottom: 0px; }")
             self.damage_bonus_checks[attr] = cb
-            self.edit_layout.addRow(cb)
-        # Ár mezők: egy sorban, rövid QSpinBox mezőkkel, egyszerű feliratok, label bal oldali oszlopban
-        from PySide6.QtWidgets import QHBoxLayout, QWidget
-        price_row = QHBoxLayout()
-        price_row.setSpacing(4)
-        price_labels = ["Réz:", "Ezüst:", "Arany:", "Mithrill:"]
-        for i, key in enumerate(self.manager.PRICE_FIELDS):
-            h = QHBoxLayout()
-            h.setSpacing(2)
-            label = QLabel(price_labels[i])
-            label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-            label.setStyleSheet("QLabel { margin-top: 0px; margin-bottom: 0px; }")
-            sb = QSpinBox()
-            sb.setMaximum(999999)
-            sb.setFixedWidth(40)
-            self.fields[key] = sb
-            h.addWidget(label, alignment=Qt.AlignVCenter)
-            h.addWidget(sb, alignment=Qt.AlignVCenter)
-            w = QWidget()
-            w.setLayout(h)
-            price_row.addWidget(w, alignment=Qt.AlignVCenter)
-        price_row.addStretch(1)
-        price_row_widget = QWidget()
-        price_row_widget.setLayout(price_row)
-        ar_label = QLabel("Ár:")
-        ar_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.edit_layout.addRow(ar_label, price_row_widget)
+            combined_grid.addWidget(cb, 1, i + 1, alignment=Qt.AlignBottom)
+        combined_grid.addItem(QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum), 1, len(self.manager.DAMAGE_BONUS_ATTRS) + 1)
+        # Harmadik sor: Ár mezők
+        price_labels = ["Réz", "Ezüst", "Arany", "Mithrill"]
+        price_label = QLabel("Ár:")
+        price_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        price_label.setMinimumWidth(40)
+        combined_grid.addWidget(price_label, 2, 0, alignment=Qt.AlignLeft | Qt.AlignVCenter)
+        from PySide6.QtWidgets import QVBoxLayout
+        # Réz
+        vbox_copper = QVBoxLayout()
+        vbox_copper.setSpacing(2)
+        lbl_copper = QLabel(price_labels[0])
+        lbl_copper.setAlignment(Qt.AlignHCenter | Qt.AlignBottom)
+        lbl_copper.setStyleSheet("QLabel { margin-bottom: 2px; }")
+        sb_copper = QSpinBox()
+        sb_copper.setMaximum(999999)
+        sb_copper.setFixedWidth(48)
+        self.fields[self.manager.PRICE_FIELDS[0]] = sb_copper
+        vbox_copper.addWidget(lbl_copper)
+        vbox_copper.addWidget(sb_copper)
+        price_widget_copper = QWidget()
+        price_widget_copper.setLayout(vbox_copper)
+        price_widget_copper.setFixedWidth(60)
+        combined_grid.addWidget(price_widget_copper, 2, 1, alignment=Qt.AlignTop)
+
+        # Ezüst
+        vbox_silver = QVBoxLayout()
+        vbox_silver.setSpacing(2)
+        lbl_silver = QLabel(price_labels[1])
+        lbl_silver.setAlignment(Qt.AlignHCenter | Qt.AlignBottom)
+        lbl_silver.setStyleSheet("QLabel { margin-bottom: 2px; }")
+        sb_silver = QSpinBox()
+        sb_silver.setMaximum(999999)
+        sb_silver.setFixedWidth(48)
+        self.fields[self.manager.PRICE_FIELDS[1]] = sb_silver
+        vbox_silver.addWidget(lbl_silver)
+        vbox_silver.addWidget(sb_silver)
+        price_widget_silver = QWidget()
+        price_widget_silver.setLayout(vbox_silver)
+        price_widget_silver.setFixedWidth(60)
+        combined_grid.addWidget(price_widget_silver, 2, 2, alignment=Qt.AlignTop)
+
+        # Arany és Mithrill egy cellában, egy sorban
+        hbox_gold_mithrill = QHBoxLayout()
+        hbox_gold_mithrill.setSpacing(8)
+        # Arany
+        vbox_gold = QVBoxLayout()
+        vbox_gold.setSpacing(2)
+        lbl_gold = QLabel(price_labels[2])
+        lbl_gold.setAlignment(Qt.AlignHCenter | Qt.AlignBottom)
+        lbl_gold.setStyleSheet("QLabel { margin-bottom: 2px; }")
+        sb_gold = QSpinBox()
+        sb_gold.setMaximum(999999)
+        sb_gold.setFixedWidth(48)
+        self.fields[self.manager.PRICE_FIELDS[2]] = sb_gold
+        vbox_gold.addWidget(lbl_gold)
+        vbox_gold.addWidget(sb_gold)
+        # Mithrill
+        vbox_mithrill = QVBoxLayout()
+        vbox_mithrill.setSpacing(2)
+        lbl_mithrill = QLabel(price_labels[3])
+        lbl_mithrill.setAlignment(Qt.AlignHCenter | Qt.AlignBottom)
+        lbl_mithrill.setStyleSheet("QLabel { margin-bottom: 2px; }")
+        sb_mithrill = QSpinBox()
+        sb_mithrill.setMaximum(999999)
+        sb_mithrill.setFixedWidth(48)
+        self.fields[self.manager.PRICE_FIELDS[3]] = sb_mithrill
+        vbox_mithrill.addWidget(lbl_mithrill)
+        vbox_mithrill.addWidget(sb_mithrill)
+        # Arany és Mithrill egymás mellett
+        hbox_gold_mithrill.addLayout(vbox_gold)
+        hbox_gold_mithrill.addLayout(vbox_mithrill)
+        price_widget_gold_mithrill = QWidget()
+        price_widget_gold_mithrill.setLayout(hbox_gold_mithrill)
+        price_widget_gold_mithrill.setFixedWidth(120)
+        combined_grid.addWidget(price_widget_gold_mithrill, 2, 3, alignment=Qt.AlignTop)
+        combined_grid_widget = QWidget()
+        combined_grid_widget.setLayout(combined_grid)
+        self.edit_layout.addRow(combined_grid_widget)
         # Egyéb mezők, checkboxok
         for key in self.manager.CHECKBOX_FIELDS:
             cb = QCheckBox(key.replace('_', ' ').capitalize())
