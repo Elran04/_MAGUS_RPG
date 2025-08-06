@@ -5,7 +5,8 @@ from utils.reopen_prevention import WindowSingleton
 class SkillLoaderDialog:
     def __init__(self, editor):
         self.editor = editor
-        self.all_skills = editor.skill_manager.load()
+        # Betöltjük a normál skilleket és a helyfoglalókat is a SkillManager-ből
+        self.all_skills = editor.skill_manager.load() + editor.skill_manager.load_placeholders()
         self.loader, created = WindowSingleton.get('skill_loader_dialog', lambda: tk.Toplevel(editor.win))
         if not created:
             return

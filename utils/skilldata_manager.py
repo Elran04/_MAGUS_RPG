@@ -6,6 +6,34 @@ DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", 
 DESC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "skills", "descriptions"))
 
 class SkillManager:
+    def load_placeholders(self):
+        """
+        Betölti a helyfoglaló képzettségeket a skill_placeholders táblából.
+        """
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        c.execute("SELECT id, name, parameter, category, subcategory FROM skill_placeholders")
+        placeholders = []
+        for row in c.fetchall():
+            placeholders.append({
+                "id": row[0],
+                "name": row[1],
+                "parameter": row[2],
+                "main_category": row[3],
+                "sub_category": row[4],
+                "description": "",
+                "acquisition_method": None,
+                "acquisition_difficulty": None,
+                "skill_type": 1,
+                "kp_per_3_percent": None,
+                "kp_costs": {},
+                "level_descriptions": {},
+                "prerequisites": {},
+                "is_parametric": bool(row[2]),
+                "description_file": None
+            })
+        conn.close()
+        return placeholders
     def __init__(self):
         self.db_path = DB_PATH
         self.desc_dir = DESC_DIR

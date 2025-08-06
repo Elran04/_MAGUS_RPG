@@ -1,0 +1,1 @@
+A rövid kardokkal való lefegyverzés művészete.
