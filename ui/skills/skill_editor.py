@@ -38,7 +38,11 @@ class SkillEditor():
         if not created:
             return
         self.skill_manager = SkillManager()
+        # Biztonság: ha description_file None, legyen üres string
         self.all_skills = self.skill_manager.load()
+        for s in self.all_skills:
+            if s.get("description_file") is None:
+                s["description_file"] = ""
         self.SKILL_NAMES = [s["name"] for s in self.all_skills]
         self.win.title("Képzettség szerkesztő")
         self.win.geometry("800x600")
@@ -162,6 +166,7 @@ class SkillEditor():
         if hasattr(self, "kp_cost_labels"):
             for label in self.kp_cost_labels:
                 label.configure(state=tk.DISABLED if is_placeholder else tk.NORMAL)
+        self._update_editor_buttons_state()
 
     def _create_acquisition_section(self):
         row = 5
@@ -224,14 +229,22 @@ class SkillEditor():
         button_frame.grid(row=row, column=0, columnspan=5, pady=20)
         load_btn = tk.Button(button_frame, text="Szerkesztés", width=18, command=self.open_skill_loader)
         load_btn.pack(side=tk.LEFT, padx=10)
-        prereq_btn = tk.Button(button_frame, text="Előfeltételek szerkesztése", width=22, command=self.open_prerequisite_editor)
-        prereq_btn.pack(side=tk.LEFT, padx=10)
-        desc_btn = tk.Button(button_frame, text="Leírások szerkesztése", width=22, command=self.open_all_description_editor)
-        desc_btn.pack(side=tk.LEFT, padx=10)
+        self.prereq_btn = tk.Button(button_frame, text="Előfeltételek szerkesztése", width=22, command=self.open_prerequisite_editor)
+        self.prereq_btn.pack(side=tk.LEFT, padx=10)
+        self.desc_btn = tk.Button(button_frame, text="Leírások szerkesztése", width=22, command=self.open_all_description_editor)
+        self.desc_btn.pack(side=tk.LEFT, padx=10)
         save_btn = tk.Button(button_frame, text="Mentés", width=18, command=self.save_skill)
         save_btn.pack(side=tk.LEFT, padx=10)
-        # Delete button removed
-    # 6. szint tickbox logika eltávolítva
+        self._update_editor_buttons_state()
+
+    def _update_editor_buttons_state(self):
+        selected_main = self.main_cat_var.get() if hasattr(self, "main_cat_var") else ""
+        is_placeholder = selected_main == "Helyfoglaló képzettségek"
+        if hasattr(self, "prereq_btn"):
+            self.prereq_btn.configure(state=tk.DISABLED if is_placeholder else tk.NORMAL)
+        if hasattr(self, "desc_btn"):
+            self.desc_btn.configure(state=tk.DISABLED if is_placeholder else tk.NORMAL)
+
     def open_all_description_editor(self):
         self.open_description_editor()
 
@@ -263,8 +276,9 @@ class SkillEditor():
                         stat_list.append(f"{stat} {value}+")
                 elif prereq["type"] == "skill":
                     skillname = prereq["name_var"].get()
-                    level = prereq["level_var"].get()
-                    param = prereq.get("param_var", tk.StringVar()).get()
+                    level = prereq["level_var"].get() if "level_var" in prereq else ""
+                    param = prereq.get("param_var", tk.StringVar()).get() if "param_var" in prereq else ""
+                    # Ha a skillname placeholder, nincs szint, csak név és paraméter
                     m = re.match(r"(.+?)(?: \((.+?)\))?$", skillname)
                     base_name = m.group(1) if m else skillname
                     param_in_name = m.group(2) if m and m.group(2) else ""
@@ -274,8 +288,12 @@ class SkillEditor():
                         display_text = f"{base_name} ({param_in_name})"
                     else:
                         display_text = base_name
-                    if skillname and level:
-                        skill_list.append(f"{display_text} {level}. szint")
+                    if skillname:
+                        # Mindig jelenjen meg a szint, ha van (placeholdernél is)
+                        if level:
+                            skill_list.append(f"{display_text} {level}. szint")
+                        else:
+                            skill_list.append(display_text)
             summary = ""
             if stat_list:
                 summary += "Tulajdonság: " + ", ".join(stat_list) + "\n"
@@ -430,6 +448,9 @@ class SkillEditor():
         self._recreate_optionmenu("type_var", self.type_var, list(TYPE_MAP.values()))
         self.kp_per_3_var.set(skill.get("kp_per_3_percent", ""))
         self.general_desc = skill.get("description", "")
+        # Biztonság: ha description_file None, legyen üres string
+        if skill.get("description_file") is None:
+            skill["description_file"] = ""
         # 6. szint elérhetőség logika eltávolítva
         # Szintleírások
         self.level_desc_texts = [skill.get("level_descriptions", {}).get(str(i+1), "") for i in range(6)]
@@ -442,6 +463,7 @@ class SkillEditor():
             self.prereq_manager.load_from_string(skill.get("prerequisites", ""))
         self.update_kp_fields(self.row_kp_percent)
         self.update_prereq_summary()
+        self._update_editor_buttons_state()
 
     def _recreate_optionmenu(self, var_name, var, values):
         """

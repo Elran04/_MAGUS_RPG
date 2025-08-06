@@ -6,13 +6,8 @@ class SkillSelectorDialog:
     def __init__(self, parent, skill_list, callback):
         self.parent = parent
         self.callback = callback
-        # Helyfoglaló képzettségek betöltése a SkillManager-ből, ha van
-        try:
-            from utils.skilldata_manager import SkillManager
-            placeholders = SkillManager().load_placeholders()
-        except Exception:
-            placeholders = []
-        self.full_skill_list = skill_list + placeholders
+        # A skill_list már tartalmazza a placeholder-eket is, nem kell külön betölteni
+        self.full_skill_list = skill_list
         self.win, created = WindowSingleton.get('skill_selector_dialog', lambda: tk.Toplevel(parent))
         if not created:
             return
