@@ -13,7 +13,8 @@ CATEGORIES = {
     "Szociális képzettségek": ["Általános", "Nemesi", "Polgári", "Póri", "Művész"],
     "Alvilági képzettségek": ["Álcázó", "Kommunikációs", "Pénzszerző", "Harci", "Behatoló", "Ellenálló"],
     "Túlélő képzettségek": ["Vadonjáró", "Atlétikai"],
-    "Elméleti képzettségek": ["Közkeletű", "Szakértő", "Titkos elméleti", "Titkos szervezeti"]
+    "Elméleti képzettségek": ["Közkeletű", "Szakértő", "Titkos elméleti", "Titkos szervezeti"],
+    "Helyfoglaló képzettségek": ["Harci képzettségek", "Szociális képzettségek", "Alvilági képzettségek", "Túlélő képzettségek", "Elméleti képzettségek"]
 }
 ACQ_METHOD_MAP = {1: "Gyakorlás", 2: "Tapasztalás", 3: "Tanulás"}
 ACQ_METHOD_MAP_REV = {v: k for k, v in ACQ_METHOD_MAP.items()}
@@ -126,14 +127,41 @@ class SkillEditor():
     def _create_category_selectors(self):
         row = 3
         tk.Label(self.scroll_frame, text="Főkategória:").grid(row=row, column=0, **GRID_CFG["label"])
-        tk.OptionMenu(self.scroll_frame, self.main_cat_var, *CATEGORIES.keys()).grid(row=row, column=1, **GRID_CFG["optionmenu"])
+        main_cat_menu = tk.OptionMenu(self.scroll_frame, self.main_cat_var, *CATEGORIES.keys())
+        main_cat_menu.grid(row=row, column=1, **GRID_CFG["optionmenu"])
+        self.main_cat_menu = main_cat_menu
         self.main_cat_var.set(list(CATEGORIES.keys())[0])
         row += 1
         tk.Label(self.scroll_frame, text="Alkategória:").grid(row=row, column=0, **GRID_CFG["label"])
         self.sub_cat_menu = tk.OptionMenu(self.scroll_frame, self.sub_cat_var, *CATEGORIES[self.main_cat_var.get()])
         self.sub_cat_menu.grid(row=row, column=1, **GRID_CFG["optionmenu"])
         self.sub_cat_var.set(CATEGORIES[self.main_cat_var.get()][0])
+        self.main_cat_var.trace_add("write", self._on_main_category_change)
         self.main_cat_var.trace_add("write", self.update_subcategories)
+
+    def _on_main_category_change(self, *args):
+        selected_main = self.main_cat_var.get()
+        is_placeholder = selected_main == "Helyfoglaló képzettségek"
+        # Elsajátítás módja
+        for child in self.scroll_frame.winfo_children():
+            if isinstance(child, tk.OptionMenu) and child.cget('textvariable') == str(self.acq_method_var):
+                child.configure(state=tk.DISABLED if is_placeholder else tk.NORMAL)
+            if isinstance(child, tk.OptionMenu) and child.cget('textvariable') == str(self.acq_diff_var):
+                child.configure(state=tk.DISABLED if is_placeholder else tk.NORMAL)
+            if isinstance(child, tk.OptionMenu) and child.cget('textvariable') == str(self.type_var):
+                child.configure(state=tk.DISABLED if is_placeholder else tk.NORMAL)
+        # KP/3% mező
+        if hasattr(self, "kp_per_3_label") and hasattr(self, "kp_per_3_entry"):
+            state = tk.DISABLED if is_placeholder else tk.NORMAL
+            self.kp_per_3_label.configure(state=state)
+            self.kp_per_3_entry.configure(state=state)
+        # Szintenkénti KP mezők
+        if hasattr(self, "kp_cost_entries"):
+            for entry in self.kp_cost_entries:
+                entry.configure(state=tk.DISABLED if is_placeholder else tk.NORMAL)
+        if hasattr(self, "kp_cost_labels"):
+            for label in self.kp_cost_labels:
+                label.configure(state=tk.DISABLED if is_placeholder else tk.NORMAL)
 
     def _create_acquisition_section(self):
         row = 5
@@ -355,8 +383,8 @@ class SkillEditor():
                             valid_levels.append(i+1)
                     except ValueError:
                         continue
-        # Validáció: csak szint-alapú skilleknél
-        if ui_data.get("skill_type", 1) == 1:
+        # Validáció: csak szint-alapú skilleknél, de ne ellenőrizzük helyfoglaló képzettségnél
+        if ui_data.get("skill_type", 1) == 1 and ui_data.get("main_category", "") != "Helyfoglaló képzettségek":
             is_valid, err_msg = self.validate_skill_levels(ui_data["kp_costs"])
             if not is_valid:
                 self.show_error(err_msg)
@@ -369,26 +397,11 @@ class SkillEditor():
         if not self.skill_manager.validate(skill):
             self.show_error("Hiányzó vagy hibás mező a képzettségben!")
             return
-        try:
-            skills = self.skill_manager.load()
-        except Exception:
-            skills = []
-        # ID alapú keresés és felülírás (csak egyszer)
-        found_idx = None
-        for idx, s in enumerate(skills):
-            if s.get("id", "") == skill.get("id", "") and skill.get("id", "") != "":
-                found_idx = idx
-                break
-        if found_idx is not None:
-            answer = self.ask_yes_no("Az adott azonosítóval már létezik képzettség. Felülírja?", "Felülírás")
-            if not answer:
-                return
-            del skills[found_idx]
-        skills.append(skill)
+        # Csak az aktuális skillt mentsük, ne az összeset!
         valid_levels_dict = None
         if skill.get("skill_type", 1) == 1:
             valid_levels_dict = {skill.get("id"): valid_levels}
-        self.skill_manager.save(skills, valid_levels_dict=valid_levels_dict)
+        self.skill_manager.save([skill], valid_levels_dict=valid_levels_dict)
         self.show_info("Képzettség mentve!", "Siker")
 
     def open_skill_loader(self):
@@ -440,15 +453,15 @@ class SkillEditor():
                 child.destroy()
         # Find the row for this OptionMenu
         if var_name == "acq_method_var":
-            row = 3
-        elif var_name == "acq_diff_var":
-            row = 4
-        elif var_name == "type_var":
             row = 5
+        elif var_name == "acq_diff_var":
+            row = 6
+        elif var_name == "type_var":
+            row = 7
         else:
             return
         # Recreate OptionMenu
-        new_menu = tk.OptionMenu(self.scroll_frame, var, *values, width=30)
+        new_menu = tk.OptionMenu(self.scroll_frame, var, *values)
         new_menu.grid(row=row, column=1, **GRID_CFG["optionmenu"])
 
     # _refresh_optionmenu removed, replaced by _recreate_optionmenu

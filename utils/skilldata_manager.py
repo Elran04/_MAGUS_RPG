@@ -116,105 +116,135 @@ class SkillManager:
                 result[str(lvl)] = {"képesség": stat_list, "képzettség": skill_list}
         return result
 
+
     def save(self, skills, valid_levels_dict=None):
         """
         Képzettségek mentése az adatbázisba (tömeges mentés, pl. szerkesztőből).
         valid_levels_dict: {skill_id: [valid_levels]} - csak szint alapú skilleknél szükséges
         """
+        for skill in skills:
+            if skill.get("main_category", "") == "Helyfoglaló képzettségek":
+                self.save_placeholder(skill)
+            else:
+                self._save_skill(skill, valid_levels_dict)
+
+    def save_placeholder(self, skill):
+        """
+        Csak helyfoglaló képzettség mentése a skill_placeholders táblába.
+        """
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
-        for skill in skills:
-            # skills tábla
-            c.execute("""
-                INSERT OR REPLACE INTO skills (id, name, parameter, category, subcategory, acquisition, difficulty, type, description_file)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                skill.get("id"),
-                skill.get("name"),
-                skill.get("parameter", ""),
-                skill.get("main_category", ""),
-                skill.get("sub_category", ""),
-                skill.get("acquisition_method", ""),
-                skill.get("acquisition_difficulty", ""),
-                skill.get("skill_type", 1 if skill.get("skill_type") == "szint" else 2),
-                skill.get("description_file", f"{skill.get('id')}.md")
-            ))
-            # KP költségek
-            if skill.get("skill_type") == 1:
-                kp_costs = skill.get("kp_costs", {})
-                valid_levels = None
-                if valid_levels_dict and skill.get("id") in valid_levels_dict:
-                    valid_levels = valid_levels_dict[skill.get("id")]
-                else:
-                    valid_levels = sorted(int(lvl) for lvl in kp_costs.keys())
-                # Validáció: folytonos szintek
-                if valid_levels:
-                    if valid_levels != list(range(1, max(valid_levels) + 1)):
-                        raise ValueError(f"Hibás szintfelépítés: a megadott szintek között hiányzik legalább egy. Szintek: {valid_levels}")
-                    # Törlés: csak valid_levels maradjon
-                    placeholders = ','.join('?' for _ in valid_levels)
-                    c.execute(
-                        f'''
-                        DELETE FROM skill_level_costs
-                        WHERE skill_id = ?
-                        AND level NOT IN ({placeholders})
-                        ''',
-                        (skill.get("id"), *valid_levels)
-                    )
-                # Beszúrás/frissítés
-                for lvl, kp in kp_costs.items():
-                    c.execute(
-                        '''
-                        INSERT INTO skill_level_costs (skill_id, level, kp_cost)
-                        VALUES (?, ?, ?)
-                        ON CONFLICT(skill_id, level) DO UPDATE SET kp_cost=excluded.kp_cost
-                        ''',
-                        (skill.get("id"), int(lvl), int(kp))
-                    )
-            elif skill.get("skill_type") == 2:
-                kp3 = skill.get("kp_per_3_percent")
-                if kp3 is not None:
-                    c.execute("""
-                        INSERT OR REPLACE INTO skill_percent_costs (skill_id, kp_per_3percent) VALUES (?, ?)
-                    """, (skill.get("id"), int(kp3)))
-            # Előfeltételek
-            for lvl, prereq in skill.get("prerequisites", {}).items():
-                # --- Képzettség előfeltételek: először törlés, majd beszúrás ---
-                c.execute("DELETE FROM skill_prerequisites_skills WHERE skill_id=? AND level=?", (skill.get("id"), int(lvl)))
-                skill_prereqs = []
-                for skill_str in prereq.get("képzettség", []):
-                    m = re.match(r"(.+?)(?: \((.+?)\))? (\d+)\. szint", skill_str)
-                    if m:
-                        name = m.group(1)
-                        param = m.group(2) or ""
-                        min_lvl = int(m.group(3))
-                        # Skill id keresése név+param alapján
-                        c.execute("SELECT id FROM skills WHERE name=? AND parameter=?", (name, param))
-                        res = c.fetchone()
-                        req_id = res[0] if res else name
-                        skill_prereqs.append((req_id, min_lvl))
-                for req_id, min_lvl in skill_prereqs:
-                    c.execute("INSERT INTO skill_prerequisites_skills (skill_id, level, required_skill_id, min_level) VALUES (?, ?, ?, ?)", (skill.get("id"), int(lvl), req_id, min_lvl))
-                # --- Képesség előfeltételek: először törlés, majd beszúrás ---
-                c.execute("DELETE FROM skill_prerequisites_attributes WHERE skill_id=? AND level=?", (skill.get("id"), int(lvl)))
-                for stat_str in prereq.get("képesség", []):
-                    parts = stat_str.split()
-                    if len(parts) == 2 and parts[1].endswith("+"):
-                        attr = parts[0]
-                        min_val = int(parts[1][:-1])
-                        c.execute("INSERT INTO skill_prerequisites_attributes (skill_id, level, attribute, min_value) VALUES (?, ?, ?, ?)", (skill.get("id"), int(lvl), attr, min_val))
-            # Leírás mentése .md-be
-            desc_file = skill.get("description_file", f"{skill.get('id')}.md")
-            desc_path = os.path.join(self.desc_dir, desc_file)
-            with open(desc_path, "w", encoding="utf-8") as f:
-                f.write(skill.get("description", ""))
-                for lvl, txt in skill.get("level_descriptions", {}).items():
-                    f.write(f"\n\n## Szint {lvl}\n{txt}")
+        c.execute("""
+            INSERT OR REPLACE INTO skill_placeholders (id, name, parameter, category, subcategory)
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            skill.get("id"),
+            skill.get("name"),
+            skill.get("parameter", ""),
+            skill.get("main_category", ""),
+            skill.get("sub_category", "")
+        ))
+        conn.commit()
+        conn.close()
+
+    def _save_skill(self, skill, valid_levels_dict=None):
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        # skills tábla
+        c.execute("""
+            INSERT OR REPLACE INTO skills (id, name, parameter, category, subcategory, acquisition, difficulty, type, description_file)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            skill.get("id"),
+            skill.get("name"),
+            skill.get("parameter", ""),
+            skill.get("main_category", ""),
+            skill.get("sub_category", ""),
+            skill.get("acquisition_method", ""),
+            skill.get("acquisition_difficulty", ""),
+            skill.get("skill_type", 1 if skill.get("skill_type") == "szint" else 2),
+            skill.get("description_file", f"{skill.get('id')}.md")
+        ))
+        # KP költségek
+        if skill.get("skill_type") == 1:
+            kp_costs = skill.get("kp_costs", {})
+            valid_levels = None
+            if valid_levels_dict and skill.get("id") in valid_levels_dict:
+                valid_levels = valid_levels_dict[skill.get("id")]
+            else:
+                valid_levels = sorted(int(lvl) for lvl in kp_costs.keys())
+            # Validáció: folytonos szintek
+            if valid_levels:
+                if valid_levels != list(range(1, max(valid_levels) + 1)):
+                    raise ValueError(f"Hibás szintfelépítés: a megadott szintek között hiányzik legalább egy. Szintek: {valid_levels}")
+                # Törlés: csak valid_levels maradjon
+                placeholders = ','.join('?' for _ in valid_levels)
+                c.execute(
+                    f'''
+                    DELETE FROM skill_level_costs
+                    WHERE skill_id = ?
+                    AND level NOT IN ({placeholders})
+                    ''',
+                    (skill.get("id"), *valid_levels)
+                )
+            # Beszúrás/frissítés
+            for lvl, kp in kp_costs.items():
+                c.execute(
+                    '''
+                    INSERT INTO skill_level_costs (skill_id, level, kp_cost)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT(skill_id, level) DO UPDATE SET kp_cost=excluded.kp_cost
+                    ''',
+                    (skill.get("id"), int(lvl), int(kp))
+                )
+        elif skill.get("skill_type") == 2:
+            kp3 = skill.get("kp_per_3_percent")
+            if kp3 is not None:
+                c.execute("""
+                    INSERT OR REPLACE INTO skill_percent_costs (skill_id, kp_per_3percent) VALUES (?, ?)
+                """, (skill.get("id"), int(kp3)))
+        # Előfeltételek
+        for lvl, prereq in skill.get("prerequisites", {}).items():
+            # --- Képzettség előfeltételek: először törlés, majd beszúrás ---
+            c.execute("DELETE FROM skill_prerequisites_skills WHERE skill_id=? AND level=?", (skill.get("id"), int(lvl)))
+            skill_prereqs = []
+            for skill_str in prereq.get("képzettség", []):
+                m = re.match(r"(.+?)(?: \((.+?)\))? (\d+)\. szint", skill_str)
+                if m:
+                    name = m.group(1)
+                    param = m.group(2) or ""
+                    min_lvl = int(m.group(3))
+                    # Skill id keresése név+param alapján
+                    c.execute("SELECT id FROM skills WHERE name=? AND parameter=?", (name, param))
+                    res = c.fetchone()
+                    req_id = res[0] if res else name
+                    skill_prereqs.append((req_id, min_lvl))
+            for req_id, min_lvl in skill_prereqs:
+                c.execute("INSERT INTO skill_prerequisites_skills (skill_id, level, required_skill_id, min_level) VALUES (?, ?, ?, ?)", (skill.get("id"), int(lvl), req_id, min_lvl))
+            # --- Képesség előfeltételek: először törlés, majd beszúrás ---
+            c.execute("DELETE FROM skill_prerequisites_attributes WHERE skill_id=? AND level=?", (skill.get("id"), int(lvl)))
+            for stat_str in prereq.get("képesség", []):
+                parts = stat_str.split()
+                if len(parts) == 2 and parts[1].endswith("+"):
+                    attr = parts[0]
+                    min_val = int(parts[1][:-1])
+                    c.execute("INSERT INTO skill_prerequisites_attributes (skill_id, level, attribute, min_value) VALUES (?, ?, ?, ?)", (skill.get("id"), int(lvl), attr, min_val))
+        # Leírás mentése .md-be
+        desc_file = skill.get("description_file", f"{skill.get('id')}.md")
+        desc_path = os.path.join(self.desc_dir, desc_file)
+        with open(desc_path, "w", encoding="utf-8") as f:
+            f.write(skill.get("description", ""))
+            for lvl, txt in skill.get("level_descriptions", {}).items():
+                f.write(f"\n\n## Szint {lvl}\n{txt}")
         conn.commit()
         conn.close()
 
     def validate(self, skill):
-        required = ["name", "main_category", "sub_category", "description", "skill_type"]
+        # Helyfoglaló képzettségnél csak az alap mezők legyenek kötelezőek
+        if skill.get("main_category", "") == "Helyfoglaló képzettségek":
+            required = ["id", "name", "main_category", "sub_category"]
+        else:
+            required = ["id", "name", "main_category", "sub_category", "description", "skill_type"]
         for key in required:
             if not skill.get(key):
                 return False
