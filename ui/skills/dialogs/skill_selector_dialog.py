@@ -6,6 +6,13 @@ class SkillSelectorDialog:
     def __init__(self, parent, skill_list, callback):
         self.parent = parent
         self.callback = callback
+        # Helyfoglaló képzettségek betöltése a SkillManager-ből, ha van
+        try:
+            from utils.skilldata_manager import SkillManager
+            placeholders = SkillManager().load_placeholders()
+        except Exception:
+            placeholders = []
+        self.full_skill_list = skill_list + placeholders
         self.win, created = WindowSingleton.get('skill_selector_dialog', lambda: tk.Toplevel(parent))
         if not created:
             return
@@ -19,12 +26,12 @@ class SkillSelectorDialog:
         self.tree.pack(fill="both", expand=True, pady=10)
         self.tree.heading("#0", text="Képzettség neve", anchor="w")
         self.skill_items = []
-        self.populate_tree(skill_list)
+        self.populate_tree(self.full_skill_list)
         btn_frame = tk.Frame(self.win)
         btn_frame.pack(pady=10)
         tk.Button(btn_frame, text="Kiválasztás", command=self.select_skill).pack(side=tk.LEFT, padx=20)
         tk.Button(btn_frame, text="Mégse", command=self.win.destroy).pack(side=tk.LEFT, padx=20)
-        self.search_var.trace_add("write", lambda *args: self.filter_tree(skill_list))
+        self.search_var.trace_add("write", lambda *args: self.filter_tree(self.full_skill_list))
 
     def populate_tree(self, skill_list):
         self.tree.delete(*self.tree.get_children())
