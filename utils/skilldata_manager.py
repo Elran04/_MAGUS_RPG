@@ -39,7 +39,7 @@ class SkillManager:
         self.desc_dir = DESC_DIR
     def delete_skill_by_id(self, skill_id):
         """
-        Törli a megadott skill-t és minden hivatkozását az adatbázisból.
+        Törli a megadott skill-t és minden hivatkozását az adatbázisból, valamint a helyfoglaló táblából is.
         """
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
@@ -53,6 +53,8 @@ class SkillManager:
         c.execute("DELETE FROM skill_prerequisites_attributes WHERE skill_id=?", (skill_id,))
         # Más skillek előfeltételeiben hivatkozás törlése
         c.execute("DELETE FROM skill_prerequisites_skills WHERE required_skill_id=?", (skill_id,))
+        # Helyfoglaló képzettség törlése (ha van)
+        c.execute("DELETE FROM skill_placeholders WHERE id=?", (skill_id,))
         conn.commit()
         conn.close()
         # Leírás törlése a descriptions mappából
