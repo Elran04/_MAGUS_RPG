@@ -1,3 +1,9 @@
+"""
+Character generation and management module for MAGUS RPG.
+
+This module provides functions for generating character statistics, calculating combat values,
+managing character levels, and validating character creation based on gender and race restrictions.
+"""
 # engine/character.py
 import random
 from utils.class_db_manager import ClassDBManager
@@ -7,6 +13,18 @@ class_db = ClassDBManager()
 
 
 def generate_stats(klass: str) -> dict:
+    """
+    Generate random character statistics based on class.
+    
+    Args:
+        klass (str): The character class name
+        
+    Returns:
+        dict: Dictionary containing all character stats with randomly generated values
+        
+    Raises:
+        ValueError: If the specified class is not found in the database
+    """
     default_range = (8, 18)
     # Get class_id from name
     classes = class_db.list_classes()
@@ -32,6 +50,18 @@ def generate_stats(klass: str) -> dict:
 
 
 def calculate_combat_stats(character):
+    """
+    Calculate combat statistics for a character based on their class and attributes.
+    
+    Args:
+        character (dict): Character data including class and base stats
+        
+    Returns:
+        dict: Character data with added combat stats (FP, ÉP, KÉ, TÉ, VÉ, CÉ) and skill points
+        
+    Raises:
+        ValueError: If the character's class is not found in the database
+    """
     klass = character["Kaszt"]
     stats = character["Tulajdonságok"]
     # Get class_id from name
@@ -50,6 +80,7 @@ def calculate_combat_stats(character):
     fp_bonus = random.randint(fp_min, fp_max)
 
     def bonus(val):
+        """Calculate attribute bonus (values above 10 provide bonus)."""
         return max(0, val - 10)
 
     fp = (data[1] if len(data) > 1 else 0) + fp_bonus + bonus(stats["Akaraterő"]) + bonus(stats["Állóképesség"])
@@ -81,6 +112,19 @@ def calculate_combat_stats(character):
 
 
 def generate_character(name, gender, age, race, klass):
+    """
+    Generate a complete character with all stats, combat values, and initial setup.
+    
+    Args:
+        name (str): Character name
+        gender (str): Character gender
+        age (int): Character age
+        race (str): Character race
+        klass (str): Character class
+        
+    Returns:
+        dict: Complete character data including stats, combat values, and equipment
+    """
     stats = generate_stats(klass)
     stats = apply_age_modifiers(stats, race, age)
     stats = apply_race_modifiers(stats, race)
@@ -111,6 +155,19 @@ def generate_character(name, gender, age, race, klass):
 
 
 def get_level_for_xp(klass, xp):
+    """
+    Calculate character level based on experience points and class.
+    
+    Args:
+        klass (str): Character class name
+        xp (int): Current experience points
+        
+    Returns:
+        int: Character level
+        
+    Raises:
+        ValueError: If the specified class is not found in the database
+    """
     # Get class_id from name
     classes = class_db.list_classes()
     class_id = next((cid for cid, name in classes if name == klass), None)
@@ -132,6 +189,19 @@ def get_level_for_xp(klass, xp):
 
 
 def get_next_level_xp(klass, xp):
+    """
+    Calculate XP needed for next level.
+    
+    Args:
+        klass (str): Character class name
+        xp (int): Current experience points
+        
+    Returns:
+        int: Experience points required to reach the next level
+        
+    Raises:
+        ValueError: If the specified class is not found in the database
+    """
     # Get class_id from name
     classes = class_db.list_classes()
     class_id = next((cid for cid, name in classes if name == klass), None)
@@ -190,6 +260,17 @@ RACE_RESTRICTIONS = {
 }
 
 def is_valid_character(gender, race, klass):
+    """
+    Validate if a character combination is allowed based on gender and race restrictions.
+    
+    Args:
+        gender (str): Character gender
+        race (str): Character race
+        klass (str): Character class
+        
+    Returns:
+        bool: True if the combination is valid, False otherwise
+    """
     if klass in GENDER_RESTRICTIONS.get(gender, set()):
         return False
     if klass in RACE_RESTRICTIONS.get(race, set()):

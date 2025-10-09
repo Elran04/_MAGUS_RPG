@@ -10,6 +10,20 @@ Kategóriák:
 """
 
 class WeaponMaterialQualityManager:
+    """
+    Manages weapon material and quality modifiers for MAGUS RPG.
+    
+    This class handles weapon crafting quality, materials, modifications, and customization.
+    All modifiers are cumulative and applied to weapon base statistics.
+    
+    Attributes:
+        STAT_JSON_MAP (dict): Mapping of stat names to JSON field names
+        MODIFIABLE_STATS (list): List of stats that can be modified
+        CRAFT_QUALITY (list): Available craft quality levels
+        MOD_TYPES (list): Available modification types
+        MOD_QUALITY (list): Available modification quality levels
+        MATERIALS (list): Available weapon materials
+    """
     # MODIFIABLE_STATS -> JSON kulcsok
     STAT_JSON_MAP = {
         "KÉ": "KE",
@@ -193,6 +207,11 @@ class WeaponMaterialQualityManager:
     ]
 
     def __init__(self):
+        """
+        Initialize the WeaponMaterialQualityManager with default modifiers.
+        
+        Sets up modifier dictionaries for craft quality, customization, modifications, and materials.
+        """
         # Default: nincs változás minden statra
         self.DEFAULT_MODIFIER = {stat: (1 if stat in ["Súly", "STP", "Ár"] else 0) for stat in self.MODIFIABLE_STATS}
         self.craft_quality_mods = {

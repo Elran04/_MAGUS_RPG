@@ -1,7 +1,26 @@
+"""
+Armor management system for MAGUS RPG.
+
+This module manages armor equipment, protection zones, and armor modifiers.
+It handles the complex zone-based protection system with armor parts and subzones.
+"""
+
 import json
 import os
 
 class ArmorManager:
+    """
+    Manages armor equipment, protection zones, and temporary modifiers.
+    
+    Handles armor parts, subzones, main zones, and protection calculations.
+    Supports temporary modifiers for armor protection values.
+    
+    Attributes:
+        PARTS (dict): Mapping of armor parts to protected subzones
+        MAIN_ZONES (dict): Mapping of main body zones to their subzones
+        armors (list): List of available armor items
+        modifiers (list): List of temporary armor modifiers
+    """
     # Páncél részegységek és az általuk védett alzónák
     PARTS = {
         "sisak": ["agykoponya", "homlok", "halánték", "arckoponya", "nyak"],
@@ -43,6 +62,12 @@ class ArmorManager:
     }
 
     def __init__(self, json_path=None):
+        """
+        Initialize the ArmorManager.
+        
+        Args:
+            json_path (str, optional): Path to armor JSON file. Defaults to ../data/equipment/armor.json
+        """
         if json_path is None:
             json_path = os.path.join(os.path.dirname(__file__), "..", "data", "equipment", "armor.json")
         with open(json_path, encoding="utf-8") as f:
@@ -50,6 +75,16 @@ class ArmorManager:
         self.modifiers = []  # ideiglenes módosítók listája
 
     def get_zone_protection(self, armor, zone):
+        """
+        Calculate protection value for a specific zone on an armor piece.
+        
+        Args:
+            armor (dict): Armor item data
+            zone (str): Zone name to check
+            
+        Returns:
+            int: Protection value for the zone including any active modifiers
+        """
         # 1. protection_overrides előnyben
         if "protection_overrides" in armor and zone in armor["protection_overrides"]:
             base = armor["protection_overrides"][zone]
@@ -110,6 +145,15 @@ class ArmorManager:
             self.modifiers = []
 
     def get_armor_by_name(self, name):
+        """
+        Find armor by name (case-insensitive).
+        
+        Args:
+            name (str): Armor name to search for
+            
+        Returns:
+            dict or None: Armor data if found, None otherwise
+        """
         for armor in self.armors:
             if armor["name"].lower() == name.lower():
                 return armor

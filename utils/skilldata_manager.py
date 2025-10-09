@@ -1,3 +1,10 @@
+"""
+Skill data management for MAGUS RPG.
+
+This module provides the SkillManager class for loading, saving, validating,
+and managing skill data from the skills database and description files.
+"""
+
 import sqlite3
 import os
 import re
@@ -6,6 +13,16 @@ DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", 
 DESC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "skills", "descriptions"))
 
 class SkillManager:
+    """
+    Manages skill data for the MAGUS RPG system.
+    
+    Handles loading, saving, validation, and management of skills including
+    their costs, prerequisites, descriptions, and level requirements.
+    
+    Attributes:
+        db_path (str): Path to the skills database
+        desc_dir (str): Path to skill description files directory
+    """
     def load_placeholders(self):
         """
         Betölti a helyfoglaló (placeholder=1) képzettségeket a skills táblából.
@@ -44,11 +61,15 @@ class SkillManager:
         conn.close()
         return placeholders
     def __init__(self):
+        """Initialize the SkillManager with database and description directory paths."""
         self.db_path = DB_PATH
         self.desc_dir = DESC_DIR
     def delete_skill_by_id(self, skill_id):
         """
-        Törli a megadott skill-t és minden hivatkozását az adatbázisból (skills tábla, placeholder mezőtől függetlenül).
+        Delete a skill and all its references from the database.
+        
+        Args:
+            skill_id (str): The ID of the skill to delete
         """
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
@@ -74,7 +95,10 @@ class SkillManager:
 
     def load(self):
         """
-        Betölti az összes képzettséget az adatbázisból, minden metaadatot, költséget, előfeltételt.
+        Load all skills from the database with metadata, costs, and prerequisites.
+        
+        Returns:
+            list: List of skill dictionaries with complete data
         """
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
@@ -132,7 +156,14 @@ class SkillManager:
 
     def _load_prerequisites(self, c, skill_id):
         """
-        Előfeltételek betöltése az adatbázisból szintenként.
+        Load prerequisites from database by level.
+        
+        Args:
+            c: Database cursor
+            skill_id (str): Skill ID to load prerequisites for
+            
+        Returns:
+            dict: Prerequisites organized by level
         """
         result = {}
         for lvl in range(1, 7):
@@ -160,8 +191,11 @@ class SkillManager:
 
     def save(self, skills, valid_levels_dict=None):
         """
-        Képzettségek mentése az adatbázisba (tömeges mentés, pl. szerkesztőből).
-        valid_levels_dict: {skill_id: [valid_levels]} - csak szint alapú skilleknél szükséges
+        Save skills to the database (bulk save, e.g. from editor).
+        
+        Args:
+            skills (list): List of skill dictionaries to save
+            valid_levels_dict (dict, optional): Valid levels for each skill {skill_id: [valid_levels]}
         """
         for skill in skills:
             if skill.get("placeholder", 0) == 1 or skill.get("main_category", "") == "Helyfoglaló képzettségek":
@@ -171,7 +205,10 @@ class SkillManager:
 
     def _save_placeholder_skill(self, skill):
         """
-        Helyfoglaló (placeholder) skill mentése a skills táblába, csak a kötelező mezőkkel, minden más NULL/üres.
+        Save a placeholder skill to the skills table with minimal required fields.
+        
+        Args:
+            skill (dict): Skill data to save as placeholder
         """
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
@@ -189,6 +226,13 @@ class SkillManager:
         conn.close()
 
     def _save_skill(self, skill, valid_levels_dict=None):
+        """
+        Save a full skill with all data to the database.
+        
+        Args:
+            skill (dict): Skill data to save
+            valid_levels_dict (dict, optional): Valid levels for the skill
+        """
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
         # Fő adatok mentése
@@ -268,6 +312,15 @@ class SkillManager:
         conn.close()
 
     def validate(self, skill):
+        """
+        Validate that a skill has all required fields.
+        
+        Args:
+            skill (dict): Skill data to validate
+            
+        Returns:
+            bool: True if valid, False otherwise
+        """
         # Helyfoglaló képzettségnél csak az alap mezők legyenek kötelezőek
         if skill.get("main_category", "") == "Helyfoglaló képzettségek":
             required = ["id", "name", "main_category", "sub_category"]
@@ -279,6 +332,15 @@ class SkillManager:
         return True
 
     def serialize_skill(self, ui_data):
+        """
+        Convert UI data to skill dictionary format.
+        
+        Args:
+            ui_data (dict): Skill data from UI
+            
+        Returns:
+            dict: Serialized skill data
+        """
         # ...existing code...
         # level_six_available lehet bool vagy BooleanVar, mindig bool-t írjunk ki
         level_six_available = ui_data.get("level_six_available", True)
@@ -310,6 +372,15 @@ class SkillManager:
         return skill
 
     def deserialize_skill(self, skill):
+        """
+        Convert skill dictionary to UI data format.
+        
+        Args:
+            skill (dict): Skill data from database
+            
+        Returns:
+            dict: UI-compatible skill data
+        """
         # ...existing code...
         ui_data = {
             "id": skill.get("id", ""),
@@ -331,6 +402,15 @@ class SkillManager:
         return ui_data
 
     def prereq_to_string(self, prereq_vars):
+        """
+        Convert prerequisite variables to string format.
+        
+        Args:
+            prereq_vars (list): List of prerequisite variables by level
+            
+        Returns:
+            dict: Prerequisites in string format organized by level
+        """
         # ...existing code...
         result = {}
         for i in range(6):
@@ -363,6 +443,15 @@ class SkillManager:
         return result
 
     def prereq_from_string(self, prerequisites):
+        """
+        Convert string prerequisites to variable format.
+        
+        Args:
+            prerequisites (dict): Prerequisites in string format
+            
+        Returns:
+            list: List of prerequisite variables by level
+        """
         # ...existing code...
         prereq_vars = [[] for _ in range(6)]
         for idx in range(6):
