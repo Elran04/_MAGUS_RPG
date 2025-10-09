@@ -1,3 +1,10 @@
+"""
+Main application entry point for MAGUS RPG Game Master Toolkit.
+
+This module provides the main window interface for accessing various game tools
+including character creation, skill editor, equipment editor, and class editor.
+"""
+
 # --- IMPORTOK ÉS KONFIGURÁCIÓ ---
 import tkinter as tk
 import subprocess
@@ -11,12 +18,17 @@ last_character = {}
 
 # --- KÉPZETTSÉG SZERKESZTŐ ABLAK MEGNYITÁSA ---
 def open_skill_editor():
+    """Open the skill editor window."""
     from ui.skills.skill_editor import SkillEditor
     SkillEditor()
+
+
 # --- FELSZERELÉS SZERKESZTŐ ABLAK MEGNYITÁSA ---
 def open_equipment_editor():
+    """Open the equipment editor window."""
     from ui.equipment.equipment_editor import EquipmentEditor
     EquipmentEditor()
+
 
 # --- FŐABLAK ÉS WIDGETEK LÉTREHOZÁSA ---
 root = tk.Tk()
@@ -38,6 +50,7 @@ button_frame.pack(pady=10)
 # 1. sor: Karaktergenerálás
 
 def open_character_creator():
+    """Open the character creator in a subprocess."""
     # Run the PyQt character creator as a subprocess
     script_path = os.path.join(os.path.dirname(__file__), "ui", "character_creator.py")
     subprocess.Popen([sys.executable, script_path])
@@ -56,6 +69,7 @@ equipment_editor_button.grid(row=3, column=0, pady=5)
 
 # 4. sor: Kaszt szerkesztő (QT)
 def open_class_editor():
+    """Open the class editor in a subprocess."""
     script_path = os.path.join(os.path.dirname(__file__), "ui", "class_editor.py")
     subprocess.Popen([sys.executable, script_path])
 

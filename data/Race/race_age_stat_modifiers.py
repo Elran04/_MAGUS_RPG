@@ -1,3 +1,10 @@
+"""
+Race and age-based stat modifiers for MAGUS RPG.
+
+This module defines stat modifiers, limits, and age category effects for different races.
+It provides functions to calculate and apply race and age modifiers to character stats.
+"""
+
 DEFAULT_STAT_LIMITS = (3, 18)
 DEFAULT_HARD_LIMITS = (1, 20)
 ALL_STATS = [
@@ -162,6 +169,15 @@ RACE_MODIFIERS = {
 }
 
 def get_full_stat_limits(race: str) -> dict:
+    """
+    Get complete stat limits for a race.
+    
+    Args:
+        race (str): Race name
+        
+    Returns:
+        dict: Dictionary mapping stats to (min, max) tuples
+    """
     race_data = RACE_MODIFIERS.get(race, {})
     custom_limits = race_data.get("limits", {})
     full_limits = {}
@@ -206,6 +222,19 @@ AGE_LIMITS = {
 }
 
 def get_age_category(race: str, age) -> int:
+    """
+    Determine age category for a character based on race and age.
+    
+    Args:
+        race (str): Race name
+        age: Character's age
+        
+    Returns:
+        int: Age category (1-6)
+        
+    Raises:
+        ValueError: If age is not a valid number
+    """
     try:
         age = int(age)
     except ValueError:
@@ -219,11 +248,31 @@ def get_age_category(race: str, age) -> int:
     return 6
 
 def get_age_modifiers(race: str, age: int) -> dict:
+    """
+    Get stat modifiers based on race and age.
+    
+    Args:
+        race (str): Race name
+        age (int): Character's age
+        
+    Returns:
+        dict: Dictionary mapping stats to modifier values
+    """
     category = get_age_category(race, age)
     return AGE_CATEGORY_EFFECTS.get(category, {})
 
 
 def apply_race_modifiers(stats: dict, race: str) -> dict:
+    """
+    Apply race-based modifiers and limits to character stats.
+    
+    Args:
+        stats (dict): Character stats
+        race (str): Race name
+        
+    Returns:
+        dict: Modified stats with race bonuses applied and limited
+    """
     mods = RACE_MODIFIERS.get(race, {})
     modified_stats = stats.copy()
     
@@ -236,6 +285,17 @@ def apply_race_modifiers(stats: dict, race: str) -> dict:
     return modified_stats
 
 def apply_age_modifiers(stats: dict, race: str, age: int) -> dict:
+    """
+    Apply age-based modifiers to character stats and enforce limits.
+    
+    Args:
+        stats (dict): Character stats
+        race (str): Race name
+        age (int): Character's age
+        
+    Returns:
+        dict: Modified stats with age modifiers applied and limited
+    """
     age_mods = get_age_modifiers(race, age)
     modified_stats = stats.copy()
     for stat, mod in age_mods.items():
@@ -245,8 +305,17 @@ def apply_age_modifiers(stats: dict, race: str, age: int) -> dict:
     return enforce_stat_limits(modified_stats, race)
 
 
-# Statok limitálása a fajhoz tartozó határokhoz
 def enforce_stat_limits(stats: dict, race: str) -> dict:
+    """
+    Enforce race-specific stat limits on character stats.
+    
+    Args:
+        stats (dict): Character stats
+        race (str): Race name
+        
+    Returns:
+        dict: Stats limited to race-specific boundaries
+    """
     limits = get_full_stat_limits(race)
     limited_stats = stats.copy()
     for stat, (min_val, max_val) in limits.items():
