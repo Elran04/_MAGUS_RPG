@@ -1,9 +1,33 @@
+"""
+Weapon data management for MAGUS RPG.
+
+This module provides the WeaponDataManager class for managing weapon and shield data,
+including validation, type-specific fields, and weapon categories.
+"""
+
 import os
 import sqlite3
 from utils.json_manager import JsonManager
 
 
 class WeaponDataManager(JsonManager):
+    """
+    UI-independent data manager for weapons and shields.
+    
+    Handles loading, saving, validation, and conversions for weapon data.
+    Supports different weapon types (melee, throwing, ranged, shields) with
+    type-specific fields and requirements.
+    
+    Attributes:
+        BASE_FIELDS (list): Common fields for all weapon types
+        PRICE_FIELDS (list): Price-related fields
+        TYPE_FIELDS (list): Type-specific stat fields
+        VARIABLE_FIELDS (list): Fields for variable wield mode
+        CHECKBOX_FIELDS (list): Boolean checkbox fields
+        TYPE_FIELD_DEFS (dict): Field definitions by weapon type
+        DAMAGE_TYPES (list): Available damage types
+        DAMAGE_BONUS_ATTRS (list): Attributes that can provide damage bonuses
+    """
     # Központi meződefiníciók
     BASE_FIELDS = ["name", "id", "type", "category", "attack_time", "weight", "stp", "armor_penetration", "damage_min", "damage_max"]
     PRICE_FIELDS = ["price_réz", "price_ezüst", "price_arany", "price_mithrill"]
@@ -42,17 +66,39 @@ class WeaponDataManager(JsonManager):
 
     @staticmethod
     def get_weapon_types():
+        """
+        Get list of available weapon types.
+        
+        Returns:
+            list: Available weapon types
+        """
         return ["közelharci", "hajító", "távolsági", "pajzs"]
     """
     UI-független adatkezelő fegyverekhez és pajzsokhoz.
     Betöltés, mentés, validáció, konverziók, kategória lekérdezés.
     """
     def __init__(self, json_path=None):
+        """
+        Initialize WeaponDataManager.
+        
+        Args:
+            json_path (str, optional): Path to weapons JSON file. 
+                Defaults to ../data/equipment/weapons_and_shields.json
+        """
         if json_path is None:
             json_path = os.path.join(os.path.dirname(__file__), "..", "data", "equipment", "weapons_and_shields.json")
         super().__init__(json_path)
 
     def validate(self, item):
+        """
+        Validate that a weapon/shield item has all required fields.
+        
+        Args:
+            item (dict): Weapon or shield data to validate
+            
+        Returns:
+            bool: True if valid, False otherwise
+        """
         required = [
             "id", "name", "type", "category", "weight", "price", "stp", "armor_penetration",
             "can_disarm", "can_break_weapon", "damage_min", "damage_max"
@@ -81,7 +127,13 @@ class WeaponDataManager(JsonManager):
 
     def get_weapon_categories(self, type_value):
         """
-        Lekérdezi a fegyverkategóriákat a skills_data.db adatbázisból, a típus alapján.
+        Query weapon categories from the skills database based on weapon type.
+        
+        Args:
+            type_value (str): Weapon type
+            
+        Returns:
+            list: Sorted list of available weapon categories for the type
         """
         db_path = os.path.join(os.path.dirname(__file__), "..", "data", "skills", "skills_data.db")
         categories = set()
@@ -104,8 +156,15 @@ class WeaponDataManager(JsonManager):
     # Pl. keresés, szűrés, konverziók, stb.
     def build_item_from_fields(self, fields):
         """
-        Készít egy item dict-et a meződefiníciók, típusfüggő logika és konverziók alapján.
-        fields: dict (mezőnév: érték)
+        Build a weapon/shield item dictionary from field definitions.
+        
+        Applies type-specific logic and field conversions based on weapon type.
+        
+        Args:
+            fields (dict): Field names mapped to values
+            
+        Returns:
+            dict: Complete weapon/shield item data
         """
         # Ár összerakása
         try:

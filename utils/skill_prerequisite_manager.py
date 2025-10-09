@@ -1,3 +1,10 @@
+"""
+Skill prerequisite management UI for MAGUS RPG.
+
+This module provides the PrerequisiteManager class for managing skill prerequisites
+in the UI, including attribute and skill requirements by level.
+"""
+
 import tkinter as tk
 from tkinter import ttk
 
@@ -7,6 +14,18 @@ STAT_NAMES = [
 ]
 
 class PrerequisiteManager:
+    """
+    Manages skill prerequisites in the UI.
+    
+    Handles creation and management of prerequisite widgets for both
+    attribute requirements and skill requirements across six skill levels.
+    
+    Attributes:
+        parent: Parent widget
+        skill_names (list): List of available skill names
+        all_skills (list): List of all skill data
+        prereq_vars (list): List of prerequisite variables by level
+    """
     def load_from_string(self, prereq_str):
         """
         Parses a prerequisite string and loads it using load_prerequisites.
@@ -36,11 +55,29 @@ class PrerequisiteManager:
                 result[idx]["képzettség"].extend(skills)
         self.load_prerequisites(result)
     def __init__(self, parent, skill_names, all_skills):
+        """
+        Initialize PrerequisiteManager.
+        
+        Args:
+            parent: Parent widget
+            skill_names (list): List of available skill names
+            all_skills (list): List of all skill data
+        """
         self.parent = parent
         self.skill_names = skill_names
         self.all_skills = all_skills
         self.prereq_vars = [[] for _ in range(6)]
     def create_stat_row_widget(self, frame, prereq_dict):
+        """
+        Create UI widgets for an attribute prerequisite row.
+        
+        Args:
+            frame: Parent frame widget
+            prereq_dict (dict): Prerequisite data dictionary
+            
+        Returns:
+            tuple: Widget references (menu, entry, button)
+        """
         row = len([w for w in frame.grid_slaves() if isinstance(w, tk.OptionMenu) or isinstance(w, tk.Entry)]) // 2 + 1
         stat_var = prereq_dict["name_var"]
         value_var = prereq_dict["value_var"]
@@ -66,6 +103,16 @@ class PrerequisiteManager:
         }
         return stat_menu, entry, btn
     def create_skill_row_widget(self, frame, prereq_dict):
+        """
+        Create UI widgets for a skill prerequisite row.
+        
+        Args:
+            frame: Parent frame widget
+            prereq_dict (dict): Prerequisite data dictionary
+            
+        Returns:
+            tuple: Widget references (label, label, button)
+        """
         row = len([w for w in frame.grid_slaves() if isinstance(w, ttk.Combobox) or isinstance(w, tk.Entry) or isinstance(w, tk.Label)]) // 2 + 1
         skill_var = prereq_dict["name_var"]
         level_var = prereq_dict["level_var"]
@@ -103,6 +150,13 @@ class PrerequisiteManager:
         }
         return skill_label, level_label, btn
     def add_stat_row(self, level_idx, frame):
+        """
+        Add a new attribute prerequisite row.
+        
+        Args:
+            level_idx (int): Level index (0-5)
+            frame: Parent frame widget
+        """
         prereq_dict = {
             "type": "stat",
             "name_var": tk.StringVar(value=STAT_NAMES[0]),
@@ -111,6 +165,13 @@ class PrerequisiteManager:
         self.create_stat_row_widget(frame, prereq_dict)
         self.prereq_vars[level_idx].append(prereq_dict)
     def add_skill_row(self, level_idx, frame):
+        """
+        Add a new skill prerequisite row with skill search dialog.
+        
+        Args:
+            level_idx (int): Level index (0-5)
+            frame: Parent frame widget
+        """
         dialog = tk.Toplevel(frame)
         dialog.title("Képzettség keresése")
         dialog.geometry("400x180")
@@ -160,12 +221,19 @@ class PrerequisiteManager:
                 dialog.destroy()
         tk.Button(dialog, text="Hozzáadás", command=add_skill).pack(pady=5)
     def clear_all(self):
+        """Clear all prerequisite widgets and data."""
         for idx in range(6):
             for prereq in self.prereq_vars[idx][:]:
                 for w in prereq.get("widgets", []):
                     w.destroy()
             self.prereq_vars[idx].clear()
     def load_prerequisites(self, prerequisites):
+        """
+        Load prerequisites from dictionary and create UI widgets.
+        
+        Args:
+            prerequisites (dict): Prerequisites organized by level
+        """
         self.clear_all()
         for idx in range(6):
             prereq = prerequisites.get(str(idx+1), {})
