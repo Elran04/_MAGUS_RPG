@@ -1,3 +1,10 @@
+"""
+Character class editor UI using PyQt5.
+
+This module provides a PyQt5-based editor for managing character class data
+including stats, combat values, level requirements, and starting currency.
+"""
+
 from PyQt5 import QtWidgets, QtCore
 import sys
 import os
@@ -5,7 +12,24 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from utils.class_db_manager import ClassDBManager
 
 class ClassEditorQt(QtWidgets.QDialog):
+    """
+    PyQt5 dialog for editing character classes.
+    
+    Provides a UI for viewing and editing class statistics, combat values,
+    level requirements, and starting currency.
+    
+    Attributes:
+        class_db (ClassDBManager): Database manager for class data
+        class_list (QListWidget): List of available classes
+        class_items (list): List of (id, name) tuples for classes
+    """
     def __init__(self, parent=None):
+        """
+        Initialize the class editor dialog.
+        
+        Args:
+            parent: Parent widget (optional)
+        """
         super().__init__(parent)
         self.setWindowTitle("Kaszt szerkesztő (PyQt)")
         self.resize(600, 500)
@@ -19,6 +43,7 @@ class ClassEditorQt(QtWidgets.QDialog):
             self.display_class_details(self.class_list.currentItem(), None)
 
     def init_ui(self):
+        """Initialize the UI components."""
         self.layout = QtWidgets.QVBoxLayout(self)
         self.class_list = QtWidgets.QListWidget()
         self.layout.addWidget(QtWidgets.QLabel("Kasztok:"))
@@ -32,6 +57,7 @@ class ClassEditorQt(QtWidgets.QDialog):
         self.save_btn.clicked.connect(self.save_class)
 
     def load_classes(self):
+        """Load and display all available classes from the database."""
         self.class_list.clear()
         # Sort by ID (not alphabetically)
         self.class_items = sorted(self.class_db.list_classes(), key=lambda x: x[0])
@@ -41,6 +67,13 @@ class ClassEditorQt(QtWidgets.QDialog):
             self.class_list.setCurrentRow(0)
 
     def display_class_details(self, current, previous):
+        """
+        Display details for the selected class.
+        
+        Args:
+            current: Currently selected list item
+            previous: Previously selected list item
+        """
 
         if not current:
             return
@@ -102,6 +135,7 @@ class ClassEditorQt(QtWidgets.QDialog):
         self.current_class_id = class_id
 
     def save_class(self):
+        """Save changes to the current class."""
         # Save name
         new_name = self.name_edit.text()
         self.class_db.update_class_name(self.current_class_id, new_name)

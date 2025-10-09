@@ -1,3 +1,10 @@
+"""
+Character creation wizard UI using PyQt5.
+
+This module provides a step-by-step character creation wizard for MAGUS RPG,
+guiding users through name, gender, age, race, and class selection with validation.
+"""
+
 from PyQt5 import QtWidgets, QtCore
 import sys
 import os
@@ -8,7 +15,29 @@ from data.race.race_age_stat_modifiers import AGE_LIMITS
 from engine.character import generate_character, is_valid_character, GENDER_RESTRICTIONS, RACE_RESTRICTIONS
 
 class CharacterWizardQt(QtWidgets.QDialog):
+    """
+    PyQt5 wizard dialog for character creation.
+    
+    Guides the user through a multi-step character creation process:
+    1. Name and gender selection
+    2. Age selection with race-specific limits
+    3. Race selection
+    4. Class selection with restrictions based on gender and race
+    5. Character finalization and save
+    
+    Attributes:
+        class_db (ClassDBManager): Database manager for class data
+        data (dict): Collected character data
+        step (int): Current wizard step (0-based)
+        specializations (list): Available class specializations
+    """
     def __init__(self, parent=None):
+        """
+        Initialize the character creation wizard.
+        
+        Args:
+            parent: Parent widget (optional)
+        """
         super().__init__(parent)
         self.setWindowTitle("Karakteralkotás varázsló")
         self.resize(500, 500)
@@ -20,6 +49,7 @@ class CharacterWizardQt(QtWidgets.QDialog):
         self.show_step()
 
     def init_ui(self):
+        """Initialize the wizard UI components."""
         self.layout = QtWidgets.QVBoxLayout(self)
         self.step_widget = QtWidgets.QWidget(self)
         self.step_layout = QtWidgets.QVBoxLayout(self.step_widget)
@@ -34,6 +64,7 @@ class CharacterWizardQt(QtWidgets.QDialog):
         self.btn_frame.addWidget(self.next_btn)
 
     def show_step(self):
+        """Display the current wizard step."""
         for i in reversed(range(self.step_layout.count())):
             widget = self.step_layout.itemAt(i).widget()
             if widget:

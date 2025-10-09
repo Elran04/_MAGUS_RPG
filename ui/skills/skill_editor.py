@@ -1,3 +1,10 @@
+"""
+Skill editor UI for MAGUS RPG.
+
+This module provides a comprehensive editor for creating and modifying skills,
+including their costs, prerequisites, descriptions, and level-based properties.
+"""
+
 import tkinter as tk
 from utils.reopen_prevention import WindowSingleton
 from tkinter import messagebox
@@ -32,6 +39,21 @@ GRID_CFG = {
 }
 
 class SkillEditor():
+    """
+    Main skill editor window.
+    
+    Provides a complete interface for creating and editing skills including:
+    - Basic skill information (name, category, type)
+    - KP costs for different levels or percentages
+    - Prerequisites for each skill level
+    - Skill descriptions with Markdown support
+    - Parametric skill support
+    
+    Attributes:
+        win (tk.Toplevel): Main editor window
+        skill_manager (SkillManager): Manager for skill data
+        all_skills (list): List of all skills from database
+    """
     def __init__(self):
 
         self.win, created = WindowSingleton.get('skills_editor', lambda: tk.Toplevel())
