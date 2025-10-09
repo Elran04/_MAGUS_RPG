@@ -89,6 +89,17 @@ def ensure_table():
         conn.commit()
 
 class ClassSkillEditor(tk.Tk):
+    """
+    Main class skill editor window.
+    
+    Provides an interface for assigning skills to character classes,
+    including skill levels and percentages at different class levels.
+    Supports class specializations.
+    
+    Attributes:
+        selected_class: Currently selected class ID
+        selected_spec: Currently selected specialization ID
+    """
     def __init__(self):
         super().__init__()
         self.title("Class Skill Editor")
@@ -253,6 +264,15 @@ class ClassSkillEditor(tk.Tk):
         self.populate_class_skills()
 
 class SkillAssignDialog(tk.Toplevel):
+    """
+    Dialog for assigning a skill to a class.
+    
+    Allows setting class level, skill level, and skill percentage
+    for a skill assignment to a character class.
+    
+    Attributes:
+        result (dict): Skill assignment data (class_level, skill_level, skill_percent)
+    """
     def __init__(self, master, skill_id, skill_name, class_level=None, skill_level=None, skill_percent=None):
         super().__init__(master)
         self.title(f"Képzettség hozzárendelése: {skill_name}")
