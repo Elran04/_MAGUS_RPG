@@ -1,8 +1,30 @@
+"""
+Skill prerequisite editor dialog for MAGUS RPG.
+
+This module provides a dialog for editing skill prerequisites including
+attribute and skill requirements for each skill level.
+"""
+
 import tkinter as tk
 from utils.skill_prerequisite_manager import STAT_NAMES
 from utils.reopen_prevention import WindowSingleton
 
 class SkillPrerequisiteEditorDialog:
+    """
+    Dialog for editing skill prerequisites.
+    
+    Provides a UI for managing:
+    - Attribute prerequisites (e.g., Strength 12+)
+    - Skill prerequisites (e.g., Sword Use level 2)
+    
+    Prerequisites can be set independently for each of the 6 skill levels.
+    
+    Attributes:
+        editor: Parent skill editor instance
+        win (tk.Toplevel): Dialog window
+        canvas (tk.Canvas): Scrollable canvas for prerequisite widgets
+        scroll_frame (tk.Frame): Frame containing prerequisite widgets
+    """
     def __init__(self, editor):
         self.editor = editor
         self.win, created = WindowSingleton.get('prerequisite_editor', lambda: tk.Toplevel(editor.win))

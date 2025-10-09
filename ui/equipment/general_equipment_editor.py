@@ -1,3 +1,10 @@
+"""
+General equipment editor UI for MAGUS RPG.
+
+This module provides an editor for creating and modifying general equipment items
+such as tools, food, containers, and special items with category-specific attributes.
+"""
+
 import tkinter as tk
 from tkinter import ttk
 import os
@@ -5,6 +12,12 @@ from utils.json_manager import JsonManager
 
 # --- JSON MANAGER ---
 class GeneralEquipmentJsonManager(JsonManager):
+    """
+    JSON manager for general equipment data.
+    
+    Handles validation and storage of general equipment items with
+    category-specific field requirements.
+    """
     def validate(self, item):
         required = ["id", "name", "description", "weight", "price", "category"]
         for field in required:
@@ -25,6 +38,19 @@ GENERAL_JSON = os.path.join(os.path.dirname(__file__), "..", "..", "data", "equi
 # --- FŐ SZERKESZTŐ ---
 
 class GeneralEquipmentEditor:
+    """
+    General equipment editor window.
+    
+    Provides a UI for creating, editing, and managing general equipment including:
+    - Tools (eszköz)
+    - Food (élelem) with freshness and durability
+    - Containers (tároló) with capacity
+    - Special items (speciális) including alchemy items
+    
+    Attributes:
+        CATEGORIES (list): Available equipment categories
+        SPECIAL_SUBCATEGORIES (list): Special subcategories (e.g., Alchemy)
+    """
     CATEGORIES = ["eszköz", "élelem", "tároló", "speciális"]
     SPECIAL_SUBCATEGORIES = ["Alkímia"]
 

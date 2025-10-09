@@ -1,11 +1,39 @@
+"""
+Character page UI for MAGUS RPG.
+
+This module provides a detailed character sheet view with tabs for
+general info, stats, skills, and equipment.
+"""
+
 def open_character_page(root, character):
+    """
+    Open a character page window.
+    
+    Args:
+        root: Parent window
+        character (dict): Character data to display
+    """
     CharacterPage(root, character)
+
+
 # ui/character_page.py
 import tkinter as tk
 from tkinter import ttk
 from ttkthemes import ThemedStyle
 
 class CharacterPage:
+    """
+    Character sheet display window.
+    
+    Displays character information in a tabbed interface including:
+    - General information
+    - Character statistics
+    - Skills and abilities
+    - Equipment and inventory
+    
+    Attributes:
+        win (tk.Toplevel): Character page window
+    """
     def __init__(self, root, character):
         self.win = tk.Toplevel(root)
         self.win.title(f"Karakterlap: {character.get('Név', '')}")

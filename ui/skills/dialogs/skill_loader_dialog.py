@@ -1,8 +1,27 @@
+"""
+Skill loader dialog for MAGUS RPG skill editor.
+
+This module provides a dialog for loading existing skills from the database,
+with search and filtering capabilities.
+"""
+
 import tkinter as tk
 from tkinter import ttk
 from utils.reopen_prevention import WindowSingleton
 
 class SkillLoaderDialog:
+    """
+    Dialog for loading existing skills.
+    
+    Provides a searchable tree view of all available skills for loading
+    into the editor. Includes filtering and category display.
+    
+    Attributes:
+        editor: Parent skill editor instance
+        all_skills (list): List of all skills from database
+        loader (tk.Toplevel): Dialog window
+        tree (ttk.Treeview): Tree view widget for skill list
+    """
     def __init__(self, editor):
         self.editor = editor
         # Betöltjük az összes skilt (a placeholder-eket is tartalmazza)

@@ -1,8 +1,28 @@
+"""
+Skill selector dialog for MAGUS RPG.
+
+This module provides a dialog for selecting skills as prerequisites,
+with search and filtering capabilities.
+"""
+
 import tkinter as tk
 from tkinter import ttk
 from utils.reopen_prevention import WindowSingleton
 
 class SkillSelectorDialog:
+    """
+    Dialog for selecting skills as prerequisites.
+    
+    Provides a searchable tree view for selecting skills to add as
+    prerequisites to another skill.
+    
+    Attributes:
+        parent: Parent window
+        callback: Function to call with selected skill
+        full_skill_list (list): Complete list of available skills
+        win (tk.Toplevel): Dialog window
+        tree (ttk.Treeview): Tree view widget for skill list
+    """
     def __init__(self, parent, skill_list, callback):
         self.parent = parent
         self.callback = callback

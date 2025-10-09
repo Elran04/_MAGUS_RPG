@@ -1,7 +1,30 @@
+"""
+Skill description editor dialog for MAGUS RPG.
+
+This module provides a dialog for editing skill descriptions including
+general description and level-specific descriptions with Markdown support.
+"""
+
 import tkinter as tk
 from utils.reopen_prevention import WindowSingleton
 
 class DescriptionEditorDialog:
+    """
+    Dialog for editing skill descriptions.
+    
+    Provides text areas for editing:
+    - General skill description
+    - Level-specific descriptions (1-6)
+    
+    Supports Markdown formatting in description text.
+    
+    Attributes:
+        parent_editor: Parent skill editor instance
+        win (tk.Toplevel): Dialog window
+        general_desc_text (tk.Text): General description text widget
+        level_desc_texts (list): List of level description strings
+        level_text_widgets (list): List of level description text widgets
+    """
     def __init__(self, parent_editor):
         self.parent_editor = parent_editor
         self.win, created = WindowSingleton.get('description_editor', lambda: tk.Toplevel(parent_editor.win))

@@ -1,3 +1,10 @@
+"""
+Weapons and shields editor UI using PySide6.
+
+This module provides a comprehensive editor for weapons and shields with
+type-specific fields, categories, and detailed attribute management.
+"""
+
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
     QTreeView, QLineEdit, QComboBox, QCheckBox, QPushButton, QMessageBox, QLabel, QSpinBox
@@ -12,6 +19,21 @@ from utils.weapondata_manager import WeaponDataManager
 WEAPONS_JSON = os.path.join(os.path.dirname(__file__), "..", "..", "data", "equipment", "weapons_and_shields.json")
 
 class WeaponsAndShieldsEditor(QMainWindow):
+    """
+    PySide6 main window for editing weapons and shields.
+    
+    Provides a two-panel interface:
+    - Left panel: TreeView with hierarchical item list (type -> category -> item)
+    - Right panel: Type-specific edit fields for selected item
+    
+    Supports different weapon types:
+    - Melee weapons (közelharci)
+    - Throwing weapons (hajító)
+    - Ranged weapons (távolsági)
+    - Shields (pajzs)
+    
+    Each type has specific attributes and validation requirements.
+    """
     # --- Fő Qt ablak: fegyverek és pajzsok szerkesztője ---
     # A szerkesztő két fő panelből áll: bal oldalon TreeView (lista), jobb oldalon szerkesztő mezők
     # Főbb egységek: setup_treeview, populate_treeview, on_tree_select, build_edit_fields, build_type_fields, mezőkezelés, mentés/törlés logika

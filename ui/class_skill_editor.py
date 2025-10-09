@@ -1,3 +1,10 @@
+"""
+Class skill editor UI for MAGUS RPG.
+
+This module provides an editor for managing class-specific skill assignments,
+including skill levels and percentages per class level.
+"""
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
@@ -6,14 +13,36 @@ DB_CLASS = "d:/_Projekt/_MAGUS_RPG/data/Class/class_data.db"
 DB_SKILL = "d:/_Projekt/_MAGUS_RPG/data/skills/skills_data.db"
 
 def get_classes():
+    """
+    Get all classes from the database.
+    
+    Returns:
+        list: List of (id, name) tuples for all classes
+    """
     with sqlite3.connect(DB_CLASS) as conn:
         return conn.execute("SELECT id, name FROM classes").fetchall()
 
 def get_skills():
+    """
+    Get all skills from the database.
+    
+    Returns:
+        list: List of skill data tuples
+    """
     with sqlite3.connect(DB_SKILL) as conn:
         return conn.execute("SELECT id, name, category, subcategory, parameter FROM skills").fetchall()
 
 def get_class_skills(class_id, spec_id=None):
+    """
+    Get skills assigned to a specific class.
+    
+    Args:
+        class_id: Class ID
+        spec_id: Specialization ID (optional)
+        
+    Returns:
+        list: List of skill assignments for the class
+    """
     with sqlite3.connect(DB_CLASS) as conn:
         return conn.execute(
             "SELECT skill_id, class_level, skill_level, skill_percent FROM class_skills WHERE class_id=? AND (specialisation_id=? OR specialisation_id IS NULL)",

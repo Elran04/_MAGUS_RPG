@@ -1,8 +1,20 @@
+"""
+Armor editor UI for MAGUS RPG.
+
+This module provides an editor for creating and modifying armor items,
+including their parts, protection values, weight, price, and other attributes.
+"""
+
 import tkinter as tk
 import os
 from utils.json_manager import JsonManager
 
 class ArmorJsonManager(JsonManager):
+    """
+    JSON manager for armor data.
+    
+    Handles validation and storage of armor items.
+    """
     def validate(self, item):
         required = ["id", "name", "parts", "mgt", "weight", "price", "description"]
         return all(field in item for field in required)
@@ -10,6 +22,21 @@ class ArmorJsonManager(JsonManager):
 ARMOR_JSON = os.path.join(os.path.dirname(__file__), "..", "..", "data", "equipment", "armor.json")
 
 class ArmorEditor:
+    """
+    Armor editor window.
+    
+    Provides a UI for creating, editing, and managing armor items including:
+    - Armor parts and their protection values
+    - MGT (movement penalty)
+    - Weight and price
+    - Description
+    
+    Attributes:
+        win (tk.Toplevel): Editor window
+        manager (ArmorJsonManager): JSON data manager
+        armors (list): List of armor items
+        selected_idx (int): Currently selected armor index
+    """
     def __init__(self):
         from utils.reopen_prevention import WindowSingleton
         self.win, created = WindowSingleton.get('armor_editor', lambda: tk.Toplevel())
@@ -27,6 +54,7 @@ class ArmorEditor:
     # nincs szükség külön _on_close metódusra, WindowSingleton kezeli
 
     def sort_abc(self):
+        """Sort armors alphabetically."""
         self.armors.sort(key=lambda a: a.get('name', '').lower(), reverse=not self.abc_sort_asc)
         self.abc_sort_asc = not self.abc_sort_asc
         self.update_sort_btn_labels()
