@@ -3,7 +3,7 @@ Hex grid logic and rendering for the MAGUS pygame game.
 """
 import pygame
 import math
-from config import WIDTH, HEIGHT, HEX_SIZE, HEX_COLOR, HEX_BORDER
+from config import WIDTH, HEIGHT, HEX_SIZE, HEX_COLOR, HEX_BORDER, HIGHLIGHT_COLOR, HIGHLIGHT_BORDER_WIDTH
 
 
 def get_grid_bounds():
@@ -35,19 +35,25 @@ def pixel_to_hex(x, y):
     return rq, rr
 
 
-def draw_hex(surface, color, pos, size, border=2):
-    """Draw a single hex at pos (center) with given size."""
+def _hex_points(center, size):
+    """Return the list of 6 vertex points for a hex at center with given size."""
     points = []
     for i in range(6):
         angle = math.pi/180 * (60 * i - 30)
-        x = pos[0] + size * math.cos(angle)
-        y = pos[1] + size * math.sin(angle)
+        x = center[0] + size * math.cos(angle)
+        y = center[1] + size * math.sin(angle)
         points.append((x, y))
+    return points
+
+
+def draw_hex(surface, color, pos, size, border=2):
+    """Draw a single hex at pos (center) with given size."""
+    points = _hex_points(pos, size)
     pygame.draw.polygon(surface, color, points)
     pygame.draw.polygon(surface, HEX_BORDER, points, border)
 
 
-def draw_grid(screen, min_q, max_q, min_r, max_r, sprite_positions=None):
+def draw_grid(screen, min_q, max_q, min_r, max_r, sprite_positions=None, highlight_hex=None):
     """
     Draw the hex grid and any sprites at their positions.
     
@@ -62,6 +68,11 @@ def draw_grid(screen, min_q, max_q, min_r, max_r, sprite_positions=None):
             px, py = hex_to_pixel(q, r)
             if -margin < px < WIDTH + margin and -margin < py < HEIGHT + margin:
                 draw_hex(screen, HEX_COLOR, (px, py), HEX_SIZE)
+                
+                # Highlight hovered hex with a thicker yellow border
+                if highlight_hex is not None and (q, r) == highlight_hex:
+                    points = _hex_points((px, py), HEX_SIZE)
+                    pygame.draw.polygon(screen, HIGHLIGHT_COLOR, points, HIGHLIGHT_BORDER_WIDTH)
                 
                 # Draw sprites at their positions
                 if sprite_positions and (q, r) in sprite_positions:
