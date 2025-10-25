@@ -17,3 +17,12 @@ HEX_BORDER = (200, 200, 220)
 # --- HOVER / HIGHLIGHT ---
 HIGHLIGHT_COLOR = (255, 220, 0)  # yellow border for hovered hex
 HIGHLIGHT_BORDER_WIDTH = 4
+
+# --- GAMEPLAY ---
+# Max hexes a unit can move in one action
+MOVEMENT_RANGE = 5
+
+# --- REACHABLE / HOVER TINTS (RGBA) ---
+# Semi-transparent green fills
+REACHABLE_TINT = (60, 200, 130, 80)
+HOVER_TINT = (60, 220, 150, 130)
