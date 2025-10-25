@@ -23,8 +23,7 @@ root = tk.Tk()
 root.title("M.A.G.U.S. Kalandmesteri eszköztár")
 root.geometry("800x500")
 # --- Egyedi ikon beállítása ---
-
-root.iconbitmap("MAGUS.ico")
+root.iconbitmap(os.path.join(os.path.dirname(__file__), "assets_icons", "MAGUS.ico"))
 
 
 # --- Fő szövegterület ---

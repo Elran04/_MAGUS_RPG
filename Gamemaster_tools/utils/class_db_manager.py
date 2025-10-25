@@ -1,6 +1,6 @@
 import sqlite3
 
-DB_PATH = "d:/_Projekt/_MAGUS_RPG/data/Class/class_data.db"
+DB_PATH = "d:/_Projekt/_MAGUS_RPG/Gamemaster_tools/data/Class/class_data.db"
 
 class ClassDBManager:
     def __init__(self, db_path=DB_PATH):
