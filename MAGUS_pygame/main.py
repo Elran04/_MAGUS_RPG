@@ -7,16 +7,10 @@ from config import (
     WIDTH,
     HEIGHT,
     BG_COLOR,
-    MOVEMENT_RANGE,
-    ATTACK_RANGE,
-    UI_BG,
-    UI_BORDER,
-    UI_TEXT,
-    UI_ACTIVE,
-    UI_INACTIVE,
 )
-from hex_grid import get_grid_bounds, pixel_to_hex, draw_grid, hex_distance, hexes_in_range
-from sprite_manager import load_and_mask_sprite, Unit
+from hex_grid import get_grid_bounds, pixel_to_hex, draw_grid
+from sprite_manager import load_and_mask_sprite, Unit, draw_unit_overlays
+from character_loader import load_character_json
 from action_handling import setup_action_ui, draw_action_ui, process_action_button_click
 from movement_handling import (
     compute_reachable,
@@ -24,6 +18,7 @@ from movement_handling import (
     apply_move_if_valid,
     handle_attack_click,
     skip_turn,
+    roll_initiative,
 )
 from game_state import GameState
 
@@ -44,6 +39,21 @@ goblin_sprite = load_and_mask_sprite(os.path.join(SPRITES_DIR, "goblin.png"))
 warrior = Unit(3, 3, warrior_sprite)
 goblin = Unit(6, 3, goblin_sprite)
 
+# Try to attach demo combat stats from repo characters/*.json
+try:
+    warrior_json = load_character_json("Teszt.json")
+    warrior.name = warrior_json.get("Név", "Warrior")
+    warrior.set_combat(warrior_json.get("Harci értékek", {}))
+except Exception:
+    pass
+
+try:
+    goblin_json = load_character_json("Teszt_Goblin.json")
+    goblin.name = goblin_json.get("Név", "Goblin")
+    goblin.set_combat(goblin_json.get("Harci értékek", {}))
+except Exception:
+    pass
+
 # Load background image and scale to window size
 try:
     _bg_img = pygame.image.load(os.path.join(SPRITES_DIR, "grass_bg.jpg")).convert()
@@ -57,6 +67,7 @@ def main():
     # Initialize game state
     state = GameState(
         turn=0,
+        active_unit=None,
         action_mode="move",
         turn_start_pos=warrior.get_position(),
         reachable_for_active=set(),
@@ -66,9 +77,16 @@ def main():
         goblin=goblin,
     )
 
-    # Initial compute for player turn
-    compute_reachable(state)
+    # Roll initiative to determine who starts
+    roll_initiative(state)
+    state.turn_start_pos = state.active_unit.get_position()
     
+    # Initial compute for active unit's turn
+    compute_reachable(state)
+
+    # Overlay font
+    overlay_font = pygame.font.SysFont(None, 18)
+
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -95,12 +113,10 @@ def main():
                 # Only act if the clicked hex is on the grid
                 if MIN_Q <= q < MAX_Q and MIN_R <= r < MAX_R:
                     if state.action_mode == "move":
-                        did_move = apply_move_if_valid(state, q, r)
-                        # On success, state is already advanced and recomputed
+                        _ = apply_move_if_valid(state, q, r)
                     else:  # attack mode
-                        did_attack = handle_attack_click(state, q, r)
-                        # On success, state is already advanced and recomputed
-            
+                        _ = handle_attack_click(state, q, r)
+
             # Right click to skip turn without moving
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
                 skip_turn(state)
@@ -132,10 +148,18 @@ def main():
             highlight_hex=(hovered_q, hovered_r),
         )
 
+        # Overlays for each unit
+        draw_unit_overlays(screen, state.warrior, overlay_font)
+        draw_unit_overlays(screen, state.goblin, overlay_font)
+
         # Draw turn/action info and action buttons
         info_font = pygame.font.SysFont(None, 32)
+        # Show round, active unit name and their initiative roll
+        active_name = state.active_unit.name if state.active_unit else "Unknown"
+        active_init = state.initiative_rolls.get(active_name, 0)
+        acted_count = len(state.units_acted_this_round)
         text = info_font.render(
-            f"Turn: {'Player' if state.turn == 0 else 'Enemy'}  Action: {state.action_mode.title()}",
+            f"Round {state.round} ({acted_count}/2) | Active: {active_name} (Init: {active_init}) | {state.action_mode.title()}",
             True,
             (255, 255, 255),
         )

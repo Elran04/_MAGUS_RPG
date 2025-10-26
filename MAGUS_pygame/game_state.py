@@ -9,8 +9,15 @@ from sprite_manager import Unit
 @dataclass
 class GameState:
     # Core turn/action
-    turn: int = 0  # 0: Player, 1: Enemy
+    round: int = 1  # Round counter
+    turn: int = 0  # Turn counter (increments each action)
+    active_unit: Unit = None  # The unit currently taking their turn
+    units_acted_this_round: Set[str] = field(default_factory=set)  # Track who has acted
     action_mode: str = "move"  # "move" | "attack"
+
+    # Initiative tracking
+    initiative_rolls: Dict[str, int] = field(default_factory=dict)  # unit_name -> d100+KÉ
+    turn_order: list = field(default_factory=list)  # Ordered list of units for this round
 
     # Positions and overlays
     turn_start_pos: Tuple[int, int] = (0, 0)
