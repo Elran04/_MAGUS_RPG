@@ -8,3 +8,4 @@ env/
 project_folderstructure_scanner.py
 *.zip
 *.rar
+characters/

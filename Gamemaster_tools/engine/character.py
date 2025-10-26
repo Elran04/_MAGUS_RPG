@@ -75,19 +75,20 @@ def calculate_combat_stats(character):
         data = {}
 
     # Véletlenszerű FP bónusz első szintre
-    fp_min = data[2] if len(data) > 2 else 0
-    fp_max = data[3] if len(data) > 3 else 0
+    # Note: data indices include id (0) and class_id (1), so actual stats start at index 2
+    fp_min = data[3] if len(data) > 3 else 0  # fp_min_per_level
+    fp_max = data[4] if len(data) > 4 else 0  # fp_max_per_level
     fp_bonus = safe_randint(fp_min, fp_max)
 
     def bonus(val):
         return max(0, val - 10)
 
-    fp = (data[1] if len(data) > 1 else 0) + fp_bonus + bonus(stats["Akaraterő"]) + bonus(stats["Állóképesség"])
-    ep = (data[4] if len(data) > 4 else 0) + bonus(stats["Egészség"])
-    ke = (data[7] if len(data) > 7 else 0) + bonus(stats["Gyorsaság"]) + bonus(stats["Ügyesség"])
-    te = (data[8] if len(data) > 8 else 0) + bonus(stats["Erő"]) + bonus(stats["Gyorsaság"]) + bonus(stats["Ügyesség"])
-    ve = (data[9] if len(data) > 9 else 0) + bonus(stats["Gyorsaság"]) + bonus(stats["Ügyesség"])
-    ce = (data[10] if len(data) > 10 else 0) + bonus(stats["Ügyesség"])
+    fp = (data[2] if len(data) > 2 else 0) + fp_bonus + bonus(stats["Akaraterő"]) + bonus(stats["Állóképesség"])
+    ep = (data[5] if len(data) > 5 else 0) + bonus(stats["Egészség"])
+    ke = (data[8] if len(data) > 8 else 0) + bonus(stats["Gyorsaság"]) + bonus(stats["Ügyesség"])
+    te = (data[9] if len(data) > 9 else 0) + bonus(stats["Erő"]) + bonus(stats["Gyorsaság"]) + bonus(stats["Ügyesség"])
+    ve = (data[10] if len(data) > 10 else 0) + bonus(stats["Gyorsaság"]) + bonus(stats["Ügyesség"])
+    ce = (data[11] if len(data) > 11 else 0) + bonus(stats["Ügyesség"])
 
     character["Harci értékek"] = {
         "FP": fp,
@@ -97,14 +98,14 @@ def calculate_combat_stats(character):
         "VÉ": ve,
         "CÉ": ce,
         "HM/szint": {
-            "total": data[11] if len(data) > 11 else 0,
-            "mandatory": {"TÉ": data[12] if len(data) > 12 else 0, "VÉ": data[13] if len(data) > 13 else 0}
+            "total": data[12] if len(data) > 12 else 0,
+            "mandatory": {"TÉ": data[13] if len(data) > 13 else 0, "VÉ": data[14] if len(data) > 14 else 0}
         },
     }
 
     character["Képzettségpontok"] = {
-        "Alap": data[5] if len(data) > 5 else 0,
-        "Szintenként": data[6] if len(data) > 6 else 0
+        "Alap": data[6] if len(data) > 6 else 0,
+        "Szintenként": data[7] if len(data) > 7 else 0
     }
 
     return character
@@ -218,8 +219,8 @@ RACE_RESTRICTIONS = {
         "Harcművész", "Kardművész", "Tűzvarázsló"
     },
     "Goblin": {
-        "Lovag", "Pap", "Paplovag", "Szerzetes", "Sámán", "Bárd",
-        "Harcművész", "Kardművész", "Boszorkány", "Boszorkánymester", "Tűzvarázsló", "Varázsló", "Pszi mester"
+        "Lovag", "Pap", "Paplovag", "Szerzetes", "Sámán", "Bárd", "Bajvívó", "Barbár", "Amazon",
+        "Harcművész", "Kardművész", "Boszorkány", "Tűzvarázsló", "Varázsló", "Pszi mester"
     }
 }
 
