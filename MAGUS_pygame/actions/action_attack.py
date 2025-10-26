@@ -4,21 +4,21 @@ Attack action handling: range checking, attack rolls, and damage resolution.
 import random
 from typing import Tuple, Optional, Set
 from systems.hex_grid import hex_distance
+from systems.reach import compute_reach_hexes
 from config import ATTACK_RANGE, AP_COST_ATTACK_DEFAULT, ActionMode
 from core.game_state import GameState
 from core.unit_manager import Unit
 
 
 def compute_attackable(state: GameState) -> Set[Tuple[int, int]]:
-    """Mark enemy hex if within attack range; updates and returns state.attackable_for_active."""
-    active_pos = state.active_unit.get_position()
-    enemy_unit = state.goblin if state.active_unit == state.warrior else state.warrior
-    enemy_pos = enemy_unit.get_position()
-    if hex_distance(active_pos[0], active_pos[1], enemy_pos[0], enemy_pos[1]) <= ATTACK_RANGE:
-        state.attackable_for_active = {enemy_pos}
-    else:
-        state.attackable_for_active = set()
-    return state.attackable_for_active
+    """Compute attackable hexes for active unit using weapon size category and facing."""
+    unit = state.active_unit
+    uq, ur = unit.get_position()
+    size_cat = getattr(unit, 'size_category', 1)
+    facing = getattr(unit, 'facing', 0)
+    attackable = compute_reach_hexes(uq, ur, facing, size_cat)
+    state.attackable_for_active = attackable
+    return attackable
 
 
 class AttackResult:
@@ -36,11 +36,10 @@ class AttackResult:
 
 
 def check_attack_range(attacker: Unit, defender: Unit) -> bool:
-    """Check if defender is within attack range of attacker."""
+    """Check if defender is within attack range of attacker using size category and facing."""
     aq, ar = attacker.get_position()
-    dq, dr = defender.get_position()
-    distance = hex_distance(aq, ar, dq, dr)
-    return distance <= ATTACK_RANGE
+    reach = compute_reach_hexes(aq, ar, attacker.facing, attacker.size_category)
+    return defender.get_position() in reach
 
 
 def roll_attack(attacker: Unit, defender: Unit) -> AttackResult:
@@ -74,7 +73,7 @@ def roll_attack(attacker: Unit, defender: Unit) -> AttackResult:
     
     # Critical hit on 100
     if d100 == 100:
-        base_damage = random.randint(1, 6)
+        base_damage = random.randint(attacker.damage_min, attacker.damage_max)
         return AttackResult(
             hit=True,
             damage=base_damage,
@@ -85,7 +84,7 @@ def roll_attack(attacker: Unit, defender: Unit) -> AttackResult:
     
     # Normal attack resolution
     if total_attack > defender_ve:
-        base_damage = random.randint(1, 6)
+        base_damage = random.randint(attacker.damage_min, attacker.damage_max)
         is_overpower = total_attack > (defender_ve + 50)
         return AttackResult(
             hit=True,
@@ -103,7 +102,7 @@ def roll_attack(attacker: Unit, defender: Unit) -> AttackResult:
     )
 
 
-def apply_damage(defender: Unit, damage: int, is_critical: bool = False, is_overpower: bool = False) -> dict:
+def apply_damage(attacker: Unit, defender: Unit, damage: int, is_critical: bool = False, is_overpower: bool = False) -> dict:
     """
     Apply damage to defender.
     
@@ -112,9 +111,10 @@ def apply_damage(defender: Unit, damage: int, is_critical: bool = False, is_over
     - Overpower strike: damage goes directly to ÉP
     - Critical hit: deals +3 ÉP damage regardless of FP
     - If ÉP damage occurs and defender still has FP: lose 2x ÉP damage as FP
-    - Max damage (6): automatically deals +1 ÉP (which also triggers 2 FP loss)
+    - Max damage (weapon max): automatically deals +1 ÉP (which also triggers 2 FP loss)
     
     Args:
+        attacker: The unit attacking (for weapon damage max check)
         defender: The unit receiving damage
         damage: Base damage amount
         is_critical: Whether this is a critical hit
@@ -127,8 +127,8 @@ def apply_damage(defender: Unit, damage: int, is_critical: bool = False, is_over
     ep_damage = 0
     max_damage_bonus = False
     
-    # Check for max damage (6) - adds +1 ÉP
-    if damage == 6:
+    # Check for max weapon damage - adds +1 ÉP
+    if damage == attacker.damage_max:
         max_damage_bonus = True
         ep_damage += 1
         # If defender has FP, lose 2 FP per ÉP damage
@@ -212,7 +212,7 @@ def execute_attack(state: GameState, attacker: Unit, defender: Unit) -> Tuple[bo
         return (True, f"{attacker.name} missed! (Rolled {result.attack_roll}, total {result.total_attack} vs VÉ {defender.VE})")
     
     # Hit - apply damage
-    damage_breakdown = apply_damage(defender, result.damage, result.is_critical, result.is_overpower)
+    damage_breakdown = apply_damage(attacker, defender, result.damage, result.is_critical, result.is_overpower)
     
     # Build message
     if result.is_critical:
@@ -255,8 +255,8 @@ def handle_attack_click(state: GameState, q: int, r: int) -> bool:
     eq, er = enemy_unit.get_position()
     if (q, r) == (eq, er):
         # Check if unit has enough action points
-        # TODO: Get actual weapon AP cost from unit equipment when implemented
-        attack_ap_cost = AP_COST_ATTACK_DEFAULT
+        # Get AP cost from equipped weapon
+        attack_ap_cost = state.active_unit.attack_time
         
         if state.active_unit.current_action_points < attack_ap_cost:
             print(f"{state.active_unit.name} doesn't have enough AP to attack! (Need {attack_ap_cost}, have {state.active_unit.current_action_points})")

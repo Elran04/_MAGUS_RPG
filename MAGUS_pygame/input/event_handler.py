@@ -49,6 +49,10 @@ def handle_facing_change(state: GameState, new_facing: int) -> None:
             next_turn(state)
             state.action_mode = ActionMode.MOVE
             compute_reachable(state)
+        else:
+            # If we remain in ATTACK mode, update attackable tiles based on new facing
+            if state.action_mode == ActionMode.ATTACK:
+                compute_attackable(state)
     else:
         print(f"{state.active_unit.name} doesn't have enough AP to change facing! (Need {AP_COST_FACING}, have {state.active_unit.current_action_points})")
 

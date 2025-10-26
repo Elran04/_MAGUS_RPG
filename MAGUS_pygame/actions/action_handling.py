@@ -73,17 +73,20 @@ def setup_action_ui() -> Dict[str, object]:
     facing_center_x = 10 + DROPDOWN_W + 40
     facing_center_y = HEIGHT - 60
     facing_buttons = []
-    facing_labels = ["N", "NE", "SE", "S", "SW", "NW"]
+    # Use simple ASCII arrows or characters
+    # Facing: 0=N, 1=NE, 2=SE, 3=S, 4=SW, 5=NW
+    facing_labels = ["^", ">", "v", "<", "v", "^"]  # Will draw rotated triangles instead
     button_size = 30
     
     for i in range(6):
-        angle = math.radians(-90 + i * 60)  # Start at top, go clockwise
+        # Arrange buttons in hex pattern, offset by 30° to match side-facing
+        angle = math.radians(-90 + 30 + i * 60)  # Start at top-right, go clockwise
         x = facing_center_x + 50 * math.cos(angle) - button_size // 2
         y = facing_center_y + 50 * math.sin(angle) - button_size // 2
         facing_buttons.append({
             "rect": pygame.Rect(int(x), int(y), button_size, button_size),
             "facing": i,
-            "label": facing_labels[i]
+            "angle": -60 + i * 60  # Angle for drawing the arrow triangle
         })
     
     return {
@@ -117,11 +120,32 @@ def draw_action_ui(screen: pygame.Surface, ui_state: Dict[str, object], action_m
     pygame.draw.rect(screen, UI_ACTIVE, dropdown_rect, border_radius=6)
     pygame.draw.rect(screen, UI_BORDER, dropdown_rect, width=2, border_radius=6)
     
-    # Show current selection with arrow
-    text = f"{selected_action} ▼" if not dropdown_open else f"{selected_action} ▲"
+    # Show current selection with text
+    text = f"{selected_action}"
     text_surf = ui_font.render(text, True, UI_TEXT)
     text_rect = text_surf.get_rect(midleft=(dropdown_rect.left + 10, dropdown_rect.centery))
     screen.blit(text_surf, text_rect)
+    
+    # Draw small triangle arrow indicator
+    arrow_x = dropdown_rect.right - 20
+    arrow_y = dropdown_rect.centery
+    arrow_size = 6
+    
+    if dropdown_open:
+        # Up arrow (triangle pointing up)
+        points = [
+            (arrow_x, arrow_y - arrow_size // 2),  # Top point
+            (arrow_x - arrow_size, arrow_y + arrow_size // 2),  # Bottom left
+            (arrow_x + arrow_size, arrow_y + arrow_size // 2)   # Bottom right
+        ]
+    else:
+        # Down arrow (triangle pointing down)
+        points = [
+            (arrow_x, arrow_y + arrow_size // 2),  # Bottom point
+            (arrow_x - arrow_size, arrow_y - arrow_size // 2),  # Top left
+            (arrow_x + arrow_size, arrow_y - arrow_size // 2)   # Top right
+        ]
+    pygame.draw.polygon(screen, UI_TEXT, points)
     
     # Draw dropdown options if open (expand upward)
     if dropdown_open:
@@ -149,9 +173,24 @@ def draw_action_ui(screen: pygame.Surface, ui_state: Dict[str, object], action_m
             pygame.draw.rect(screen, UI_INACTIVE, btn["rect"], border_radius=4)
             pygame.draw.rect(screen, UI_BORDER, btn["rect"], width=2, border_radius=4)
             
-            label_surf = ui_font.render(btn["label"], True, UI_TEXT)
-            label_rect = label_surf.get_rect(center=btn["rect"].center)
-            screen.blit(label_surf, label_rect)
+            # Draw a small triangle pointing in the facing direction
+            center_x = btn["rect"].centerx
+            center_y = btn["rect"].centery
+            angle_rad = math.radians(btn["angle"])
+            
+            # Triangle dimensions
+            size = 10
+            tip_x = center_x + size * math.cos(angle_rad)
+            tip_y = center_y + size * math.sin(angle_rad)
+            
+            perp_angle = angle_rad + math.pi / 2
+            base1_x = center_x + (size * 0.4) * math.cos(perp_angle)
+            base1_y = center_y + (size * 0.4) * math.sin(perp_angle)
+            base2_x = center_x - (size * 0.4) * math.cos(perp_angle)
+            base2_y = center_y - (size * 0.4) * math.sin(perp_angle)
+            
+            points = [(tip_x, tip_y), (base1_x, base1_y), (base2_x, base2_y)]
+            pygame.draw.polygon(screen, UI_TEXT, points)
 
 
 def process_action_ui_click(mx: int, my: int, ui_state: Dict[str, object]) -> Optional[Dict[str, any]]:

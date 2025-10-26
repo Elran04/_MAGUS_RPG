@@ -118,5 +118,6 @@ def draw_hud(screen: pygame.Surface, state: GameState) -> None:
     )
     screen.blit(text, (10, 10))
     
+    
     # Draw action buttons
     draw_action_ui(screen, state.ui_state, state.action_mode)

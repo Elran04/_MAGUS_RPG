@@ -39,6 +39,7 @@ def main():
         warrior=warrior,
         goblin=goblin,
     )
+    
 
     # Roll initiative to determine who starts
     roll_initiative(state)

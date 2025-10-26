@@ -19,9 +19,12 @@ def draw_facing_indicator(screen: pygame.Surface, unit, px: int, py: int):
     # Triangle size
     triangle_size = HEX_SIZE * 0.4
     
-    # Calculate angle based on facing (0 = north/top, clockwise)
-    # Facing 0 = -90° (pointing up), each step is 60°
-    angle_degrees = -90 + (unit.facing * 60)
+    # Calculate angle based on facing (0-5)
+    # For pointy-top hexagons, flat edges are at 0°, 60°, 120°, 180°, 240°, 300°
+    # Facing 0 = North (0° = right, so -90° + 30° = -60° for top-right edge)
+    # We want: 0=N, 1=NE, 2=SE, 3=S, 4=SW, 5=NW
+    # Start at -90° (top) and add 30° to point at sides instead of vertices
+    angle_degrees = -90 + 30 + (unit.facing * 60)
     angle_rad = math.radians(angle_degrees)
     
     # Triangle points (small triangle pointing in facing direction)
