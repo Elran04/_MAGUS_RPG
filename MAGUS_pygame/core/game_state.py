@@ -3,7 +3,8 @@ Game state container to centralize turn and UI state for cleaner module interfac
 """
 from dataclasses import dataclass, field
 from typing import Dict, Set, Tuple
-from unit_manager import Unit
+from core.unit_manager import Unit
+from config import ActionMode
 
 
 @dataclass
@@ -13,7 +14,7 @@ class GameState:
     turn: int = 0  # Turn counter (increments each action)
     active_unit: Unit = None  # The unit currently taking their turn
     units_acted_this_round: Set[str] = field(default_factory=set)  # Track who has acted
-    action_mode: str = "move"  # "move" | "attack"
+    action_mode: str = ActionMode.MOVE  # ActionMode.MOVE | ActionMode.ATTACK | ActionMode.CHANGE_FACING
 
     # Game over tracking
     game_over: bool = False
@@ -53,3 +54,33 @@ def check_defeat(state: GameState) -> bool:
         return True
     
     return False
+
+
+def next_turn(state: GameState) -> None:
+    """
+    End current unit's turn and switch to next unit.
+    If both units have acted, start a new round with fresh initiative.
+    Resets action points when switching to a new unit.
+    """
+    from actions.action_handling import roll_initiative
+    
+    # Mark current unit as having acted
+    state.units_acted_this_round.add(state.active_unit.name)
+    
+    # Check if both units have acted this round
+    if len(state.units_acted_this_round) >= 2:
+        # Round complete - roll new initiative for next round
+        state.round += 1
+        roll_initiative(state)  # This resets AP for both units
+    else:
+        # Switch to next unit in turn order
+        current_idx = state.turn_order.index(state.active_unit)
+        next_idx = (current_idx + 1) % len(state.turn_order)
+        state.active_unit = state.turn_order[next_idx]
+        state.turn = 0 if state.active_unit == state.warrior else 1
+        
+        # Reset action points for the new active unit
+        state.active_unit.current_action_points = state.active_unit.max_action_points
+    
+    # Set turn start position to current active unit's position
+    state.turn_start_pos = state.active_unit.get_position()

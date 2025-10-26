@@ -1,0 +1,101 @@
+"""
+Event handling for user input and UI interactions.
+"""
+from typing import Tuple
+from config import AP_COST_FACING, ActionMode
+from core.game_state import GameState, next_turn
+from systems.hex_grid import pixel_to_hex
+from actions.action_handling import process_action_ui_click
+from actions.action_movement import compute_reachable, apply_move_if_valid, skip_turn
+from actions.action_attack import compute_attackable, handle_attack_click
+
+
+def handle_ui_click(state: GameState, ui_result: dict) -> None:
+    """
+    Process UI click results from dropdown and facing buttons.
+    Updates action mode and recalculates overlays.
+    """
+    if ui_result["type"] == "select_action":
+        action = ui_result["action"]
+        if action == "move":
+            state.action_mode = ActionMode.MOVE
+            compute_reachable(state)
+            state.attackable_for_active = set()
+        elif action == "attack":
+            state.action_mode = ActionMode.ATTACK
+            state.reachable_for_active = set()
+            compute_attackable(state)
+        elif action == "change_facing":
+            state.action_mode = ActionMode.CHANGE_FACING
+            state.reachable_for_active = set()
+            state.attackable_for_active = set()
+    elif ui_result["type"] == "select_facing":
+        handle_facing_change(state, ui_result["facing"])
+    # toggle_dropdown is handled automatically by action_handling
+
+
+def handle_facing_change(state: GameState, new_facing: int) -> None:
+    """
+    Change active unit's facing direction.
+    Deducts AP_COST_FACING action points.
+    Auto-ends turn if AP depleted.
+    """
+    if state.active_unit.current_action_points >= AP_COST_FACING:
+        state.active_unit.facing = new_facing
+        state.active_unit.current_action_points -= AP_COST_FACING
+        print(f"{state.active_unit.name} changed facing to {new_facing}. AP remaining: {state.active_unit.current_action_points}/{state.active_unit.max_action_points}")
+        # Check if AP depleted
+        if state.active_unit.current_action_points <= 0:
+            next_turn(state)
+            state.action_mode = ActionMode.MOVE
+            compute_reachable(state)
+    else:
+        print(f"{state.active_unit.name} doesn't have enough AP to change facing! (Need {AP_COST_FACING}, have {state.active_unit.current_action_points})")
+
+
+def handle_grid_click(state: GameState, q: int, r: int, grid_bounds: Tuple[int, int, int, int]) -> None:
+    """
+    Process grid click based on action mode.
+    Routes to movement or attack handlers.
+    
+    Args:
+        state: Current game state
+        q, r: Hex coordinates of clicked position
+        grid_bounds: (MIN_Q, MAX_Q, MIN_R, MAX_R) boundaries
+    """
+    MIN_Q, MAX_Q, MIN_R, MAX_R = grid_bounds
+    
+    # Only act if the clicked hex is on the grid
+    if MIN_Q <= q < MAX_Q and MIN_R <= r < MAX_R:
+        if state.action_mode == ActionMode.MOVE:
+            _ = apply_move_if_valid(state, q, r)
+        elif state.action_mode == ActionMode.ATTACK:
+            _ = handle_attack_click(state, q, r)
+
+
+def handle_right_click(state: GameState) -> None:
+    """Skip current turn without performing any action."""
+    skip_turn(state)
+
+
+def process_mouse_click(state: GameState, mx: int, my: int, button: int, grid_bounds: Tuple[int, int, int, int]) -> None:
+    """
+    Main mouse click processor.
+    
+    Args:
+        state: Current game state
+        mx, my: Mouse pixel coordinates
+        button: Mouse button (1=left, 3=right)
+        grid_bounds: (MIN_Q, MAX_Q, MIN_R, MAX_R) boundaries
+    """
+    if button == 1:  # Left click
+        # Try UI click first
+        ui_result = process_action_ui_click(mx, my, state.ui_state)
+        if ui_result:
+            handle_ui_click(state, ui_result)
+        else:
+            # Try grid click
+            q, r = pixel_to_hex(mx, my)
+            handle_grid_click(state, q, r, grid_bounds)
+    elif button == 3:  # Right click
+        handle_right_click(state)

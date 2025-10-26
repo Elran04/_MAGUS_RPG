@@ -5,7 +5,7 @@ import random
 import pygame
 from typing import Optional, Dict, List
 from config import HEIGHT, WIDTH, UI_BORDER, UI_TEXT, UI_ACTIVE, UI_INACTIVE
-from game_state import GameState
+from core.game_state import GameState
 
 
 def roll_initiative(state: GameState) -> None:

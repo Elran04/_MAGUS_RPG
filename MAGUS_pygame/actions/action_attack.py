@@ -3,10 +3,10 @@ Attack action handling: range checking, attack rolls, and damage resolution.
 """
 import random
 from typing import Tuple, Optional, Set
-from hex_grid import hex_distance
-from config import ATTACK_RANGE, AP_COST_ATTACK_DEFAULT
-from game_state import GameState
-from unit_manager import Unit
+from systems.hex_grid import hex_distance
+from config import ATTACK_RANGE, AP_COST_ATTACK_DEFAULT, ActionMode
+from core.game_state import GameState
+from core.unit_manager import Unit
 
 
 def compute_attackable(state: GameState) -> Set[Tuple[int, int]]:
@@ -248,8 +248,8 @@ def handle_attack_click(state: GameState, q: int, r: int) -> bool:
     On success, advance turn if no AP left, otherwise allow more actions.
     Returns True if attacked.
     """
-    from action_movement import next_turn, compute_reachable
-    from game_state import check_defeat
+    from actions.action_movement import compute_reachable
+    from core.game_state import check_defeat, next_turn
     
     enemy_unit = state.goblin if state.active_unit == state.warrior else state.warrior
     eq, er = enemy_unit.get_position()
@@ -278,7 +278,7 @@ def handle_attack_click(state: GameState, q: int, r: int) -> bool:
             # If no AP left, end turn automatically
             if state.active_unit.current_action_points <= 0:
                 next_turn(state)
-                state.action_mode = "move"
+                state.action_mode = ActionMode.MOVE
                 state.attackable_for_active = set()
                 compute_reachable(state)
             else:

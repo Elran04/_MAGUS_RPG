@@ -9,8 +9,9 @@ from typing import Any, Dict
 
 
 def repo_root() -> str:
-    # MAGUS_pygame directory -> parent is repo root
-    return os.path.dirname(os.path.dirname(__file__))
+    # __file__ is in systems/ folder -> parent is MAGUS_pygame -> parent is repo root
+    magus_pygame_dir = os.path.dirname(os.path.dirname(__file__))
+    return os.path.dirname(magus_pygame_dir)
 
 
 def load_character_json(filename: str) -> Dict[str, Any]:

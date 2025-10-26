@@ -4,7 +4,7 @@ Sprite loading and visual rendering for the MAGUS pygame game.
 import pygame
 import math
 from config import HEX_SIZE, UI_BORDER, UI_TEXT
-from hex_grid import hex_to_pixel
+from systems.hex_grid import hex_to_pixel
 
 
 def draw_facing_indicator(screen: pygame.Surface, unit, px: int, py: int):

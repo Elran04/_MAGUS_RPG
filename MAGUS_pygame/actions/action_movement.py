@@ -2,9 +2,9 @@
 Movement action helpers: range computation and movement resolution.
 """
 from typing import Set, Tuple
-from hex_grid import hexes_in_range, hex_distance
-from config import MOVEMENT_RANGE, AP_COST_MOVEMENT
-from game_state import GameState
+from systems.hex_grid import hexes_in_range, hex_distance
+from config import MOVEMENT_RANGE, AP_COST_MOVEMENT, ActionMode
+from core.game_state import GameState, next_turn
 
 
 def compute_reachable(state: GameState) -> Set[Tuple[int, int]]:
@@ -27,40 +27,6 @@ def compute_reachable(state: GameState) -> Set[Tuple[int, int]]:
     return reachable
 
 
-def _set_turn_start_to_active(state: GameState) -> None:
-    """Set the turn start position to the current active unit's position."""
-    state.turn_start_pos = state.active_unit.get_position()
-
-
-def next_turn(state: GameState) -> None:
-    """
-    End current unit's turn and switch to next unit.
-    If both units have acted, start a new round with fresh initiative.
-    Resets action points when switching to a new unit.
-    """
-    from action_handling import roll_initiative
-    
-    # Mark current unit as having acted
-    state.units_acted_this_round.add(state.active_unit.name)
-    
-    # Check if both units have acted this round
-    if len(state.units_acted_this_round) >= 2:
-        # Round complete - roll new initiative for next round
-        state.round += 1
-        roll_initiative(state)  # This resets AP for both units
-    else:
-        # Switch to next unit in turn order
-        current_idx = state.turn_order.index(state.active_unit)
-        next_idx = (current_idx + 1) % len(state.turn_order)
-        state.active_unit = state.turn_order[next_idx]
-        state.turn = 0 if state.active_unit == state.warrior else 1
-        
-        # Reset action points for the new active unit
-        state.active_unit.current_action_points = state.active_unit.max_action_points
-    
-    _set_turn_start_to_active(state)
-
-
 def apply_move_if_valid(state: GameState, q: int, r: int) -> bool:
     """
     Attempt to move active unit to (q,r). 
@@ -68,7 +34,7 @@ def apply_move_if_valid(state: GameState, q: int, r: int) -> bool:
     On success, advance turn if no AP left, otherwise allow more actions.
     Returns True if moved.
     """
-    if state.action_mode != "move" or (q, r) not in state.reachable_for_active:
+    if state.action_mode != ActionMode.MOVE or (q, r) not in state.reachable_for_active:
         return False
     
     # Calculate hex distance from turn start position
@@ -97,7 +63,7 @@ def apply_move_if_valid(state: GameState, q: int, r: int) -> bool:
     # If no AP left, end turn automatically
     if state.active_unit.current_action_points <= 0:
         next_turn(state)
-        state.action_mode = "move"
+        state.action_mode = ActionMode.MOVE
         state.attackable_for_active = set()
         compute_reachable(state)
     else:
@@ -110,6 +76,6 @@ def apply_move_if_valid(state: GameState, q: int, r: int) -> bool:
 def skip_turn(state: GameState) -> None:
     """Skip current turn and prepare next turn state."""
     next_turn(state)
-    state.action_mode = "move"
+    state.action_mode = ActionMode.MOVE
     state.attackable_for_active = set()
     compute_reachable(state)
