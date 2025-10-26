@@ -13,6 +13,7 @@ from config import (
     HIGHLIGHT_BORDER_WIDTH,
     REACHABLE_TINT,
     HOVER_TINT,
+    ATTACKABLE_TINT,
 )
 
 
@@ -77,9 +78,11 @@ def _hex_points(center, size):
 
 
 def draw_hex(surface, color, pos, size, border=2):
-    """Draw a single hex at pos (center) with given size."""
+    """Draw a single hex border at pos (center) with given size.
+    The interior is left transparent so backgrounds remain visible.
+    """
     points = _hex_points(pos, size)
-    pygame.draw.polygon(surface, color, points)
+    # No fill: leave interior transparent to reveal background
     pygame.draw.polygon(surface, HEX_BORDER, points, border)
 
 
@@ -91,6 +94,7 @@ def draw_grid(
     max_r,
     sprite_positions=None,
     reachable_hexes=None,
+    attackable_hexes=None,
     highlight_hex=None,
 ):
     """
@@ -104,30 +108,43 @@ def draw_grid(
         highlight_hex: (q, r) hex to draw as hovered
     """
     margin = HEX_SIZE * 2
+    # Draw semi-transparent overlays onto a separate surface for correct alpha blending
+    overlay_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+
+    # Pass 1: draw base hex borders and accumulate overlay fills
     for q in range(min_q, max_q):
         for r in range(min_r, max_r):
             px, py = hex_to_pixel(q, r)
             if -margin < px < WIDTH + margin and -margin < py < HEIGHT + margin:
-                # Base hex tile
+                # Base hex border (interior transparent)
                 draw_hex(screen, HEX_COLOR, (px, py), HEX_SIZE)
 
                 # Compute polygon points once
                 points = _hex_points((px, py), HEX_SIZE)
 
-                # Under-sprite overlays: reachable and hover fills
+                # Accumulate semi-transparent fills
                 if reachable_hexes and (q, r) in reachable_hexes:
-                    pygame.draw.polygon(screen, REACHABLE_TINT, points, 0)
+                    pygame.draw.polygon(overlay_surface, REACHABLE_TINT, points, 0)
+                if attackable_hexes and (q, r) in attackable_hexes:
+                    pygame.draw.polygon(overlay_surface, ATTACKABLE_TINT, points, 0)
                 if highlight_hex is not None and (q, r) == highlight_hex:
-                    pygame.draw.polygon(screen, HOVER_TINT, points, 0)
+                    pygame.draw.polygon(overlay_surface, HOVER_TINT, points, 0)
 
-                # Sprites on top of fills
-                if sprite_positions and (q, r) in sprite_positions:
-                    sprite = sprite_positions[(q, r)]
-                    rect = sprite.get_rect(center=(px, py))
-                    screen.blit(sprite, rect)
+    # Blit accumulated overlays once (under sprites)
+    screen.blit(overlay_surface, (0, 0))
 
-                # On-top overlay: hover border only (no fill)
-                if highlight_hex is not None and (q, r) == highlight_hex:
-                    pygame.draw.polygon(
-                        screen, HIGHLIGHT_COLOR, points, HIGHLIGHT_BORDER_WIDTH
-                    )
+    # Pass 2: draw sprites above overlays
+    if sprite_positions:
+        for (sq, sr), sprite in sprite_positions.items():
+            spx, spy = hex_to_pixel(sq, sr)
+            if -margin < spx < WIDTH + margin and -margin < spy < HEIGHT + margin:
+                rect = sprite.get_rect(center=(spx, spy))
+                screen.blit(sprite, rect)
+
+    # On-top overlay: hover border only (no fill)
+    if highlight_hex is not None:
+        hq, hr = highlight_hex
+        hpx, hpy = hex_to_pixel(hq, hr)
+        if -margin < hpx < WIDTH + margin and -margin < hpy < HEIGHT + margin:
+            hpoints = _hex_points((hpx, hpy), HEX_SIZE)
+            pygame.draw.polygon(screen, HIGHLIGHT_COLOR, hpoints, HIGHLIGHT_BORDER_WIDTH)

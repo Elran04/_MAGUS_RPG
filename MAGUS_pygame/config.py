@@ -21,8 +21,17 @@ HIGHLIGHT_BORDER_WIDTH = 4
 # --- GAMEPLAY ---
 # Max hexes a unit can move in one action
 MOVEMENT_RANGE = 5
+ATTACK_RANGE = 1
+
+# --- ACTION UI ---
+UI_BG = (20, 20, 28)
+UI_BORDER = (90, 90, 110)
+UI_TEXT = (230, 230, 240)
+UI_ACTIVE = (70, 150, 220)
+UI_INACTIVE = (60, 60, 80)
 
 # --- REACHABLE / HOVER TINTS (RGBA) ---
 # Semi-transparent green fills
 REACHABLE_TINT = (60, 200, 130, 80)
 HOVER_TINT = (60, 220, 150, 130)
+ATTACKABLE_TINT = (220, 80, 60, 100)
