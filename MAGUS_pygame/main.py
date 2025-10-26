@@ -12,7 +12,7 @@ from hex_grid import get_grid_bounds, pixel_to_hex, draw_grid
 from sprite_manager import load_and_mask_sprite, draw_unit_overlays
 from unit_manager import Unit
 from character_loader import load_character_json
-from action_handling import setup_action_ui, draw_action_ui, process_action_button_click, roll_initiative
+from action_handling import setup_action_ui, draw_action_ui, process_action_ui_click, roll_initiative
 from action_movement import (
     compute_reachable,
     apply_move_if_valid,
@@ -99,25 +99,52 @@ def main():
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mx, my = event.pos
 
-                # Buttons first
-                clicked_mode = process_action_button_click(mx, my, state.ui_state)
-                if clicked_mode == "move":
-                    state.action_mode = "move"
-                    compute_reachable(state)
-                    state.attackable_for_active = set()
-                    continue
-                elif clicked_mode == "attack":
-                    state.action_mode = "attack"
-                    state.reachable_for_active = set()
-                    compute_attackable(state)
-                    continue
+                # Process UI clicks (dropdown and facing buttons)
+                ui_result = process_action_ui_click(mx, my, state.ui_state)
+                if ui_result:
+                    if ui_result["type"] == "select_action":
+                        action = ui_result["action"]
+                        if action == "move":
+                            state.action_mode = "move"
+                            compute_reachable(state)
+                            state.attackable_for_active = set()
+                            continue
+                        elif action == "attack":
+                            state.action_mode = "attack"
+                            state.reachable_for_active = set()
+                            compute_attackable(state)
+                            continue
+                        elif action == "change_facing":
+                            state.action_mode = "change_facing"
+                            state.reachable_for_active = set()
+                            state.attackable_for_active = set()
+                            continue
+                    elif ui_result["type"] == "select_facing":
+                        # Change facing action
+                        from config import AP_COST_FACING
+                        new_facing = ui_result["facing"]
+                        if state.active_unit.current_action_points >= AP_COST_FACING:
+                            state.active_unit.facing = new_facing
+                            state.active_unit.current_action_points -= AP_COST_FACING
+                            print(f"{state.active_unit.name} changed facing to {new_facing}. AP remaining: {state.active_unit.current_action_points}/{state.active_unit.max_action_points}")
+                            # Check if AP depleted
+                            if state.active_unit.current_action_points <= 0:
+                                from action_movement import next_turn
+                                next_turn(state)
+                                state.action_mode = "move"
+                                compute_reachable(state)
+                        else:
+                            print(f"{state.active_unit.name} doesn't have enough AP to change facing! (Need {AP_COST_FACING}, have {state.active_unit.current_action_points})")
+                        continue
+                    elif ui_result["type"] == "toggle_dropdown":
+                        continue
 
                 q, r = pixel_to_hex(mx, my)
                 # Only act if the clicked hex is on the grid
                 if MIN_Q <= q < MAX_Q and MIN_R <= r < MAX_R:
                     if state.action_mode == "move":
                         _ = apply_move_if_valid(state, q, r)
-                    else:  # attack mode
+                    elif state.action_mode == "attack":
                         _ = handle_attack_click(state, q, r)
 
             # Right click to skip turn without moving

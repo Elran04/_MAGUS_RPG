@@ -26,6 +26,10 @@ class Unit:
         self.max_action_points = 10
         self.current_action_points = 10
         
+        # Facing direction (0-5 for hex directions, 0 = north/top)
+        # 0 = N, 1 = NE, 2 = SE, 3 = S, 4 = SW, 5 = NW
+        self.facing = 0
+        
         # Combat state (current HP/FP)
         self.current_ep = 0
         self.current_fp = 0

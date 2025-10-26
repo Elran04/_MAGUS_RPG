@@ -7,6 +7,46 @@ from config import HEX_SIZE, UI_BORDER, UI_TEXT
 from hex_grid import hex_to_pixel
 
 
+def draw_facing_indicator(screen: pygame.Surface, unit, px: int, py: int):
+    """
+    Draw a small triangle on the sprite indicating facing direction.
+    
+    Args:
+        screen: pygame surface to draw on
+        unit: Unit with facing property (0-5)
+        px, py: pixel position of the unit
+    """
+    # Triangle size
+    triangle_size = HEX_SIZE * 0.4
+    
+    # Calculate angle based on facing (0 = north/top, clockwise)
+    # Facing 0 = -90° (pointing up), each step is 60°
+    angle_degrees = -90 + (unit.facing * 60)
+    angle_rad = math.radians(angle_degrees)
+    
+    # Triangle points (small triangle pointing in facing direction)
+    # Base of triangle at center, point extends outward
+    tip_distance = triangle_size
+    base_width = triangle_size * 0.4
+    
+    # Tip of triangle (pointing in facing direction)
+    tip_x = px + tip_distance * math.cos(angle_rad)
+    tip_y = py + tip_distance * math.sin(angle_rad)
+    
+    # Base corners (perpendicular to facing direction)
+    perp_angle = angle_rad + math.pi / 2
+    base1_x = px + base_width * math.cos(perp_angle)
+    base1_y = py + base_width * math.sin(perp_angle)
+    base2_x = px - base_width * math.cos(perp_angle)
+    base2_y = py - base_width * math.sin(perp_angle)
+    
+    points = [(tip_x, tip_y), (base1_x, base1_y), (base2_x, base2_y)]
+    
+    # Draw triangle with outline
+    pygame.draw.polygon(screen, (255, 255, 100), points)  # Yellow fill
+    pygame.draw.polygon(screen, (200, 200, 50), points, width=2)  # Darker outline
+
+
 def load_and_mask_sprite(filepath):
     """
     Load a sprite image and mask it to a hex shape.
@@ -47,8 +87,12 @@ def draw_unit_overlays(screen: pygame.Surface, unit, font: pygame.font.Font):
 
     - Name: above the sprite
     - Bars: at the feet (near bottom of the hex)
+    - Facing indicator: small triangle on the sprite
     """
     px, py = hex_to_pixel(*unit.get_position())
+    
+    # Draw facing direction indicator
+    draw_facing_indicator(screen, unit, px, py)
 
     # Name above
     if unit.name:
