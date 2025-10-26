@@ -51,6 +51,10 @@ def roll_initiative(state: GameState) -> None:
     state.active_unit = state.turn_order[0]
     state.units_acted_this_round = set()
     state.turn = 0 if state.active_unit == state.warrior else 1
+    
+    # Reset action points for both units at start of new round
+    state.warrior.current_action_points = state.warrior.max_action_points
+    state.goblin.current_action_points = state.goblin.max_action_points
 
 
 def setup_action_ui() -> Dict[str, object]:

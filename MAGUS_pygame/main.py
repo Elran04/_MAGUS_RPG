@@ -9,7 +9,8 @@ from config import (
     BG_COLOR,
 )
 from hex_grid import get_grid_bounds, pixel_to_hex, draw_grid
-from sprite_manager import load_and_mask_sprite, Unit, draw_unit_overlays
+from sprite_manager import load_and_mask_sprite, draw_unit_overlays
+from unit_manager import Unit
 from character_loader import load_character_json
 from action_handling import setup_action_ui, draw_action_ui, process_action_button_click, roll_initiative
 from action_movement import (
@@ -90,6 +91,10 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
+            # Skip input processing if game is over
+            if state.game_over:
+                continue
+
             # Left click: interact with UI or perform action based on current mode
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mx, my = event.pos
@@ -150,21 +155,50 @@ def main():
         draw_unit_overlays(screen, state.warrior, overlay_font)
         draw_unit_overlays(screen, state.goblin, overlay_font)
 
-        # Draw turn/action info and action buttons
-        info_font = pygame.font.SysFont(None, 32)
-        # Show round, active unit name and their initiative roll
-        active_name = state.active_unit.name if state.active_unit else "Unknown"
-        active_init = state.initiative_rolls.get(active_name, 0)
-        acted_count = len(state.units_acted_this_round)
-        text = info_font.render(
-            f"Round {state.round} ({acted_count}/2) | Active: {active_name} (Init: {active_init}) | {state.action_mode.title()}",
-            True,
-            (255, 255, 255),
-        )
-        screen.blit(text, (10, 10))
+        # Draw turn/action info and action buttons (unless game is over)
+        if state.game_over:
+            # Victory screen
+            victory_font = pygame.font.SysFont(None, 64)
+            info_font = pygame.font.SysFont(None, 32)
+            
+            # Semi-transparent overlay
+            overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 180))
+            screen.blit(overlay, (0, 0))
+            
+            # Victory text
+            victory_text = victory_font.render(f"{state.winner.name} Wins!", True, (255, 215, 0))
+            victory_rect = victory_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 40))
+            screen.blit(victory_text, victory_rect)
+            
+            # Defeated text
+            defeated_name = state.warrior.name if state.winner == state.goblin else state.goblin.name
+            defeated_text = info_font.render(f"{defeated_name} has been defeated", True, (200, 200, 200))
+            defeated_rect = defeated_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 20))
+            screen.blit(defeated_text, defeated_rect)
+            
+            # Instructions
+            instruction_text = info_font.render("Close window to exit", True, (150, 150, 150))
+            instruction_rect = instruction_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 70))
+            screen.blit(instruction_text, instruction_rect)
+        else:
+            # Normal game UI
+            info_font = pygame.font.SysFont(None, 32)
+            # Show round, active unit name and their initiative roll
+            active_name = state.active_unit.name if state.active_unit else "Unknown"
+            active_init = state.initiative_rolls.get(active_name, 0)
+            acted_count = len(state.units_acted_this_round)
+            ap_current = state.active_unit.current_action_points if state.active_unit else 0
+            ap_max = state.active_unit.max_action_points if state.active_unit else 0
+            text = info_font.render(
+                f"Round {state.round} ({acted_count}/2) | Active: {active_name} (Init: {active_init}) | AP: {ap_current}/{ap_max} | {state.action_mode.title()}",
+                True,
+                (255, 255, 255),
+            )
+            screen.blit(text, (10, 10))
 
-        # Buttons
-        draw_action_ui(screen, state.ui_state, state.action_mode)
+            # Buttons
+            draw_action_ui(screen, state.ui_state, state.action_mode)
 
         pygame.display.flip()
         clock.tick(60)

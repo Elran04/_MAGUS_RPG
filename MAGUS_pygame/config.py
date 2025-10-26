@@ -23,6 +23,14 @@ HIGHLIGHT_BORDER_WIDTH = 4
 MOVEMENT_RANGE = 5
 ATTACK_RANGE = 1
 
+# Action point costs (in game-seconds, 1 AP = 1 second)
+AP_COST_MOVEMENT = 2
+AP_COST_FACING = 1  # For future implementation
+AP_COST_ATTACK_DAGGER = 5
+AP_COST_ATTACK_SWORD = 10
+# Default weapon cost for now (will be replaced with actual weapon detection)
+AP_COST_ATTACK_DEFAULT = 10
+
 # --- ACTION UI ---
 UI_BG = (20, 20, 28)
 UI_BORDER = (90, 90, 110)
