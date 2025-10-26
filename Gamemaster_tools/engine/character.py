@@ -6,6 +6,24 @@ from data.race.race_age_stat_modifiers import apply_age_modifiers , apply_race_m
 class_db = ClassDBManager()
 
 
+def safe_randint(low, high):
+    """Robust randint that handles equal or inverted bounds gracefully.
+    - Coerces bounds to int when possible.
+    - If low == high, returns that value without calling randrange.
+    - If low > high, swaps them.
+    """
+    try:
+        low = int(low)
+        high = int(high)
+    except Exception:
+        low, high = 0, 0
+    if low == high:
+        return low
+    if low > high:
+        low, high = high, low
+    return random.randint(low, high)
+
+
 def generate_stats(klass: str) -> dict:
     default_range = (8, 18)
     # Get class_id from name
@@ -14,20 +32,32 @@ def generate_stats(klass: str) -> dict:
     if class_id is None:
         raise ValueError(f"Class '{klass}' not found in DB")
     details = class_db.get_class_details(class_id)
-    stat_ranges = {stat: (minv, maxv) for stat, minv, maxv in details["stats"]}
-    # For now, dupla_dobas is not in DB, so fallback to empty set
+    # details["stats"] rows may include a 4th column (double_chance)
+    stat_ranges = {}
     dupla_dobas = set()
+    for row in details["stats"]:
+        if len(row) == 4:
+            stat, minv, maxv, double_chance = row
+        elif len(row) == 3:
+            stat, minv, maxv = row
+            double_chance = 0
+        else:
+            # Unexpected shape; skip this row
+            continue
+        stat_ranges[stat] = (minv, maxv)
+        if double_chance:
+            dupla_dobas.add(stat)
 
     stats = {}
     for stat in ["Erő", "Gyorsaság", "Ügyesség", "Állóképesség", "Karizma",
                  "Egészség", "Intelligencia", "Akaraterő", "Asztrál", "Érzékelés"]:
         low, high = stat_ranges.get(stat, default_range)
         if stat in dupla_dobas:
-            val1 = random.randint(low, high)
-            val2 = random.randint(low, high)
+            val1 = safe_randint(low, high)
+            val2 = safe_randint(low, high)
             stats[stat] = max(val1, val2)
         else:
-            stats[stat] = random.randint(low, high)
+            stats[stat] = safe_randint(low, high)
     return stats
 
 
@@ -47,7 +77,7 @@ def calculate_combat_stats(character):
     # Véletlenszerű FP bónusz első szintre
     fp_min = data[2] if len(data) > 2 else 0
     fp_max = data[3] if len(data) > 3 else 0
-    fp_bonus = random.randint(fp_min, fp_max)
+    fp_bonus = safe_randint(fp_min, fp_max)
 
     def bonus(val):
         return max(0, val - 10)
@@ -187,6 +217,10 @@ RACE_RESTRICTIONS = {
         "Gladiátor", "Amazon", "Barbár", "Bárd", "Pap", "Sámán",
         "Harcművész", "Kardművész", "Tűzvarázsló"
     },
+    "Goblin": {
+        "Lovag", "Pap", "Paplovag", "Szerzetes", "Sámán", "Bárd",
+        "Harcművész", "Kardművész", "Boszorkány", "Boszorkánymester", "Tűzvarázsló", "Varázsló", "Pszi mester"
+    }
 }
 
 def is_valid_character(gender, race, klass):

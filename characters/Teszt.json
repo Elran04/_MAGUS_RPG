@@ -1,0 +1,43 @@
+{
+  "Név": "Teszt",
+  "Nem": "Férfi",
+  "Kor": "30",
+  "Faj": "Ember",
+  "Kaszt": "Harcos",
+  "Szint": 1,
+  "Tapasztalat": 0,
+  "Tulajdonságok": {
+    "Erő": 17,
+    "Gyorsaság": 17,
+    "Ügyesség": 9,
+    "Állóképesség": 17,
+    "Karizma": 16,
+    "Egészség": 14,
+    "Intelligencia": 5,
+    "Akaraterő": 12,
+    "Asztrál": 18,
+    "Érzékelés": 9
+  },
+  "Fejleszthető": [],
+  "Képzettségek": [],
+  "Felszerelés": [],
+  "Harci értékek": {
+    "FP": 16,
+    "ÉP": 14,
+    "KÉ": 21,
+    "TÉ": 23,
+    "VÉ": 82,
+    "CÉ": 0,
+    "HM/szint": {
+      "total": 0,
+      "mandatory": {
+        "TÉ": 11,
+        "VÉ": 3
+      }
+    }
+  },
+  "Képzettségpontok": {
+    "Alap": 7,
+    "Szintenként": 10
+  }
+}

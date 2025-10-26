@@ -156,6 +156,30 @@ RACE_MODIFIERS = {
             "Karizma": (1, 13),
             "Intelligencia": (1, 16),
             "Asztrál": (1, 15)
+        },
+    },
+    "Goblin": {
+        "modifiers": {
+            "Erő": -2,
+            "Gyorsaság": +2,
+            "Karizma": -3,
+            "Érzékelés": +2
+        },
+        "limits": {
+            "Erő": (1, 16),
+            "Gyorsaság": (5, 20),
+            "Ügyesség": (3, 19),
+            "Egészség": (3, 17),
+            "Karizma": (1, 13),
+            "Intelligencia": (3, 17),
+            "Akaraterő": (3, 17),
+            "Asztrál": (3, 16),
+            "Érzékelés": (5, 19)
+        },
+        "hard_limits": {
+            "Gyorsaság": (1, 22),
+            "Ügyesség": (1, 21),
+            "Érzékelés": (1, 19)
         }
     },
     # többi faj...
@@ -191,6 +215,8 @@ AGE_LIMITS_BY_RACE = {
     "Amund":       [18, 35, 55, 70, 90],
     "Dzsenn":      [19, 120, 150, 170, 200],
     "Khál":        [6, 12, 29, 39, 44],
+    "Wier":        [15, 40, 70, 90, 110],
+    "Goblin":      [10, 20, 28, 35, 40],
     # fajok bővíthetők
 }
 AGE_LIMITS = {
@@ -203,6 +229,7 @@ AGE_LIMITS = {
     "Dzsenn": (15, 250),
     "Khál": (1, 50),
     "Wier": (10, 130),
+    "Goblin": (8, 45),
 }
 
 def get_age_category(race: str, age) -> int:

@@ -3,6 +3,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils.class_db_manager import ClassDBManager
+from utils.character_storage import save_character
 from data.race.race_list import ALL_RACES
 from data.race.race_age_stat_modifiers import AGE_LIMITS
 from engine.character import generate_character, is_valid_character, GENDER_RESTRICTIONS, RACE_RESTRICTIONS
@@ -177,10 +178,18 @@ class CharacterWizardQt(QtWidgets.QDialog):
         char = generate_character(
             self.data["Név"], self.data["Nem"], self.data["Kor"], self.data["Faj"], self.data["Kaszt"]
         )
+        # Save character to JSON file
+        filename = f"{self.data['Név'].replace(' ', '_')}.json"
+        save_character(char, filename)
+        
         # Itt bővíthető a char a specializációval, képzettségekkel, felszereléssel
         self.accept()
         # Optionally show summary or pass char to another window
-        QtWidgets.QMessageBox.information(self, "Karakter létrehozva", f"Sikeres karaktergenerálás!\n\n{char}")
+        QtWidgets.QMessageBox.information(
+            self, 
+            "Karakter létrehozva", 
+            f"Sikeres karaktergenerálás!\nMentve: characters/{filename}"
+        )
 
 if __name__ == "__main__":
     import sys
