@@ -1,9 +1,56 @@
 """
 Action handling UI utilities: buttons setup, rendering, and clicks processing.
+Also handles initiative rolling for turn order.
 """
+import random
 import pygame
 from typing import Optional, Dict
 from config import HEIGHT, UI_BORDER, UI_TEXT, UI_ACTIVE, UI_INACTIVE
+from game_state import GameState
+
+
+def roll_initiative(state: GameState) -> None:
+    """
+    Roll initiative for both units (d100 + KÉ).
+    Determine turn order for the round and set first active unit.
+    In case of tie, higher base KÉ wins. If still tied, reroll.
+    """
+    warrior_ke = state.warrior.KE
+    goblin_ke = state.goblin.KE
+    
+    while True:
+        warrior_d100 = random.randint(1, 100)
+        goblin_d100 = random.randint(1, 100)
+        
+        warrior_init = warrior_d100 + warrior_ke
+        goblin_init = goblin_d100 + goblin_ke
+        
+        # Store the rolls for display
+        state.initiative_rolls = {
+            state.warrior.name: warrior_init,
+            state.goblin.name: goblin_init,
+        }
+        
+        if warrior_init > goblin_init:
+            state.turn_order = [state.warrior, state.goblin]
+            break
+        elif goblin_init > warrior_init:
+            state.turn_order = [state.goblin, state.warrior]
+            break
+        else:
+            # Tied - use base KÉ as tiebreaker
+            if warrior_ke > goblin_ke:
+                state.turn_order = [state.warrior, state.goblin]
+                break
+            elif goblin_ke > warrior_ke:
+                state.turn_order = [state.goblin, state.warrior]
+                break
+            # Both init and base KÉ are equal - reroll (loop continues)
+    
+    # Set first active unit and clear acted tracking
+    state.active_unit = state.turn_order[0]
+    state.units_acted_this_round = set()
+    state.turn = 0 if state.active_unit == state.warrior else 1
 
 
 def setup_action_ui() -> Dict[str, object]:

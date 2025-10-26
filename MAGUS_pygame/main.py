@@ -11,15 +11,13 @@ from config import (
 from hex_grid import get_grid_bounds, pixel_to_hex, draw_grid
 from sprite_manager import load_and_mask_sprite, Unit, draw_unit_overlays
 from character_loader import load_character_json
-from action_handling import setup_action_ui, draw_action_ui, process_action_button_click
-from movement_handling import (
+from action_handling import setup_action_ui, draw_action_ui, process_action_button_click, roll_initiative
+from action_movement import (
     compute_reachable,
-    compute_attackable,
     apply_move_if_valid,
-    handle_attack_click,
     skip_turn,
-    roll_initiative,
 )
+from action_attack import compute_attackable, handle_attack_click
 from game_state import GameState
 
 # Initialize pygame
