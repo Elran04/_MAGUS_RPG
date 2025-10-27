@@ -51,3 +51,11 @@ REACHABLE_TINT = (60, 200, 130, 80)
 HOVER_TINT = (60, 220, 150, 130)
 ATTACKABLE_TINT = (220, 80, 60, 100)
 ENEMY_ZONE_TINT = (200, 50, 50, 60)  # Red tint for enemy zone of control
+
+# --- PATH VISUALIZATION ---
+PATH_LINE_COLOR = (100, 200, 255)  # Cyan color for movement path
+PATH_LINE_WIDTH = 3
+PATH_DOT_COLOR = (150, 220, 255)  # Lighter cyan for path nodes
+PATH_DOT_RADIUS = 5
+PATH_ZONE_OVERLAP_COLOR = (255, 50, 50)  # Red color for path nodes that overlap with enemy zone
+PATH_ZONE_OVERLAP_RADIUS = 8  # Larger radius to highlight danger

@@ -3,9 +3,9 @@ MAGUS RPG - Main game loop for the hex-grid turn-based game.
 """
 import pygame
 from config import WIDTH, HEIGHT, ActionMode
-from systems.hex_grid import get_grid_bounds
+from systems.hex_grid import get_grid_bounds, pixel_to_hex
 from actions.action_handling import setup_action_ui, roll_initiative
-from actions.action_movement import compute_reachable
+from actions.action_movement import compute_reachable, find_path
 from core.game_state import GameState
 from core.game_setup import setup_game
 from input.event_handler import process_mouse_click
@@ -71,6 +71,22 @@ def main():
         # Decrement message timer
         if state.message_timer > 0:
             state.message_timer -= 1
+
+        # Update path preview based on mouse position (only in MOVE mode and not game over)
+        if not state.game_over and state.action_mode == ActionMode.MOVE:
+            mx, my = pygame.mouse.get_pos()
+            hovered_q, hovered_r = pixel_to_hex(mx, my)
+            
+            # If hovering over a reachable hex, calculate and store the path
+            if (hovered_q, hovered_r) in state.reachable_for_active:
+                enemy_unit = state.goblin if state.active_unit == state.warrior else state.warrior
+                enemy_pos = enemy_unit.get_position()
+                path = find_path(state.turn_start_pos, (hovered_q, hovered_r), blocked={enemy_pos})
+                state.preview_path = path
+            else:
+                state.preview_path = []
+        else:
+            state.preview_path = []
 
         # Render game screen
         draw_game_screen(screen, state, background, grid_bounds, overlay_font)

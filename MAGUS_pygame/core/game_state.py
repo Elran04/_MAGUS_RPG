@@ -2,7 +2,7 @@
 Game state container to centralize turn and UI state for cleaner module interfaces.
 """
 from dataclasses import dataclass, field
-from typing import Dict, Set, Tuple
+from typing import Dict, Set, Tuple, List
 from core.unit_manager import Unit
 from config import ActionMode
 
@@ -29,6 +29,7 @@ class GameState:
     reachable_for_active: Set[Tuple[int, int]] = field(default_factory=set)
     attackable_for_active: Set[Tuple[int, int]] = field(default_factory=set)
     enemy_zone_hexes: Set[Tuple[int, int]] = field(default_factory=set)  # Enemy's zone of control
+    preview_path: List[Tuple[int, int]] = field(default_factory=list)  # Path preview for movement
     
     # Combat messages
     combat_message: str = ""  # Display combat events (attacks, opportunity attacks, etc.)

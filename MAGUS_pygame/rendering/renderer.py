@@ -2,12 +2,51 @@
 Rendering utilities for game visuals and UI.
 """
 import pygame
-from typing import Optional
-from config import WIDTH, HEIGHT, BG_COLOR, ActionMode
+from typing import Optional, List, Tuple, Set
+from config import (
+    WIDTH, HEIGHT, BG_COLOR, ActionMode, 
+    PATH_LINE_COLOR, PATH_LINE_WIDTH, PATH_DOT_COLOR, PATH_DOT_RADIUS,
+    PATH_ZONE_OVERLAP_COLOR, PATH_ZONE_OVERLAP_RADIUS
+)
 from core.game_state import GameState
-from systems.hex_grid import pixel_to_hex, draw_grid
+from systems.hex_grid import pixel_to_hex, draw_grid, hex_to_pixel
 from rendering.sprite_manager import draw_unit_overlays
 from actions.action_handling import draw_action_ui  # Direct import to avoid circular dependency
+
+
+def draw_movement_path(screen: pygame.Surface, path: List[Tuple[int, int]], enemy_zone: Set[Tuple[int, int]]) -> None:
+    """
+    Draw the movement path as lines connecting hex centers with dots at each hex.
+    Highlights path nodes that pass through enemy zone of control in red.
+    
+    Args:
+        screen: Main pygame display surface
+        path: List of (q, r) hex coordinates representing the path
+        enemy_zone: Set of (q, r) hex coordinates in enemy's zone of control
+    """
+    if len(path) < 2:
+        return
+    
+    # Convert path to pixel coordinates
+    pixel_path = [hex_to_pixel(q, r) for q, r in path]
+    
+    # Draw lines connecting path nodes
+    if len(pixel_path) >= 2:
+        pygame.draw.lines(screen, PATH_LINE_COLOR, False, pixel_path, PATH_LINE_WIDTH)
+    
+    # Draw dots at each path node, highlighting zone overlaps
+    for i, (hex_pos, (px, py)) in enumerate(zip(path, pixel_path)):
+        if i == 0:  # Skip starting position
+            continue
+            
+        # Check if this hex is in the enemy zone
+        if hex_pos in enemy_zone:
+            # DANGER! Path goes through zone - draw large red circle
+            pygame.draw.circle(screen, PATH_ZONE_OVERLAP_COLOR, (px, py), PATH_ZONE_OVERLAP_RADIUS)
+            # Draw inner dot for visibility
+            pygame.draw.circle(screen, (255, 200, 200), (px, py), PATH_DOT_RADIUS)
+        elif i < len(pixel_path) - 1:  # Normal intermediate node (not start or end)
+            pygame.draw.circle(screen, PATH_DOT_COLOR, (px, py), PATH_DOT_RADIUS)
 
 
 def draw_game_screen(
@@ -56,6 +95,10 @@ def draw_game_screen(
         enemy_zone_hexes=state.enemy_zone_hexes if state.action_mode == ActionMode.MOVE else None,
         highlight_hex=(hovered_q, hovered_r),
     )
+    
+    # Draw movement path preview if available
+    if state.preview_path and state.action_mode == ActionMode.MOVE:
+        draw_movement_path(screen, state.preview_path, state.enemy_zone_hexes)
 
     # Overlays for each unit
     draw_unit_overlays(screen, state.warrior, overlay_font)
