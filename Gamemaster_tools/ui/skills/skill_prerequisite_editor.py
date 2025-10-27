@@ -5,7 +5,7 @@ Modern tabbed interface for editing skill prerequisites
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QTabWidget,
     QLabel, QLineEdit, QComboBox, QPushButton, QSpinBox, QListWidget,
-    QGroupBox, QMessageBox, QWidget, QScrollArea
+    QGroupBox, QMessageBox, QWidget, QScrollArea, QCompleter
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
@@ -139,31 +139,31 @@ class SkillPrerequisiteEditorQt(QDialog):
         # Add skill controls
         skill_add_layout = QVBoxLayout()
         
-        # Row 1: Skill name
+        # Row 1: Skill name with parameter
         skill_name_layout = QHBoxLayout()
         widget.skill_combo = QComboBox()
         widget.skill_combo.addItems(self.skill_names)
         widget.skill_combo.setEditable(True)
+        
+        # Add completer for autocomplete filtering
+        completer = QCompleter(self.skill_names)
+        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        completer.setFilterMode(Qt.MatchFlag.MatchContains)
+        widget.skill_combo.setCompleter(completer)
+        
         skill_name_layout.addWidget(QLabel("Képzettség:"))
         skill_name_layout.addWidget(widget.skill_combo)
-        skill_add_layout.addLayout(skill_name_layout)
-        
-        # Row 2: Parameter and level
-        skill_details_layout = QHBoxLayout()
-        widget.skill_param_edit = QLineEdit()
-        widget.skill_param_edit.setPlaceholderText("Paraméter (opcionális, pl. Rövid kardok)")
-        skill_details_layout.addWidget(QLabel("Paraméter:"))
-        skill_details_layout.addWidget(widget.skill_param_edit)
         
         widget.skill_level_spin = QSpinBox()
         widget.skill_level_spin.setMinimum(1)
         widget.skill_level_spin.setMaximum(6)
         widget.skill_level_spin.setValue(1)
-        skill_details_layout.addWidget(QLabel("Szint:"))
-        skill_details_layout.addWidget(widget.skill_level_spin)
-        skill_add_layout.addLayout(skill_details_layout)
+        skill_name_layout.addWidget(QLabel("Szint:"))
+        skill_name_layout.addWidget(widget.skill_level_spin)
         
-        # Row 3: Buttons
+        skill_add_layout.addLayout(skill_name_layout)
+        
+        # Row 2: Buttons
         skill_btn_layout = QHBoxLayout()
         btn_add_skill = QPushButton("Hozzáadás")
         btn_add_skill.clicked.connect(lambda checked, w=widget: self.add_skill_prereq(w))
@@ -206,13 +206,21 @@ class SkillPrerequisiteEditorQt(QDialog):
     
     def add_skill_prereq(self, widget):
         """Add a skill prerequisite"""
-        skill = widget.skill_combo.currentText().strip()
-        param = widget.skill_param_edit.text().strip()
+        skill_text = widget.skill_combo.currentText().strip()
         level = widget.skill_level_spin.value()
         
-        if not skill:
+        if not skill_text:
             QMessageBox.warning(self, "Figyelem", "Válassz ki egy képzettséget!")
             return
+        
+        # Parse skill name and parameter from format "Name (Parameter)"
+        match = re.match(r"^(.+?)\s*(?:\((.+?)\))?$", skill_text)
+        if match:
+            skill = match.group(1).strip()
+            param = match.group(2).strip() if match.group(2) else ""
+        else:
+            skill = skill_text
+            param = ""
         
         # Build display text
         prereq_text = skill
@@ -221,9 +229,6 @@ class SkillPrerequisiteEditorQt(QDialog):
         prereq_text += f" {level}. szint"
         
         widget.skill_list.addItem(prereq_text)
-        
-        # Clear param for next entry
-        widget.skill_param_edit.clear()
     
     def remove_skill_prereq(self, widget):
         """Remove selected skill prerequisite"""

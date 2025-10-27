@@ -54,6 +54,17 @@ def open_class_editor():
     except Exception as e:
         print(f"Failed to open Class Editor: {e}")
 
+# --- KASZT KÉPZETTSÉG SZERKESZTŐ MEGNYITÁSA ---
+def open_class_skill_editor():
+    try:
+        from ui.class_skill_editor import ClassSkillEditorQt
+        win = ClassSkillEditorQt()
+        win.setAttribute(Qt.WA_DeleteOnClose, True)
+        _windows.append(win)
+        win.show()
+    except Exception as e:
+        print(f"Failed to open Class Skill Editor: {e}")
+
 
 class MagusGMTools(QMainWindow):
     """M.A.G.U.S. Kalandmesteri eszköztár - Főablak"""
@@ -108,6 +119,11 @@ class MagusGMTools(QMainWindow):
         btn_class_editor.setMinimumHeight(40)
         btn_class_editor.clicked.connect(open_class_editor)
         layout.addWidget(btn_class_editor)
+        
+        btn_class_skill_editor = QPushButton("Kaszt képzettség szerkesztő")
+        btn_class_skill_editor.setMinimumHeight(40)
+        btn_class_skill_editor.clicked.connect(open_class_skill_editor)
+        layout.addWidget(btn_class_skill_editor)
         
         layout.addStretch()
         

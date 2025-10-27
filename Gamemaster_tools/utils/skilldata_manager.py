@@ -260,6 +260,8 @@ class SkillManager:
         # Leírás mentése .md-be
         desc_file = skill.get("description_file", f"{skill.get('id')}.md")
         desc_path = os.path.join(self.desc_dir, desc_file)
+        # Ensure the descriptions directory exists
+        os.makedirs(self.desc_dir, exist_ok=True)
         with open(desc_path, "w", encoding="utf-8") as f:
             f.write(skill.get("description", ""))
             for lvl, txt in skill.get("level_descriptions", {}).items():

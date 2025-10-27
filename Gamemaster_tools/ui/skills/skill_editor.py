@@ -60,7 +60,14 @@ class SkillEditorQt(QMainWindow):
             if skill.get("description_file") is None:
                 skill["description_file"] = ""
         
-        self.skill_names = [s["name"] for s in self.all_skills]
+        # Build skill names with parameters for autocomplete
+        self.skill_names = []
+        for s in self.all_skills:
+            name = s["name"]
+            param = s.get("parameter", "")
+            display_name = f"{name} ({param})" if param else name
+            self.skill_names.append(display_name)
+        
         self.current_skill = None
         self.current_prerequisites = {}
         
@@ -487,8 +494,10 @@ class SkillEditorQt(QMainWindow):
             )
             return
         
-        # Build full path - descriptions are in data/skills/descriptions
-        base_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        # Build full path - descriptions are in Gamemaster_tools/data/skills/descriptions
+        # __file__ is at Gamemaster_tools/ui/skills/skill_editor.py
+        # Go up 2 levels: ui/skills -> ui -> Gamemaster_tools
+        base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
         full_path = os.path.join(base_path, 'data', 'skills', 'descriptions', desc_file)
         
         if os.path.exists(full_path):
@@ -510,9 +519,16 @@ class SkillEditorQt(QMainWindow):
         if not self.current_skill:
             return None
         desc_file = self.current_skill.get("description_file", "") or self.desc_file_edit.text().strip()
+        # Auto-generate filename from skill ID if not specified
         if not desc_file:
-            return None
-        base_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            skill_id = self.current_skill.get("id", "")
+            if skill_id:
+                desc_file = f"{skill_id}.md"
+            else:
+                return None
+        # __file__ is at Gamemaster_tools/ui/skills/skill_editor.py
+        # Go up 2 levels: ui/skills -> ui -> Gamemaster_tools
+        base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
         return os.path.join(base_path, 'data', 'skills', 'descriptions', desc_file)
 
     def load_description_file(self, silent=False):
@@ -541,11 +557,16 @@ class SkillEditorQt(QMainWindow):
         if not self.current_skill:
             QMessageBox.warning(self, "Figyelem", "Nincs kiválasztott képzettség!")
             return
-        # Ensure filename is provided
+        # Auto-generate filename from skill ID if not specified
         desc_file = self.desc_file_edit.text().strip()
         if not desc_file:
-            QMessageBox.warning(self, "Figyelem", "Add meg a leírás fájl nevét az Alapadatok fülön (pl. uszas.md)")
-            return
+            skill_id = self.current_skill.get("id", "")
+            if not skill_id:
+                QMessageBox.warning(self, "Figyelem", "Nincs skill ID megadva. Mentsd először a képzettséget!")
+                return
+            desc_file = f"{skill_id}.md"
+            # Update the UI field and current skill
+            self.desc_file_edit.setText(desc_file)
         # Update current skill's field from UI
         self.current_skill["description_file"] = desc_file
         # Resolve path and ensure directory
@@ -647,8 +668,14 @@ class SkillEditorQt(QMainWindow):
             # Ensure percent field is cleared for level-based skills
             self.current_skill["kp_per_3_percent"] = 0
 
-        # Description file
-        self.current_skill["description_file"] = self.desc_file_edit.text()
+        # Description file - auto-generate from ID if empty
+        desc_file = self.desc_file_edit.text().strip()
+        if not desc_file:
+            skill_id = self.current_skill.get("id", "") or self.id_edit.text().strip()
+            if skill_id:
+                desc_file = f"{skill_id}.md"
+                self.desc_file_edit.setText(desc_file)
+        self.current_skill["description_file"] = desc_file
         # Sync description text from editor so DB manager writes the same content
         self.current_skill["description"] = self.desc_text_editor.toPlainText()
         # We no longer use per-level descriptions; ensure it's empty

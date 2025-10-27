@@ -9,9 +9,10 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 
-# Keep original database paths to avoid changing data access
-DB_CLASS = "d:/_Projekt/_MAGUS_RPG/data/Class/class_data.db"
-DB_SKILL = "d:/_Projekt/_MAGUS_RPG/data/skills/skills_data.db"
+# Compute database paths relative to this file to avoid absolute paths
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+DB_CLASS = os.path.join(BASE_DIR, 'data', 'Class', 'class_data.db')
+DB_SKILL = os.path.join(BASE_DIR, 'data', 'skills', 'skills_data.db')
 
 
 def get_classes():
@@ -21,7 +22,30 @@ def get_classes():
 
 def get_skills():
     with sqlite3.connect(DB_SKILL) as conn:
-        return conn.execute("SELECT id, name, category, subcategory, parameter FROM skills").fetchall()
+        return conn.execute("SELECT id, name, category, subcategory, parameter, type, placeholder FROM skills").fetchall()
+
+
+def get_skill_type(skill_id):
+    """Get the type of a skill (1=level-based, 2=percentage-based)"""
+    with sqlite3.connect(DB_SKILL) as conn:
+        result = conn.execute("SELECT type FROM skills WHERE id=?", (skill_id,)).fetchone()
+        return result[0] if result else None
+
+
+def is_skill_already_assigned(class_id, spec_id, skill_id):
+    """Check if a skill is already assigned to a class"""
+    with sqlite3.connect(DB_CLASS) as conn:
+        if spec_id is None:
+            result = conn.execute(
+                "SELECT class_level, skill_level, skill_percent FROM class_skills WHERE class_id=? AND specialisation_id IS NULL AND skill_id=?",
+                (class_id, skill_id)
+            ).fetchone()
+        else:
+            result = conn.execute(
+                "SELECT class_level, skill_level, skill_percent FROM class_skills WHERE class_id=? AND specialisation_id=? AND skill_id=?",
+                (class_id, spec_id, skill_id)
+            ).fetchone()
+        return result
 
 
 def get_class_skills(class_id, spec_id=None):
@@ -43,19 +67,31 @@ def add_class_skill(class_id, spec_id, class_level, skill_id, skill_level, skill
 
 def update_class_skill(class_id, spec_id, skill_id, class_level, skill_level, skill_percent):
     with sqlite3.connect(DB_CLASS) as conn:
-        conn.execute(
-            "UPDATE class_skills SET class_level=?, skill_level=?, skill_percent=? WHERE class_id=? AND specialisation_id=? AND skill_id=?",
-            (class_level, skill_level, skill_percent, class_id, spec_id, skill_id)
-        )
+        if spec_id is None:
+            conn.execute(
+                "UPDATE class_skills SET class_level=?, skill_level=?, skill_percent=? WHERE class_id=? AND specialisation_id IS NULL AND skill_id=?",
+                (class_level, skill_level, skill_percent, class_id, skill_id)
+            )
+        else:
+            conn.execute(
+                "UPDATE class_skills SET class_level=?, skill_level=?, skill_percent=? WHERE class_id=? AND specialisation_id=? AND skill_id=?",
+                (class_level, skill_level, skill_percent, class_id, spec_id, skill_id)
+            )
         conn.commit()
 
 
 def delete_class_skill(class_id, spec_id, skill_id):
     with sqlite3.connect(DB_CLASS) as conn:
-        conn.execute(
-            "DELETE FROM class_skills WHERE class_id=? AND specialisation_id=? AND skill_id=?",
-            (class_id, spec_id, skill_id)
-        )
+        if spec_id is None:
+            conn.execute(
+                "DELETE FROM class_skills WHERE class_id=? AND specialisation_id IS NULL AND skill_id=?",
+                (class_id, skill_id)
+            )
+        else:
+            conn.execute(
+                "DELETE FROM class_skills WHERE class_id=? AND specialisation_id=? AND skill_id=?",
+                (class_id, spec_id, skill_id)
+            )
         conn.commit()
 
 
@@ -78,11 +114,12 @@ def ensure_table():
 
 
 class SkillAssignDialogQt(QDialog):
-    def __init__(self, parent, skill_id, skill_name, class_level=None, skill_level=None, skill_percent=None):
+    def __init__(self, parent, skill_id, skill_name, class_level=None, skill_level=None, skill_percent=None, skill_type=None):
         super().__init__(parent)
         self.setWindowTitle(f"Képzettség hozzárendelése: {skill_name}")
         self.setModal(True)
         self.result_values = None
+        self.skill_type = skill_type
 
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -111,6 +148,20 @@ class SkillAssignDialogQt(QDialog):
         self.inp_skill_percent.setValue(int(skill_percent) if skill_percent else 0)
         form.addRow("Képzettség %:", self.inp_skill_percent)
 
+        # Auto-set based on skill type
+        if skill_type == 1:  # Level-based
+            self.inp_skill_level.setEnabled(True)
+            self.inp_skill_percent.setEnabled(False)
+            if skill_level is None:
+                self.inp_skill_level.setValue(1)
+            self.inp_skill_percent.setValue(0)
+        elif skill_type == 2:  # Percentage-based
+            self.inp_skill_level.setEnabled(False)
+            self.inp_skill_percent.setEnabled(True)
+            self.inp_skill_level.setValue(0)
+            if skill_percent is None:
+                self.inp_skill_percent.setValue(10)
+
         btns = QHBoxLayout()
         btn_ok = QPushButton("OK")
         btn_ok.clicked.connect(self.on_ok)
@@ -127,15 +178,27 @@ class SkillAssignDialogQt(QDialog):
         skill_level = self.inp_skill_level.value()
         skill_percent = self.inp_skill_percent.value()
 
-        # Only one of skill_level or skill_percent should be set (non-zero)
-        if skill_level and skill_percent:
-            QMessageBox.critical(self, "Hiba", "Csak az egyik mezőt töltsd ki: szint vagy százalék!")
-            return
+        # Auto-validation based on skill type
+        if self.skill_type == 1:  # Level-based - only skill_level should be set
+            skill_percent = None
+            if skill_level == 0:
+                QMessageBox.critical(self, "Hiba", "A szint alapú képzettségnél add meg a szintet!")
+                return
+        elif self.skill_type == 2:  # Percentage-based - only skill_percent should be set
+            skill_level = None
+            if skill_percent == 0:
+                QMessageBox.critical(self, "Hiba", "A % alapú képzettségnél add meg a százalékot!")
+                return
+        else:
+            # No type info - manual validation
+            if skill_level and skill_percent:
+                QMessageBox.critical(self, "Hiba", "Csak az egyik mezőt töltsd ki: szint vagy százalék!")
+                return
 
         self.result_values = (
             int(class_level),
-            int(skill_level) if skill_level != 0 else None,
-            int(skill_percent) if skill_percent != 0 else None,
+            int(skill_level) if skill_level and skill_level != 0 else None,
+            int(skill_percent) if skill_percent and skill_percent != 0 else None,
         )
         self.accept()
 
@@ -234,7 +297,7 @@ class ClassSkillEditorQt(QMainWindow):
         skills = get_skills()
         cat_items = {}
         subcat_items = {}
-        for skill_id, skill_name, cat, subcat, parameter in skills:
+        for skill_id, skill_name, cat, subcat, parameter, skill_type, placeholder in skills:
             if cat not in cat_items:
                 item = QTreeWidgetItem([cat, "", ""])
                 item.setFirstColumnSpanned(True)
@@ -315,11 +378,51 @@ class ClassSkillEditorQt(QMainWindow):
             QMessageBox.warning(self, "Nincs kiválasztva", "Válassz ki egy képzettséget!")
             return
         skill_id, skill_name = sel
-        dlg = SkillAssignDialogQt(self, skill_id, skill_name)
-        if dlg.exec():
-            class_level, skill_level, skill_percent = dlg.result_values
-            add_class_skill(self.selected_class, None, class_level, skill_id, skill_level, skill_percent)
-            self.populate_class_skills()
+        
+        # Get skill type to auto-determine level vs percentage
+        skill_type = get_skill_type(skill_id)
+        
+        # Get placeholder status
+        with sqlite3.connect(DB_SKILL) as conn:
+            placeholder_result = conn.execute("SELECT placeholder FROM skills WHERE id=?", (skill_id,)).fetchone()
+            is_placeholder = placeholder_result[0] if placeholder_result and placeholder_result[0] else 0
+        
+        # Check if skill is already assigned
+        existing = is_skill_already_assigned(self.selected_class, None, skill_id)
+        
+        if existing:
+            existing_class_level, existing_skill_level, existing_skill_percent = existing
+            
+            # If it's a placeholder skill, always add as new (never overwrite)
+            if is_placeholder:
+                # Show dialog to add new entry
+                dlg = SkillAssignDialogQt(self, skill_id, skill_name, skill_type=skill_type)
+                if dlg.exec():
+                    class_level, skill_level, skill_percent = dlg.result_values
+                    add_class_skill(self.selected_class, None, class_level, skill_id, skill_level, skill_percent)
+                    self.populate_class_skills()
+            else:
+                # Non-placeholder: ask if they want to update the existing entry
+                reply = QMessageBox.question(
+                    self, 
+                    "Képzettség már hozzáadva", 
+                    f"A '{skill_name}' képzettség már hozzá van rendelve ehhez a kaszthoz.\n\nFrissíted a meglévő bejegyzést?",
+                    QMessageBox.Yes | QMessageBox.No
+                )
+                if reply == QMessageBox.Yes:
+                    dlg = SkillAssignDialogQt(self, skill_id, skill_name, 
+                                             existing_class_level, existing_skill_level, existing_skill_percent, skill_type)
+                    if dlg.exec():
+                        class_level, skill_level, skill_percent = dlg.result_values
+                        update_class_skill(self.selected_class, None, skill_id, class_level, skill_level, skill_percent)
+                        self.populate_class_skills()
+        else:
+            # New skill - show dialog
+            dlg = SkillAssignDialogQt(self, skill_id, skill_name, skill_type=skill_type)
+            if dlg.exec():
+                class_level, skill_level, skill_percent = dlg.result_values
+                add_class_skill(self.selected_class, None, class_level, skill_id, skill_level, skill_percent)
+                self.populate_class_skills()
 
     def edit_skill(self):
         sel = self._selected_assigned_row()
@@ -331,7 +434,11 @@ class ClassSkillEditorQt(QMainWindow):
         cl = int(class_level) if class_level else None
         sl = int(skill_level) if skill_level else None
         sp = int(skill_percent) if skill_percent else None
-        dlg = SkillAssignDialogQt(self, skill_id, skill_name, cl, sl, sp)
+        
+        # Get skill type
+        skill_type = get_skill_type(skill_id)
+        
+        dlg = SkillAssignDialogQt(self, skill_id, skill_name, cl, sl, sp, skill_type)
         if dlg.exec():
             class_level, skill_level, skill_percent = dlg.result_values
             update_class_skill(self.selected_class, None, skill_id, class_level, skill_level, skill_percent)
