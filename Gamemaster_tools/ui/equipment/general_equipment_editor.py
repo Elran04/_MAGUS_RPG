@@ -1,5 +1,6 @@
 import os
 from utils.json_manager import JsonManager
+from utils.validation import validate_general_equipment, ValidationError
 from PySide6.QtWidgets import (
     QWidget, QMainWindow, QApplication, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QTreeWidget, QTreeWidgetItem, QLineEdit, QTextEdit, QDoubleSpinBox, QSpinBox, QComboBox,
@@ -10,18 +11,11 @@ from PySide6.QtCore import Qt
 
 class GeneralEquipmentJsonManager(JsonManager):
     def validate(self, item):
-        required = ["id", "name", "description", "weight", "price", "category"]
-        for field in required:
-            if field not in item or item[field] in (None, ""):
-                return False
-        cat = item.get("category", "")
-        if cat in ["eszköz", "élelem", "speciális"] and "space" not in item:
+        try:
+            validate_general_equipment(item)
+            return True
+        except ValidationError:
             return False
-        if cat == "tároló" and "capacity" not in item:
-            return False
-        if cat == "élelem" and ("freshness" not in item or "durability" not in item):
-            return False
-        return True
 
 
 GENERAL_JSON = os.path.join(os.path.dirname(__file__), "..", "..", "data", "equipment", "general_equipment.json")

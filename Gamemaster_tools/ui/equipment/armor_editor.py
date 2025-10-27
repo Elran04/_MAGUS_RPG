@@ -1,5 +1,6 @@
 import os
 from utils.json_manager import JsonManager
+from utils.validation import validate_armor, ValidationError
 from PySide6.QtWidgets import (
     QWidget, QMainWindow, QApplication, QVBoxLayout, QHBoxLayout, QLabel, QListWidget,
     QPushButton, QMessageBox, QLineEdit, QCheckBox, QSpinBox, QDoubleSpinBox, QTextEdit,
@@ -10,8 +11,12 @@ from PySide6.QtCore import Qt
 
 class ArmorJsonManager(JsonManager):
     def validate(self, item):
-        required = ["id", "name", "parts", "mgt", "weight", "price", "description"]
-        return all(field in item for field in required)
+        # Delegate to centralized validator for consistency
+        try:
+            validate_armor(item)
+            return True
+        except ValidationError:
+            return False
 
 
 ARMOR_JSON = os.path.join(os.path.dirname(__file__), "..", "..", "data", "equipment", "armor.json")

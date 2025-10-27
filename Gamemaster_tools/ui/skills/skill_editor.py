@@ -11,11 +11,14 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 import sys
 import os
+import subprocess
+import copy
 
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from utils.skilldata_manager import SkillManager
+from utils.validation import validate_skill, ValidationError
 # Note: Legacy Tkinter-based PrerequisiteManager is no longer used
 
 
@@ -207,12 +210,12 @@ class SkillEditorQt(QMainWindow):
         self.acq_diff_combo.addItems(ACQ_DIFF_MAP.values())
         layout.addRow("Elsajátítás nehézsége:", self.acq_diff_combo)
         
-        # Type
+    # Type
         self.type_combo = QComboBox()
         self.type_combo.addItems(TYPE_MAP.values())
         layout.addRow("Típus:", self.type_combo)
         
-        # KP per 3
+    # KP per 3 (percent-based)
         self.kp_per_3_spin = QSpinBox()
         self.kp_per_3_spin.setMaximum(999)
         layout.addRow("KP/3:", self.kp_per_3_spin)
@@ -221,6 +224,9 @@ class SkillEditorQt(QMainWindow):
         self.desc_file_edit = QLineEdit()
         layout.addRow("Leírás fájl:", self.desc_file_edit)
         
+        # React to type changes to toggle fields
+        self.type_combo.currentTextChanged.connect(self._update_type_dependent_fields)
+
         self.tab_widget.addTab(scroll, "Alapadatok")
     
     def create_levels_tab(self):
@@ -326,6 +332,16 @@ class SkillEditorQt(QMainWindow):
         
         self.tab_widget.addTab(tab, "Leírás")
     
+    def _update_type_dependent_fields(self):
+        """Enable/disable KP fields depending on skill type selection."""
+        current = self.type_combo.currentText()
+        st = TYPE_MAP_REV.get(current, 1)
+        is_level = (st == 1)
+        # Level-based: enable per-level KP, disable KP/3%
+        for spin in getattr(self, 'kp_cost_spins', []):
+            spin.setEnabled(is_level)
+        self.kp_per_3_spin.setEnabled(not is_level)
+    
     def on_main_category_changed(self, main_category):
         """Update subcategory combo when main category changes"""
         # Clear and repopulate subcategory combo
@@ -388,12 +404,14 @@ class SkillEditorQt(QMainWindow):
         acq_diff = skill.get("acquisition_difficulty", 3)
         self.acq_diff_combo.setCurrentText(ACQ_DIFF_MAP.get(acq_diff, "Közepes"))
         
-        # Type
-        skill_type = skill.get("type", 1)
+        # Type (DB uses 'skill_type')
+        skill_type = skill.get("skill_type", skill.get("type", 1))
         self.type_combo.setCurrentText(TYPE_MAP.get(skill_type, "szint"))
+        # Update field enables based on type
+        self._update_type_dependent_fields()
         
-        # KP per 3
-        self.kp_per_3_spin.setValue(skill.get("kp_per_3", 0))
+        # KP/3 for percent-based skills
+        self.kp_per_3_spin.setValue(skill.get("kp_per_3_percent", 0))
         
         # Description file
         self.desc_file_edit.setText(skill.get("description_file", ""))
@@ -421,11 +439,7 @@ class SkillEditorQt(QMainWindow):
         self.current_prerequisites = skill.get("prerequisites", {})
         self.update_prereq_summary()
     
-    def on_main_category_changed(self, category):
-        """Update subcategory combo when main category changes"""
-        self.sub_cat_combo.clear()
-        if category in CATEGORIES:
-            self.sub_cat_combo.addItems(CATEGORIES[category])
+    # Removed duplicate on_main_category_changed; the version above handles disabling fields
     
     def update_prereq_summary(self):
         """Update prerequisite summary labels for all levels"""
@@ -473,18 +487,17 @@ class SkillEditorQt(QMainWindow):
             )
             return
         
-        import os
-        import subprocess
-        
         # Build full path - descriptions are in data/skills/descriptions
         base_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         full_path = os.path.join(base_path, 'data', 'skills', 'descriptions', desc_file)
         
         if os.path.exists(full_path):
             # Open with default editor
-            if os.name == 'nt':  # Windows
+            if sys.platform.startswith('win'):
                 os.startfile(full_path)
-            else:  # macOS and Linux
+            elif sys.platform == 'darwin':
+                subprocess.call(['open', full_path])
+            else:
                 subprocess.call(['xdg-open', full_path])
         else:
             QMessageBox.warning(
@@ -555,10 +568,10 @@ class SkillEditorQt(QMainWindow):
             "sub_category": CATEGORIES[list(CATEGORIES.keys())[0]][0],
             "acquisition_method": 3,
             "acquisition_difficulty": 3,
-            "type": 1,
-            "kp_per_3": 0,
-            "kp_costs": [0] * 8,
-            "level_descriptions": [""] * 6,
+            "skill_type": 1,
+            "kp_per_3_percent": 0,
+            "kp_costs": {str(i): 0 for i in range(1,7)},
+            "level_descriptions": {},
             "description_file": "",
             "prerequisites": {}
         }
@@ -573,7 +586,6 @@ class SkillEditorQt(QMainWindow):
             QMessageBox.warning(self, "Figyelem", "Nincs kiválasztott képzettség!")
             return
         
-        import copy
         new_skill = copy.deepcopy(self.current_skill)
         new_skill["name"] = new_skill["name"] + " (másolat)"
         new_skill["id"] = new_skill["id"] + "_copy"
@@ -623,21 +635,40 @@ class SkillEditorQt(QMainWindow):
         )
         
         # Type
-        self.current_skill["type"] = TYPE_MAP_REV.get(self.type_combo.currentText(), 1)
-        
-        # KP per 3
-        self.current_skill["kp_per_3"] = self.kp_per_3_spin.value()
-        
+        # Persist DB-compatible key
+        self.current_skill["skill_type"] = TYPE_MAP_REV.get(self.type_combo.currentText(), 1)
+
+        # KP per 3 percent (only for percent-based skills)
+        if self.current_skill["skill_type"] == 2:
+            self.current_skill["kp_per_3_percent"] = self.kp_per_3_spin.value()
+            # For percent-based skills, ensure kp_costs is empty dict for cleanliness
+            self.current_skill["kp_costs"] = {}
+        else:
+            # Ensure percent field is cleared for level-based skills
+            self.current_skill["kp_per_3_percent"] = 0
+
         # Description file
         self.current_skill["description_file"] = self.desc_file_edit.text()
-        
-        # Levels - save with string keys to match database format
-        kp_costs = {str(i+1): self.kp_cost_spins[i].value() for i in range(6)}
-        self.current_skill["kp_costs"] = kp_costs
-        
+        # Sync description text from editor so DB manager writes the same content
+        self.current_skill["description"] = self.desc_text_editor.toPlainText()
+        # We no longer use per-level descriptions; ensure it's empty
+        self.current_skill["level_descriptions"] = {}
+
+        # Levels - save with string keys to match database format (only for level-based)
+        if self.current_skill["skill_type"] == 1:
+            kp_costs = {str(i+1): self.kp_cost_spins[i].value() for i in range(6)}
+            self.current_skill["kp_costs"] = kp_costs
+
         # Prerequisites (already stored in current_prerequisites)
         self.current_skill["prerequisites"] = self.current_prerequisites
-        
+
+        # Validate before save
+        try:
+            validate_skill(self.current_skill)
+        except ValidationError as ve:
+            QMessageBox.critical(self, "Hiba", f"Érvénytelen adatok:\n{ve}")
+            return
+
         # Save to database
         try:
             self.skill_manager.save(self.all_skills)
@@ -668,7 +699,6 @@ class SkillEditorQt(QMainWindow):
 
 if __name__ == "__main__":
     from PySide6.QtWidgets import QApplication
-    import sys
     
     # Import dark mode
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))

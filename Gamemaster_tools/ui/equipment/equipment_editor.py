@@ -7,7 +7,6 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
-import subprocess
 import sys
 import os
 
@@ -85,8 +84,17 @@ class EquipmentEditorQt(QMainWindow):
     
     def open_weapons_editor(self):
         """Open weapons and shields editor"""
-        script_path = os.path.join(os.path.dirname(__file__), "weapons_and_shields_editor.py")
-        subprocess.Popen([sys.executable, script_path])
+        try:
+            from ui.equipment.weapons_and_shields_editor import WeaponsAndShieldsEditor
+            if not hasattr(self, '_children'):
+                self._children = []
+            win = WeaponsAndShieldsEditor()
+            win.setAttribute(Qt.WA_DeleteOnClose, True)
+            self._children.append(win)
+            win.show()
+        except Exception as e:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.critical(self, "Hiba", f"Nem sikerült megnyitni a fegyver/pajzs szerkesztőt.\n{e}")
     
     def open_general_editor(self):
         """Open general equipment editor"""

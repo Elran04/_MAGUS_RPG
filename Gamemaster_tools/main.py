@@ -2,32 +2,57 @@
 from PySide6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QPushButton, QLabel
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
-import subprocess
 import sys
 import os
 from utils.dark_mode import apply_dark_mode
 
 last_character = {}
 
+# Keep references to child windows/dialogs to prevent garbage collection
+_windows = []
+
 # --- KÉPZETTSÉG SZERKESZTŐ ABLAK MEGNYITÁSA ---
 def open_skill_editor():
-    script_path = os.path.join(os.path.dirname(__file__), "ui", "skills", "skill_editor.py")
-    subprocess.Popen([sys.executable, script_path])
+    try:
+        from ui.skills.skill_editor import SkillEditorQt
+        win = SkillEditorQt()
+        win.setAttribute(Qt.WA_DeleteOnClose, True)
+        _windows.append(win)
+        win.show()
+    except Exception as e:
+        print(f"Failed to open Skill Editor: {e}")
 
 # --- FELSZERELÉS SZERKESZTŐ ABLAK MEGNYITÁSA ---
 def open_equipment_editor():
-    script_path = os.path.join(os.path.dirname(__file__), "ui", "equipment", "equipment_editor.py")
-    subprocess.Popen([sys.executable, script_path])
+    try:
+        from ui.equipment.equipment_editor import EquipmentEditorQt
+        win = EquipmentEditorQt()
+        win.setAttribute(Qt.WA_DeleteOnClose, True)
+        _windows.append(win)
+        win.show()
+    except Exception as e:
+        print(f"Failed to open Equipment Editor: {e}")
 
 # --- KARAKTERALKOTÁS MEGNYITÁSA ---
 def open_character_creator():
-    script_path = os.path.join(os.path.dirname(__file__), "ui", "character_creator.py")
-    subprocess.Popen([sys.executable, script_path])
+    try:
+        from ui.character_creator import CharacterWizardQt
+        dlg = CharacterWizardQt()
+        # Non-modal to avoid blocking main window; keep reference
+        _windows.append(dlg)
+        dlg.show()
+    except Exception as e:
+        print(f"Failed to open Character Creator: {e}")
 
 # --- KASZT SZERKESZTŐ MEGNYITÁSA ---
 def open_class_editor():
-    script_path = os.path.join(os.path.dirname(__file__), "ui", "class_editor.py")
-    subprocess.Popen([sys.executable, script_path])
+    try:
+        from ui.class_editor import ClassEditorQt
+        dlg = ClassEditorQt()
+        _windows.append(dlg)
+        dlg.show()
+    except Exception as e:
+        print(f"Failed to open Class Editor: {e}")
 
 
 class MagusGMTools(QMainWindow):
