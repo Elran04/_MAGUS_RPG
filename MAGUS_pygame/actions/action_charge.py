@@ -86,11 +86,12 @@ def compute_charge_targets(state: GameState) -> Set[Tuple[int, int]]:
     unit = state.active_unit
     uq, ur = unit.get_position()
     
-    # Calculate max charge distance based on AP (same as movement)
-    max_distance = unit.current_action_points // 2  # 2 AP per hex for movement
+    # Charge costs 10 AP (full turn), so show max range based on that
+    # Maximum distance is limited by the AP cost (10 AP / 2 AP per hex = 5 hexes)
+    max_charge_distance = CHARGE_AP_COST // 2  # 10 AP / 2 = 5 hexes max range
     
     # Get all hexes in range
-    all_in_range = hexes_in_range(uq, ur, max_distance)
+    all_in_range = hexes_in_range(uq, ur, max_charge_distance)
     
     # Filter to only hexes at least CHARGE_MIN_DISTANCE away
     chargeable_area = set()
@@ -103,6 +104,9 @@ def compute_charge_targets(state: GameState) -> Set[Tuple[int, int]]:
     enemy_unit = state.goblin if unit == state.warrior else state.warrior
     enemy_q, enemy_r = enemy_unit.get_position()
     enemy_pos = (enemy_q, enemy_r)
+    
+    # Compute enemy's zone of control for visual warning (like in movement mode)
+    state.enemy_zone_hexes = compute_reach_hexes(enemy_q, enemy_r, enemy_unit.facing, enemy_unit.size_category)
     
     # Remove enemy position from chargeable area display (we'll handle it separately)
     chargeable_area.discard(enemy_pos)

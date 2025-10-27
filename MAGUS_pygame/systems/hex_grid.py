@@ -132,17 +132,21 @@ def draw_grid(
                 # Compute polygon points once
                 points = _hex_points((px, py), HEX_SIZE)
 
-                # Accumulate semi-transparent fills
+                # Accumulate semi-transparent fills (order matters - later = on top)
+                # 1. Base ranges (movement/charge area)
                 if reachable_hexes and (q, r) in reachable_hexes:
                     pygame.draw.polygon(overlay_surface, REACHABLE_TINT, points, 0)
-                if enemy_zone_hexes and (q, r) in enemy_zone_hexes:
-                    pygame.draw.polygon(overlay_surface, ENEMY_ZONE_TINT, points, 0)
-                if attackable_hexes and (q, r) in attackable_hexes:
-                    pygame.draw.polygon(overlay_surface, ATTACKABLE_TINT, points, 0)
                 if charge_area_hexes and (q, r) in charge_area_hexes:
                     pygame.draw.polygon(overlay_surface, CHARGE_AREA_TINT, points, 0)
+                # 2. Attack ranges
+                if attackable_hexes and (q, r) in attackable_hexes:
+                    pygame.draw.polygon(overlay_surface, ATTACKABLE_TINT, points, 0)
                 if charge_targets and (q, r) in charge_targets:
                     pygame.draw.polygon(overlay_surface, CHARGE_TINT, points, 0)
+                # 3. Enemy zone (rendered on top so it's visible as warning)
+                if enemy_zone_hexes and (q, r) in enemy_zone_hexes:
+                    pygame.draw.polygon(overlay_surface, ENEMY_ZONE_TINT, points, 0)
+                # 4. Hover highlight (always on top)
                 if highlight_hex is not None and (q, r) == highlight_hex:
                     pygame.draw.polygon(overlay_surface, HOVER_TINT, points, 0)
 

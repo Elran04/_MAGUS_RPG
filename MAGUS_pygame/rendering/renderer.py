@@ -94,7 +94,7 @@ def draw_game_screen(
         attackable_hexes=state.attackable_for_active if state.action_mode == ActionMode.ATTACK else None,
         charge_area_hexes=state.reachable_for_active if state.action_mode == ActionMode.CHARGE else None,
         charge_targets=state.charge_targets if state.action_mode == ActionMode.CHARGE else None,
-        enemy_zone_hexes=state.enemy_zone_hexes if state.action_mode == ActionMode.MOVE else None,
+        enemy_zone_hexes=state.enemy_zone_hexes if state.action_mode in [ActionMode.MOVE, ActionMode.CHARGE] else None,
         highlight_hex=(hovered_q, hovered_r),
     )
     
