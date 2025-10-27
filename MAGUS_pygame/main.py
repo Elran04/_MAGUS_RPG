@@ -68,6 +68,10 @@ def main():
                 mx, my = event.pos
                 process_mouse_click(state, mx, my, event.button, grid_bounds)
 
+        # Decrement message timer
+        if state.message_timer > 0:
+            state.message_timer -= 1
+
         # Render game screen
         draw_game_screen(screen, state, background, grid_bounds, overlay_font)
 

@@ -6,7 +6,7 @@ from typing import Tuple, Optional, Set
 from systems.hex_grid import hex_distance
 from systems.reach import compute_reach_hexes
 from config import ATTACK_RANGE, AP_COST_ATTACK_DEFAULT, ActionMode
-from core.game_state import GameState
+from core.game_state import GameState, check_defeat, next_turn
 from core.unit_manager import Unit
 
 
@@ -249,7 +249,6 @@ def handle_attack_click(state: GameState, q: int, r: int) -> bool:
     Returns True if attacked.
     """
     from actions.action_movement import compute_reachable
-    from core.game_state import check_defeat, next_turn
     
     enemy_unit = state.goblin if state.active_unit == state.warrior else state.warrior
     eq, er = enemy_unit.get_position()

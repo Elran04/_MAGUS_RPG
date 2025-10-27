@@ -28,6 +28,11 @@ class GameState:
     turn_start_pos: Tuple[int, int] = (0, 0)
     reachable_for_active: Set[Tuple[int, int]] = field(default_factory=set)
     attackable_for_active: Set[Tuple[int, int]] = field(default_factory=set)
+    enemy_zone_hexes: Set[Tuple[int, int]] = field(default_factory=set)  # Enemy's zone of control
+    
+    # Combat messages
+    combat_message: str = ""  # Display combat events (attacks, opportunity attacks, etc.)
+    message_timer: int = 0  # Frame counter for message display
 
     # UI and units
     ui_state: Dict[str, object] = field(default_factory=dict)
@@ -72,6 +77,9 @@ def next_turn(state: GameState) -> None:
         # Round complete - roll new initiative for next round
         state.round += 1
         roll_initiative(state)  # This resets AP for both units
+        # Reset ZOC opportunity attacks for all units
+        state.warrior.has_used_opportunity_attack = False
+        state.goblin.has_used_opportunity_attack = False
     else:
         # Switch to next unit in turn order
         current_idx = state.turn_order.index(state.active_unit)

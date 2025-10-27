@@ -53,6 +53,7 @@ def draw_game_screen(
         sprite_positions,
         reachable_hexes=state.reachable_for_active if state.action_mode == ActionMode.MOVE else None,
         attackable_hexes=state.attackable_for_active if state.action_mode == ActionMode.ATTACK else None,
+        enemy_zone_hexes=state.enemy_zone_hexes if state.action_mode == ActionMode.MOVE else None,
         highlight_hex=(hovered_q, hovered_r),
     )
 
@@ -117,6 +118,26 @@ def draw_hud(screen: pygame.Surface, state: GameState) -> None:
         (255, 255, 255),
     )
     screen.blit(text, (10, 10))
+    
+    # Draw combat message if present
+    if state.combat_message and state.message_timer > 0:
+        message_font = pygame.font.SysFont(None, 36)
+        message_text = message_font.render(state.combat_message, True, (255, 220, 0))
+        message_rect = message_text.get_rect(center=(WIDTH // 2, 60))
+        
+        # Semi-transparent background for message
+        padding = 10
+        bg_rect = pygame.Rect(
+            message_rect.x - padding,
+            message_rect.y - padding,
+            message_rect.width + 2 * padding,
+            message_rect.height + 2 * padding
+        )
+        bg_surface = pygame.Surface((bg_rect.width, bg_rect.height), pygame.SRCALPHA)
+        bg_surface.fill((0, 0, 0, 180))
+        screen.blit(bg_surface, bg_rect)
+        
+        screen.blit(message_text, message_rect)
     
     
     # Draw action buttons

@@ -50,3 +50,4 @@ UI_INACTIVE = (60, 60, 80)
 REACHABLE_TINT = (60, 200, 130, 80)
 HOVER_TINT = (60, 220, 150, 130)
 ATTACKABLE_TINT = (220, 80, 60, 100)
+ENEMY_ZONE_TINT = (200, 50, 50, 60)  # Red tint for enemy zone of control

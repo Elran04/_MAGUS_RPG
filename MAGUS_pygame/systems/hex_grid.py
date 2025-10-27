@@ -14,6 +14,7 @@ from config import (
     REACHABLE_TINT,
     HOVER_TINT,
     ATTACKABLE_TINT,
+    ENEMY_ZONE_TINT,
 )
 
 
@@ -95,6 +96,7 @@ def draw_grid(
     sprite_positions=None,
     reachable_hexes=None,
     attackable_hexes=None,
+    enemy_zone_hexes=None,
     highlight_hex=None,
 ):
     """
@@ -105,6 +107,8 @@ def draw_grid(
         min_q, max_q, min_r, max_r: grid bounds
         sprite_positions: dict of {(q, r): sprite_surface} to draw
         reachable_hexes: set of (q, r) within movement range
+        attackable_hexes: set of (q, r) within attack range
+        enemy_zone_hexes: set of (q, r) in enemy's zone of control
         highlight_hex: (q, r) hex to draw as hovered
     """
     margin = HEX_SIZE * 2
@@ -125,6 +129,8 @@ def draw_grid(
                 # Accumulate semi-transparent fills
                 if reachable_hexes and (q, r) in reachable_hexes:
                     pygame.draw.polygon(overlay_surface, REACHABLE_TINT, points, 0)
+                if enemy_zone_hexes and (q, r) in enemy_zone_hexes:
+                    pygame.draw.polygon(overlay_surface, ENEMY_ZONE_TINT, points, 0)
                 if attackable_hexes and (q, r) in attackable_hexes:
                     pygame.draw.polygon(overlay_surface, ATTACKABLE_TINT, points, 0)
                 if highlight_hex is not None and (q, r) == highlight_hex:

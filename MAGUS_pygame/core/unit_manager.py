@@ -36,6 +36,9 @@ class Unit:
         # Combat state (current HP/FP)
         self.current_ep = 0
         self.current_fp = 0
+        
+        # Zone of Control - opportunity attack tracking
+        self.has_used_opportunity_attack = False
     
     def move_to(self, q, r):
         """Move the unit to a new hex."""
