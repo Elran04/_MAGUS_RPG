@@ -6,6 +6,7 @@ import pygame
 from typing import Optional, Dict, List
 from config import HEIGHT, WIDTH, UI_BORDER, UI_TEXT, UI_ACTIVE, UI_INACTIVE
 from core.game_state import GameState
+from systems.weapon_wielding import has_variable_weapon
 
 
 def roll_initiative(state: GameState) -> None:
@@ -60,13 +61,11 @@ def setup_action_ui() -> Dict[str, object]:
     """Create dropdown and facing selection UI elements.
 
     Returns:
-        dict with keys: dropdown_rect, dropdown_open, ui_font, action_options, facing_buttons
+        dict with keys: dropdown_rect, dropdown_open, ui_font, facing_buttons
     """
     DROPDOWN_W, DROPDOWN_H = 200, 36
     dropdown_rect = pygame.Rect(10, HEIGHT - DROPDOWN_H - 10, DROPDOWN_W, DROPDOWN_H)
     ui_font = pygame.font.SysFont(None, 28)
-    
-    action_options = ["Move", "Attack", "Charge", "Change Facing", "Change Wield"]
     
     # Facing direction buttons (shown when Change Facing is selected)
     # Arrange in hex pattern around a center point
@@ -93,13 +92,21 @@ def setup_action_ui() -> Dict[str, object]:
         "dropdown_rect": dropdown_rect,
         "dropdown_open": False,
         "ui_font": ui_font,
-        "action_options": action_options,
         "selected_action": "Move",
         "facing_buttons": facing_buttons,
     }
 
 
 import math
+
+
+def get_action_options(active_unit=None) -> List[str]:
+    """Compute available action options for the given active unit."""
+    base_options = ["Move", "Attack", "Charge", "Change Facing"]
+    options = base_options.copy()
+    if active_unit and has_variable_weapon(active_unit):
+        options.append("Change Wield")
+    return options
 
 
 def draw_action_ui(screen: pygame.Surface, ui_state: Dict[str, object], action_mode: str, active_unit=None):
@@ -116,13 +123,8 @@ def draw_action_ui(screen: pygame.Surface, ui_state: Dict[str, object], action_m
     dropdown_open = ui_state["dropdown_open"]
     selected_action = ui_state.get("selected_action", "Move")
     
-    # Filter action options based on active unit's weapon
-    base_options = ["Move", "Attack", "Charge", "Change Facing"]
-    action_options = base_options.copy()
-    
-    # Only show "Change Wield" if unit has a variable weapon
-    if active_unit and active_unit.weapon and active_unit.weapon.get('wield_mode') == 'Változó':
-        action_options.append("Change Wield")
+    # Compute action options dynamically
+    action_options = get_action_options(active_unit)
     
     # Draw main dropdown button
     pygame.draw.rect(screen, UI_ACTIVE, dropdown_rect, border_radius=6)
@@ -219,13 +221,8 @@ def process_action_ui_click(mx: int, my: int, ui_state: Dict[str, object], activ
     dropdown_rect = ui_state["dropdown_rect"]
     dropdown_open = ui_state["dropdown_open"]
     
-    # Filter action options based on active unit's weapon
-    base_options = ["Move", "Attack", "Charge", "Change Facing"]
-    action_options = base_options.copy()
-    
-    # Only show "Change Wield" if unit has a variable weapon
-    if active_unit and active_unit.weapon and active_unit.weapon.get('wield_mode') == 'Változó':
-        action_options.append("Change Wield")
+    # Compute action options dynamically
+    action_options = get_action_options(active_unit)
     
     # Check dropdown button click
     if dropdown_rect.collidepoint(mx, my):

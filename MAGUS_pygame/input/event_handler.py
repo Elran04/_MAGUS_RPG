@@ -56,11 +56,9 @@ def handle_wield_change(state: GameState) -> None:
     Toggle the active unit's weapon wield mode.
     """
     if toggle_wield_mode(state):
-        # If AP depleted, end turn
-        if state.active_unit.current_action_points <= 0:
-            next_turn(state)
-            state.action_mode = ActionMode.MOVE
-            compute_reachable(state)
+        # Refresh popup wield info if visible
+        if state.unit_info_popup and state.unit_info_popup.visible:
+            state.unit_info_popup.refresh_cached_wield_info()
 
 
 def handle_facing_change(state: GameState, new_facing: int) -> None:

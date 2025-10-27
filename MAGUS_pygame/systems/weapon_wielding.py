@@ -78,6 +78,11 @@ def can_wield_one_handed(unit: "Unit", weapon: Dict) -> bool:
     return can_wield
 
 
+def has_variable_weapon(unit: "Unit") -> bool:
+    """Return True if the unit currently wields a weapon with 'Változó' wield mode."""
+    return bool(getattr(unit, "weapon", None)) and unit.weapon.get("wield_mode") == "Változó"
+
+
 def get_wielding_mode(unit: "Unit", weapon: Dict) -> str:
     """
     Determine the wielding mode for a weapon based on unit's attributes and preference.
