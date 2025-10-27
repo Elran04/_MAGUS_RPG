@@ -8,6 +8,7 @@ from systems.hex_grid import pixel_to_hex
 from actions.action_handling import process_action_ui_click
 from actions.action_movement import compute_reachable, apply_move_if_valid, skip_turn
 from actions.action_attack import compute_attackable, handle_attack_click
+from actions.action_charge import compute_charge_targets, execute_charge_attack
 
 
 def handle_ui_click(state: GameState, ui_result: dict) -> None:
@@ -21,14 +22,22 @@ def handle_ui_click(state: GameState, ui_result: dict) -> None:
             state.action_mode = ActionMode.MOVE
             compute_reachable(state)
             state.attackable_for_active = set()
+            state.charge_targets = set()
         elif action == "attack":
             state.action_mode = ActionMode.ATTACK
             state.reachable_for_active = set()
             compute_attackable(state)
+            state.charge_targets = set()
+        elif action == "charge":
+            state.action_mode = ActionMode.CHARGE
+            state.reachable_for_active = set()
+            state.attackable_for_active = set()
+            compute_charge_targets(state)
         elif action == "change_facing":
             state.action_mode = ActionMode.CHANGE_FACING
             state.reachable_for_active = set()
             state.attackable_for_active = set()
+            state.charge_targets = set()
     elif ui_result["type"] == "select_facing":
         handle_facing_change(state, ui_result["facing"])
     # toggle_dropdown is handled automatically by action_handling
@@ -60,7 +69,7 @@ def handle_facing_change(state: GameState, new_facing: int) -> None:
 def handle_grid_click(state: GameState, q: int, r: int, grid_bounds: Tuple[int, int, int, int]) -> None:
     """
     Process grid click based on action mode.
-    Routes to movement or attack handlers.
+    Routes to movement, attack, or charge handlers.
     
     Args:
         state: Current game state
@@ -75,6 +84,10 @@ def handle_grid_click(state: GameState, q: int, r: int, grid_bounds: Tuple[int, 
             _ = apply_move_if_valid(state, q, r)
         elif state.action_mode == ActionMode.ATTACK:
             _ = handle_attack_click(state, q, r)
+        elif state.action_mode == ActionMode.CHARGE:
+            # Check if clicked hex is a valid charge target
+            if (q, r) in state.charge_targets:
+                execute_charge_attack(state, q, r)
 
 
 def handle_right_click(state: GameState) -> None:

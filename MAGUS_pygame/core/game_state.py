@@ -28,12 +28,16 @@ class GameState:
     turn_start_pos: Tuple[int, int] = (0, 0)
     reachable_for_active: Set[Tuple[int, int]] = field(default_factory=set)
     attackable_for_active: Set[Tuple[int, int]] = field(default_factory=set)
+    charge_targets: Set[Tuple[int, int]] = field(default_factory=set)  # Valid charge targets
     enemy_zone_hexes: Set[Tuple[int, int]] = field(default_factory=set)  # Enemy's zone of control
     preview_path: List[Tuple[int, int]] = field(default_factory=list)  # Path preview for movement
     
     # Combat messages
     combat_message: str = ""  # Display combat events (attacks, opportunity attacks, etc.)
     message_timer: int = 0  # Frame counter for message display
+    
+    # Charge attack state
+    charge_damage_multiplier: int = 1  # Damage multiplier for charge attacks
 
     # UI and units
     ui_state: Dict[str, object] = field(default_factory=dict)

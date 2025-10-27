@@ -14,6 +14,8 @@ from config import (
     REACHABLE_TINT,
     HOVER_TINT,
     ATTACKABLE_TINT,
+    CHARGE_AREA_TINT,
+    CHARGE_TINT,
     ENEMY_ZONE_TINT,
 )
 
@@ -96,6 +98,8 @@ def draw_grid(
     sprite_positions=None,
     reachable_hexes=None,
     attackable_hexes=None,
+    charge_area_hexes=None,
+    charge_targets=None,
     enemy_zone_hexes=None,
     highlight_hex=None,
 ):
@@ -108,6 +112,8 @@ def draw_grid(
         sprite_positions: dict of {(q, r): sprite_surface} to draw
         reachable_hexes: set of (q, r) within movement range
         attackable_hexes: set of (q, r) within attack range
+        charge_area_hexes: set of (q, r) in chargeable range (4+ hexes away)
+        charge_targets: set of (q, r) valid for charge attacks (enemy positions)
         enemy_zone_hexes: set of (q, r) in enemy's zone of control
         highlight_hex: (q, r) hex to draw as hovered
     """
@@ -133,6 +139,10 @@ def draw_grid(
                     pygame.draw.polygon(overlay_surface, ENEMY_ZONE_TINT, points, 0)
                 if attackable_hexes and (q, r) in attackable_hexes:
                     pygame.draw.polygon(overlay_surface, ATTACKABLE_TINT, points, 0)
+                if charge_area_hexes and (q, r) in charge_area_hexes:
+                    pygame.draw.polygon(overlay_surface, CHARGE_AREA_TINT, points, 0)
+                if charge_targets and (q, r) in charge_targets:
+                    pygame.draw.polygon(overlay_surface, CHARGE_TINT, points, 0)
                 if highlight_hex is not None and (q, r) == highlight_hex:
                     pygame.draw.polygon(overlay_surface, HOVER_TINT, points, 0)
 

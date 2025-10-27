@@ -24,6 +24,7 @@ class ActionMode:
     MOVE = "move"
     ATTACK = "attack"
     CHANGE_FACING = "change_facing"
+    CHARGE = "charge"
 
 # --- GAMEPLAY ---
 # Max hexes a unit can move in one action
@@ -50,6 +51,8 @@ UI_INACTIVE = (60, 60, 80)
 REACHABLE_TINT = (60, 200, 130, 80)
 HOVER_TINT = (60, 220, 150, 130)
 ATTACKABLE_TINT = (220, 80, 60, 100)
+CHARGE_AREA_TINT = (255, 255, 0, 70)  # Yellow tint for chargeable area (4+ hexes away)
+CHARGE_TINT = (255, 165, 0, 100)  # Orange tint for valid charge targets (enemy)
 ENEMY_ZONE_TINT = (200, 50, 50, 60)  # Red tint for enemy zone of control
 
 # --- PATH VISUALIZATION ---

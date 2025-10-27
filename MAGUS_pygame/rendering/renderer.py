@@ -92,13 +92,22 @@ def draw_game_screen(
         sprite_positions,
         reachable_hexes=state.reachable_for_active if state.action_mode == ActionMode.MOVE else None,
         attackable_hexes=state.attackable_for_active if state.action_mode == ActionMode.ATTACK else None,
+        charge_area_hexes=state.reachable_for_active if state.action_mode == ActionMode.CHARGE else None,
+        charge_targets=state.charge_targets if state.action_mode == ActionMode.CHARGE else None,
         enemy_zone_hexes=state.enemy_zone_hexes if state.action_mode == ActionMode.MOVE else None,
         highlight_hex=(hovered_q, hovered_r),
     )
     
-    # Draw movement path preview if available
+    # Draw path preview if available (for both MOVE and CHARGE modes)
     if state.preview_path and state.action_mode == ActionMode.MOVE:
         draw_movement_path(screen, state.preview_path, state.enemy_zone_hexes)
+    elif state.preview_path and state.action_mode == ActionMode.CHARGE:
+        # For charge, also compute enemy zone to show danger
+        enemy_unit = state.goblin if state.active_unit == state.warrior else state.warrior
+        enemy_pos = enemy_unit.get_position()
+        from systems.reach import compute_reach_hexes
+        enemy_zone = compute_reach_hexes(enemy_pos[0], enemy_pos[1], enemy_unit.facing, enemy_unit.size_category)
+        draw_movement_path(screen, state.preview_path, enemy_zone)
 
     # Overlays for each unit
     draw_unit_overlays(screen, state.warrior, overlay_font)

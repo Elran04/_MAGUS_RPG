@@ -72,19 +72,49 @@ def main():
         if state.message_timer > 0:
             state.message_timer -= 1
 
-        # Update path preview based on mouse position (only in MOVE mode and not game over)
-        if not state.game_over and state.action_mode == ActionMode.MOVE:
+        # Update path preview based on mouse position (for MOVE and CHARGE modes, not during game over)
+        if not state.game_over and state.action_mode in [ActionMode.MOVE, ActionMode.CHARGE]:
             mx, my = pygame.mouse.get_pos()
             hovered_q, hovered_r = pixel_to_hex(mx, my)
+            enemy_unit = state.goblin if state.active_unit == state.warrior else state.warrior
+            enemy_pos = enemy_unit.get_position()
             
-            # If hovering over a reachable hex, calculate and store the path
-            if (hovered_q, hovered_r) in state.reachable_for_active:
-                enemy_unit = state.goblin if state.active_unit == state.warrior else state.warrior
-                enemy_pos = enemy_unit.get_position()
-                path = find_path(state.turn_start_pos, (hovered_q, hovered_r), blocked={enemy_pos})
-                state.preview_path = path
-            else:
-                state.preview_path = []
+            if state.action_mode == ActionMode.MOVE:
+                # Movement path preview
+                if (hovered_q, hovered_r) in state.reachable_for_active:
+                    path = find_path(state.turn_start_pos, (hovered_q, hovered_r), blocked={enemy_pos})
+                    state.preview_path = path
+                else:
+                    state.preview_path = []
+            elif state.action_mode == ActionMode.CHARGE:
+                # Charge path preview - show path to enemy if hovering over valid charge target
+                if (hovered_q, hovered_r) in state.charge_targets:
+                    # Calculate path to best adjacent hex of enemy
+                    from systems.hex_grid import hexes_in_range
+                    adjacent_hexes = [
+                        (enemy_pos[0] + 1, enemy_pos[1]), 
+                        (enemy_pos[0] + 1, enemy_pos[1] - 1), 
+                        (enemy_pos[0], enemy_pos[1] - 1),
+                        (enemy_pos[0] - 1, enemy_pos[1]), 
+                        (enemy_pos[0] - 1, enemy_pos[1] + 1), 
+                        (enemy_pos[0], enemy_pos[1] + 1)
+                    ]
+                    
+                    # Find shortest path among all adjacent hexes
+                    best_path = None
+                    best_distance = float('inf')
+                    start_pos = state.active_unit.get_position()
+                    
+                    for adj_q, adj_r in adjacent_hexes:
+                        path = find_path(start_pos, (adj_q, adj_r), blocked={enemy_pos})
+                        if path and len(path) > 1:
+                            if len(path) < best_distance:
+                                best_distance = len(path)
+                                best_path = path
+                    
+                    state.preview_path = best_path if best_path else []
+                else:
+                    state.preview_path = []
         else:
             state.preview_path = []
 

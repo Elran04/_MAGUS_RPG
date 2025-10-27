@@ -5,6 +5,7 @@ import random
 from typing import Tuple, Optional, Set
 from systems.hex_grid import hex_distance
 from systems.reach import compute_reach_hexes
+from systems.damage_calculator import calculate_damage, calculate_attribute_damage_bonus
 from config import ATTACK_RANGE, AP_COST_ATTACK_DEFAULT, ActionMode
 from core.game_state import GameState, check_defeat, next_turn
 from core.unit_manager import Unit
@@ -42,7 +43,7 @@ def check_attack_range(attacker: Unit, defender: Unit) -> bool:
     return defender.get_position() in reach
 
 
-def roll_attack(attacker: Unit, defender: Unit) -> AttackResult:
+def roll_attack(attacker: Unit, defender: Unit, state: GameState = None) -> AttackResult:
     """
     Roll an attack from attacker against defender.
     
@@ -53,6 +54,11 @@ def roll_attack(attacker: Unit, defender: Unit) -> AttackResult:
       - d100 = 1: Critical failure (automatic miss)
       - d100 = 100: Critical hit (automatic hit, +3 ÉP damage)
       - d100 + TÉ > VÉ + 50: Overpower strike (damage goes directly to ÉP)
+    
+    Args:
+        attacker: The attacking unit
+        defender: The defending unit
+        state: Optional game state for charge damage multiplier
     
     Returns:
         AttackResult with hit status and damage info
@@ -74,9 +80,11 @@ def roll_attack(attacker: Unit, defender: Unit) -> AttackResult:
     # Critical hit on 100
     if d100 == 100:
         base_damage = random.randint(attacker.damage_min, attacker.damage_max)
+        # Apply attribute bonuses and charge multiplier to base damage
+        damage_calc = calculate_damage(attacker, base_damage, state)
         return AttackResult(
             hit=True,
-            damage=base_damage,
+            damage=damage_calc['final_damage'],
             is_critical=True,
             attack_roll=d100,
             total_attack=total_attack
@@ -85,10 +93,12 @@ def roll_attack(attacker: Unit, defender: Unit) -> AttackResult:
     # Normal attack resolution
     if total_attack > defender_ve:
         base_damage = random.randint(attacker.damage_min, attacker.damage_max)
+        # Apply attribute bonuses and charge multiplier to base damage
+        damage_calc = calculate_damage(attacker, base_damage, state)
         is_overpower = total_attack > (defender_ve + 50)
         return AttackResult(
             hit=True,
-            damage=base_damage,
+            damage=damage_calc['final_damage'],
             is_overpower=is_overpower,
             attack_roll=d100,
             total_attack=total_attack
@@ -200,8 +210,8 @@ def execute_attack(state: GameState, attacker: Unit, defender: Unit) -> Tuple[bo
     if not check_attack_range(attacker, defender):
         return (False, f"{attacker.name} is too far to attack!")
     
-    # Roll attack
-    result = roll_attack(attacker, defender)
+    # Roll attack (pass state for charge multiplier)
+    result = roll_attack(attacker, defender, state)
     
     # Critical failure
     if result.is_critical_fail:

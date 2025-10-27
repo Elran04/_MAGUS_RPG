@@ -24,6 +24,7 @@ class Unit:
         self.attributes = {}  # Character attributes (Tulajdonságok)
         self.weapon = {}  # Equipped weapon data
         self.base_combat = {}  # Base combat values before weapon modifiers
+        self.character_data = {}  # Full character JSON data for reference
         
         # Action points (10 per turn by default, representing 10 seconds)
         self.max_action_points = 10

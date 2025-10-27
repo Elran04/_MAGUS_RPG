@@ -36,6 +36,7 @@ def setup_game() -> Tuple[Unit, Unit, Optional[pygame.Surface]]:
     try:
         warrior_json = load_character_json("Teszt.json")
         warrior.name = warrior_json.get("Név", "Warrior")
+        warrior.character_data = warrior_json  # Store full character data
         warrior.set_combat(warrior_json.get("Harci értékek", {}))
         warrior.set_attributes(warrior_json.get("Tulajdonságok", {}))
         
@@ -55,6 +56,7 @@ def setup_game() -> Tuple[Unit, Unit, Optional[pygame.Surface]]:
     try:
         goblin_json = load_character_json("Teszt_Goblin.json")
         goblin.name = goblin_json.get("Név", "Goblin")
+        goblin.character_data = goblin_json  # Store full character data
         goblin.set_combat(goblin_json.get("Harci értékek", {}))
         goblin.set_attributes(goblin_json.get("Tulajdonságok", {}))
         

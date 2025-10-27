@@ -66,7 +66,7 @@ def setup_action_ui() -> Dict[str, object]:
     dropdown_rect = pygame.Rect(10, HEIGHT - DROPDOWN_H - 10, DROPDOWN_W, DROPDOWN_H)
     ui_font = pygame.font.SysFont(None, 28)
     
-    action_options = ["Move", "Attack", "Change Facing"]
+    action_options = ["Move", "Attack", "Charge", "Change Facing"]
     
     # Facing direction buttons (shown when Change Facing is selected)
     # Arrange in hex pattern around a center point
