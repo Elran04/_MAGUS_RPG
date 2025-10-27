@@ -149,8 +149,12 @@ def process_mouse_click(state: GameState, mx: int, my: int, button: int, grid_bo
         grid_bounds: (MIN_Q, MAX_Q, MIN_R, MAX_R) boundaries
     """
     if button == 1:  # Left click
-        # If popup is visible, check if clicking outside to close it
+        # If popup is visible, check if clicking inside for tab switching or outside to close
         if state.unit_info_popup and state.unit_info_popup.visible:
+            # Try tab click first
+            if state.unit_info_popup.handle_click(mx, my):
+                return  # Tab was clicked, handled
+            # Otherwise check if clicking outside to close
             if state.unit_info_popup.is_click_outside(mx, my):
                 state.unit_info_popup.hide()
             return
