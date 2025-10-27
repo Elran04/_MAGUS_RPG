@@ -1,35 +1,212 @@
-import tkinter as tk
 import os
 from utils.json_manager import JsonManager
+from PySide6.QtWidgets import (
+    QWidget, QMainWindow, QApplication, QVBoxLayout, QHBoxLayout, QLabel, QListWidget,
+    QPushButton, QMessageBox, QLineEdit, QCheckBox, QSpinBox, QDoubleSpinBox, QTextEdit,
+    QComboBox, QGridLayout, QListWidgetItem, QScrollArea
+)
+from PySide6.QtCore import Qt
+
 
 class ArmorJsonManager(JsonManager):
     def validate(self, item):
         required = ["id", "name", "parts", "mgt", "weight", "price", "description"]
         return all(field in item for field in required)
 
+
 ARMOR_JSON = os.path.join(os.path.dirname(__file__), "..", "..", "data", "equipment", "armor.json")
 
-class ArmorEditor:
+
+class ArmorEditorQt(QMainWindow):
     def __init__(self):
-        from utils.reopen_prevention import WindowSingleton
-        self.win, created = WindowSingleton.get('armor_editor', lambda: tk.Toplevel())
-        if not created:
-            return
-        self.win.title("Páncél szerkesztő")
-        self.win.geometry("1100x700")
+        super().__init__()
+        self.setWindowTitle("Páncél szerkesztő")
+        self.resize(1200, 760)
+
         self.manager = ArmorJsonManager(ARMOR_JSON)
         self.armors = self.manager.load()
         self.selected_idx = None
         self.abc_sort_asc = True
         self.sfe_sort_asc = False
-        self.create_widgets()
 
-    # nincs szükség külön _on_close metódusra, WindowSingleton kezeli
+        central = QWidget()
+        self.setCentralWidget(central)
+        root = QHBoxLayout()
+        central.setLayout(root)
 
+        # Left: list and actions
+        left = QVBoxLayout()
+        root.addLayout(left, stretch=1)
+        title = QLabel("Páncélok listája")
+        title.setAlignment(Qt.AlignHCenter)
+        left.addWidget(title)
+        self.listbox = QListWidget()
+        left.addWidget(self.listbox, stretch=1)
+        self.listbox.currentRowChanged.connect(self.on_select)
+
+        btns_row = QHBoxLayout()
+        self.btn_new = QPushButton("Új páncél")
+        self.btn_new.clicked.connect(self.new_armor)
+        self.btn_del = QPushButton("Törlés")
+        self.btn_del.clicked.connect(self.delete_armor)
+        btns_row.addWidget(self.btn_new)
+        btns_row.addWidget(self.btn_del)
+        left.addLayout(btns_row)
+
+        sort_row = QHBoxLayout()
+        self.btn_sort_abc = QPushButton("ABC ▲")
+        self.btn_sort_abc.clicked.connect(self.sort_abc)
+        self.btn_sort_sfe = QPushButton("SFÉ ▼")
+        self.btn_sort_sfe.clicked.connect(self.sort_sfe)
+        sort_row.addWidget(self.btn_sort_abc)
+        sort_row.addWidget(self.btn_sort_sfe)
+        left.addLayout(sort_row)
+
+        # Right: editor form in a scroll area
+        from engine.armor_manager import ArmorManager
+        right_container = QWidget()
+        right_layout = QVBoxLayout(right_container)
+        form = QWidget()
+        form_layout = QGridLayout(form)
+        right_layout.addWidget(form)
+        root.addWidget(right_container, stretch=2)
+
+        r = 0
+        form_layout.addWidget(QLabel("Név:"), r, 0)
+        self.inp_name = QLineEdit()
+        form_layout.addWidget(self.inp_name, r, 1)
+        r += 1
+
+        form_layout.addWidget(QLabel("Azonosító:"), r, 0)
+        self.inp_id = QLineEdit()
+        form_layout.addWidget(self.inp_id, r, 1)
+        r += 1
+
+        form_layout.addWidget(QLabel("Részegységek és SFÉ:"), r, 0)
+        r += 1
+        parts = [
+            "sisak", "mellvért", "vállvédő", "felkarvédő", "alkarvédő", "kesztyű", "combvédő", "lábszárvédő", "csizma"
+        ]
+        self.parts_checks = {}
+        self.parts_sfe = {}
+        part_grid = QGridLayout()
+        form_layout.addLayout(part_grid, r, 0, 1, 2)
+        for i, part in enumerate(parts):
+            chk = QCheckBox(part)
+            spn = QSpinBox()
+            spn.setRange(0, 99)
+            part_grid.addWidget(chk, i, 0)
+            part_grid.addWidget(QLabel("SFÉ:"), i, 1)
+            part_grid.addWidget(spn, i, 2)
+            self.parts_checks[part] = chk
+            self.parts_sfe[part] = spn
+        r += 1
+
+        form_layout.addWidget(QLabel("SFÉ override-ok (alzónák):"), r, 0)
+        r += 1
+        self.cmb_main = QComboBox()
+        self.cmb_sub = QComboBox()
+        self.spn_override = QSpinBox()
+        self.spn_override.setRange(0, 99)
+        self.btn_add_override = QPushButton("Hozzáadás")
+        ov_row = QHBoxLayout()
+        ov_row.addWidget(QLabel("Főzóna:"))
+        ov_row.addWidget(self.cmb_main)
+        ov_row.addWidget(QLabel("Alzóna:"))
+        ov_row.addWidget(self.cmb_sub)
+        ov_row.addWidget(QLabel("SFÉ:"))
+        ov_row.addWidget(self.spn_override)
+        ov_row.addWidget(self.btn_add_override)
+        form_layout.addLayout(ov_row, r, 0, 1, 2)
+        r += 1
+
+        self.override_list = QListWidget()
+        form_layout.addWidget(self.override_list, r, 0, 1, 2)
+        r += 1
+        self.btn_del_override = QPushButton("Kijelölt override törlése")
+        self.btn_del_override.clicked.connect(self.delete_selected_override)
+        form_layout.addWidget(self.btn_del_override, r, 1)
+        r += 1
+
+        # MGT and weight
+        form_layout.addWidget(QLabel("MGT:"), r, 0)
+        self.spn_mgt = QSpinBox()
+        self.spn_mgt.setRange(0, 99)
+        form_layout.addWidget(self.spn_mgt, r, 1)
+        r += 1
+
+        form_layout.addWidget(QLabel("Súly (kg):"), r, 0)
+        self.spn_weight = QDoubleSpinBox()
+        self.spn_weight.setRange(0.0, 1000.0)
+        self.spn_weight.setDecimals(2)
+        form_layout.addWidget(self.spn_weight, r, 1)
+        r += 1
+
+        # Price
+        form_layout.addWidget(QLabel("Ár:"), r, 0, alignment=Qt.AlignTop)
+        price_row = QHBoxLayout()
+        from engine.currency_manager import CurrencyManager
+        self.price_spins = {}
+        for curr in ["réz", "ezüst", "arany", "mithrill"]:
+            price_row.addWidget(QLabel(curr))
+            spn = QSpinBox()
+            spn.setRange(0, 9999999)
+            price_row.addWidget(spn)
+            self.price_spins[curr] = spn
+        form_layout.addLayout(price_row, r, 1)
+        r += 1
+
+        # Description
+        form_layout.addWidget(QLabel("Leírás:"), r, 0, alignment=Qt.AlignTop)
+        self.txt_desc = QTextEdit()
+        form_layout.addWidget(self.txt_desc, r, 1)
+        r += 1
+
+        self.btn_save = QPushButton("Mentés")
+        form_layout.addWidget(self.btn_save, r, 1)
+
+        # Wiring
+        self.btn_add_override.clicked.connect(self.add_override)
+        self.cmb_main.currentTextChanged.connect(self._on_main_zone_changed)
+        self.btn_save.clicked.connect(self.save_armor)
+
+        self._load_zone_menus()
+        self.refresh_list()
+
+    # Helpers
+    def _load_zone_menus(self):
+        from engine.armor_manager import ArmorManager
+        self._main_to_sub = ArmorManager.MAIN_ZONES
+        self.cmb_main.clear()
+        self.cmb_main.addItems(list(self._main_to_sub.keys()))
+        self._on_main_zone_changed(self.cmb_main.currentText())
+
+    def _on_main_zone_changed(self, main):
+        subs = self._main_to_sub.get(main, []) if hasattr(self, '_main_to_sub') else []
+        self.cmb_sub.clear()
+        self.cmb_sub.addItems(subs)
+
+    def _price_to_parts(self, price):
+        from engine.currency_manager import CurrencyManager
+        return CurrencyManager().from_base(int(price or 0))
+
+    def _parts_to_price(self):
+        from engine.currency_manager import CurrencyManager
+        total = 0
+        for curr in ["réz", "ezüst", "arany", "mithrill"]:
+            total += CurrencyManager().to_base(self.price_spins[curr].value(), curr)
+        return total
+
+    def refresh_list(self):
+        self.listbox.clear()
+        for armor in self.armors:
+            self.listbox.addItem(f"{armor.get('name','')} (ID: {armor.get('id','-')})")
+
+    # Sorting
     def sort_abc(self):
         self.armors.sort(key=lambda a: a.get('name', '').lower(), reverse=not self.abc_sort_asc)
         self.abc_sort_asc = not self.abc_sort_asc
-        self.update_sort_btn_labels()
+        self.btn_sort_abc.setText(f"ABC {'▲' if self.abc_sort_asc else '▼'}")
         self.refresh_list()
 
     def sort_sfe(self):
@@ -38,296 +215,158 @@ class ArmorEditor:
             return max(parts.values()) if parts else 0
         self.armors.sort(key=max_sfe, reverse=not self.sfe_sort_asc)
         self.sfe_sort_asc = not self.sfe_sort_asc
-        self.update_sort_btn_labels()
+        self.btn_sort_sfe.setText(f"SFÉ {'▲' if self.sfe_sort_asc else '▼'}")
         self.refresh_list()
 
-    def update_sort_btn_labels(self):
-        if hasattr(self, 'abc_btn') and hasattr(self, 'sfe_btn'):
-            self.abc_btn.config(text=f"ABC {'▲' if self.abc_sort_asc else '▼'}")
-            self.sfe_btn.config(text=f"SFÉ {'▲' if self.sfe_sort_asc else '▼'}")
-
-    def create_widgets(self):
-        main_frame = tk.Frame(self.win)
-        main_frame.pack(fill=tk.BOTH, expand=True)
-
-        # Bal oldali lista
-        list_frame = tk.Frame(main_frame)
-        list_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
-        tk.Label(list_frame, text="Páncélok listája", font=("Arial", 14, "bold")).pack(pady=5)
-        self.listbox = tk.Listbox(list_frame, width=35, height=30)
-        for armor in self.armors:
-            self.listbox.insert(tk.END, f"{armor['name']} (ID: {armor.get('id', '-')})")
-        self.listbox.pack(pady=5)
-        self.listbox.bind('<<ListboxSelect>>', self.on_select)
-
-        tk.Button(list_frame, text="Új páncél", command=self.new_armor).pack(pady=5)
-        tk.Button(list_frame, text="Törlés", command=self.delete_armor).pack(pady=5)
-        # Rendezés gombok (ikonokkal és irányváltással)
-        sort_btn_frame = tk.Frame(list_frame)
-        sort_btn_frame.pack(pady=5)
-        self.abc_btn = tk.Button(sort_btn_frame, text="ABC ▲", command=self.sort_abc)
-        self.abc_btn.pack(side=tk.LEFT, padx=2)
-        self.sfe_btn = tk.Button(sort_btn_frame, text="SFÉ ▼", command=self.sort_sfe)
-        self.sfe_btn.pack(side=tk.LEFT, padx=2)
-
-        # Jobb oldali szerkesztő panel
-        edit_frame = tk.Frame(main_frame)
-        edit_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
-        self.edit_vars = {}
-        row = 0
-        tk.Label(edit_frame, text="Név:").grid(row=row, column=0, sticky="w")
-        self.edit_vars['name'] = tk.StringVar()
-        tk.Entry(edit_frame, textvariable=self.edit_vars['name'], width=40).grid(row=row, column=1, sticky="w")
-        row += 1
-        tk.Label(edit_frame, text="Azonosító:").grid(row=row, column=0, sticky="w")
-        self.edit_vars['id'] = tk.StringVar()
-        tk.Entry(edit_frame, textvariable=self.edit_vars['id'], width=40).grid(row=row, column=1, sticky="w")
-        row += 1
-        # Páncél részegységek (parts) - SFÉ értékekkel
-        from engine.armor_manager import ArmorManager
-        tk.Label(edit_frame, text="Részegységek és SFÉ:", font=("Arial", 11, "bold")).grid(row=row, column=0, sticky="w", pady=5)
-        row += 1
-        self.parts_vars = {}
-        self.parts_sfe_vars = {}
-        # Friss parts lista: felkarvédő, alkarvédő, karvédő helyett
-        parts = [
-            "sisak", "mellvért", "vállvédő", "felkarvédő", "alkarvédő", "kesztyű", "combvédő", "lábszárvédő", "csizma"
-        ]
-        parts_frame = tk.Frame(edit_frame)
-        parts_frame.grid(row=row, column=0, columnspan=3, sticky="w")
-        for i, part in enumerate(parts):
-            var = tk.IntVar()
-            sfe_var = tk.StringVar()
-            self.parts_vars[part] = var
-            self.parts_sfe_vars[part] = sfe_var
-            tk.Checkbutton(parts_frame, text=part, variable=var).grid(row=i, column=0, sticky="w")
-            tk.Label(parts_frame, text="SFÉ:").grid(row=i, column=1, sticky="e")
-            tk.Entry(parts_frame, textvariable=sfe_var, width=6).grid(row=i, column=2, padx=2)
-        row += len(parts)
-        # Protection overrides - interaktív panel
-        from engine.armor_manager import ArmorManager
-        tk.Label(edit_frame, text="SFÉ override-ok (alzónák):", font=("Arial", 11, "bold")).grid(row=row, column=0, sticky="w", pady=5)
-        row += 1
-        self.override_frame = tk.Frame(edit_frame)
-        self.override_frame.grid(row=row, column=0, columnspan=3, sticky="w")
-        self.override_vars = []  # list of dicts: {main, sub, value, widgets}
-
-        # Add override controls
-        self.ov_main_var = tk.StringVar()
-        self.ov_sub_var = tk.StringVar()
-        self.ov_value_var = tk.StringVar()
-        main_zones = list(ArmorManager.MAIN_ZONES.keys())
-        tk.Label(self.override_frame, text="Főzóna:").grid(row=0, column=0)
-        main_menu = tk.OptionMenu(self.override_frame, self.ov_main_var, *main_zones, command=self.update_subzone_menu)
-        main_menu.grid(row=0, column=1)
-        tk.Label(self.override_frame, text="Alzóna:").grid(row=0, column=2)
-        self.subzone_menu = tk.OptionMenu(self.override_frame, self.ov_sub_var, "")
-        self.subzone_menu.grid(row=0, column=3)
-        tk.Label(self.override_frame, text="SFÉ:").grid(row=0, column=4)
-        tk.Entry(self.override_frame, textvariable=self.ov_value_var, width=6).grid(row=0, column=5)
-        tk.Button(self.override_frame, text="Hozzáadás", command=self.add_override).grid(row=0, column=6, padx=5)
-        self.ov_main_var.set(main_zones[0])
-        self.update_subzone_menu(main_zones[0])
-        row += 1
-        # List of current overrides
-        self.ov_list_frame = tk.Frame(edit_frame)
-        self.ov_list_frame.grid(row=row, column=0, columnspan=3, sticky="w")
-        row += 1
-        # ...existing code for MGT, súly, ár, leírás, mentés gomb...
-        for label, key in [("MGT:", "mgt"), ("Súly (kg):", "weight")]:
-            tk.Label(edit_frame, text=label).grid(row=row, column=0, sticky="w")
-            self.edit_vars[key] = tk.StringVar()
-            tk.Entry(edit_frame, textvariable=self.edit_vars[key], width=12).grid(row=row, column=1, sticky="w")
-            row += 1
-        # Ár mezők (currency manager alapján) - egy sorban, egy frame-ben
-        from engine.currency_manager import CurrencyManager
-        tk.Label(edit_frame, text="Ár:").grid(row=row, column=0, sticky="nw")
-        price_frame = tk.Frame(edit_frame)
-        price_frame.grid(row=row, column=1, columnspan=8, sticky="w", pady=2)
-        self.edit_vars['price_réz'] = tk.StringVar()
-        self.edit_vars['price_ezüst'] = tk.StringVar()
-        self.edit_vars['price_arany'] = tk.StringVar()
-        self.edit_vars['price_mithrill'] = tk.StringVar()
-        tk.Label(price_frame, text="réz").grid(row=0, column=0)
-        tk.Entry(price_frame, textvariable=self.edit_vars['price_réz'], width=4).grid(row=0, column=1)
-        tk.Label(price_frame, text="ezüst").grid(row=0, column=2)
-        tk.Entry(price_frame, textvariable=self.edit_vars['price_ezüst'], width=4).grid(row=0, column=3)
-        tk.Label(price_frame, text="arany").grid(row=0, column=4)
-        tk.Entry(price_frame, textvariable=self.edit_vars['price_arany'], width=4).grid(row=0, column=5)
-        tk.Label(price_frame, text="mithrill").grid(row=0, column=6)
-        tk.Entry(price_frame, textvariable=self.edit_vars['price_mithrill'], width=4).grid(row=0, column=7)
-        row += 1
-        tk.Label(edit_frame, text="Leírás:").grid(row=row, column=0, sticky="nw")
-        self.edit_vars['description'] = tk.Text(edit_frame, width=50, height=4)
-        self.edit_vars['description'].grid(row=row, column=1, columnspan=2, sticky="w")
-        row += 1
-
-        tk.Button(edit_frame, text="Mentés", command=self.save_armor).grid(row=row, column=1, pady=15, sticky="w")
-
-    def update_subzone_menu(self, main):
-        from engine.armor_manager import ArmorManager
-        menu = self.subzone_menu["menu"]
-        menu.delete(0, "end")
-        subs = ArmorManager.MAIN_ZONES.get(main, [])
-        if subs:
-            self.ov_sub_var.set(subs[0])
-        else:
-            self.ov_sub_var.set("")
-        for sub in subs:
-            menu.add_command(label=sub, command=lambda value=sub: self.ov_sub_var.set(value))
-
+    # Overrides list management
     def add_override(self):
-        main = self.ov_main_var.get()
-        sub = self.ov_sub_var.get()
-        value = self.ov_value_var.get()
-        if not sub or not value:
-            tk.messagebox.showwarning("Hiba", "Válassz alzónát és adj meg SFÉ értéket!")
+        sub = self.cmb_sub.currentText()
+        if not sub:
+            QMessageBox.warning(self, "Hiba", "Válassz alzónát és adj meg SFÉ értéket!")
             return
-        # Ellenőrizd, hogy már van-e ilyen override
-        for ov in self.override_vars:
-            if ov['sub'] == sub:
-                tk.messagebox.showwarning("Hiba", "Ez az alzóna már szerepel az override-ok között!")
+        # check for duplicates by sub
+        for i in range(self.override_list.count()):
+            it = self.override_list.item(i)
+            data = it.data(Qt.UserRole)
+            if data and data.get('sub') == sub:
+                QMessageBox.warning(self, "Hiba", "Ez az alzóna már szerepel az override-ok között!")
                 return
-        # Hozzáadás
-        ov_dict = {'main': main, 'sub': sub, 'value': int(value)}
-        self.override_vars.append(ov_dict)
-        self.refresh_override_list()
-        self.ov_value_var.set("")
+        item = {
+            'main': self.cmb_main.currentText(),
+            'sub': sub,
+            'value': int(self.spn_override.value())
+        }
+        lw_item = QListWidgetItem(f"{item['sub']} ({item['main']}): {item['value']}")
+        lw_item.setData(Qt.UserRole, item)
+        self.override_list.addItem(lw_item)
 
-    def refresh_override_list(self):
-        for w in getattr(self, 'ov_list_widgets', []):
-            w.destroy()
-        self.ov_list_widgets = []
-        for idx, ov in enumerate(self.override_vars):
-            txt = f"{ov['sub']} ({ov['main']}): {ov['value']}"
-            lbl = tk.Label(self.ov_list_frame, text=txt)
-            lbl.grid(row=idx, column=0, sticky="w")
-            btn = tk.Button(self.ov_list_frame, text="Törlés", command=lambda i=idx: self.delete_override(i))
-            btn.grid(row=idx, column=1, padx=5)
-            self.ov_list_widgets.extend([lbl, btn])
-
-    def delete_override(self, idx):
-        self.override_vars.pop(idx)
-        self.refresh_override_list()
-
-    def on_select(self, event):
-        idxs = self.listbox.curselection()
-        if not idxs:
-            return
-        idx = idxs[0]
-        self.selected_idx = idx
-        armor = self.armors[idx]
-        self.edit_vars['name'].set(armor.get('name', ''))
-        self.edit_vars['id'].set(armor.get('id', ''))
-        # parts mező kitöltése és SFÉ értékek
-        for part in self.parts_vars:
-            # SFÉ érték lekérése, ha nincs, akkor 0
-            sfe_val = 0
-            if part in armor.get('parts', {}):
-                sfe_val = armor['parts'][part]
-            self.parts_sfe_vars[part].set(str(sfe_val))
-            # Tickbox csak akkor checked, ha SFÉ > 0
-            self.parts_vars[part].set(1 if sfe_val > 0 else 0)
-        # overrides: dict -> interactive list
-        overrides = armor.get('protection_overrides', {})
-        self.override_vars = []
+    def _load_overrides_to_ui(self, overrides_dict):
+        self.override_list.clear()
+        # Build from dict of sub->value; infer main by mapping
         from engine.armor_manager import ArmorManager
         for main, subs in ArmorManager.MAIN_ZONES.items():
             for sub in subs:
-                if sub in overrides:
-                    self.override_vars.append({'main': main, 'sub': sub, 'value': overrides[sub]})
-        self.refresh_override_list()
-        self.edit_vars['mgt'].set(str(armor.get('mgt', '')))
-        self.edit_vars['weight'].set(str(armor.get('weight', '')))
-        # Ár felbontása currency managerrel
-        from engine.currency_manager import CurrencyManager
-        price = int(armor.get('price', 0))
-        price_parts = CurrencyManager().from_base(price)
-        self.edit_vars['price_réz'].set(str(price_parts.get('réz', 0)))
-        self.edit_vars['price_ezüst'].set(str(price_parts.get('ezüst', 0)))
-        self.edit_vars['price_arany'].set(str(price_parts.get('arany', 0)))
-        self.edit_vars['price_mithrill'].set(str(price_parts.get('mithrill', 0)))
-        self.edit_vars['description'].delete("1.0", tk.END)
-        self.edit_vars['description'].insert(tk.END, armor.get('description', ''))
+                if sub in overrides_dict:
+                    val = overrides_dict[sub]
+                    lw_item = QListWidgetItem(f"{sub} ({main}): {val}")
+                    lw_item.setData(Qt.UserRole, {'main': main, 'sub': sub, 'value': val})
+                    self.override_list.addItem(lw_item)
+
+    def _overrides_from_ui(self):
+        result = {}
+        for i in range(self.override_list.count()):
+            data = self.override_list.item(i).data(Qt.UserRole)
+            if data:
+                result[data['sub']] = data['value']
+        return result
+
+    def delete_selected_override(self):
+        row = self.override_list.currentRow()
+        if row >= 0:
+            self.override_list.takeItem(row)
+
+    # Selection and data binding
+    def on_select(self, row):
+        if row < 0 or row >= len(self.armors):
+            self.selected_idx = None
+            return
+        self.selected_idx = row
+        armor = self.armors[row]
+        self.inp_name.setText(armor.get('name', ''))
+        self.inp_id.setText(armor.get('id', ''))
+        # parts
+        parts = armor.get('parts', {})
+        for part, chk in self.parts_checks.items():
+            val = int(parts.get(part, 0))
+            chk.setChecked(val > 0)
+            self.parts_sfe[part].setValue(val)
+        # overrides
+        self._load_overrides_to_ui(armor.get('protection_overrides', {}))
+        # mgt, weight
+        try:
+            self.spn_mgt.setValue(int(armor.get('mgt', 0)))
+        except Exception:
+            self.spn_mgt.setValue(0)
+        try:
+            self.spn_weight.setValue(float(armor.get('weight', 0)))
+        except Exception:
+            self.spn_weight.setValue(0.0)
+        # price
+        parts_price = self._price_to_parts(armor.get('price', 0))
+        for curr in ["réz", "ezüst", "arany", "mithrill"]:
+            self.price_spins[curr].setValue(int(parts_price.get(curr, 0)))
+        # description
+        self.txt_desc.setPlainText(armor.get('description', ''))
+
+    def _collect_parts(self):
+        result = {}
+        for part, chk in self.parts_checks.items():
+            if chk.isChecked():
+                result[part] = int(self.parts_sfe[part].value())
+            else:
+                result[part] = 0
+        return result
 
     def save_armor(self):
-        # Gyűjtés
-        from engine.currency_manager import CurrencyManager
-        # Ár összerakása
-        price_total = 0
-        for curr in CurrencyManager.ORDER:
-            val = int(self.edit_vars[f'price_{curr}'].get() or 0)
-            price_total += CurrencyManager().to_base(val, curr)
-        # parts dict: {part: SFÉ} minden parts elemhez, ha nincs tickbox vagy üres SFÉ, akkor 0
-        parts_dict = {}
-        for part, var in self.parts_vars.items():
-            if var.get():
-                try:
-                    sfe_val = int(self.parts_sfe_vars[part].get() or 0)
-                except ValueError:
-                    sfe_val = 0
-                parts_dict[part] = sfe_val
-            else:
-                parts_dict[part] = 0
+        # Build armor dict
         armor = {
-            'name': self.edit_vars['name'].get(),
-            'id': self.edit_vars['id'].get(),
-            'parts': parts_dict,
-            'protection_overrides': {},
-            'mgt': int(self.edit_vars['mgt'].get() or 0),
-            'weight': float(self.edit_vars['weight'].get() or 0),
-            'price': price_total,
-            'description': self.edit_vars['description'].get("1.0", tk.END).strip()
+            'name': self.inp_name.text().strip(),
+            'id': self.inp_id.text().strip(),
+            'parts': self._collect_parts(),
+            'protection_overrides': self._overrides_from_ui(),
+            'mgt': int(self.spn_mgt.value()),
+            'weight': float(self.spn_weight.value()),
+            'price': int(self._parts_to_price()),
+            'description': self.txt_desc.toPlainText().strip(),
         }
-        # override list -> dict
-        for ov in self.override_vars:
-            armor['protection_overrides'][ov['sub']] = ov['value']
-        # Validáció
-        if not self.manager.validate(armor):
-            tk.messagebox.showerror("Hiba", "Hiányzó vagy hibás mező!")
+        if not ArmorJsonManager(ARMOR_JSON).validate(armor):
+            QMessageBox.critical(self, "Hiba", "Hiányzó vagy hibás mező!")
             return
-        # Mentés
         if self.selected_idx is not None:
             self.armors[self.selected_idx] = armor
         else:
             self.armors.append(armor)
+            self.selected_idx = len(self.armors) - 1
         self.manager.save(self.armors)
         self.refresh_list()
-        tk.messagebox.showinfo("Mentés", "Páncél mentve!")
-
-    def refresh_list(self):
-        self.listbox.delete(0, tk.END)
-        for armor in self.armors:
-            self.listbox.insert(tk.END, f"{armor['name']} (ID: {armor.get('id', '-')})")
+        self.listbox.setCurrentRow(self.selected_idx)
+        QMessageBox.information(self, "Mentés", "Páncél mentve!")
 
     def new_armor(self):
         self.selected_idx = None
-        self.edit_vars['name'].set("")
-        self.edit_vars['id'].set("")
-        for part in self.parts_vars:
-            self.parts_vars[part].set(0)
-            self.parts_sfe_vars[part].set("")
-        self.override_vars = []
-        self.refresh_override_list()
-        self.edit_vars['mgt'].set("")
-        self.edit_vars['weight'].set("")
-        self.edit_vars['price_réz'].set("")
-        self.edit_vars['price_ezüst'].set("")
-        self.edit_vars['price_arany'].set("")
-        self.edit_vars['price_mithrill'].set("")
-        self.edit_vars['description'].delete("1.0", tk.END)
+        self.inp_name.clear()
+        self.inp_id.clear()
+        for part in self.parts_checks:
+            self.parts_checks[part].setChecked(False)
+            self.parts_sfe[part].setValue(0)
+        self.override_list.clear()
+        self.spn_mgt.setValue(0)
+        self.spn_weight.setValue(0.0)
+        for curr in ["réz", "ezüst", "arany", "mithrill"]:
+            self.price_spins[curr].setValue(0)
+        self.txt_desc.clear()
 
     def delete_armor(self):
-        idxs = self.listbox.curselection()
-        if not idxs:
-            tk.messagebox.showwarning("Törlés", "Nincs kiválasztva páncél.")
+        row = self.listbox.currentRow()
+        if row < 0:
+            QMessageBox.warning(self, "Törlés", "Nincs kiválasztva páncél.")
             return
-        idx = idxs[0]
-        answer = tk.messagebox.askyesno("Törlés", f"Biztosan törlöd ezt a páncélt?\n{self.armors[idx]['name']}")
-        if answer:
-            self.armors.pop(idx)
+        name = self.armors[row].get('name', '-')
+        answer = QMessageBox.question(self, "Törlés", f"Biztosan törlöd ezt a páncélt?\n{name}")
+        if answer == QMessageBox.Yes:
+            self.armors.pop(row)
             self.manager.save(self.armors)
             self.refresh_list()
+            self.selected_idx = None
+
 
 if __name__ == "__main__":
-    ArmorEditor()
+    import sys
+    import os as _os
+    sys.path.insert(0, _os.path.abspath(_os.path.join(_os.path.dirname(__file__), '..', '..')))
+    from utils.dark_mode import apply_dark_mode
+    app = QApplication(sys.argv)
+    apply_dark_mode(app)
+    w = ArmorEditorQt()
+    w.show()
+    sys.exit(app.exec())

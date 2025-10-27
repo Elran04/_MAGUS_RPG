@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets, QtCore
+from PySide6 import QtWidgets, QtCore
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -7,10 +7,10 @@ from utils.class_db_manager import ClassDBManager
 class ClassEditorQt(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Kaszt szerkesztő (PyQt)")
-        self.resize(600, 500)
+        self.setWindowTitle("Kaszt szerkesztő")
+        self.resize(700, 600)
         # Standard ablakvezérlők (min/max/close)
-        self.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowMinimizeButtonHint | QtCore.Qt.WindowMaximizeButtonHint | QtCore.Qt.WindowCloseButtonHint)
+        self.setWindowFlags(QtCore.Qt.WindowType.Window | QtCore.Qt.WindowType.WindowMinimizeButtonHint | QtCore.Qt.WindowType.WindowMaximizeButtonHint | QtCore.Qt.WindowType.WindowCloseButtonHint)
         self.class_db = ClassDBManager()
         self.init_ui()
         self.load_classes()
@@ -72,8 +72,8 @@ class ClassEditorQt(QtWidgets.QDialog):
             stats_table.setItem(i, 2, QtWidgets.QTableWidgetItem(str(maxv)))
             # Checkbox for double_chance
             chk = QtWidgets.QTableWidgetItem()
-            chk.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-            chk.setCheckState(QtCore.Qt.Checked if double_chance == 1 else QtCore.Qt.Unchecked)
+            chk.setFlags(QtCore.Qt.ItemFlag.ItemIsUserCheckable | QtCore.Qt.ItemFlag.ItemIsEnabled)
+            chk.setCheckState(QtCore.Qt.CheckState.Checked if double_chance == 1 else QtCore.Qt.CheckState.Unchecked)
             stats_table.setItem(i, 3, chk)
         self.details_layout.addRow("Tulajdonságok:", stats_table)
         # Starting currency
@@ -133,7 +133,7 @@ class ClassEditorQt(QtWidgets.QDialog):
                     stat_name = stats_table.item(row, 0).text()
                     min_value = int(stats_table.item(row, 1).text())
                     max_value = int(stats_table.item(row, 2).text())
-                    double_chance = 1 if stats_table.item(row, 3).checkState() == QtCore.Qt.Checked else 0
+                    double_chance = 1 if stats_table.item(row, 3).checkState() == QtCore.Qt.CheckState.Checked else 0
                     cursor.execute(
                         "UPDATE stats SET min_value = ?, max_value = ?, double_chance = ? WHERE class_id = ? AND stat_name = ?",
                         (min_value, max_value, double_chance, self.current_class_id, stat_name)
@@ -151,6 +151,10 @@ class ClassEditorQt(QtWidgets.QDialog):
                 break
 
 if __name__ == "__main__":
+    from utils.dark_mode import apply_dark_mode
+    
     app = QtWidgets.QApplication(sys.argv)
+    apply_dark_mode(app)
+    
     editor = ClassEditorQt()
-    editor.exec_()
+    editor.exec()

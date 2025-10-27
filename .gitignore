@@ -5,6 +5,7 @@ __pycache__/
 venv/
 env/
 .others
+.backups
 project_folderstructure_scanner.py
 *.zip
 *.rar

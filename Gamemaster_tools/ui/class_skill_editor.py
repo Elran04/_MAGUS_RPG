@@ -1,17 +1,28 @@
-import tkinter as tk
-from tkinter import ttk, messagebox
+import os
 import sqlite3
 
+from PySide6.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QLabel, QComboBox, QPushButton, QTreeWidget, QTreeWidgetItem,
+    QTableWidget, QTableWidgetItem, QHeaderView, QDialog, QFormLayout,
+    QLineEdit, QSpinBox, QMessageBox
+)
+from PySide6.QtCore import Qt
+
+# Keep original database paths to avoid changing data access
 DB_CLASS = "d:/_Projekt/_MAGUS_RPG/data/Class/class_data.db"
 DB_SKILL = "d:/_Projekt/_MAGUS_RPG/data/skills/skills_data.db"
 
+
 def get_classes():
     with sqlite3.connect(DB_CLASS) as conn:
-        return conn.execute("SELECT id, name FROM classes").fetchall()
+        return conn.execute("SELECT id, name FROM classes ORDER BY name").fetchall()
+
 
 def get_skills():
     with sqlite3.connect(DB_SKILL) as conn:
         return conn.execute("SELECT id, name, category, subcategory, parameter FROM skills").fetchall()
+
 
 def get_class_skills(class_id, spec_id=None):
     with sqlite3.connect(DB_CLASS) as conn:
@@ -19,6 +30,7 @@ def get_class_skills(class_id, spec_id=None):
             "SELECT skill_id, class_level, skill_level, skill_percent FROM class_skills WHERE class_id=? AND (specialisation_id=? OR specialisation_id IS NULL)",
             (class_id, spec_id)
         ).fetchall()
+
 
 def add_class_skill(class_id, spec_id, class_level, skill_id, skill_level, skill_percent):
     with sqlite3.connect(DB_CLASS) as conn:
@@ -28,6 +40,7 @@ def add_class_skill(class_id, spec_id, class_level, skill_id, skill_level, skill
         )
         conn.commit()
 
+
 def update_class_skill(class_id, spec_id, skill_id, class_level, skill_level, skill_percent):
     with sqlite3.connect(DB_CLASS) as conn:
         conn.execute(
@@ -35,6 +48,7 @@ def update_class_skill(class_id, spec_id, skill_id, class_level, skill_level, sk
             (class_level, skill_level, skill_percent, class_id, spec_id, skill_id)
         )
         conn.commit()
+
 
 def delete_class_skill(class_id, spec_id, skill_id):
     with sqlite3.connect(DB_CLASS) as conn:
@@ -44,9 +58,11 @@ def delete_class_skill(class_id, spec_id, skill_id):
         )
         conn.commit()
 
+
 def ensure_table():
     with sqlite3.connect(DB_CLASS) as conn:
-        conn.execute("""
+        conn.execute(
+            """
         CREATE TABLE IF NOT EXISTS class_skills (
             class_id TEXT,
             specialisation_id TEXT,
@@ -56,214 +72,294 @@ def ensure_table():
             skill_percent INTEGER,
             PRIMARY KEY (class_id, specialisation_id, skill_id)
         )
-        """)
+        """
+        )
         conn.commit()
 
-class ClassSkillEditor(tk.Tk):
+
+class SkillAssignDialogQt(QDialog):
+    def __init__(self, parent, skill_id, skill_name, class_level=None, skill_level=None, skill_percent=None):
+        super().__init__(parent)
+        self.setWindowTitle(f"Képzettség hozzárendelése: {skill_name}")
+        self.setModal(True)
+        self.result_values = None
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        layout.addWidget(QLabel(f"Képzettség: {skill_name} ({skill_id})"))
+
+        form = QFormLayout()
+        layout.addLayout(form)
+
+        self.inp_class_level = QSpinBox()
+        self.inp_class_level.setRange(1, 99)
+        if class_level is not None:
+            try:
+                self.inp_class_level.setValue(int(class_level))
+            except Exception:
+                pass
+        form.addRow("Szint (class_level):", self.inp_class_level)
+
+        self.inp_skill_level = QSpinBox()
+        self.inp_skill_level.setRange(0, 6)
+        self.inp_skill_level.setValue(int(skill_level) if skill_level else 0)
+        form.addRow("Képzettség szint:", self.inp_skill_level)
+
+        self.inp_skill_percent = QSpinBox()
+        self.inp_skill_percent.setRange(0, 100)
+        self.inp_skill_percent.setValue(int(skill_percent) if skill_percent else 0)
+        form.addRow("Képzettség %:", self.inp_skill_percent)
+
+        btns = QHBoxLayout()
+        btn_ok = QPushButton("OK")
+        btn_ok.clicked.connect(self.on_ok)
+        btn_cancel = QPushButton("Mégsem")
+        btn_cancel.clicked.connect(self.reject)
+        btns.addWidget(btn_ok)
+        btns.addWidget(btn_cancel)
+        layout.addLayout(btns)
+
+        self.resize(360, 200)
+
+    def on_ok(self):
+        class_level = self.inp_class_level.value()
+        skill_level = self.inp_skill_level.value()
+        skill_percent = self.inp_skill_percent.value()
+
+        # Only one of skill_level or skill_percent should be set (non-zero)
+        if skill_level and skill_percent:
+            QMessageBox.critical(self, "Hiba", "Csak az egyik mezőt töltsd ki: szint vagy százalék!")
+            return
+
+        self.result_values = (
+            int(class_level),
+            int(skill_level) if skill_level != 0 else None,
+            int(skill_percent) if skill_percent != 0 else None,
+        )
+        self.accept()
+
+
+class ClassSkillEditorQt(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.title("Class Skill Editor")
-        self.geometry("900x500")
+        self.setWindowTitle("Kaszt képzettség szerkesztő")
+        self.resize(1100, 650)
+
         ensure_table()
-        self.create_widgets()
-        self.populate_classes()
-        self.populate_skills()
+
         self.selected_class = None
         self.selected_spec = None
 
-    def create_widgets(self):
-        # Top: class & spec selector
-        top_frame = tk.Frame(self)
-        top_frame.pack(side=tk.TOP, fill=tk.X, padx=8, pady=4)
+        central = QWidget()
+        self.setCentralWidget(central)
+        root = QVBoxLayout()
+        central.setLayout(root)
 
-        tk.Label(top_frame, text="Kaszt:").pack(side=tk.LEFT)
-        self.class_cb = ttk.Combobox(top_frame, state="readonly")
-        self.class_cb.pack(side=tk.LEFT, padx=4)
-        self.class_cb.bind("<<ComboboxSelected>>", self.on_class_selected)
+        # Top controls
+        top = QHBoxLayout()
+        root.addLayout(top)
 
-        tk.Label(top_frame, text="Specializáció:").pack(side=tk.LEFT)
-        self.spec_cb = ttk.Combobox(top_frame, state="readonly", values=["(nincs)", "(placeholder)"])
-        self.spec_cb.pack(side=tk.LEFT, padx=4)
-        self.spec_cb.current(0)
-        self.spec_cb.bind("<<ComboboxSelected>>", self.on_spec_selected)
+        top.addWidget(QLabel("Kaszt:"))
+        self.class_cb = QComboBox()
+        self.class_cb.currentIndexChanged.connect(self.on_class_selected)
+        top.addWidget(self.class_cb)
 
-        # Main layout
-        main_frame = tk.Frame(self)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=4)
+        top.addWidget(QLabel("Specializáció:"))
+        self.spec_cb = QComboBox()
+        self.spec_cb.addItems(["(nincs)", "(placeholder)"])
+        self.spec_cb.currentIndexChanged.connect(self.on_spec_selected)
+        top.addWidget(self.spec_cb)
+        top.addStretch()
 
-        # Left: available skills
-        left_frame = tk.Frame(main_frame)
-        left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        tk.Label(left_frame, text="Elérhető képzettségek").pack()
-        self.skill_tree = ttk.Treeview(left_frame, columns=("skill_id", "skill_name"), show="tree headings")
-        self.skill_tree.heading("#0", text="Kategória / Alkategória")
-        self.skill_tree.heading("skill_id", text="Azonosító")
-        self.skill_tree.heading("skill_name", text="Név")
-        self.skill_tree.pack(fill=tk.BOTH, expand=True)
-        self.skill_tree.bind("<<TreeviewSelect>>", self.on_skill_select)
+        # Main split: left tree (available), right table (assigned)
+        main = QHBoxLayout()
+        root.addLayout(main, stretch=1)
 
-        # Right: assigned skills
-        right_frame = tk.Frame(main_frame)
-        right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
-        tk.Label(right_frame, text="Hozzárendelt képzettségek").pack()
-        self.class_skill_tree = ttk.Treeview(right_frame, columns=("skill_id", "skill_name", "class_level", "skill_level", "skill_percent"), show="headings")
-        for col, txt in zip(self.class_skill_tree["columns"], ["Azonosító", "Név", "Szint", "Képzettség szint", "Képzettség %"]):
-            self.class_skill_tree.heading(col, text=txt)
-        self.class_skill_tree.pack(fill=tk.BOTH, expand=True)
-        self.class_skill_tree.bind("<<TreeviewSelect>>", self.on_class_skill_select)
+        # Left panel
+        left_layout = QVBoxLayout()
+        main.addLayout(left_layout, stretch=1)
+        left_layout.addWidget(QLabel("Elérhető képzettségek"))
+        self.skill_tree = QTreeWidget()
+        self.skill_tree.setColumnCount(3)
+        self.skill_tree.setHeaderLabels(["Kategória / Alkategória", "Azonosító", "Név"])
+        self.skill_tree.header().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.skill_tree.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.skill_tree.header().setSectionResizeMode(2, QHeaderView.Stretch)
+        left_layout.addWidget(self.skill_tree)
 
-        # Bottom: CRUD buttons
-        btn_frame = tk.Frame(self)
-        btn_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=8, pady=4)
-        self.btn_add = tk.Button(btn_frame, text="Hozzáadás", command=self.add_skill)
-        self.btn_add.pack(side=tk.LEFT, padx=4)
-        self.btn_edit = tk.Button(btn_frame, text="Szerkesztés", command=self.edit_skill)
-        self.btn_edit.pack(side=tk.LEFT, padx=4)
-        self.btn_delete = tk.Button(btn_frame, text="Törlés", command=self.delete_skill)
-        self.btn_delete.pack(side=tk.LEFT, padx=4)
+        # Right panel
+        right_layout = QVBoxLayout()
+        main.addLayout(right_layout, stretch=1)
+        right_layout.addWidget(QLabel("Hozzárendelt képzettségek"))
+        self.assigned_table = QTableWidget(0, 5)
+        self.assigned_table.setHorizontalHeaderLabels(["Azonosító", "Név", "Szint", "Képzettség szint", "Képzettség %"])
+        self.assigned_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.assigned_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.assigned_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self.assigned_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        self.assigned_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        right_layout.addWidget(self.assigned_table)
 
+        # Bottom buttons
+        btns = QHBoxLayout()
+        root.addLayout(btns)
+        self.btn_add = QPushButton("Hozzáadás")
+        self.btn_add.clicked.connect(self.add_skill)
+        btns.addWidget(self.btn_add)
+        self.btn_edit = QPushButton("Szerkesztés")
+        self.btn_edit.clicked.connect(self.edit_skill)
+        btns.addWidget(self.btn_edit)
+        self.btn_delete = QPushButton("Törlés")
+        self.btn_delete.clicked.connect(self.delete_skill)
+        btns.addWidget(self.btn_delete)
+        btns.addStretch()
+
+        # Populate data
+        self.populate_classes()
+        self.populate_skills()
+
+    # Data population
     def populate_classes(self):
+        self.class_cb.clear()
         classes = get_classes()
-        self.class_cb["values"] = [f"{cid} - {name}" for cid, name in classes]
+        for cid, name in classes:
+            self.class_cb.addItem(f"{cid} - {name}", userData=cid)
         if classes:
-            self.class_cb.current(0)
+            self.class_cb.setCurrentIndex(0)
             self.on_class_selected()
 
     def populate_skills(self):
-        self.skill_tree.delete(*self.skill_tree.get_children())
+        self.skill_tree.clear()
         skills = get_skills()
-        cats = {}
+        cat_items = {}
+        subcat_items = {}
         for skill_id, skill_name, cat, subcat, parameter in skills:
-            if cat not in cats:
-                cats[cat] = self.skill_tree.insert("", "end", text=cat)
+            if cat not in cat_items:
+                item = QTreeWidgetItem([cat, "", ""])
+                item.setFirstColumnSpanned(True)
+                self.skill_tree.addTopLevelItem(item)
+                cat_items[cat] = item
+            parent = cat_items[cat]
             if subcat:
-                if (cat, subcat) not in cats:
-                    cats[(cat, subcat)] = self.skill_tree.insert(cats[cat], "end", text=subcat)
-                parent = cats[(cat, subcat)]
-            else:
-                parent = cats[cat]
+                key = (cat, subcat)
+                if key not in subcat_items:
+                    sub = QTreeWidgetItem([subcat, "", ""])
+                    sub.setFirstColumnSpanned(True)
+                    parent.addChild(sub)
+                    subcat_items[key] = sub
+                parent = subcat_items[key]
             display_name = f"{skill_name} ({parameter})" if parameter else skill_name
-            self.skill_tree.insert(parent, "end", text="", values=(skill_id, display_name))
-
-    def on_class_selected(self, event=None):
-        sel = self.class_cb.get()
-        if not sel:
-            return
-        self.selected_class = sel.split(" - ")[0]
-        self.populate_class_skills()
-
-    def on_spec_selected(self, event=None):
-        self.selected_spec = self.spec_cb.get()
-        self.populate_class_skills()
+            leaf = QTreeWidgetItem(["", str(skill_id), display_name])
+            leaf.setData(1, Qt.UserRole, str(skill_id))
+            parent.addChild(leaf)
+        self.skill_tree.expandAll()
 
     def populate_class_skills(self):
-        self.class_skill_tree.delete(*self.class_skill_tree.get_children())
-        skills = get_class_skills(self.selected_class, None)
-        for skill_id, class_level, skill_level, skill_percent in skills:
-            # Skill name lookup
+        self.assigned_table.setRowCount(0)
+        if not self.selected_class:
+            return
+        records = get_class_skills(self.selected_class, None)
+        for skill_id, class_level, skill_level, skill_percent in records:
+            # Resolve skill name from skills DB (column names: id, name)
             with sqlite3.connect(DB_SKILL) as conn:
-                res = conn.execute("SELECT skill_name FROM skills WHERE skill_id=?", (skill_id,)).fetchone()
-                skill_name = res[0] if res else ""
-            self.class_skill_tree.insert("", "end", values=(skill_id, skill_name, class_level, skill_level, skill_percent))
+                res = conn.execute("SELECT name, parameter FROM skills WHERE id=?", (skill_id,)).fetchone()
+                if res:
+                    name, param = res
+                    skill_name = f"{name} ({param})" if param else name
+                else:
+                    skill_name = ""
+            row = self.assigned_table.rowCount()
+            self.assigned_table.insertRow(row)
+            self.assigned_table.setItem(row, 0, QTableWidgetItem(str(skill_id)))
+            self.assigned_table.setItem(row, 1, QTableWidgetItem(skill_name))
+            self.assigned_table.setItem(row, 2, QTableWidgetItem(str(class_level if class_level is not None else "")))
+            self.assigned_table.setItem(row, 3, QTableWidgetItem(str(skill_level if skill_level is not None else "")))
+            self.assigned_table.setItem(row, 4, QTableWidgetItem(str(skill_percent if skill_percent is not None else "")))
 
-    def on_skill_select(self, event=None):
-        pass  # Implement if needed for UI feedback
+    # Events
+    def on_class_selected(self):
+        data = self.class_cb.currentData()
+        self.selected_class = data
+        self.populate_class_skills()
 
-    def on_class_skill_select(self, event=None):
-        pass  # Implement if needed for UI feedback
+    def on_spec_selected(self):
+        self.selected_spec = self.spec_cb.currentText()
+        self.populate_class_skills()
+
+    def _selected_skill_from_tree(self):
+        item = self.skill_tree.currentItem()
+        if not item:
+            return None
+        # Must be a leaf with an ID
+        skill_id = item.data(1, Qt.UserRole)
+        if not skill_id:
+            return None
+        skill_name = item.text(2)
+        return str(skill_id), skill_name
+
+    def _selected_assigned_row(self):
+        row = self.assigned_table.currentRow()
+        if row < 0:
+            return None
+        skill_id = self.assigned_table.item(row, 0).text()
+        skill_name = self.assigned_table.item(row, 1).text()
+        class_level = self.assigned_table.item(row, 2).text()
+        skill_level = self.assigned_table.item(row, 3).text()
+        skill_percent = self.assigned_table.item(row, 4).text()
+        return skill_id, skill_name, class_level, skill_level, skill_percent, row
 
     def add_skill(self):
-        sel = self.skill_tree.selection()
+        sel = self._selected_skill_from_tree()
         if not sel:
-            messagebox.showwarning("Nincs kiválasztva", "Válassz ki egy képzettséget!")
+            QMessageBox.warning(self, "Nincs kiválasztva", "Válassz ki egy képzettséget!")
             return
-        item = self.skill_tree.item(sel[0])
-        skill_id = item["values"][0]
-        skill_name = item["values"][1]
-        # Dialog for input
-        dlg = SkillAssignDialog(self, skill_id, skill_name)
-        self.wait_window(dlg)
-        if dlg.result:
-            class_level, skill_level, skill_percent = dlg.result
-            # Csak az egyik lehet kitöltve!
-            if skill_level and skill_percent:
-                messagebox.showerror("Hiba", "Csak az egyik mezőt töltsd ki: szint vagy százalék!")
-                return
+        skill_id, skill_name = sel
+        dlg = SkillAssignDialogQt(self, skill_id, skill_name)
+        if dlg.exec():
+            class_level, skill_level, skill_percent = dlg.result_values
             add_class_skill(self.selected_class, None, class_level, skill_id, skill_level, skill_percent)
             self.populate_class_skills()
 
     def edit_skill(self):
-        sel = self.class_skill_tree.selection()
+        sel = self._selected_assigned_row()
         if not sel:
-            messagebox.showwarning("Nincs kiválasztva", "Válassz ki egy hozzárendelt képzettséget!")
+            QMessageBox.warning(self, "Nincs kiválasztva", "Válassz ki egy hozzárendelt képzettséget!")
             return
-        item = self.class_skill_tree.item(sel[0])
-        skill_id = item["values"][0]
-        skill_name = item["values"][1]
-        class_level = item["values"][2]
-        skill_level = item["values"][3]
-        skill_percent = item["values"][4]
-        dlg = SkillAssignDialog(self, skill_id, skill_name, class_level, skill_level, skill_percent)
-        self.wait_window(dlg)
-        if dlg.result:
-            class_level, skill_level, skill_percent = dlg.result
-            if skill_level and skill_percent:
-                messagebox.showerror("Hiba", "Csak az egyik mezőt töltsd ki: szint vagy százalék!")
-                return
+        skill_id, skill_name, class_level, skill_level, skill_percent, _ = sel
+        # Convert blanks to None
+        cl = int(class_level) if class_level else None
+        sl = int(skill_level) if skill_level else None
+        sp = int(skill_percent) if skill_percent else None
+        dlg = SkillAssignDialogQt(self, skill_id, skill_name, cl, sl, sp)
+        if dlg.exec():
+            class_level, skill_level, skill_percent = dlg.result_values
             update_class_skill(self.selected_class, None, skill_id, class_level, skill_level, skill_percent)
             self.populate_class_skills()
 
     def delete_skill(self):
-        sel = self.class_skill_tree.selection()
+        sel = self._selected_assigned_row()
         if not sel:
-            messagebox.showwarning("Nincs kiválasztva", "Válassz ki egy hozzárendelt képzettséget!")
+            QMessageBox.warning(self, "Nincs kiválasztva", "Válassz ki egy hozzárendelt képzettséget!")
             return
-        item = self.class_skill_tree.item(sel[0])
-        skill_id = item["values"][0]
+        skill_id = sel[0]
         delete_class_skill(self.selected_class, None, skill_id)
         self.populate_class_skills()
 
-class SkillAssignDialog(tk.Toplevel):
-    def __init__(self, master, skill_id, skill_name, class_level=None, skill_level=None, skill_percent=None):
-        super().__init__(master)
-        self.title(f"Képzettség hozzárendelése: {skill_name}")
-        self.result = None
-        tk.Label(self, text=f"Képzettség: {skill_name} ({skill_id})").pack(pady=4)
-        frm = tk.Frame(self)
-        frm.pack(padx=8, pady=4)
-        tk.Label(frm, text="Szint (class_level):").grid(row=0, column=0, sticky="e")
-        self.ent_class_level = tk.Entry(frm)
-        self.ent_class_level.grid(row=0, column=1)
-        if class_level:
-            self.ent_class_level.insert(0, str(class_level))
-        tk.Label(frm, text="Képzettség szint:").grid(row=1, column=0, sticky="e")
-        self.ent_skill_level = tk.Entry(frm)
-        self.ent_skill_level.grid(row=1, column=1)
-        if skill_level:
-            self.ent_skill_level.insert(0, str(skill_level))
-        tk.Label(frm, text="Képzettség %:").grid(row=2, column=0, sticky="e")
-        self.ent_skill_percent = tk.Entry(frm)
-        self.ent_skill_percent.grid(row=2, column=1)
-        if skill_percent:
-            self.ent_skill_percent.insert(0, str(skill_percent))
-        btn_ok = tk.Button(self, text="OK", command=self.on_ok)
-        btn_ok.pack(pady=8)
-        btn_cancel = tk.Button(self, text="Mégsem", command=self.destroy)
-        btn_cancel.pack()
-
-    def on_ok(self):
-        try:
-            class_level = int(self.ent_class_level.get())
-        except ValueError:
-            messagebox.showerror("Hiba", "A szint (class_level) kötelező és számnak kell lennie!")
-            return
-        skill_level = self.ent_skill_level.get()
-        skill_percent = self.ent_skill_percent.get()
-        skill_level = int(skill_level) if skill_level else None
-        skill_percent = int(skill_percent) if skill_percent else None
-        self.result = (class_level, skill_level, skill_percent)
-        self.destroy()
 
 if __name__ == "__main__":
-    app = ClassSkillEditor()
-    app.mainloop()
+    import sys
+    # Make utils importable and apply dark mode
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+    try:
+        from utils.dark_mode import apply_dark_mode
+    except Exception:
+        apply_dark_mode = None
+
+    app = QApplication(sys.argv)
+    if apply_dark_mode:
+        apply_dark_mode(app)
+    win = ClassSkillEditorQt()
+    win.show()
+    sys.exit(app.exec())

@@ -1,175 +1,312 @@
-import tkinter as tk
-from utils.skill_prerequisite_manager import STAT_NAMES
-from utils.reopen_prevention import WindowSingleton
+"""
+Skill Prerequisite Editor - PySide6 version
+Modern tabbed interface for editing skill prerequisites
+"""
+from PySide6.QtWidgets import (
+    QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QTabWidget,
+    QLabel, QLineEdit, QComboBox, QPushButton, QSpinBox, QListWidget,
+    QGroupBox, QMessageBox, QWidget, QScrollArea
+)
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
+import re
 
-class SkillPrerequisiteEditorDialog:
-    def __init__(self, editor):
-        self.editor = editor
-        self.win, created = WindowSingleton.get('prerequisite_editor', lambda: tk.Toplevel(editor.win))
-        if not created:
-            return
-        self.win.title("Előfeltételek szerkesztése")
-        self.win.geometry("1024x768")
-        tk.Label(self.win, text="Itt szerkesztheted az összes szint előfeltételeit (tulajdonságok és képzettségek)", font=("Arial", 12)).pack(pady=10)
-        # Görgethető panel
-        self.canvas = tk.Canvas(self.win, borderwidth=0, background="#f0f0f0")
-        self.scroll_frame = tk.Frame(self.canvas, background="#f0f0f0")
-        self.vsb = tk.Scrollbar(self.win, orient="vertical", command=self.canvas.yview)
-        self.canvas.configure(yscrollcommand=self.vsb.set)
-        self.vsb.pack(side="right", fill="y")
-        self.canvas.pack(side="left", fill="both", expand=True)
-        self.canvas.create_window((0,0), window=self.scroll_frame, anchor="nw")
-        self.scroll_frame.bind("<Configure>", lambda event: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
-        self.prereq_vars = [[] for _ in range(6)]
-        self.stat_frames = []
-        self.skill_frames = []
-        self.frames = []
-        # Betöltjük az aktuális előfeltételeket
-        for idx in range(6):
-            self.prereq_vars[idx] = []
-            for prereq in self.editor.prereq_manager.prereq_vars[idx]:
-                # Mélymásolat, hogy a szerkesztés ne legyen azonnali
-                if prereq["type"] == "stat":
-                    self.prereq_vars[idx].append({
-                        "type": "stat",
-                        "name_var": tk.StringVar(value=prereq["name_var"].get()),
-                        "value_var": tk.StringVar(value=prereq["value_var"].get()),
-                    })
-                elif prereq["type"] == "skill":
-                    self.prereq_vars[idx].append({
-                        "type": "skill",
-                        "name_var": tk.StringVar(value=prereq["name_var"].get()),
-                        "level_var": tk.StringVar(value=prereq["level_var"].get()),
-                        "param_var": tk.StringVar(value=prereq.get("param_var", tk.StringVar()).get()),
-                    })
-        # UI: minden szinthez külön frame, gombok, lista
+# Stat names (tulajdonságok)
+STAT_NAMES = [
+    "Erő", "Állóképesség", "Gyorsaság", "Ügyesség", "Karizma",
+    "Egészség", "Intelligencia", "Akaraterő", "Asztrál", "Érzékelés"
+]
+
+
+class SkillPrerequisiteEditorQt(QDialog):
+    """Modern prerequisite editor for skills"""
+    
+    def __init__(self, parent_editor):
+        # Parent should be the QWidget (the editor window), not the editor object itself
+        super().__init__(parent_editor if hasattr(parent_editor, 'windowTitle') else None)
+        self.parent_editor = parent_editor
+        self.skill_names = parent_editor.skill_names
+        self.prerequisites = parent_editor.current_prerequisites.copy()
+        
+        # Ensure prerequisites has structure for all 6 levels
         for i in range(1, 7):
-            main_frame = tk.LabelFrame(self.scroll_frame, text=f"{i}. szint előfeltételek", padx=10, pady=5)
-            main_frame.pack(fill="x", padx=10, pady=5)
-            btn_row = tk.Frame(main_frame)
-            btn_row.pack(anchor="w")
-            tk.Button(
-                btn_row, text="Tulajdonság hozzáadása",
-                command=lambda idx=i-1: self.add_stat_row(idx)
-            ).pack(side="left", padx=(0,10))
-            tk.Button(
-                btn_row, text="Képzettség hozzáadása",
-                command=lambda idx=i-1: self.add_skill_row(idx)
-            ).pack(side="left", padx=(60,10))
-            stat_frame = tk.Frame(main_frame)
-            stat_frame.pack(side="left", fill="y", padx=5)
-            skill_frame = tk.Frame(main_frame)
-            skill_frame.pack(side="left", fill="y", padx=5)
-            self.stat_frames.append(stat_frame)
-            self.skill_frames.append(skill_frame)
-            self.frames.append(main_frame)
-        self.refresh_all_rows()
-        save_btn = tk.Button(self.scroll_frame, text="Mentés", command=self.save_and_close)
-        save_btn.pack(pady=20)
-
-    def refresh_all_rows(self):
-        for idx in range(6):
-            for w in self.stat_frames[idx].winfo_children():
-                w.destroy()
-            for w in self.skill_frames[idx].winfo_children():
-                w.destroy()
-            for prereq in self.prereq_vars[idx]:
-                if prereq["type"] == "stat":
-                    self.create_stat_row_widget(self.stat_frames[idx], prereq, idx)
-                elif prereq["type"] == "skill":
-                    self.create_skill_row_widget(self.skill_frames[idx], prereq, idx)
-
-    def create_stat_row_widget(self, frame, prereq_dict, level_idx):
-        row = len(frame.winfo_children())
-        stat_var = prereq_dict["name_var"]
-        value_var = prereq_dict["value_var"]
-        stat_menu = tk.OptionMenu(frame, stat_var, *STAT_NAMES)
-        stat_menu.grid(row=row, column=0, padx=(0, 0), sticky="w")
-        entry = tk.Entry(frame, textvariable=value_var, width=5)
-        entry.grid(row=row, column=1, padx=10, sticky="w")
-        def remove():
-            self.prereq_vars[level_idx].remove(prereq_dict)
-            self.refresh_all_rows()
-        btn = tk.Button(frame, text="Törlés", command=remove)
-        btn.grid(row=row, column=2, padx=10, sticky="w")
-
-    def create_skill_row_widget(self, frame, prereq_dict, level_idx):
-        row = len(frame.winfo_children())
-        skill_var = prereq_dict["name_var"]
-        level_var = prereq_dict["level_var"]
-        param_var = prereq_dict.get("param_var", None)
-        def remove():
-            self.prereq_vars[level_idx].remove(prereq_dict)
-            self.refresh_all_rows()
-        # Skill gomb: kattintásra új skill választható
-        def select_new_skill():
-            from ui.skills.dialogs.skill_selector_dialog import SkillSelectorDialog
-            skill_list = self.editor.skill_manager.load()
-            def on_skill_selected(skill):
-                skill_var.set(skill["name"])
-                if param_var is not None:
-                    param_var.set(skill.get("parameter", ""))
-                self.refresh_all_rows()
-            SkillSelectorDialog(self.win, skill_list, on_skill_selected)
-        # Gomb felirata: név (paraméter)
-        display_name = skill_var.get()
-        param_value = param_var.get() if param_var is not None else ""
-        if param_value:
-            display_name = f"{display_name} ({param_value})"
-        skill_btn = tk.Button(frame, text=display_name or "Képzettség kiválasztása", command=select_new_skill, width=28)
-        skill_btn.grid(row=row, column=0, padx=5, sticky="w")
-        # Szint választó OptionMenu
-        level_choices = [str(i) for i in range(1,7)]
-        if level_var.get() not in level_choices:
-            level_var.set(level_choices[0])
-        level_menu = tk.OptionMenu(frame, level_var, *level_choices)
-        level_menu.grid(row=row, column=1, padx=5, sticky="w")
-        # Törlés gomb
-        btn = tk.Button(frame, text="Törlés", command=remove)
-        btn.grid(row=row, column=2, padx=10, sticky="w")
-
-    def add_stat_row(self, level_idx):
-        prereq_dict = {
-            "type": "stat",
-            "name_var": tk.StringVar(value=STAT_NAMES[0]),
-            "value_var": tk.StringVar(),
-        }
-        self.prereq_vars[level_idx].append(prereq_dict)
-        self.refresh_all_rows()
-
-    def add_skill_row(self, level_idx):
-        # SkillSelectorDialog import csak itt, hogy ne legyen körkörös import
-        from ui.skills.dialogs.skill_selector_dialog import SkillSelectorDialog
-        # Skill listát az editor.skill_manager-ből vesszük
-        skill_list = self.editor.skill_manager.load()
-        def on_skill_selected(skill):
-            prereq_dict = {
-                "type": "skill",
-                "name_var": tk.StringVar(value=skill["name"]),
-                "level_var": tk.StringVar(),
-                "param_var": tk.StringVar(value=skill.get("parameter", "")),
-            }
-            self.prereq_vars[level_idx].append(prereq_dict)
-            self.refresh_all_rows()
-        SkillSelectorDialog(self.win, skill_list, on_skill_selected)
-
+            level_key = str(i)
+            if level_key not in self.prerequisites:
+                self.prerequisites[level_key] = {'képesség': [], 'képzettség': []}
+        
+        self.setWindowTitle("Előfeltételek szerkesztése")
+        self.resize(1000, 700)
+        self.setModal(True)
+        
+        self.init_ui()
+        self.load_prerequisites()
+    
+    def init_ui(self):
+        """Initialize the user interface"""
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        
+        # Header
+        header = QLabel("Képzettség előfeltételek szerkesztése")
+        header_font = QFont()
+        header_font.setPointSize(12)
+        header_font.setBold(True)
+        header.setFont(header_font)
+        layout.addWidget(header)
+        
+        # Create tab widget for 6 levels
+        self.tab_widget = QTabWidget()
+        layout.addWidget(self.tab_widget)
+        
+        # Store widgets for each level
+        self.level_widgets = []
+        
+        for i in range(6):
+            level = i + 1
+            tab = self.create_level_tab(level)
+            self.tab_widget.addTab(tab, f"{level}. szint")
+            self.level_widgets.append(tab)
+        
+        # Buttons
+        btn_layout = QHBoxLayout()
+        
+        btn_save = QPushButton("Mentés")
+        btn_save.setMinimumHeight(40)
+        btn_save.clicked.connect(self.save_and_close)
+        btn_layout.addWidget(btn_save)
+        
+        btn_cancel = QPushButton("Mégse")
+        btn_cancel.setMinimumHeight(40)
+        btn_cancel.clicked.connect(self.reject)
+        btn_layout.addWidget(btn_cancel)
+        
+        layout.addLayout(btn_layout)
+    
+    def create_level_tab(self, level):
+        """Create a tab for one skill level"""
+        widget = QWidget()
+        widget.level = level
+        layout = QVBoxLayout()
+        widget.setLayout(layout)
+        
+        # Stat prerequisites section
+        stat_group = QGroupBox("Tulajdonság előfeltételek")
+        stat_layout = QVBoxLayout()
+        stat_group.setLayout(stat_layout)
+        
+        # Stat list
+        widget.stat_list = QListWidget()
+        widget.stat_list.setMaximumHeight(150)
+        stat_layout.addWidget(widget.stat_list)
+        
+        # Add stat controls
+        stat_add_layout = QHBoxLayout()
+        widget.stat_combo = QComboBox()
+        widget.stat_combo.addItems(STAT_NAMES)
+        stat_add_layout.addWidget(QLabel("Tulajdonság:"))
+        stat_add_layout.addWidget(widget.stat_combo)
+        
+        widget.stat_value_spin = QSpinBox()
+        widget.stat_value_spin.setMinimum(1)
+        widget.stat_value_spin.setMaximum(20)
+        widget.stat_value_spin.setValue(10)
+        stat_add_layout.addWidget(QLabel("Minimum érték:"))
+        stat_add_layout.addWidget(widget.stat_value_spin)
+        
+        btn_add_stat = QPushButton("Hozzáadás")
+        btn_add_stat.clicked.connect(lambda checked, w=widget: self.add_stat_prereq(w))
+        stat_add_layout.addWidget(btn_add_stat)
+        
+        btn_remove_stat = QPushButton("Törlés")
+        btn_remove_stat.clicked.connect(lambda checked, w=widget: self.remove_stat_prereq(w))
+        stat_add_layout.addWidget(btn_remove_stat)
+        
+        stat_add_layout.addStretch()
+        stat_layout.addLayout(stat_add_layout)
+        
+        layout.addWidget(stat_group)
+        
+        # Skill prerequisites section
+        skill_group = QGroupBox("Képzettség előfeltételek")
+        skill_layout = QVBoxLayout()
+        skill_group.setLayout(skill_layout)
+        
+        # Skill list
+        widget.skill_list = QListWidget()
+        widget.skill_list.setMaximumHeight(200)
+        skill_layout.addWidget(widget.skill_list)
+        
+        # Add skill controls
+        skill_add_layout = QVBoxLayout()
+        
+        # Row 1: Skill name
+        skill_name_layout = QHBoxLayout()
+        widget.skill_combo = QComboBox()
+        widget.skill_combo.addItems(self.skill_names)
+        widget.skill_combo.setEditable(True)
+        skill_name_layout.addWidget(QLabel("Képzettség:"))
+        skill_name_layout.addWidget(widget.skill_combo)
+        skill_add_layout.addLayout(skill_name_layout)
+        
+        # Row 2: Parameter and level
+        skill_details_layout = QHBoxLayout()
+        widget.skill_param_edit = QLineEdit()
+        widget.skill_param_edit.setPlaceholderText("Paraméter (opcionális, pl. Rövid kardok)")
+        skill_details_layout.addWidget(QLabel("Paraméter:"))
+        skill_details_layout.addWidget(widget.skill_param_edit)
+        
+        widget.skill_level_spin = QSpinBox()
+        widget.skill_level_spin.setMinimum(1)
+        widget.skill_level_spin.setMaximum(6)
+        widget.skill_level_spin.setValue(1)
+        skill_details_layout.addWidget(QLabel("Szint:"))
+        skill_details_layout.addWidget(widget.skill_level_spin)
+        skill_add_layout.addLayout(skill_details_layout)
+        
+        # Row 3: Buttons
+        skill_btn_layout = QHBoxLayout()
+        btn_add_skill = QPushButton("Hozzáadás")
+        btn_add_skill.clicked.connect(lambda checked, w=widget: self.add_skill_prereq(w))
+        skill_btn_layout.addWidget(btn_add_skill)
+        
+        btn_remove_skill = QPushButton("Törlés")
+        btn_remove_skill.clicked.connect(lambda checked, w=widget: self.remove_skill_prereq(w))
+        skill_btn_layout.addWidget(btn_remove_skill)
+        
+        skill_btn_layout.addStretch()
+        skill_add_layout.addLayout(skill_btn_layout)
+        
+        skill_layout.addLayout(skill_add_layout)
+        
+        layout.addWidget(skill_group)
+        layout.addStretch()
+        
+        return widget
+    
+    def add_stat_prereq(self, widget):
+        """Add a stat prerequisite"""
+        stat = widget.stat_combo.currentText()
+        value = widget.stat_value_spin.value()
+        
+        prereq_text = f"{stat} {value}+"
+        
+        # Check if already exists
+        for i in range(widget.stat_list.count()):
+            if widget.stat_list.item(i).text().startswith(stat):
+                QMessageBox.warning(self, "Figyelem", f"{stat} már hozzá van adva!")
+                return
+        
+        widget.stat_list.addItem(prereq_text)
+    
+    def remove_stat_prereq(self, widget):
+        """Remove selected stat prerequisite"""
+        current_item = widget.stat_list.currentItem()
+        if current_item:
+            widget.stat_list.takeItem(widget.stat_list.row(current_item))
+    
+    def add_skill_prereq(self, widget):
+        """Add a skill prerequisite"""
+        skill = widget.skill_combo.currentText().strip()
+        param = widget.skill_param_edit.text().strip()
+        level = widget.skill_level_spin.value()
+        
+        if not skill:
+            QMessageBox.warning(self, "Figyelem", "Válassz ki egy képzettséget!")
+            return
+        
+        # Build display text
+        prereq_text = skill
+        if param:
+            prereq_text += f" ({param})"
+        prereq_text += f" {level}. szint"
+        
+        widget.skill_list.addItem(prereq_text)
+        
+        # Clear param for next entry
+        widget.skill_param_edit.clear()
+    
+    def remove_skill_prereq(self, widget):
+        """Remove selected skill prerequisite"""
+        current_item = widget.skill_list.currentItem()
+        if current_item:
+            widget.skill_list.takeItem(widget.skill_list.row(current_item))
+    
+    def load_prerequisites(self):
+        """Load existing prerequisites into the UI"""
+        for i in range(6):
+            level = i + 1
+            level_key = str(level)
+            widget = self.level_widgets[i]
+            
+            prereqs = self.prerequisites.get(level_key, {'képesség': [], 'képzettség': []})
+            
+            # Load stats
+            for stat_prereq in prereqs.get('képesség', []):
+                widget.stat_list.addItem(stat_prereq)
+            
+            # Load skills
+            for skill_prereq in prereqs.get('képzettség', []):
+                widget.skill_list.addItem(skill_prereq)
+    
     def save_and_close(self):
-        # Visszaírjuk az adatokat az editor.prereq_manager-be
-        for idx in range(6):
-            self.editor.prereq_manager.prereq_vars[idx].clear()
-            for prereq in self.prereq_vars[idx]:
-                if prereq["type"] == "stat":
-                    self.editor.prereq_manager.prereq_vars[idx].append({
-                        "type": "stat",
-                        "name_var": prereq["name_var"],
-                        "value_var": prereq["value_var"],
-                    })
-                elif prereq["type"] == "skill":
-                    self.editor.prereq_manager.prereq_vars[idx].append({
-                        "type": "skill",
-                        "name_var": prereq["name_var"],
-                        "level_var": prereq["level_var"],
-                        "param_var": prereq.get("param_var", tk.StringVar()),
-                    })
-        self.editor.update_prereq_summary()
-        self.win.destroy()
+        """Save prerequisites and close dialog"""
+        # Collect data from all tabs
+        new_prereqs = {}
+        
+        for i in range(6):
+            level = i + 1
+            level_key = str(level)
+            widget = self.level_widgets[i]
+            
+            # Collect stat prerequisites
+            stats = []
+            for j in range(widget.stat_list.count()):
+                stats.append(widget.stat_list.item(j).text())
+            
+            # Collect skill prerequisites
+            skills = []
+            for j in range(widget.skill_list.count()):
+                skills.append(widget.skill_list.item(j).text())
+            
+            new_prereqs[level_key] = {
+                'képesség': stats,
+                'képzettség': skills
+            }
+        
+        # Update parent editor
+        self.parent_editor.current_prerequisites = new_prereqs
+        self.parent_editor.update_prereq_summary()
+        
+        self.accept()
+
+
+if __name__ == "__main__":
+    from PySide6.QtWidgets import QApplication
+    import sys
+    
+    app = QApplication(sys.argv)
+    
+    # Mock parent editor for testing
+    class MockEditor:
+        def __init__(self):
+            self.skill_names = ["Fegyverhasználat", "Lovaglás", "Úszás"]
+            self.current_prerequisites = {
+                '1': {'képesség': ['Ügyesség 10+'], 'képzettség': []},
+                '2': {'képesség': ['Ügyesség 11+'], 'képzettség': ['Fegyverhasználat (Rövid kardok) 1. szint']}
+            }
+        
+        def update_prereq_summary(self):
+            print("Prerequisites updated:", self.current_prerequisites)
+    
+    # Apply dark mode
+    import sys
+    import os
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+    from utils.dark_mode import apply_dark_mode
+    apply_dark_mode(app)
+    
+    mock = MockEditor()
+    editor = SkillPrerequisiteEditorQt(mock)
+    editor.show()
+    
+    sys.exit(app.exec())

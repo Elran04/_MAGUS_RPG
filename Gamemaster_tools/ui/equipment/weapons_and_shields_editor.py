@@ -549,7 +549,12 @@ class WeaponsAndShieldsEditor(QMainWindow):
             self.new_item()
 
 if __name__ == "__main__":
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+    from utils.dark_mode import apply_dark_mode
+    
     app = QApplication(sys.argv)
+    apply_dark_mode(app)
+    
     win = WeaponsAndShieldsEditor()
     win.show()
     sys.exit(app.exec())

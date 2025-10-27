@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets, QtCore
+from PySide6 import QtWidgets, QtCore
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -12,7 +12,7 @@ class CharacterWizardQt(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Karakteralkotás varázsló")
-        self.resize(500, 500)
+        self.resize(600, 600)
         self.class_db = ClassDBManager()
         self.data = {}
         self.step = 0
@@ -193,6 +193,10 @@ class CharacterWizardQt(QtWidgets.QDialog):
 
 if __name__ == "__main__":
     import sys
+    from utils.dark_mode import apply_dark_mode
+    
     app = QtWidgets.QApplication(sys.argv)
+    apply_dark_mode(app)
+    
     wizard = CharacterWizardQt()
-    wizard.exec_()
+    wizard.exec()

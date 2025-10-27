@@ -1,493 +1,683 @@
-import tkinter as tk
-from utils.reopen_prevention import WindowSingleton
-from tkinter import messagebox
+"""
+Skill Editor - PySide6 version with dark mode support
+Modern tabbed interface for M.A.G.U.S. skill management
+"""
+from PySide6.QtWidgets import (
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QFormLayout, QGridLayout,
+    QLabel, QLineEdit, QComboBox, QPushButton, QTextEdit, QSpinBox,
+    QListWidget, QSplitter, QGroupBox, QMessageBox, QTabWidget, QScrollArea
+)
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
+import sys
+import os
+
+# Add parent directory to path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
 from utils.skilldata_manager import SkillManager
-import re
-from ui.skills.skill_prerequisite_editor import SkillPrerequisiteEditorDialog
-from ui.skills.dialogs.skill_loader_dialog import SkillLoaderDialog
-from utils.skill_prerequisite_manager import PrerequisiteManager
+# Note: Legacy Tkinter-based PrerequisiteManager is no longer used
 
 
+# Skill categories
 CATEGORIES = {
     "Harci képzettségek": ["Közkeletű", "Szakértő", "Titkos"],
     "Szociális képzettségek": ["Általános", "Nemesi", "Polgári", "Póri", "Művész"],
     "Alvilági képzettségek": ["Álcázó", "Kommunikációs", "Pénzszerző", "Harci", "Behatoló", "Ellenálló"],
     "Túlélő képzettségek": ["Vadonjáró", "Atlétikai"],
     "Elméleti képzettségek": ["Közkeletű", "Szakértő", "Titkos elméleti", "Titkos szervezeti"],
-    "Helyfoglaló képzettségek": ["Harci képzettségek", "Szociális képzettségek", "Alvilági képzettségek", "Túlélő képzettségek", "Elméleti képzettségek"]
+    "Helyfoglaló képzettségek": ["Harci képzettségek", "Szociális képzettségek", "Alvilági képzettségek", 
+                                  "Túlélő képzettségek", "Elméleti képzettségek"]
 }
+
 ACQ_METHOD_MAP = {1: "Gyakorlás", 2: "Tapasztalás", 3: "Tanulás"}
 ACQ_METHOD_MAP_REV = {v: k for k, v in ACQ_METHOD_MAP.items()}
+
 ACQ_DIFF_MAP = {1: "Egyszerű", 2: "Könnyű", 3: "Közepes", 4: "Nehéz", 5: "Szinte lehetetlen"}
 ACQ_DIFF_MAP_REV = {v: k for k, v in ACQ_DIFF_MAP.items()}
+
 TYPE_MAP = {1: "szint", 2: "%"}
 TYPE_MAP_REV = {v: k for k, v in TYPE_MAP.items()}
 
-GRID_CFG = {
-    "label": {"sticky": "w", "padx": 5, "pady": 2},
-    "entry": {"sticky": "w", "padx": 5, "pady": 2},
-    "optionmenu": {"sticky": "w", "padx": 5, "pady": 2},
-    "text": {"sticky": "w", "padx": 5, "pady": 2},
-    "kp_entry": {"sticky": "w", "padx": 25, "pady": 2},
-}
 
-class SkillEditor():
+class SkillEditorQt(QMainWindow):
+    """Modern skill editor with tabbed interface"""
+    
     def __init__(self):
-
-        self.win, created = WindowSingleton.get('skills_editor', lambda: tk.Toplevel())
-        if not created:
-            return
+        super().__init__()
+        self.setWindowTitle("Képzettség szerkesztő")
+        self.resize(1200, 800)
+        
+        # Initialize skill manager
         self.skill_manager = SkillManager()
-        # Biztonság: ha description_file None, legyen üres string
         self.all_skills = self.skill_manager.load()
-        for s in self.all_skills:
-            if s.get("description_file") is None:
-                s["description_file"] = ""
-        self.SKILL_NAMES = [s["name"] for s in self.all_skills]
-        self.win.title("Képzettség szerkesztő")
-        self.win.geometry("800x600")
-        # --- Scrollable frame setup ---
-        self.canvas = tk.Canvas(self.win, borderwidth=0, background="#f0f0f0", width=1420, height=880)
-        self.scroll_frame = tk.Frame(self.canvas, background="#f0f0f0")
-        self.vsb = tk.Scrollbar(self.win, orient="vertical", command=self.canvas.yview)
-        self.canvas.configure(yscrollcommand=self.vsb.set)
-        self.vsb.pack(side="right", fill="y")
-        self.canvas.pack(side="left", fill="both", expand=True)
-        self.canvas.create_window((0,0), window=self.scroll_frame, anchor="nw")
-        self.scroll_frame.bind("<Configure>", lambda event: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
-        # --- End scrollable frame setup ---
-        self.prereq_manager = PrerequisiteManager(self.scroll_frame, self.SKILL_NAMES, self.all_skills)
-        self.create_widgets()
-        self.win.mainloop()
-
-
-    # Egységes hibakezelő metódusok
-    def show_error(self, message, title="Hiba"):
-        messagebox.showerror(title, message)
-
-    def show_info(self, message, title="Info"):
-        messagebox.showinfo(title, message)
-
-    def show_warning(self, message, title="Figyelem"):
-        messagebox.showwarning(title, message)
-
-    def ask_yes_no(self, message, title="Megerősítés"):
-        return messagebox.askyesno(title, message)
-
-    def create_widgets(self):
-        self._init_vars()
-        self._create_header()
-        self._create_category_selectors()
-        # Leírás szekció eltávolítva, a leírás szerkesztő gombot helyezd át az akciógombokhoz, ha szükséges
-        self._create_acquisition_section()
-        self._create_type_section()
-        self._create_level_sections()
-        self._create_action_buttons()
-
-    def _init_vars(self):
-        if not hasattr(self, "id_var"):
-            self.id_var = tk.StringVar()
-        if not hasattr(self, "name_var"):
-            self.name_var = tk.StringVar()
-        if not hasattr(self, "param_var"):
-            self.param_var = tk.StringVar()
-        if not hasattr(self, "main_cat_var"):
-            self.main_cat_var = tk.StringVar()
-        if not hasattr(self, "sub_cat_var"):
-            self.sub_cat_var = tk.StringVar()
-        if not hasattr(self, "acq_method_var"):
-            self.acq_method_var = tk.StringVar(value=ACQ_METHOD_MAP[1])
-        if not hasattr(self, "acq_diff_var"):
-            self.acq_diff_var = tk.StringVar(value=ACQ_DIFF_MAP[3])
-        if not hasattr(self, "type_var"):
-            self.type_var = tk.StringVar(value=TYPE_MAP[1])
-        if not hasattr(self, "kp_per_3_var"):
-            self.kp_per_3_var = tk.StringVar()
-        if not hasattr(self, "general_desc"):
-            self.general_desc = ""
-        if not hasattr(self, "level_desc_texts") or not self.level_desc_texts:
-            self.level_desc_texts = ["" for _ in range(6)]
-        if not hasattr(self, "kp_cost_vars") or not self.kp_cost_vars:
-            self.kp_cost_vars = [tk.StringVar() for _ in range(6)]
-        if not hasattr(self, "kp_cost_labels") or not self.kp_cost_labels:
-            self.kp_cost_labels = []
-        if not hasattr(self, "kp_cost_entries") or not self.kp_cost_entries:
-            self.kp_cost_entries = []
-
-    def _create_header(self):
-        row = 0
-        # Név
-        tk.Label(self.scroll_frame, text="Név:").grid(row=row, column=0, **GRID_CFG["label"])
-        tk.Entry(self.scroll_frame, textvariable=self.name_var, width=30).grid(row=row, column=1, columnspan=4, **GRID_CFG["entry"])
-        row += 1
-        # Azonosító
-        tk.Label(self.scroll_frame, text="Azonosító:").grid(row=row, column=0, **GRID_CFG["label"])
-        tk.Entry(self.scroll_frame, textvariable=self.id_var, width=30).grid(row=row, column=1, columnspan=4, **GRID_CFG["entry"])
-        row += 1
-        # Paraméter
-        tk.Label(self.scroll_frame, text="Paraméter:").grid(row=row, column=0, **GRID_CFG["label"])
-        tk.Entry(self.scroll_frame, textvariable=self.param_var, width=30).grid(row=row, column=1, columnspan=4, **GRID_CFG["entry"])
-        tk.Label(self.scroll_frame, text="Rövid kardok, Elf nyelv, Dobótőr stb...").grid(row=row, column=2, **GRID_CFG["label"])
-    def _create_category_selectors(self):
-        row = 3
-        tk.Label(self.scroll_frame, text="Főkategória:").grid(row=row, column=0, **GRID_CFG["label"])
-        main_cat_menu = tk.OptionMenu(self.scroll_frame, self.main_cat_var, *CATEGORIES.keys())
-        main_cat_menu.grid(row=row, column=1, **GRID_CFG["optionmenu"])
-        self.main_cat_menu = main_cat_menu
-        self.main_cat_var.set(list(CATEGORIES.keys())[0])
-        row += 1
-        tk.Label(self.scroll_frame, text="Alkategória:").grid(row=row, column=0, **GRID_CFG["label"])
-        self.sub_cat_menu = tk.OptionMenu(self.scroll_frame, self.sub_cat_var, *CATEGORIES[self.main_cat_var.get()])
-        self.sub_cat_menu.grid(row=row, column=1, **GRID_CFG["optionmenu"])
-        self.sub_cat_var.set(CATEGORIES[self.main_cat_var.get()][0])
-        self.main_cat_var.trace_add("write", self._on_main_category_change)
-        self.main_cat_var.trace_add("write", self.update_subcategories)
-
-    def _on_main_category_change(self, *args):
-        selected_main = self.main_cat_var.get()
-        is_placeholder = selected_main == "Helyfoglaló képzettségek"
-        # Elsajátítás módja
-        for child in self.scroll_frame.winfo_children():
-            if isinstance(child, tk.OptionMenu) and child.cget('textvariable') == str(self.acq_method_var):
-                child.configure(state=tk.DISABLED if is_placeholder else tk.NORMAL)
-            if isinstance(child, tk.OptionMenu) and child.cget('textvariable') == str(self.acq_diff_var):
-                child.configure(state=tk.DISABLED if is_placeholder else tk.NORMAL)
-            if isinstance(child, tk.OptionMenu) and child.cget('textvariable') == str(self.type_var):
-                child.configure(state=tk.DISABLED if is_placeholder else tk.NORMAL)
-        # KP/3% mező
-        if hasattr(self, "kp_per_3_label") and hasattr(self, "kp_per_3_entry"):
-            state = tk.DISABLED if is_placeholder else tk.NORMAL
-            self.kp_per_3_label.configure(state=state)
-            self.kp_per_3_entry.configure(state=state)
-        # Szintenkénti KP mezők
-        if hasattr(self, "kp_cost_entries"):
-            for entry in self.kp_cost_entries:
-                entry.configure(state=tk.DISABLED if is_placeholder else tk.NORMAL)
-        if hasattr(self, "kp_cost_labels"):
-            for label in self.kp_cost_labels:
-                label.configure(state=tk.DISABLED if is_placeholder else tk.NORMAL)
-        self._update_editor_buttons_state()
-
-    def _create_acquisition_section(self):
-        row = 5
-        tk.Label(self.scroll_frame, text="Elsajátítás módja:").grid(row=row, column=0, **GRID_CFG["label"])
-        tk.OptionMenu(self.scroll_frame, self.acq_method_var, *ACQ_METHOD_MAP.values()).grid(row=row, column=1, **GRID_CFG["optionmenu"])
-        row += 1
-        tk.Label(self.scroll_frame, text="Elsajátítás nehézsége:").grid(row=row, column=0, **GRID_CFG["label"])
-        tk.OptionMenu(
-            self.scroll_frame, self.acq_diff_var,
-            *ACQ_DIFF_MAP.values()
-        ).grid(row=row, column=1, **GRID_CFG["optionmenu"])
-
-    def _create_type_section(self):
-        row = 7
-        tk.Label(self.scroll_frame, text="Típus:").grid(row=row, column=0, **GRID_CFG["label"])
-        tk.OptionMenu(self.scroll_frame, self.type_var, *TYPE_MAP.values()).grid(row=row, column=1, **GRID_CFG["optionmenu"])
-        self.row_kp_percent = row + 1
-        self.kp_per_3_label = tk.Label(self.scroll_frame, text="KP/3%:")
-        self.kp_per_3_entry = tk.Entry(self.scroll_frame, textvariable=self.kp_per_3_var)
-        if self.type_var.get() == TYPE_MAP[2]:
-            self.kp_per_3_label.grid(row=self.row_kp_percent, column=0, **GRID_CFG["label"])
-            self.kp_per_3_entry.grid(row=self.row_kp_percent, column=1, **GRID_CFG["entry"])
-        self.type_var.trace_add("write", lambda *args: self.update_kp_fields(self.row_kp_percent))
-        self.update_kp_fields(self.row_kp_percent)
-
-    def _create_level_sections(self):
-        row = self.row_kp_percent
-        self.level_frames = []
-        for i in range(1, 7):
-            row += 1
-            level_frame = tk.Frame(self.scroll_frame)
-            level_frame.grid(row=row, column=0, columnspan=5, sticky="w", pady=2)
-            self.level_frames.append(level_frame)
-            kp_label = tk.Label(level_frame, text=f"{i}. szint KP:")
-            kp_label.grid(row=0, column=0, sticky="nw", padx=5)
-            self.kp_cost_labels.append(kp_label)
-            kp_entry = tk.Entry(level_frame, textvariable=self.kp_cost_vars[i-1], width=8)
-            kp_entry.grid(row=0, column=1, sticky="nw", padx=5)
-            self.kp_cost_entries.append(kp_entry)
-            prereq_summary = tk.Label(level_frame, text="", anchor="nw", justify="left", font=("Consolas", 10), fg="#444")
-            prereq_summary.grid(row=0, column=2, sticky="nw", padx=5)
-            if not hasattr(self, "prereq_summary_labels"):
-                self.prereq_summary_labels = []
-            self.prereq_summary_labels.append(prereq_summary)
-        # 6. szint frame tiltása/engedélyezése tickbox alapján (ha már létezik a var)
-        if hasattr(self, "level_six_available_var") and len(self.level_frames) >= 6:
-            state = tk.NORMAL if self.level_six_available_var.get() else tk.DISABLED
-            for widget in self.level_frames[5].winfo_children():
-                try:
-                    widget.configure(state=state)
-                except Exception:
-                    pass
-
-    def _create_action_buttons(self):
-        row = self.row_kp_percent + 7
-        # Tickbox a gombok fölé
-        # 6. szint tickbox és logika eltávolítva
-        row += 1
-        button_frame = tk.Frame(self.scroll_frame)
-        button_frame.grid(row=row, column=0, columnspan=5, pady=20)
-        load_btn = tk.Button(button_frame, text="Szerkesztés", width=18, command=self.open_skill_loader)
-        load_btn.pack(side=tk.LEFT, padx=10)
-        self.prereq_btn = tk.Button(button_frame, text="Előfeltételek szerkesztése", width=22, command=self.open_prerequisite_editor)
-        self.prereq_btn.pack(side=tk.LEFT, padx=10)
-        self.desc_btn = tk.Button(button_frame, text="Leírások szerkesztése", width=22, command=self.open_all_description_editor)
-        self.desc_btn.pack(side=tk.LEFT, padx=10)
-        save_btn = tk.Button(button_frame, text="Mentés", width=18, command=self.save_skill)
-        save_btn.pack(side=tk.LEFT, padx=10)
-        self._update_editor_buttons_state()
-
-    def _update_editor_buttons_state(self):
-        selected_main = self.main_cat_var.get() if hasattr(self, "main_cat_var") else ""
-        is_placeholder = selected_main == "Helyfoglaló képzettségek"
-        if hasattr(self, "prereq_btn"):
-            self.prereq_btn.configure(state=tk.DISABLED if is_placeholder else tk.NORMAL)
-        if hasattr(self, "desc_btn"):
-            self.desc_btn.configure(state=tk.DISABLED if is_placeholder else tk.NORMAL)
-
-    def open_all_description_editor(self):
-        self.open_description_editor()
-
-    def update_subcategories(self, *args):
-        menu = self.sub_cat_menu["menu"]
-        menu.delete(0, 'end')
-        selected_main = self.main_cat_var.get()
-        for sub in CATEGORIES.get(selected_main, []):
-            menu.add_command(label=sub, command=tk._setit(self.sub_cat_var, sub))
-        if CATEGORIES.get(selected_main):
-            self.sub_cat_var.set(CATEGORIES[selected_main][0])
-        else:
-            self.sub_cat_var.set("")
-
-
-
-    def update_prereq_summary(self):
-        """
-        Frissíti a főablakban lévő tömör előfeltétel listákat minden szinthez.
-        """
+        
+        # Ensure description_file is not None
+        for skill in self.all_skills:
+            if skill.get("description_file") is None:
+                skill["description_file"] = ""
+        
+        self.skill_names = [s["name"] for s in self.all_skills]
+        self.current_skill = None
+        self.current_prerequisites = {}
+        
+        # Initialize UI
+        self.init_ui()
+        
+        # Load first skill if available
+        if self.all_skills:
+            self.skill_list.setCurrentRow(0)
+    
+    def init_ui(self):
+        """Initialize the user interface"""
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        
+        # Main layout - horizontal splitter
+        main_layout = QHBoxLayout()
+        central_widget.setLayout(main_layout)
+        
+        # Create splitter for skill list and editor
+        splitter = QSplitter(Qt.Orientation.Horizontal)
+        main_layout.addWidget(splitter)
+        
+        # Left panel - Skill list
+        self.create_skill_list_panel(splitter)
+        
+        # Right panel - Editor
+        self.create_editor_panel(splitter)
+        
+        # Set splitter sizes (30% list, 70% editor)
+        splitter.setSizes([300, 900])
+    
+    def create_skill_list_panel(self, parent):
+        """Create the skill list panel on the left"""
+        list_widget = QWidget()
+        list_layout = QVBoxLayout()
+        list_widget.setLayout(list_layout)
+        
+        # Header
+        header_label = QLabel("Képzettségek")
+        header_font = QFont()
+        header_font.setPointSize(12)
+        header_font.setBold(True)
+        header_label.setFont(header_font)
+        list_layout.addWidget(header_label)
+        
+        # Skill list
+        self.skill_list = QListWidget()
+        self.populate_skill_list()
+        self.skill_list.currentRowChanged.connect(self.on_skill_selected)
+        list_layout.addWidget(self.skill_list)
+        
+        # Action buttons
+        btn_layout = QVBoxLayout()
+        
+        btn_new = QPushButton("Új képzettség")
+        btn_new.clicked.connect(self.new_skill)
+        btn_layout.addWidget(btn_new)
+        
+        btn_duplicate = QPushButton("Képzettség másolása")
+        btn_duplicate.clicked.connect(self.duplicate_skill)
+        btn_layout.addWidget(btn_duplicate)
+        
+        btn_delete = QPushButton("Törlés")
+        btn_delete.clicked.connect(self.delete_skill)
+        btn_layout.addWidget(btn_delete)
+        
+        btn_layout.addStretch()
+        list_layout.addLayout(btn_layout)
+        
+        parent.addWidget(list_widget)
+    
+    def create_editor_panel(self, parent):
+        """Create the editor panel on the right"""
+        editor_widget = QWidget()
+        editor_layout = QVBoxLayout()
+        editor_widget.setLayout(editor_layout)
+        
+        # Create tab widget
+        self.tab_widget = QTabWidget()
+        editor_layout.addWidget(self.tab_widget)
+        
+        # Tab 1: Basic Info
+        self.create_basic_info_tab()
+        
+        # Tab 2: Levels & KP
+        self.create_levels_tab()
+        
+        # Tab 3: Description
+        self.create_description_tab()
+        
+        # Save button
+        btn_save = QPushButton("Mentés")
+        btn_save.setMinimumHeight(40)
+        btn_save.clicked.connect(self.save_skill)
+        editor_layout.addWidget(btn_save)
+        
+        parent.addWidget(editor_widget)
+    
+    def create_basic_info_tab(self):
+        """Create the basic information tab"""
+        tab = QWidget()
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(tab)
+        
+        layout = QFormLayout()
+        tab.setLayout(layout)
+        
+        # Name
+        self.name_edit = QLineEdit()
+        layout.addRow("Név:", self.name_edit)
+        
+        # ID
+        self.id_edit = QLineEdit()
+        layout.addRow("Azonosító:", self.id_edit)
+        
+        # Parameter
+        param_layout = QHBoxLayout()
+        self.param_edit = QLineEdit()
+        param_layout.addWidget(self.param_edit)
+        param_layout.addWidget(QLabel("(pl. Rövid kardok, Elf nyelv, Dobótőr)"))
+        layout.addRow("Paraméter:", param_layout)
+        
+        # Main category
+        self.main_cat_combo = QComboBox()
+        self.main_cat_combo.addItems(CATEGORIES.keys())
+        self.main_cat_combo.currentTextChanged.connect(self.on_main_category_changed)
+        layout.addRow("Főkategória:", self.main_cat_combo)
+        
+        # Sub category
+        self.sub_cat_combo = QComboBox()
+        layout.addRow("Alkategória:", self.sub_cat_combo)
+        
+        # Initialize subcategories for the first main category
+        first_main_cat = list(CATEGORIES.keys())[0]
+        if first_main_cat in CATEGORIES:
+            self.sub_cat_combo.addItems(CATEGORIES[first_main_cat])
+        
+        # Acquisition method
+        self.acq_method_combo = QComboBox()
+        self.acq_method_combo.addItems(ACQ_METHOD_MAP.values())
+        layout.addRow("Elsajátítás módja:", self.acq_method_combo)
+        
+        # Acquisition difficulty
+        self.acq_diff_combo = QComboBox()
+        self.acq_diff_combo.addItems(ACQ_DIFF_MAP.values())
+        layout.addRow("Elsajátítás nehézsége:", self.acq_diff_combo)
+        
+        # Type
+        self.type_combo = QComboBox()
+        self.type_combo.addItems(TYPE_MAP.values())
+        layout.addRow("Típus:", self.type_combo)
+        
+        # KP per 3
+        self.kp_per_3_spin = QSpinBox()
+        self.kp_per_3_spin.setMaximum(999)
+        layout.addRow("KP/3:", self.kp_per_3_spin)
+        
+        # Description file
+        self.desc_file_edit = QLineEdit()
+        layout.addRow("Leírás fájl:", self.desc_file_edit)
+        
+        self.tab_widget.addTab(scroll, "Alapadatok")
+    
+    def create_levels_tab(self):
+        """Create the levels and KP costs tab with prerequisites"""
+        tab = QWidget()
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(tab)
+        
+        layout = QVBoxLayout()
+        tab.setLayout(layout)
+        
+        # Header
+        header = QLabel("Szintek, KP költségek és Előfeltételek")
+        header_font = QFont()
+        header_font.setPointSize(11)
+        header_font.setBold(True)
+        header.setFont(header_font)
+        layout.addWidget(header)
+        
+        # Create grid for levels 1-6
+        grid = QGridLayout()
+        
+        # Headers
+        grid.addWidget(QLabel("Szint"), 0, 0)
+        grid.addWidget(QLabel("KP költség"), 0, 1)
+        grid.addWidget(QLabel("Előfeltételek"), 0, 2)
+        
+        self.kp_cost_spins = []
+        self.prereq_labels = []
+        
         for i in range(6):
-            stat_list = []
-            skill_list = []
-            for prereq in self.prereq_manager.prereq_vars[i]:
-                if prereq["type"] == "stat":
-                    stat = prereq["name_var"].get()
-                    value = prereq["value_var"].get()
-                    if stat and value:
-                        stat_list.append(f"{stat} {value}+")
-                elif prereq["type"] == "skill":
-                    skillname = prereq["name_var"].get()
-                    level = prereq["level_var"].get() if "level_var" in prereq else ""
-                    param = prereq.get("param_var", tk.StringVar()).get() if "param_var" in prereq else ""
-                    # Ha a skillname placeholder, nincs szint, csak név és paraméter
-                    m = re.match(r"(.+?)(?: \((.+?)\))?$", skillname)
-                    base_name = m.group(1) if m else skillname
-                    param_in_name = m.group(2) if m and m.group(2) else ""
-                    if param:
-                        display_text = f"{base_name} ({param})"
-                    elif param_in_name:
-                        display_text = f"{base_name} ({param_in_name})"
-                    else:
-                        display_text = base_name
-                    if skillname:
-                        # Mindig jelenjen meg a szint, ha van (placeholdernél is)
-                        if level:
-                            skill_list.append(f"{display_text} {level}. szint")
-                        else:
-                            skill_list.append(display_text)
-            summary = ""
-            if stat_list:
-                summary += "Tulajdonság: " + ", ".join(stat_list) + "\n"
-            if skill_list:
-                summary += "Képzettség: " + ", ".join(skill_list)
-            self.prereq_summary_labels[i].config(text=summary.strip())
+            level = i + 1
+            
+            # Level label
+            grid.addWidget(QLabel(f"{level}. szint:"), i + 1, 0)
+            
+            # KP cost
+            kp_spin = QSpinBox()
+            kp_spin.setMaximum(9999)
+            kp_spin.setMinimumWidth(80)
+            self.kp_cost_spins.append(kp_spin)
+            grid.addWidget(kp_spin, i + 1, 1)
+            
+            # Prerequisite summary label
+            prereq_label = QLabel("")
+            prereq_label.setWordWrap(True)
+            prereq_label.setStyleSheet("color: #666; font-family: Consolas;")
+            prereq_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+            self.prereq_labels.append(prereq_label)
+            grid.addWidget(prereq_label, i + 1, 2)
+        
+        layout.addLayout(grid)
+        
+        # Button to edit prerequisites
+        btn_prereq = QPushButton("Előfeltételek szerkesztése")
+        btn_prereq.clicked.connect(self.open_prereq_editor)
+        btn_prereq.setMinimumHeight(35)
+        layout.addWidget(btn_prereq)
+        
+        layout.addStretch()
+        
+        self.tab_widget.addTab(scroll, "Szintek & KP")
+    
+    def create_description_tab(self):
+        """Create the description tab"""
+        tab = QWidget()
+        layout = QVBoxLayout()
+        tab.setLayout(layout)
+        
+        # Header
+        header = QLabel("Leírás")
+        header_font = QFont()
+        header_font.setPointSize(11)
+        header_font.setBold(True)
+        header.setFont(header_font)
+        layout.addWidget(header)
+        
+        # Description file info
+        info_label = QLabel("A képzettség részletes leírása külső .md fájlban található.")
+        info_label.setStyleSheet("color: #666; margin: 10px 0;")
+        layout.addWidget(info_label)
+        
+        # Editor area for markdown content
+        self.desc_text_editor = QTextEdit()
+        self.desc_text_editor.setPlaceholderText("Itt szerkesztheted a leírás .md fájl tartalmát…")
+        layout.addWidget(self.desc_text_editor, stretch=1)
 
-    def validate_skill_levels(self, level_kp_dict):
-        if not level_kp_dict:
-            return False, "Nem adtál meg egy szintet sem."
-        valid_levels = sorted(int(lvl) for lvl in level_kp_dict.keys())
-        expected_levels = list(range(1, max(valid_levels) + 1))
-        if valid_levels != expected_levels:
-            return False, f"Hibás szintfelépítés: hiányzó szintek észlelve: {valid_levels}"
-        return True, None
+        # Actions for description
+        desc_btns = QHBoxLayout()
+        btn_save_desc = QPushButton("Leírás mentése (.md)")
+        btn_save_desc.clicked.connect(self.save_description_file)
+        desc_btns.addWidget(btn_save_desc)
 
- 
-    def open_prerequisite_editor(self):
-        SkillPrerequisiteEditorDialog(self)
+        btn_open_desc = QPushButton("Megnyitás külső szerkesztőben")
+        btn_open_desc.clicked.connect(self.open_description_file)
+        desc_btns.addWidget(btn_open_desc)
 
-
-    def save_and_close(self):
-        # Itt kell visszaírni az adatokat az editor.prereq_manager-be
-        self.win.destroy()
-
-    def open_level_description_editor(self, idx):
-        """
-        Megnyit egy új ablakot a szintenkénti leírás szerkesztéséhez (Markdown támogatott).
-        idx: 0-alapú index a szinthez
-        """
-        editor_win = tk.Toplevel(self.win)
-        editor_win.title(f"{idx+1}. szint leírás szerkesztése")
-        editor_win.geometry("800x600")
-        tk.Label(editor_win, text="Használhatsz Markdown szintaxist: **félkövér**, *dőlt*, - lista, stb.").pack(pady=5)
-        desc_text = tk.Text(editor_win, wrap=tk.WORD, font=("Consolas", 12))
-        desc_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        # Betöltjük a jelenlegi leírást (stringből)
-        current_desc = self.level_desc_texts[idx] if idx < len(self.level_desc_texts) else ""
-        desc_text.insert(tk.END, current_desc)
-        def save_and_close():
-            self.level_desc_texts[idx] = desc_text.get("1.0", tk.END).strip()
-            editor_win.destroy()
-        tk.Button(editor_win, text="Mentés", command=save_and_close).pack(pady=10)
-
-    def open_description_editor(self):
-        editor_win = tk.Toplevel(self.win)
-        editor_win.title("Leírás szerkesztése")
-        editor_win.geometry("800x600")
-        tk.Label(editor_win, text="Használhatsz Markdown szintaxist: **félkövér**, *dőlt*, - lista, stb.").pack(pady=5)
-        desc_text = tk.Text(editor_win, wrap=tk.WORD, font=("Consolas", 12))
-        desc_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        desc_text.insert(tk.END, self.general_desc)
-        def save_and_close():
-            self.general_desc = desc_text.get("1.0", tk.END).strip()
-            editor_win.destroy()
-        tk.Button(editor_win, text="Mentés", command=save_and_close).pack(pady=10)
-
-    def update_kp_fields(self, row_kp_percent):
-        if self.type_var.get() == TYPE_MAP[2]:
-            self.kp_per_3_label.grid(row=row_kp_percent, column=0, sticky="w", padx=5, pady=2)
-            self.kp_per_3_entry.grid(row=row_kp_percent, column=1, sticky="w", padx=5, pady=2)
-            # Ne állítsd újra a kp_per_3_var értékét, csak ha skillt töltünk be!
-            for lbl, entry in zip(self.kp_cost_labels, self.kp_cost_entries):
-                lbl.grid_remove()
-                entry.grid_remove()
-        else:
-            self.kp_per_3_label.grid_remove()
-            self.kp_per_3_entry.grid_remove()
-            for lbl, entry in zip(self.kp_cost_labels, self.kp_cost_entries):
-                lbl.grid()
-                entry.grid()
-
-    def save_skill(self):
-        # UI adatok összegyűjtése
-        ui_data = {
-            "id": self.id_var.get().strip(),
-            "name": self.name_var.get(),
-            "main_category": self.main_cat_var.get(),
-            "sub_category": self.sub_cat_var.get(),
-            "description": self.general_desc,
-            "acquisition_method": ACQ_METHOD_MAP_REV.get(self.acq_method_var.get(), 1),
-            "acquisition_difficulty": ACQ_DIFF_MAP_REV.get(self.acq_diff_var.get(), 3),
-            "skill_type": TYPE_MAP_REV.get(self.type_var.get(), 1),
-            "kp_per_3_percent": self.kp_per_3_var.get() if self.type_var.get() == TYPE_MAP[2] else None,
-            "kp_costs": {},
-            "level_descriptions": {},
-            "is_parametric": bool(self.param_var.get().strip()),
-            "parameter": self.param_var.get().strip(),
-        # "level_six_available" mező eltávolítva
-        }
-        # Szintleírások
-        for i, desc_text in enumerate(self.level_desc_texts):
-            desc = desc_text.strip()
-            if desc:
-                ui_data["level_descriptions"][str(i+1)] = desc
-        # KP költségek
-        valid_levels = []
-        if self.type_var.get() != TYPE_MAP[2]:
-            for i, kp_var in enumerate(self.kp_cost_vars):
-                kp = kp_var.get().strip()
-                if kp:
-                    try:
-                        if int(kp) > 0:
-                            ui_data["kp_costs"][str(i+1)] = kp
-                            valid_levels.append(i+1)
-                    except ValueError:
-                        continue
-        # Validáció: csak szint-alapú skilleknél, de ne ellenőrizzük helyfoglaló képzettségnél
-        if ui_data.get("skill_type", 1) == 1 and ui_data.get("main_category", "") != "Helyfoglaló képzettségek":
-            is_valid, err_msg = self.validate_skill_levels(ui_data["kp_costs"])
-            if not is_valid:
-                self.show_error(err_msg)
-                return
-        # Előfeltételek
-        ui_data["prerequisites"] = self.skill_manager.prereq_to_string(self.prereq_manager.prereq_vars)
-
-        # Skill szerializálása
-        skill = self.skill_manager.serialize_skill(ui_data)
-        if not self.skill_manager.validate(skill):
-            self.show_error("Hiányzó vagy hibás mező a képzettségben!")
+        desc_btns.addStretch()
+        layout.addLayout(desc_btns)
+        
+        layout.addStretch()
+        
+        self.tab_widget.addTab(tab, "Leírás")
+    
+    def on_main_category_changed(self, main_category):
+        """Update subcategory combo when main category changes"""
+        # Clear and repopulate subcategory combo
+        self.sub_cat_combo.clear()
+        
+        # Get subcategories for selected main category
+        if main_category in CATEGORIES:
+            subcategories = CATEGORIES[main_category]
+            self.sub_cat_combo.addItems(subcategories)
+            
+            # Disable fields for placeholder category
+            is_placeholder = main_category == "Helyfoglaló képzettségek"
+            self.sub_cat_combo.setEnabled(not is_placeholder)
+            self.acq_method_combo.setEnabled(not is_placeholder)
+            self.acq_diff_combo.setEnabled(not is_placeholder)
+            self.type_combo.setEnabled(not is_placeholder)
+            self.kp_per_3_spin.setEnabled(not is_placeholder)
+    
+    def populate_skill_list(self):
+        """Populate the skill list"""
+        self.skill_list.clear()
+        for skill in self.all_skills:
+            name = skill.get("name", "Névtelen")
+            param = skill.get("parameter", "")
+            display_name = f"{name}" + (f" ({param})" if param else "")
+            self.skill_list.addItem(display_name)
+    
+    def on_skill_selected(self, index):
+        """Handle skill selection from list"""
+        if index < 0 or index >= len(self.all_skills):
             return
-        # Csak az aktuális skillt mentsük, ne az összeset!
-        valid_levels_dict = None
-        if skill.get("skill_type", 1) == 1:
-            valid_levels_dict = {skill.get("id"): valid_levels}
-        self.skill_manager.save([skill], valid_levels_dict=valid_levels_dict)
-        self.show_info("Képzettség mentve!", "Siker")
-
-    def open_skill_loader(self):
-        SkillLoaderDialog(self)
-
-    def load_skill_to_ui(self, skill):
-        """
-        Betölt egy skill dict-et az editor UI-ba, a megfelelő szöveges értékekkel.
-        """
-        self.id_var.set(skill.get("id", ""))
-        self.name_var.set(skill.get("name", ""))
-        self.param_var.set(skill.get("parameter", ""))
-        self.main_cat_var.set(skill.get("main_category", list(CATEGORIES.keys())[0]))
-        self.sub_cat_var.set(skill.get("sub_category", ""))
-        # Map integer to string for enums and recreate OptionMenus
-        acq_method_val = skill.get("acquisition_method", 1)
-        self.acq_method_var.set(ACQ_METHOD_MAP.get(acq_method_val, "Gyakorlás"))
-        self._recreate_optionmenu("acq_method_var", self.acq_method_var, list(ACQ_METHOD_MAP.values()))
-
-        acq_diff_val = skill.get("acquisition_difficulty", 3)
-        self.acq_diff_var.set(ACQ_DIFF_MAP.get(acq_diff_val, "Közepes"))
-        self._recreate_optionmenu("acq_diff_var", self.acq_diff_var, list(ACQ_DIFF_MAP.values()))
-
-        type_val = skill.get("skill_type", 1)
-        self.type_var.set(TYPE_MAP.get(type_val, "szint"))
-        self._recreate_optionmenu("type_var", self.type_var, list(TYPE_MAP.values()))
-        self.kp_per_3_var.set(skill.get("kp_per_3_percent", ""))
-        self.general_desc = skill.get("description", "")
-        # Biztonság: ha description_file None, legyen üres string
-        if skill.get("description_file") is None:
-            skill["description_file"] = ""
-        # 6. szint elérhetőség logika eltávolítva
-        # Szintleírások
-        self.level_desc_texts = [skill.get("level_descriptions", {}).get(str(i+1), "") for i in range(6)]
-        # KP költségek
+        
+        self.current_skill = self.all_skills[index]
+        self.load_skill_to_ui()
+    
+    def load_skill_to_ui(self):
+        """Load current skill data to UI fields"""
+        if not self.current_skill:
+            return
+        
+        skill = self.current_skill
+        
+        # Basic info
+        self.name_edit.setText(skill.get("name", ""))
+        self.id_edit.setText(skill.get("id", ""))
+        self.param_edit.setText(skill.get("parameter", ""))
+        
+        # Categories
+        main_cat = skill.get("main_category", list(CATEGORIES.keys())[0])
+        self.main_cat_combo.setCurrentText(main_cat)
+        
+        sub_cat = skill.get("sub_category", "")
+        if sub_cat:
+            self.sub_cat_combo.setCurrentText(sub_cat)
+        
+        # Acquisition
+        acq_method = skill.get("acquisition_method", 1)
+        self.acq_method_combo.setCurrentText(ACQ_METHOD_MAP.get(acq_method, "Tanulás"))
+        
+        acq_diff = skill.get("acquisition_difficulty", 3)
+        self.acq_diff_combo.setCurrentText(ACQ_DIFF_MAP.get(acq_diff, "Közepes"))
+        
+        # Type
+        skill_type = skill.get("type", 1)
+        self.type_combo.setCurrentText(TYPE_MAP.get(skill_type, "szint"))
+        
+        # KP per 3
+        self.kp_per_3_spin.setValue(skill.get("kp_per_3", 0))
+        
+        # Description file
+        self.desc_file_edit.setText(skill.get("description_file", ""))
+        # Load description content into editor (if available)
+        self.load_description_file(silent=True)
+        
+        # Levels and KP costs
+        kp_costs = skill.get("kp_costs", {})
+        
+        # Handle both dict and list formats
+        if isinstance(kp_costs, dict):
+            kp_list = [kp_costs.get(str(i+1), 0) for i in range(6)]
+        else:
+            kp_list = kp_costs if isinstance(kp_costs, list) else []
+        
         for i in range(6):
-            kp_val = skill.get("kp_costs", {}).get(str(i+1), "")
-            self.kp_cost_vars[i].set(kp_val)
-        # Előfeltételek
-        if hasattr(self, "prereq_manager"):
-            self.prereq_manager.load_from_string(skill.get("prerequisites", ""))
-        self.update_kp_fields(self.row_kp_percent)
+            # KP cost
+            kp = kp_list[i] if i < len(kp_list) else 0
+            if isinstance(kp, (int, float)):
+                self.kp_cost_spins[i].setValue(int(kp))
+            else:
+                self.kp_cost_spins[i].setValue(0)
+        
+        # Prerequisites - load and update summary
+        self.current_prerequisites = skill.get("prerequisites", {})
         self.update_prereq_summary()
-        self._update_editor_buttons_state()
-
-    def _recreate_optionmenu(self, var_name, var, values):
-        """
-        Teljesen újraépíti az OptionMenu-t, hogy a helyes szöveg jelenjen meg.
-        """
-        # Find and destroy the old OptionMenu
-        for child in self.scroll_frame.winfo_children():
-            if isinstance(child, tk.OptionMenu) and child.cget('textvariable') == str(var):
-                child.destroy()
-        # Find the row for this OptionMenu
-        if var_name == "acq_method_var":
-            row = 5
-        elif var_name == "acq_diff_var":
-            row = 6
-        elif var_name == "type_var":
-            row = 7
-        else:
+    
+    def on_main_category_changed(self, category):
+        """Update subcategory combo when main category changes"""
+        self.sub_cat_combo.clear()
+        if category in CATEGORIES:
+            self.sub_cat_combo.addItems(CATEGORIES[category])
+    
+    def update_prereq_summary(self):
+        """Update prerequisite summary labels for all levels"""
+        if not hasattr(self, 'current_prerequisites') or not self.current_prerequisites:
+            # Clear all labels if no prerequisites
+            for label in self.prereq_labels:
+                label.setText("")
             return
-        # Recreate OptionMenu
-        new_menu = tk.OptionMenu(self.scroll_frame, var, *values)
-        new_menu.grid(row=row, column=1, **GRID_CFG["optionmenu"])
+        
+        # Parse prerequisites for each level (1-6)
+        for i in range(6):
+            level_key = str(i + 1)
+            level_prereqs = self.current_prerequisites.get(level_key, {})
+            
+            # Handle the actual format: {'képesség': ['Ügyesség 10+'], 'képzettség': ['Skill 1. szint']}
+            if isinstance(level_prereqs, dict):
+                stat_list = level_prereqs.get('képesség', [])
+                skill_list = level_prereqs.get('képzettség', [])
+                
+                # Build summary text
+                summary = ""
+                if stat_list:
+                    summary += "Tulajdonság: " + ", ".join(stat_list)
+                if skill_list:
+                    if summary:
+                        summary += "\n"
+                    summary += "Képzettség: " + ", ".join(skill_list)
+                
+                self.prereq_labels[i].setText(summary.strip())
+            else:
+                # Old format or empty
+                self.prereq_labels[i].setText("")
+    
+    def open_description_file(self):
+        """Open the description markdown file in the default editor"""
+        if not self.current_skill:
+            QMessageBox.warning(self, "Figyelem", "Nincs kiválasztott képzettség!")
+            return
+        
+        desc_file = self.current_skill.get("description_file", "")
+        if not desc_file:
+            QMessageBox.information(
+                self, "Info", 
+                "Nincs leírás fájl megadva ehhez a képzettséghez."
+            )
+            return
+        
+        import os
+        import subprocess
+        
+        # Build full path - descriptions are in data/skills/descriptions
+        base_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        full_path = os.path.join(base_path, 'data', 'skills', 'descriptions', desc_file)
+        
+        if os.path.exists(full_path):
+            # Open with default editor
+            if os.name == 'nt':  # Windows
+                os.startfile(full_path)
+            else:  # macOS and Linux
+                subprocess.call(['xdg-open', full_path])
+        else:
+            QMessageBox.warning(
+                self, "Hiba",
+                f"A leírás fájl nem található:\n{full_path}"
+            )
 
-    # _refresh_optionmenu removed, replaced by _recreate_optionmenu
+    def _description_full_path(self):
+        """Return absolute path to the current skill's description file under data/skills/descriptions"""
+        if not self.current_skill:
+            return None
+        desc_file = self.current_skill.get("description_file", "") or self.desc_file_edit.text().strip()
+        if not desc_file:
+            return None
+        base_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        return os.path.join(base_path, 'data', 'skills', 'descriptions', desc_file)
 
-# --- Futtatható fő rész ---
+    def load_description_file(self, silent=False):
+        """Load description .md content into the editor area"""
+        path = self._description_full_path()
+        if not path:
+            self.desc_text_editor.clear()
+            if not silent:
+                QMessageBox.information(self, "Info", "Nincs leírás fájlnév megadva. Add meg az Alapadatok fülön.")
+            return
+        if os.path.exists(path):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    self.desc_text_editor.setPlainText(f.read())
+            except Exception as e:
+                self.desc_text_editor.clear()
+                if not silent:
+                    QMessageBox.critical(self, "Hiba", f"Nem sikerült beolvasni a leírást:\n{e}")
+        else:
+            self.desc_text_editor.clear()
+            if not silent:
+                QMessageBox.information(self, "Info", "A leírás fájl nem létezik. Mentéskor létrehozzuk.")
+
+    def save_description_file(self):
+        """Save the editor content to the description .md file (create if missing)"""
+        if not self.current_skill:
+            QMessageBox.warning(self, "Figyelem", "Nincs kiválasztott képzettség!")
+            return
+        # Ensure filename is provided
+        desc_file = self.desc_file_edit.text().strip()
+        if not desc_file:
+            QMessageBox.warning(self, "Figyelem", "Add meg a leírás fájl nevét az Alapadatok fülön (pl. uszas.md)")
+            return
+        # Update current skill's field from UI
+        self.current_skill["description_file"] = desc_file
+        # Resolve path and ensure directory
+        path = self._description_full_path()
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(self.desc_text_editor.toPlainText())
+            QMessageBox.information(self, "Siker", "Leírás elmentve a .md fájlba.")
+        except Exception as e:
+            QMessageBox.critical(self, "Hiba", f"Nem sikerült menteni a leírást:\n{e}")
+    
+    def new_skill(self):
+        """Create a new skill"""
+        new_skill = {
+            "name": "Új képzettség",
+            "id": "new_skill",
+            "parameter": "",
+            "main_category": list(CATEGORIES.keys())[0],
+            "sub_category": CATEGORIES[list(CATEGORIES.keys())[0]][0],
+            "acquisition_method": 3,
+            "acquisition_difficulty": 3,
+            "type": 1,
+            "kp_per_3": 0,
+            "kp_costs": [0] * 8,
+            "level_descriptions": [""] * 6,
+            "description_file": "",
+            "prerequisites": {}
+        }
+        
+        self.all_skills.append(new_skill)
+        self.populate_skill_list()
+        self.skill_list.setCurrentRow(len(self.all_skills) - 1)
+    
+    def duplicate_skill(self):
+        """Duplicate the current skill"""
+        if not self.current_skill:
+            QMessageBox.warning(self, "Figyelem", "Nincs kiválasztott képzettség!")
+            return
+        
+        import copy
+        new_skill = copy.deepcopy(self.current_skill)
+        new_skill["name"] = new_skill["name"] + " (másolat)"
+        new_skill["id"] = new_skill["id"] + "_copy"
+        
+        self.all_skills.append(new_skill)
+        self.populate_skill_list()
+        self.skill_list.setCurrentRow(len(self.all_skills) - 1)
+    
+    def delete_skill(self):
+        """Delete the current skill"""
+        if not self.current_skill:
+            QMessageBox.warning(self, "Figyelem", "Nincs kiválasztott képzettség!")
+            return
+        
+        reply = QMessageBox.question(
+            self, "Megerősítés",
+            f"Biztosan törlöd ezt a képzettséget?\n{self.current_skill.get('name', '')}",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            index = self.skill_list.currentRow()
+            self.all_skills.pop(index)
+            self.populate_skill_list()
+            if self.all_skills:
+                self.skill_list.setCurrentRow(min(index, len(self.all_skills) - 1))
+    
+    def save_skill(self):
+        """Save the current skill"""
+        if not self.current_skill:
+            QMessageBox.warning(self, "Figyelem", "Nincs kiválasztott képzettség!")
+            return
+        
+        # Collect data from UI
+        self.current_skill["name"] = self.name_edit.text()
+        self.current_skill["id"] = self.id_edit.text()
+        self.current_skill["parameter"] = self.param_edit.text()
+        self.current_skill["main_category"] = self.main_cat_combo.currentText()
+        self.current_skill["sub_category"] = self.sub_cat_combo.currentText()
+        
+        # Acquisition
+        self.current_skill["acquisition_method"] = ACQ_METHOD_MAP_REV.get(
+            self.acq_method_combo.currentText(), 3
+        )
+        self.current_skill["acquisition_difficulty"] = ACQ_DIFF_MAP_REV.get(
+            self.acq_diff_combo.currentText(), 3
+        )
+        
+        # Type
+        self.current_skill["type"] = TYPE_MAP_REV.get(self.type_combo.currentText(), 1)
+        
+        # KP per 3
+        self.current_skill["kp_per_3"] = self.kp_per_3_spin.value()
+        
+        # Description file
+        self.current_skill["description_file"] = self.desc_file_edit.text()
+        
+        # Levels - save with string keys to match database format
+        kp_costs = {str(i+1): self.kp_cost_spins[i].value() for i in range(6)}
+        self.current_skill["kp_costs"] = kp_costs
+        
+        # Prerequisites (already stored in current_prerequisites)
+        self.current_skill["prerequisites"] = self.current_prerequisites
+        
+        # Save to database
+        try:
+            self.skill_manager.save(self.all_skills)
+            self.populate_skill_list()
+            QMessageBox.information(self, "Siker", "Képzettség mentve!")
+        except Exception as e:
+            QMessageBox.critical(self, "Hiba", f"Mentési hiba:\n{str(e)}")
+    
+    def open_prereq_editor(self):
+        """Open prerequisite editor dialog"""
+        if not self.current_skill:
+            QMessageBox.warning(self, "Figyelem", "Nincs kiválasztott képzettség!")
+            return
+        
+        # Import and open the PySide6 prerequisite editor
+        try:
+            from ui.skills.skill_prerequisite_editor import SkillPrerequisiteEditorQt
+            editor = SkillPrerequisiteEditorQt(self)
+            if editor.exec():
+                # Dialog was accepted, prerequisites are already updated
+                pass
+        except Exception as e:
+            QMessageBox.critical(
+                self, "Hiba",
+                f"Az előfeltétel szerkesztő nem nyitható meg:\n{str(e)}"
+            )
+
+
 if __name__ == "__main__":
-    editor = SkillEditor()
+    from PySide6.QtWidgets import QApplication
+    import sys
+    
+    # Import dark mode
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+    from utils.dark_mode import apply_dark_mode
+    
+    app = QApplication(sys.argv)
+    apply_dark_mode(app)
+    
+    editor = SkillEditorQt()
+    editor.show()
+    
+    sys.exit(app.exec())
