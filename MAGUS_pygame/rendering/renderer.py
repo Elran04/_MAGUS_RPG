@@ -193,4 +193,4 @@ def draw_hud(screen: pygame.Surface, state: GameState) -> None:
     
     
     # Draw action buttons
-    draw_action_ui(screen, state.ui_state, state.action_mode)
+    draw_action_ui(screen, state.ui_state, state.action_mode, state.active_unit)

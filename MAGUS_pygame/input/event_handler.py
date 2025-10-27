@@ -9,6 +9,7 @@ from actions.action_handling import process_action_ui_click
 from actions.action_movement import compute_reachable, apply_move_if_valid, skip_turn
 from actions.action_attack import compute_attackable, handle_attack_click
 from actions.action_charge import compute_charge_targets, execute_charge_attack
+from actions.action_wield import toggle_wield_mode, can_change_wield_mode
 
 
 def handle_ui_click(state: GameState, ui_result: dict) -> None:
@@ -38,9 +39,28 @@ def handle_ui_click(state: GameState, ui_result: dict) -> None:
             state.reachable_for_active = set()
             state.attackable_for_active = set()
             state.charge_targets = set()
+        elif action == "change_wield":
+            state.action_mode = ActionMode.CHANGE_WIELD
+            state.reachable_for_active = set()
+            state.attackable_for_active = set()
+            state.charge_targets = set()
     elif ui_result["type"] == "select_facing":
         handle_facing_change(state, ui_result["facing"])
+    elif ui_result["type"] == "toggle_wield":
+        handle_wield_change(state)
     # toggle_dropdown is handled automatically by action_handling
+
+
+def handle_wield_change(state: GameState) -> None:
+    """
+    Toggle the active unit's weapon wield mode.
+    """
+    if toggle_wield_mode(state):
+        # If AP depleted, end turn
+        if state.active_unit.current_action_points <= 0:
+            next_turn(state)
+            state.action_mode = ActionMode.MOVE
+            compute_reachable(state)
 
 
 def handle_facing_change(state: GameState, new_facing: int) -> None:
@@ -69,7 +89,7 @@ def handle_facing_change(state: GameState, new_facing: int) -> None:
 def handle_grid_click(state: GameState, q: int, r: int, grid_bounds: Tuple[int, int, int, int]) -> None:
     """
     Process grid click based on action mode.
-    Routes to movement, attack, or charge handlers.
+    Routes to movement, attack, charge, or wield handlers.
     
     Args:
         state: Current game state
@@ -88,11 +108,34 @@ def handle_grid_click(state: GameState, q: int, r: int, grid_bounds: Tuple[int, 
             # Check if clicked hex is a valid charge target
             if (q, r) in state.charge_targets:
                 execute_charge_attack(state, q, r)
+        elif state.action_mode == ActionMode.CHANGE_WIELD:
+            # Any click in change wield mode toggles the wield mode
+            handle_wield_change(state)
 
 
-def handle_right_click(state: GameState) -> None:
-    """Skip current turn without performing any action."""
-    skip_turn(state)
+def handle_right_click(state: GameState, mx: int, my: int) -> None:
+    """
+    Handle right-click: show unit info popup if clicking on unit, close popup if clicking outside.
+    
+    Args:
+        state: Current game state
+        mx, my: Mouse pixel coordinates
+    """
+    # Check if popup is visible and we're clicking outside it
+    if state.unit_info_popup and state.unit_info_popup.visible:
+        if state.unit_info_popup.is_click_outside(mx, my):
+            state.unit_info_popup.hide()
+        return
+    
+    # Check if right-clicking on a unit to show info
+    q, r = pixel_to_hex(mx, my)
+    warrior_pos = state.warrior.get_position()
+    goblin_pos = state.goblin.get_position()
+    
+    if (q, r) == warrior_pos:
+        state.unit_info_popup.show(state.warrior)
+    elif (q, r) == goblin_pos:
+        state.unit_info_popup.show(state.goblin)
 
 
 def process_mouse_click(state: GameState, mx: int, my: int, button: int, grid_bounds: Tuple[int, int, int, int]) -> None:
@@ -106,8 +149,14 @@ def process_mouse_click(state: GameState, mx: int, my: int, button: int, grid_bo
         grid_bounds: (MIN_Q, MAX_Q, MIN_R, MAX_R) boundaries
     """
     if button == 1:  # Left click
+        # If popup is visible, check if clicking outside to close it
+        if state.unit_info_popup and state.unit_info_popup.visible:
+            if state.unit_info_popup.is_click_outside(mx, my):
+                state.unit_info_popup.hide()
+            return
+        
         # Try UI click first
-        ui_result = process_action_ui_click(mx, my, state.ui_state)
+        ui_result = process_action_ui_click(mx, my, state.ui_state, state.active_unit)
         if ui_result:
             handle_ui_click(state, ui_result)
         else:
@@ -115,4 +164,4 @@ def process_mouse_click(state: GameState, mx: int, my: int, button: int, grid_bo
             q, r = pixel_to_hex(mx, my)
             handle_grid_click(state, q, r, grid_bounds)
     elif button == 3:  # Right click
-        handle_right_click(state)
+        handle_right_click(state, mx, my)

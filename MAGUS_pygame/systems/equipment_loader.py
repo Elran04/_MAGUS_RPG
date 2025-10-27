@@ -67,7 +67,10 @@ def get_weapon_combat_stats(weapon_data: Dict[str, Any]) -> Dict[str, Any]:
         Dictionary with combat stats (KE, TE, VE, attack_time, damage, etc.)
     """
     return {
+        "name": weapon_data.get("name", "Unknown Weapon"),
+        "id": weapon_data.get("id", ""),
         "attack_time": weapon_data.get("attack_time", 5),
+        "damage": weapon_data.get("damage", "?"),
         "damage_min": weapon_data.get("damage_min", 1),
         "damage_max": weapon_data.get("damage_max", 6),
         "stp": weapon_data.get("stp", 10),
@@ -82,4 +85,10 @@ def get_weapon_combat_stats(weapon_data: Dict[str, Any]) -> Dict[str, Any]:
         "CE": weapon_data.get("CE", 0),  # For ranged weapons
         "size_category": weapon_data.get("size_category", 1),
         "wield_mode": weapon_data.get("wield_mode", "Egykezes"),
+        "variable_strength_req": weapon_data.get("variable_strength_req", 0),
+        "variable_dex_req": weapon_data.get("variable_dex_req", 0),
+        "variable_dual_wield": weapon_data.get("variable_dual_wield", False),
+        "variable_bonus_KE": weapon_data.get("variable_bonus_KE", 0),
+        "variable_bonus_TE": weapon_data.get("variable_bonus_TE", 0),
+        "variable_bonus_VE": weapon_data.get("variable_bonus_VE", 0),
     }

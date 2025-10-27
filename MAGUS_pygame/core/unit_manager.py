@@ -26,6 +26,10 @@ class Unit:
         self.base_combat = {}  # Base combat values before weapon modifiers
         self.character_data = {}  # Full character JSON data for reference
         
+        # Weapon wielding mode for variable weapons
+        # "1-handed", "2-handed", or None (uses default based on weapon/attributes)
+        self.wielding_mode_preference = None
+        
         # Action points (10 per turn by default, representing 10 seconds)
         self.max_action_points = 10
         self.current_action_points = 10
@@ -61,24 +65,27 @@ class Unit:
 
     @property
     def KE(self) -> int:
-        """Initiative (base + weapon bonus)"""
+        """Initiative (base + weapon bonus + wielding bonus)"""
         base = int(self.combat.get("KÉ", 0))
         weapon_bonus = int(self.weapon.get("KE", 0))
-        return base + weapon_bonus
+        wielding_bonus = self._get_wielding_bonus('KE')
+        return base + weapon_bonus + wielding_bonus
 
     @property
     def TE(self) -> int:
-        """Attack value (base + weapon bonus)"""
+        """Attack value (base + weapon bonus + wielding bonus)"""
         base = int(self.combat.get("TÉ", 0))
         weapon_bonus = int(self.weapon.get("TE", 0))
-        return base + weapon_bonus
+        wielding_bonus = self._get_wielding_bonus('TE')
+        return base + weapon_bonus + wielding_bonus
 
     @property
     def VE(self) -> int:
-        """Defense value (base + weapon bonus)"""
+        """Defense value (base + weapon bonus + wielding bonus)"""
         base = int(self.combat.get("VÉ", 0))
         weapon_bonus = int(self.weapon.get("VE", 0))
-        return base + weapon_bonus
+        wielding_bonus = self._get_wielding_bonus('VE')
+        return base + weapon_bonus + wielding_bonus
 
     @property
     def CE(self) -> int:
@@ -86,6 +93,25 @@ class Unit:
         base = int(self.combat.get("CÉ", 0))
         weapon_bonus = int(self.weapon.get("CE", 0))
         return base + weapon_bonus
+    
+    def _get_wielding_bonus(self, stat: str) -> int:
+        """
+        Get wielding bonus for a combat stat.
+        
+        Args:
+            stat: 'KE', 'TE', or 'VE'
+        
+        Returns:
+            Bonus value from 2-handed wielding of variable weapons
+        """
+        if not self.weapon or self.weapon.get('wield_mode') != 'Változó':
+            return 0
+        
+        # Import here to avoid circular dependency
+        from systems.weapon_wielding import get_wielding_info
+        
+        wield_info = get_wielding_info(self)
+        return wield_info['bonuses'].get(stat, 0)
 
     # Attribute getters (Tulajdonságok)
     @property

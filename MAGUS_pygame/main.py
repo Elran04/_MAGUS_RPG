@@ -10,6 +10,7 @@ from core.game_state import GameState
 from core.game_setup import setup_game
 from input.event_handler import process_mouse_click
 from rendering.renderer import draw_game_screen, draw_victory_screen, draw_hud
+from ui.unit_info_popup import UnitInfoPopup
 
 # Initialize pygame
 pygame.init()
@@ -40,6 +41,9 @@ def main():
         goblin=goblin,
     )
     
+    # Initialize unit info popup
+    state.unit_info_popup = UnitInfoPopup()
+    
 
     # Roll initiative to determine who starts
     roll_initiative(state)
@@ -62,6 +66,13 @@ def main():
             # Skip input processing if game is over
             if state.game_over:
                 continue
+
+            # Handle keyboard input
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    # Space bar skips turn
+                    from actions.action_movement import skip_turn
+                    skip_turn(state)
 
             # Handle mouse clicks
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -126,6 +137,10 @@ def main():
             draw_victory_screen(screen, state)
         else:
             draw_hud(screen, state)
+        
+        # Draw unit info popup if visible
+        if state.unit_info_popup and state.unit_info_popup.visible:
+            state.unit_info_popup.draw(screen)
 
         pygame.display.flip()
         clock.tick(60)

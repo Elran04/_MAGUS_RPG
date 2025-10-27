@@ -41,6 +41,7 @@ class GameState:
 
     # UI and units
     ui_state: Dict[str, object] = field(default_factory=dict)
+    unit_info_popup: object = None  # UnitInfoPopup instance
     warrior: Unit = None
     goblin: Unit = None
 

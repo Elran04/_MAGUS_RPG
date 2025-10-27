@@ -25,6 +25,7 @@ class ActionMode:
     ATTACK = "attack"
     CHANGE_FACING = "change_facing"
     CHARGE = "charge"
+    CHANGE_WIELD = "change_wield"
 
 # --- GAMEPLAY ---
 # Max hexes a unit can move in one action

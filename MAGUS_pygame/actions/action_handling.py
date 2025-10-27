@@ -66,7 +66,7 @@ def setup_action_ui() -> Dict[str, object]:
     dropdown_rect = pygame.Rect(10, HEIGHT - DROPDOWN_H - 10, DROPDOWN_W, DROPDOWN_H)
     ui_font = pygame.font.SysFont(None, 28)
     
-    action_options = ["Move", "Attack", "Charge", "Change Facing"]
+    action_options = ["Move", "Attack", "Charge", "Change Facing", "Change Wield"]
     
     # Facing direction buttons (shown when Change Facing is selected)
     # Arrange in hex pattern around a center point
@@ -102,19 +102,27 @@ def setup_action_ui() -> Dict[str, object]:
 import math
 
 
-def draw_action_ui(screen: pygame.Surface, ui_state: Dict[str, object], action_mode: str):
+def draw_action_ui(screen: pygame.Surface, ui_state: Dict[str, object], action_mode: str, active_unit=None):
     """Draw action dropdown and facing selection UI.
 
     Args:
         screen: pygame screen surface
         ui_state: dict from setup_action_ui
         action_mode: current action mode string
+        active_unit: current active unit (optional, to filter available actions)
     """
     ui_font = ui_state["ui_font"]
     dropdown_rect = ui_state["dropdown_rect"]
     dropdown_open = ui_state["dropdown_open"]
-    action_options = ui_state["action_options"]
     selected_action = ui_state.get("selected_action", "Move")
+    
+    # Filter action options based on active unit's weapon
+    base_options = ["Move", "Attack", "Charge", "Change Facing"]
+    action_options = base_options.copy()
+    
+    # Only show "Change Wield" if unit has a variable weapon
+    if active_unit and active_unit.weapon and active_unit.weapon.get('wield_mode') == 'Változó':
+        action_options.append("Change Wield")
     
     # Draw main dropdown button
     pygame.draw.rect(screen, UI_ACTIVE, dropdown_rect, border_radius=6)
@@ -193,9 +201,14 @@ def draw_action_ui(screen: pygame.Surface, ui_state: Dict[str, object], action_m
             pygame.draw.polygon(screen, UI_TEXT, points)
 
 
-def process_action_ui_click(mx: int, my: int, ui_state: Dict[str, object]) -> Optional[Dict[str, any]]:
+def process_action_ui_click(mx: int, my: int, ui_state: Dict[str, object], active_unit=None) -> Optional[Dict[str, any]]:
     """
     Process click on action UI (dropdown or facing buttons).
+    
+    Args:
+        mx, my: Mouse coordinates
+        ui_state: UI state dictionary
+        active_unit: Current active unit (optional, to filter available actions)
     
     Returns:
         dict with 'type' and relevant data, or None:
@@ -205,7 +218,14 @@ def process_action_ui_click(mx: int, my: int, ui_state: Dict[str, object]) -> Op
     """
     dropdown_rect = ui_state["dropdown_rect"]
     dropdown_open = ui_state["dropdown_open"]
-    action_options = ui_state["action_options"]
+    
+    # Filter action options based on active unit's weapon
+    base_options = ["Move", "Attack", "Charge", "Change Facing"]
+    action_options = base_options.copy()
+    
+    # Only show "Change Wield" if unit has a variable weapon
+    if active_unit and active_unit.weapon and active_unit.weapon.get('wield_mode') == 'Változó':
+        action_options.append("Change Wield")
     
     # Check dropdown button click
     if dropdown_rect.collidepoint(mx, my):
