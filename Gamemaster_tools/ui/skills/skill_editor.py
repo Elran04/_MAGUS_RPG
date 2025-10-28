@@ -19,7 +19,6 @@ from ui.skills.skill_editor_constants import TYPE_MAP_REV
 from ui.skills.skill_editor_list import SkillListPanel
 from ui.skills.skill_editor_tabs import SkillEditorTabs
 from ui.skills.skill_editor_actions import SkillEditorActions
-from ui.skills.skill_prerequisite_editor import SkillPrerequisiteEditorQt
 
 
 
@@ -145,18 +144,6 @@ class SkillEditorQt(QMainWindow):
     def save_description_file(self):
         """Save description file - delegates to actions"""
         self.actions.save_description_file()
-    
-    def open_prereq_editor(self):
-        """Open prerequisite editor dialog"""
-        if not self.current_skill:
-            QMessageBox.warning(self, "Figyelem", "Nincs kiválasztott képzettség!")
-            return
-        
-        # Open the PySide6 prerequisite editor
-        editor = SkillPrerequisiteEditorQt(self)
-        if editor.exec():
-            # Dialog was accepted, prerequisites are already updated
-            pass
 
 
 if __name__ == "__main__":

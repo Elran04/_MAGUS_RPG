@@ -15,12 +15,7 @@ import subprocess
 import re
 
 from .skill_editor_constants import CATEGORIES, ACQ_METHOD_MAP, ACQ_DIFF_MAP, TYPE_MAP
-
-# Stat names for prerequisites
-STAT_NAMES = [
-    "Erő", "Állóképesség", "Gyorsaság", "Ügyesség", "Karizma",
-    "Egészség", "Intelligencia", "Akaraterő", "Asztrál", "Érzékelés"
-]
+from .skill_prerequisite_editor import SkillPrerequisiteEditorWidget
 
 
 class SkillEditorTabs:
@@ -123,195 +118,93 @@ class SkillEditorTabs:
         self.tab_widget.addTab(scroll, "Alapadatok")
     
     def create_levels_tab(self):
-        """Create the levels and KP costs tab with prerequisites"""
+        """Create the Levels & KP tab with a top overview and bottom editor tabs."""
         tab = QWidget()
         main_layout = QVBoxLayout()
         tab.setLayout(main_layout)
-        
-        # Create splitter for top/bottom sections
+
+        # Vertical splitter: top = overview (KP + summaries), bottom = editor tabs
         splitter = QSplitter(Qt.Orientation.Vertical)
-        
-        # Top section: Overview grid (always visible)
+
+        # Top section: Overview with KP per level and quick prerequisite summary labels
         overview_scroll = QScrollArea()
         overview_scroll.setWidgetResizable(True)
+
         overview_widget = QWidget()
         overview_layout = QVBoxLayout()
         overview_widget.setLayout(overview_layout)
-        
-        # Header
-        header = QLabel("Szintek, KP költségek és Előfeltételek")
+
+        header = QLabel("Szintek áttekintése és KP költségek")
         header_font = QFont()
         header_font.setPointSize(11)
         header_font.setBold(True)
         header.setFont(header_font)
         overview_layout.addWidget(header)
-        
-        # Create grid for levels 1-6
+
         grid = QGridLayout()
-        
-        # Headers
         grid.addWidget(QLabel("Szint"), 0, 0)
-        grid.addWidget(QLabel("KP költség"), 0, 1)
-        grid.addWidget(QLabel("Előfeltételek"), 0, 2)
-        
-        # Set column stretch so prerequisites column takes most space
-        grid.setColumnStretch(0, 0)  # Szint - no stretch
-        grid.setColumnStretch(1, 0)  # KP - no stretch
-        grid.setColumnStretch(2, 1)  # Előfeltételek - stretch to fill
-        
+        grid.addWidget(QLabel("KP"), 0, 1)
+        grid.addWidget(QLabel("Előfeltételek összefoglaló"), 0, 2)
+
+        # Keep references for other components
         self.kp_cost_spins = []
         self.prereq_labels = []
-        self.prereq_widgets = []  # Store prerequisite editing widgets for each level
-        
+        self.prereq_widgets = []
+
         for i in range(6):
             level = i + 1
-            
             # Level label
-            grid.addWidget(QLabel(f"{level}. szint:"), i + 1, 0)
-            
-            # KP cost
+            grid.addWidget(QLabel(f"{level}."), i + 1, 0)
+
+            # KP spin per level
             kp_spin = QSpinBox()
-            kp_spin.setMaximum(9999)
-            kp_spin.setMinimumWidth(80)
+            kp_spin.setMaximum(999)
             self.kp_cost_spins.append(kp_spin)
             grid.addWidget(kp_spin, i + 1, 1)
-            
-            # Prerequisite summary label
-            prereq_label = QLabel()
-            prereq_label.setWordWrap(True)
-            prereq_label.setMinimumHeight(40)
-            prereq_label.setMinimumWidth(300)
-            prereq_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
-            prereq_label.setStyleSheet("QLabel { background-color: #2a2a2a; color: #ffffff; padding: 5px; border: 1px solid #767676; }")
-            prereq_label.setText("")  # Initialize with empty text
-            self.prereq_labels.append(prereq_label)
-            grid.addWidget(prereq_label, i + 1, 2)
-        
+
+            # Prerequisite summary label per level
+            lbl = QLabel("")
+            lbl.setWordWrap(True)
+            lbl.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+            # Dark-mode friendly: transparent background, palette-driven text
+            lbl.setStyleSheet("QLabel { background: transparent; color: palette(text); }")
+            lbl.setMinimumHeight(40)
+            self.prereq_labels.append(lbl)
+            grid.addWidget(lbl, i + 1, 2)
+
+        # Make summary column expand
+        grid.setColumnStretch(2, 1)
         overview_layout.addLayout(grid)
         overview_layout.addStretch()
+
         overview_scroll.setWidget(overview_widget)
-        
         splitter.addWidget(overview_scroll)
-        
+
         # Bottom section: Nested tab widget for prerequisite editing
         self.levels_tab_widget = QTabWidget()
-        
-        # Create prerequisite editor tabs for each level
+
         for i in range(6):
             level = i + 1
             prereq_widget = self.create_prereq_editor(level)
             self.prereq_widgets.append(prereq_widget)
             self.levels_tab_widget.addTab(prereq_widget, f"{level}. szint előfeltételei")
-        
+
         splitter.addWidget(self.levels_tab_widget)
 
         # Set splitter ratio: 60% top, 40% bottom
         splitter.setSizes([600, 400])
         
         main_layout.addWidget(splitter)
-        
+
         self.tab_widget.addTab(tab, "Szintek & KP")
     
     def create_prereq_editor(self, level):
-        """Create prerequisite editor for a specific level as a tab"""
-        tab = QWidget()
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        
-        widget = QWidget()
-        widget.level = level
-        scroll.setWidget(widget)
-        
-        main_layout = QVBoxLayout()
-        tab.setLayout(main_layout)
-        main_layout.addWidget(scroll)
-        
-        layout = QHBoxLayout()
-        widget.setLayout(layout)
-        
-        # Stat prerequisites column
-        stat_col = QVBoxLayout()
-        stat_col.addWidget(QLabel("<b>Tulajdonság előfeltételek:</b>"))
-        
-        widget.stat_list = QListWidget()
-        widget.stat_list.setMinimumHeight(200)
-        stat_col.addWidget(widget.stat_list)
-        
-        stat_controls = QHBoxLayout()
-        widget.stat_combo = QComboBox()
-        widget.stat_combo.addItems(STAT_NAMES)
-        widget.stat_combo.setMaximumWidth(120)
-        stat_controls.addWidget(widget.stat_combo)
-        
-        widget.stat_value_spin = QSpinBox()
-        widget.stat_value_spin.setMinimum(1)
-        widget.stat_value_spin.setMaximum(20)
-        widget.stat_value_spin.setValue(10)
-        widget.stat_value_spin.setMaximumWidth(60)
-        stat_controls.addWidget(widget.stat_value_spin)
-        
-        btn_add_stat = QPushButton("+")
-        btn_add_stat.setMaximumWidth(30)
-        btn_add_stat.clicked.connect(lambda: self.add_stat_prereq(widget))
-        stat_controls.addWidget(btn_add_stat)
-        
-        btn_remove_stat = QPushButton("-")
-        btn_remove_stat.setMaximumWidth(30)
-        btn_remove_stat.clicked.connect(lambda: self.remove_stat_prereq(widget))
-        stat_controls.addWidget(btn_remove_stat)
-        
-        stat_col.addLayout(stat_controls)
-        layout.addLayout(stat_col)
-        
-        # Skill prerequisites column
-        skill_col = QVBoxLayout()
-        skill_col.addWidget(QLabel("<b>Képzettség előfeltételek:</b>"))
-        
-        widget.skill_list = QListWidget()
-        widget.skill_list.setMinimumHeight(200)
-        skill_col.addWidget(widget.skill_list)
-        
-        skill_controls = QHBoxLayout()
-        widget.skill_combo = QComboBox()
-        widget.skill_combo.addItems(self.parent.skill_names)
-        widget.skill_combo.setEditable(True)
-        completer = QCompleter(self.parent.skill_names)
-        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
-        completer.setFilterMode(Qt.MatchFlag.MatchContains)
-        widget.skill_combo.setCompleter(completer)
-        skill_controls.addWidget(widget.skill_combo)
-        
-        widget.skill_level_spin = QSpinBox()
-        widget.skill_level_spin.setMinimum(1)
-        widget.skill_level_spin.setMaximum(6)
-        widget.skill_level_spin.setValue(1)
-        widget.skill_level_spin.setMaximumWidth(50)
-        skill_controls.addWidget(QLabel("szint"))
-        skill_controls.addWidget(widget.skill_level_spin)
-        
-        btn_add_skill = QPushButton("+")
-        btn_add_skill.setMaximumWidth(30)
-        btn_add_skill.clicked.connect(lambda: self.add_skill_prereq(widget))
-        skill_controls.addWidget(btn_add_skill)
-        
-        btn_remove_skill = QPushButton("-")
-        btn_remove_skill.setMaximumWidth(30)
-        btn_remove_skill.clicked.connect(lambda: self.remove_skill_prereq(widget))
-        skill_controls.addWidget(btn_remove_skill)
-        
-        skill_col.addLayout(skill_controls)
-        layout.addLayout(skill_col)
-        
-        # Store references to list widgets on the tab for easy access
-        tab.stat_list = widget.stat_list
-        tab.skill_list = widget.skill_list
-        tab.stat_combo = widget.stat_combo
-        tab.stat_value_spin = widget.stat_value_spin
-        tab.skill_combo = widget.skill_combo
-        tab.skill_level_spin = widget.skill_level_spin
-        tab.level = level
-        
-        return tab
+           """
+           Create prerequisite editor for a specific level using the reusable widget component.
+           Delegates to SkillPrerequisiteEditorWidget from skill_prerequisite_editor module.
+           """
+           widget = SkillPrerequisiteEditorWidget(level, self.parent.skill_names)
+           return widget
     
     def load_prereq_for_level(self, level):
         """Load prerequisites for a specific level into the editor"""
@@ -319,67 +212,37 @@ class SkillEditorTabs:
         level_key = str(level)
         prereqs = self.parent.current_prerequisites.get(level_key, {'képesség': [], 'képzettség': []})
         
-        # Load stat prerequisites
-        widget.stat_list.clear()
-        for stat_req in prereqs.get('képesség', []):
-            widget.stat_list.addItem(stat_req)
-        
-        # Load skill prerequisites
-        widget.skill_list.clear()
-        for skill_req in prereqs.get('képzettség', []):
-            widget.skill_list.addItem(skill_req)
+        # Use the widget's API to load prerequisites
+        if hasattr(widget, 'load_prerequisites'):
+            widget.load_prerequisites(prereqs)
+        else:
+            # Fallback for older widget structure
+            widget.stat_list.clear()
+            for stat_req in prereqs.get('képesség', []):
+                widget.stat_list.addItem(stat_req)
+            widget.skill_list.clear()
+            for skill_req in prereqs.get('képzettség', []):
+                widget.skill_list.addItem(skill_req)
     
     def add_stat_prereq(self, widget):
-        """Add a stat prerequisite"""
-        stat = widget.stat_combo.currentText()
-        value = widget.stat_value_spin.value()
-        text = f"{stat} {value}+"
-        widget.stat_list.addItem(text)
-        self.save_prereq_from_widget(widget)
+        """(Deprecated) No longer used; widget handles add/remove internally."""
+        pass
     
     def remove_stat_prereq(self, widget):
-        """Remove selected stat prerequisite"""
-        current = widget.stat_list.currentRow()
-        if current >= 0:
-            widget.stat_list.takeItem(current)
-            self.save_prereq_from_widget(widget)
+        """(Deprecated) No longer used; widget handles add/remove internally."""
+        pass
     
     def add_skill_prereq(self, widget):
-        """Add a skill prerequisite"""
-        skill = widget.skill_combo.currentText()
-        level = widget.skill_level_spin.value()
-        text = f"{skill} {level}. szint"
-        widget.skill_list.addItem(text)
-        self.save_prereq_from_widget(widget)
+        """(Deprecated) No longer used; widget handles add/remove internally."""
+        pass
     
     def remove_skill_prereq(self, widget):
-        """Remove selected skill prerequisite"""
-        current = widget.skill_list.currentRow()
-        if current >= 0:
-            widget.skill_list.takeItem(current)
-            self.save_prereq_from_widget(widget)
+        """(Deprecated) No longer used; widget handles add/remove internally."""
+        pass
     
     def save_prereq_from_widget(self, widget):
-        """Save prerequisites from widget back to parent's current_prerequisites"""
-        level = widget.level
-        level_key = str(level)
-        
-        # Collect stat prerequisites
-        stat_prereqs = []
-        for i in range(widget.stat_list.count()):
-            stat_prereqs.append(widget.stat_list.item(i).text())
-        
-        # Collect skill prerequisites
-        skill_prereqs = []
-        for i in range(widget.skill_list.count()):
-            skill_prereqs.append(widget.skill_list.item(i).text())
-        
-        # Update parent's prerequisites
-        if level_key not in self.parent.current_prerequisites:
-            self.parent.current_prerequisites[level_key] = {}
-        
-        self.parent.current_prerequisites[level_key]['képesség'] = stat_prereqs
-        self.parent.current_prerequisites[level_key]['képzettség'] = skill_prereqs
+        """(Deprecated) No longer used; state is read on save from widgets."""
+        pass
     
     def create_description_tab(self):
         """Create the description tab"""

@@ -135,8 +135,34 @@ class SkillEditorActions:
             kp_costs = {str(i + 1): tabs.kp_cost_spins[i].value() for i in range(6)}
             self.parent.current_skill["kp_costs"] = kp_costs
         
-        # Prerequisites (already stored in current_prerequisites)
+        # Prerequisites – sync from inline editor widgets into current_prerequisites first
+        if hasattr(self.parent.tabs, 'prereq_widgets') and self.parent.tabs.prereq_widgets:
+            new_prereqs = {}
+            for i in range(6):
+                level = i + 1
+                level_key = str(level)
+                if i < len(self.parent.tabs.prereq_widgets):
+                    w = self.parent.tabs.prereq_widgets[i]
+                    if hasattr(w, 'get_prerequisites'):
+                        new_prereqs[level_key] = w.get_prerequisites()
+                    else:
+                        # Fallback: read directly from list widgets
+                        stats = []
+                        skills = []
+                        for j in range(w.stat_list.count()):
+                            stats.append(w.stat_list.item(j).text())
+                        for j in range(w.skill_list.count()):
+                            skills.append(w.skill_list.item(j).text())
+                        new_prereqs[level_key] = {
+                            'képesség': stats,
+                            'képzettség': skills
+                        }
+            self.parent.current_prerequisites = new_prereqs
+
+        # Prerequisites (use synced current_prerequisites)
         self.parent.current_skill["prerequisites"] = self.parent.current_prerequisites
+        # Refresh quick summaries in the UI so the top overview reflects latest edits
+        self.parent.update_prereq_summary()
         
         # Validate before save
         try:
