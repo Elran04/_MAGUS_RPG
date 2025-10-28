@@ -137,13 +137,108 @@ class CharacterWizardQt(QtWidgets.QDialog):
         return True
 
     def show_specialization(self):
+        # Load specializations for selected class
+        selected_class_id = None
+        for class_id, class_name in self.class_db.list_classes():
+            if class_name == self.data.get("Kaszt"):
+                selected_class_id = class_id
+                break
+        
+        self.selected_class_id = selected_class_id  # Store for base class description loading
+        self.specializations = ["Nincs"]
+        self.spec_data = {}  # Map spec name to spec data
+        if selected_class_id:
+            try:
+                specs = self.class_db.list_specialisations(selected_class_id)
+                for spec in specs:
+                    spec_name = spec["specialisation_name"]
+                    self.specializations.append(spec_name)
+                    self.spec_data[spec_name] = spec
+            except Exception:
+                pass
+        
         self.spec_combo = QtWidgets.QComboBox()
         self.spec_combo.addItems(self.specializations)
-        self.spec_desc = QtWidgets.QTextEdit()
+        self.spec_combo.currentTextChanged.connect(self.load_specialization_description)
+        
+        # Use QTextBrowser for markdown rendering
+        self.spec_desc = QtWidgets.QTextBrowser()
+        self.spec_desc.setOpenExternalLinks(False)
+        self.spec_desc.setPlaceholderText("Válassz egy specializációt a leírás megtekintéséhez...")
+        
         self.step_layout.addWidget(QtWidgets.QLabel("Specializáció:"))
         self.step_layout.addWidget(self.spec_combo)
         self.step_layout.addWidget(QtWidgets.QLabel("Leírás:"))
         self.step_layout.addWidget(self.spec_desc)
+        
+        # Load initial description if default selection is not "Nincs"
+        self.load_specialization_description(self.spec_combo.currentText())
+    
+    def load_specialization_description(self, spec_name):
+        """Load specialization description from .md file"""
+        if spec_name == "Nincs" or not spec_name:
+            # Load base class description instead
+            self.load_base_class_description()
+            return
+        
+        spec_info = self.spec_data.get(spec_name)
+        if not spec_info:
+            self.spec_desc.clear()
+            return
+        
+        desc_file = spec_info.get("specialisation_description", "")
+        if not desc_file:
+            self.spec_desc.setPlainText("Nincs leírás fájl megadva ehhez a specializációhoz.")
+            return
+        
+        # Build path to description file: data/Class/descriptions/
+        # __file__ is at Gamemaster_tools/ui/character_creator.py
+        base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        desc_path = os.path.join(base_path, 'data', 'Class', 'descriptions', desc_file)
+        
+        if os.path.exists(desc_path):
+            try:
+                with open(desc_path, 'r', encoding='utf-8') as f:
+                    markdown_content = f.read()
+                    # Render as markdown
+                    self.spec_desc.setMarkdown(markdown_content)
+            except Exception as e:
+                self.spec_desc.setPlainText(f"Hiba a leírás betöltésekor:\n{e}")
+        else:
+            self.spec_desc.setPlainText(f"A leírás fájl nem található:\n{desc_file}")
+    
+    def load_base_class_description(self):
+        """Load base class description when no specialization is selected"""
+        if not self.selected_class_id:
+            self.spec_desc.clear()
+            self.spec_desc.setPlaceholderText("Nincs kaszt kiválasztva.")
+            return
+        
+        # Get class details including description filename
+        try:
+            class_details = self.class_db.get_class_details(self.selected_class_id)
+            desc_file = class_details.get("class_description_file", "")
+            
+            if not desc_file:
+                # Fallback: try using class_id.md
+                desc_file = f"{self.selected_class_id}.md"
+            
+            # Build path to description file: data/Class/descriptions/
+            base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+            desc_path = os.path.join(base_path, 'data', 'Class', 'descriptions', desc_file)
+            
+            if os.path.exists(desc_path):
+                try:
+                    with open(desc_path, 'r', encoding='utf-8') as f:
+                        markdown_content = f.read()
+                        # Render as markdown
+                        self.spec_desc.setMarkdown(markdown_content)
+                except Exception as e:
+                    self.spec_desc.setPlainText(f"Hiba a leírás betöltésekor:\n{e}")
+            else:
+                self.spec_desc.setPlainText(f"Nincs leírás fájl a {self.data.get('Kaszt')} kaszthoz.\n(Keresett fájl: {desc_file})")
+        except Exception as e:
+            self.spec_desc.setPlainText(f"Hiba a kaszt részletek betöltésekor:\n{e}")
 
     def show_skills(self):
         self.step_layout.addWidget(QtWidgets.QLabel("Képzettségek szerkesztése (később)"))
