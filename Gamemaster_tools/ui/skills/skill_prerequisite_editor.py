@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QWidget, QScrollArea, QCompleter
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
+ 
 
 # Stat names (tulajdonságok)
 STAT_NAMES = [
@@ -120,6 +120,25 @@ class SkillPrerequisiteEditorWidget(QWidget):
         layout.addLayout(skill_col)
         
         main_layout.addWidget(scroll)
+
+    def set_skill_names(self, skill_names):
+        """Update the available skill names for the skill prerequisite combo and completer."""
+        # Preserve current edit text to avoid disrupting in-progress typing
+        current_text = self.skill_combo.currentText().strip()
+        self.skill_names = list(skill_names) if isinstance(skill_names, (list, tuple)) else []
+        self.skill_combo.blockSignals(True)
+        try:
+            self.skill_combo.clear()
+            self.skill_combo.addItems(self.skill_names)
+            self.skill_combo.setEditable(True)
+            completer = QCompleter(self.skill_names)
+            completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+            completer.setFilterMode(Qt.MatchFlag.MatchContains)
+            self.skill_combo.setCompleter(completer)
+            if current_text:
+                self.skill_combo.setEditText(current_text)
+        finally:
+            self.skill_combo.blockSignals(False)
     
     def add_stat_prereq(self):
         """Add a stat prerequisite"""

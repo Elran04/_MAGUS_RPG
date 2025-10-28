@@ -5,14 +5,10 @@ Handles creation of all editor tabs (Basic Info, Levels & KP, Description)
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFormLayout, QGridLayout,
     QLabel, QLineEdit, QComboBox, QPushButton, QTextEdit, QSpinBox,
-    QScrollArea, QListWidget, QGroupBox, QCompleter, QTabWidget, QSplitter
+    QScrollArea, QTabWidget, QSplitter
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
-import sys
-import os
-import subprocess
-import re
 
 from .skill_editor_constants import CATEGORIES, ACQ_METHOD_MAP, ACQ_DIFF_MAP, TYPE_MAP
 from .skill_prerequisite_editor import SkillPrerequisiteEditorWidget
@@ -205,6 +201,14 @@ class SkillEditorTabs:
            """
            widget = SkillPrerequisiteEditorWidget(level, self.parent.skill_names)
            return widget
+
+    def update_prereq_skill_names(self, skill_names):
+        """Propagate updated skill name list to all per-level prerequisite editor widgets."""
+        if not hasattr(self, 'prereq_widgets'):
+            return
+        for w in self.prereq_widgets:
+            if hasattr(w, 'set_skill_names'):
+                w.set_skill_names(skill_names)
     
     def load_prereq_for_level(self, level):
         """Load prerequisites for a specific level into the editor"""
@@ -224,25 +228,7 @@ class SkillEditorTabs:
             for skill_req in prereqs.get('képzettség', []):
                 widget.skill_list.addItem(skill_req)
     
-    def add_stat_prereq(self, widget):
-        """(Deprecated) No longer used; widget handles add/remove internally."""
-        pass
-    
-    def remove_stat_prereq(self, widget):
-        """(Deprecated) No longer used; widget handles add/remove internally."""
-        pass
-    
-    def add_skill_prereq(self, widget):
-        """(Deprecated) No longer used; widget handles add/remove internally."""
-        pass
-    
-    def remove_skill_prereq(self, widget):
-        """(Deprecated) No longer used; widget handles add/remove internally."""
-        pass
-    
-    def save_prereq_from_widget(self, widget):
-        """(Deprecated) No longer used; state is read on save from widgets."""
-        pass
+    # Deprecated helper methods removed – the embedded widget handles interactions
     
     def create_description_tab(self):
         """Create the description tab"""

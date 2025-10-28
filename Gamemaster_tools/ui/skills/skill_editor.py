@@ -5,7 +5,7 @@ Refactored into modular components for better maintainability
 """
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QPushButton, QSplitter,
-    QTabWidget, QMessageBox, QVBoxLayout
+    QTabWidget, QVBoxLayout
 )
 from PySide6.QtCore import Qt
 import sys
@@ -28,7 +28,7 @@ class SkillEditorQt(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Képzettség szerkesztő")
-        self.resize(1400, 900)  # Increased window size for better visibility
+        self.resize(1400, 900)  
         
         # Initialize skill manager
         self.skill_manager = SkillManager()
@@ -106,6 +106,9 @@ class SkillEditorQt(QMainWindow):
         
         # Initialize tabs
         self.tabs = SkillEditorTabs(tab_widget, self)
+        # Live-update prereq editor skill names as the user edits name/parameter
+        self.tabs.name_edit.textChanged.connect(self.on_basic_info_changed)
+        self.tabs.param_edit.textChanged.connect(self.on_basic_info_changed)
         
         # Save button
         btn_save = QPushButton("Mentés")
@@ -136,6 +139,28 @@ class SkillEditorQt(QMainWindow):
     def update_prereq_summary(self):
         """Update prerequisite summary labels - delegates to actions"""
         self.actions.update_prereq_summary()
+
+    def on_basic_info_changed(self):
+        """Rebuild the list of displayable skill names and propagate to prereq editors.
+        Includes the current unsaved name/parameter so self-referencing is possible immediately.
+        """
+        names = []
+        for s in self.all_skills:
+            # Use live UI values for the current skill to allow self-referencing before save
+            if self.current_skill is not None and s is self.current_skill:
+                name = self.tabs.name_edit.text().strip()
+                param = self.tabs.param_edit.text().strip()
+            else:
+                name = s.get("name", "")
+                param = s.get("parameter", "")
+            display = f"{name} ({param})" if param else name
+            if display:
+                names.append(display)
+        # Update cached names
+        self.skill_names = names
+        # Push into all per-level prerequisite editor widgets
+        if hasattr(self.tabs, 'update_prereq_skill_names'):
+            self.tabs.update_prereq_skill_names(self.skill_names)
     
     def open_description_file(self):
         """Open description file - delegates to actions"""
