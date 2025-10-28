@@ -212,42 +212,57 @@ class SkillEditorActions:
             else:
                 tabs.kp_cost_spins[i].setValue(0)
         
-        # Prerequisites - load and update summary
+        # Prerequisites - load and update summary labels
         self.parent.current_prerequisites = skill.get("prerequisites", {})
         self.update_prereq_summary()
     
     def update_prereq_summary(self):
         """Update prerequisite summary labels for all levels"""
         tabs = self.parent.tabs
-        if not hasattr(self.parent, 'current_prerequisites') or not self.parent.current_prerequisites:
-            # Clear all labels if no prerequisites
-            for label in tabs.prereq_labels:
-                label.setText("")
-            return
+        if not hasattr(self.parent, 'current_prerequisites'):
+            self.parent.current_prerequisites = {}
         
-        # Parse prerequisites for each level (1-6)
+        # Update summary labels and load data into inline editors for each level (1-6)
         for i in range(6):
-            level_key = str(i + 1)
+            level = i + 1
+            level_key = str(level)
             level_prereqs = self.parent.current_prerequisites.get(level_key, {})
             
-            # Handle the actual format: {'képesség': ['Ügyesség 10+'], 'képzettség': ['Skill 1. szint']}
+            # Build summary text for the label
+            summary = ""
             if isinstance(level_prereqs, dict):
                 stat_list = level_prereqs.get('képesség', [])
                 skill_list = level_prereqs.get('képzettség', [])
                 
-                # Build summary text
-                summary = ""
                 if stat_list:
-                    summary += "Tulajdonság: " + ", ".join(stat_list)
+                    summary += ", ".join(stat_list)
                 if skill_list:
-                    if summary:
+                    if stat_list:
                         summary += "\n"
-                    summary += "Képzettség: " + ", ".join(skill_list)
-                
+                    summary += "\n".join(skill_list)
+            
+            # Update the summary label
+            if i < len(tabs.prereq_labels):
                 tabs.prereq_labels[i].setText(summary.strip())
-            else:
-                # Old format or empty
-                tabs.prereq_labels[i].setText("")
+            
+            # Also load into the editor widgets
+            if i < len(tabs.prereq_widgets):
+                widget = tabs.prereq_widgets[i]
+                
+                # Clear existing items
+                widget.stat_list.clear()
+                widget.skill_list.clear()
+                
+                # Load stat and skill prerequisites
+                if isinstance(level_prereqs, dict):
+                    stat_list = level_prereqs.get('képesség', [])
+                    skill_list = level_prereqs.get('képzettség', [])
+                    
+                    for stat_req in stat_list:
+                        widget.stat_list.addItem(stat_req)
+                    
+                    for skill_req in skill_list:
+                        widget.skill_list.addItem(skill_req)
     
     def open_description_file(self):
         """Open the description markdown file in the default editor"""

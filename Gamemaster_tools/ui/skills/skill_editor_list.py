@@ -55,6 +55,8 @@ class SkillListPanel:
         self.skill_tree.header().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.skill_tree.header().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
         self.skill_tree.currentItemChanged.connect(self.on_tree_item_selected)
+        # Set minimum height to make the tree taller
+        self.skill_tree.setMinimumHeight(800)
         list_layout.addWidget(self.skill_tree)
         
         # Action buttons

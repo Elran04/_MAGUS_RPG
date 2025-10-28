@@ -19,6 +19,7 @@ from ui.skills.skill_editor_constants import TYPE_MAP_REV
 from ui.skills.skill_editor_list import SkillListPanel
 from ui.skills.skill_editor_tabs import SkillEditorTabs
 from ui.skills.skill_editor_actions import SkillEditorActions
+from ui.skills.skill_prerequisite_editor import SkillPrerequisiteEditorQt
 
 
 
@@ -28,7 +29,7 @@ class SkillEditorQt(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Képzettség szerkesztő")
-        self.resize(1200, 800)
+        self.resize(1400, 900)  # Increased window size for better visibility
         
         # Initialize skill manager
         self.skill_manager = SkillManager()
@@ -91,8 +92,8 @@ class SkillEditorQt(QMainWindow):
         # Right panel - Editor
         self.create_editor_panel(splitter)
         
-        # Set splitter sizes (30% list, 70% editor)
-        splitter.setSizes([300, 900])
+        # Set splitter sizes (50% list, 50% editor for equal space)
+        splitter.setSizes([600, 800])
     
     def create_editor_panel(self, parent):
         """Create the editor panel on the right"""
@@ -151,18 +152,11 @@ class SkillEditorQt(QMainWindow):
             QMessageBox.warning(self, "Figyelem", "Nincs kiválasztott képzettség!")
             return
         
-        # Import and open the PySide6 prerequisite editor
-        try:
-            from .skill_prerequisite_editor import SkillPrerequisiteEditorQt
-            editor = SkillPrerequisiteEditorQt(self)
-            if editor.exec():
-                # Dialog was accepted, prerequisites are already updated
-                pass
-        except Exception as e:
-            QMessageBox.critical(
-                self, "Hiba",
-                f"Az előfeltétel szerkesztő nem nyitható meg:\n{str(e)}"
-            )
+        # Open the PySide6 prerequisite editor
+        editor = SkillPrerequisiteEditorQt(self)
+        if editor.exec():
+            # Dialog was accepted, prerequisites are already updated
+            pass
 
 
 if __name__ == "__main__":
