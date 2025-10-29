@@ -6,6 +6,7 @@ from PySide6 import QtWidgets, QtCore
 import sys
 import os
 import subprocess
+import json
 
 from .class_editor_constants import EQUIPMENT_TYPES
 
@@ -21,6 +22,51 @@ class ClassEditorActions:
             parent_editor: Reference to parent ClassEditorQt instance
         """
         self.parent = parent_editor
+        self.equipment_cache = {}  # Cache for equipment data
+    
+    def _load_equipment_data(self, equipment_type):
+        """
+        Load equipment data from JSON files
+        
+        Args:
+            equipment_type: One of 'armor', 'weaponandshield', 'general'
+        
+        Returns:
+            List of equipment items with id and name
+        """
+        if equipment_type in self.equipment_cache:
+            return self.equipment_cache[equipment_type]
+        
+        # Map equipment types to JSON files
+        type_to_file = {
+            'armor': 'armor.json',
+            'weaponandshield': 'weapons_and_shields.json',
+            'general': 'general_equipment.json'
+        }
+        
+        filename = type_to_file.get(equipment_type)
+        if not filename:
+            return []
+        
+        # Build path to JSON file
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+        json_path = os.path.join(base_dir, 'data', 'equipment', filename)
+        
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                # Extract id and name pairs
+                items = []
+                for item in data:
+                    item_id = item.get('id', '')
+                    item_name = item.get('name', '')
+                    if item_id:
+                        items.append({'id': item_id, 'name': item_name, 'display': f"{item_id} - {item_name}"})
+                self.equipment_cache[equipment_type] = items
+                return items
+        except Exception as e:
+            print(f"Error loading equipment data from {json_path}: {e}")
+            return []
     
     def load_details(self):
         """Load class/spec details into UI"""
@@ -223,11 +269,24 @@ class ClassEditorActions:
         for i, r in enumerate(rows):
             tabs.eq_table.setItem(i, 0, QtWidgets.QTableWidgetItem(str(r["entry_id"])))
             tabs.eq_table.setItem(i, 1, QtWidgets.QTableWidgetItem(r["item_type"]))
-            tabs.eq_table.setItem(i, 2, QtWidgets.QTableWidgetItem(r.get("item_id") or ""))
-            tabs.eq_table.setItem(i, 3, QtWidgets.QTableWidgetItem(
+            
+            item_id = r.get("item_id") or ""
+            tabs.eq_table.setItem(i, 2, QtWidgets.QTableWidgetItem(item_id))
+            
+            # Resolve item name from equipment data
+            item_name = ""
+            if item_id and r["item_type"] != "currency":
+                equipment_items = self._load_equipment_data(r["item_type"])
+                for item in equipment_items:
+                    if item['id'] == item_id:
+                        item_name = item['name']
+                        break
+            
+            tabs.eq_table.setItem(i, 3, QtWidgets.QTableWidgetItem(item_name))
+            tabs.eq_table.setItem(i, 4, QtWidgets.QTableWidgetItem(
                 str(r.get("min_currency") if r.get("min_currency") is not None else "")
             ))
-            tabs.eq_table.setItem(i, 4, QtWidgets.QTableWidgetItem(
+            tabs.eq_table.setItem(i, 5, QtWidgets.QTableWidgetItem(
                 str(r.get("max_currency") if r.get("max_currency") is not None else "")
             ))
     
@@ -324,18 +383,54 @@ class ClassEditorActions:
             self.reload_equipment_table()
     
     def add_item_row(self):
-        """Add an item equipment row"""
+        """Add an item equipment row with autocomplete"""
         if not self.parent.current_class_id:
             return
         
         dlg = QtWidgets.QDialog(self.parent)
         dlg.setWindowTitle("Tárgy hozzáadása")
+        dlg.resize(500, 150)
         form = QtWidgets.QFormLayout(dlg)
+        
+        # Equipment type selection
         cb_type = QtWidgets.QComboBox()
         cb_type.addItems(EQUIPMENT_TYPES)
-        inp_item = QtWidgets.QLineEdit()
         form.addRow("Típus:", cb_type)
+        
+        # Item ID input with autocomplete
+        inp_item = QtWidgets.QLineEdit()
+        inp_item.setPlaceholderText("Kezdd el gépelni az azonosítót vagy nevet...")
+        
+        # Completer setup
+        completer = QtWidgets.QCompleter()
+        completer.setCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
+        completer.setFilterMode(QtCore.Qt.MatchFlag.MatchContains)
+        inp_item.setCompleter(completer)
+        
+        # Function to update completer when type changes
+        def update_completer():
+            selected_type = cb_type.currentText()
+            equipment_items = self._load_equipment_data(selected_type)
+            
+            # Create list of display strings and ID mapping
+            display_items = [item['display'] for item in equipment_items]
+            completer.setModel(QtCore.QStringListModel(display_items))
+        
+        # Connect type change to update completer
+        cb_type.currentTextChanged.connect(update_completer)
+        
+        # Initialize completer with first type
+        update_completer()
+        
         form.addRow("Tárgy ID:", inp_item)
+        
+        # Help text
+        help_label = QtWidgets.QLabel("Tipp: Válaszd ki a típust, majd kezdd el gépelni az azonosítót vagy nevet.")
+        help_label.setWordWrap(True)
+        help_label.setStyleSheet("color: #666; font-size: 9pt;")
+        form.addRow(help_label)
+        
+        # Buttons
         btns = QtWidgets.QDialogButtonBox(
             QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
         )
@@ -344,13 +439,21 @@ class ClassEditorActions:
         btns.rejected.connect(dlg.reject)
         
         if dlg.exec() == QtWidgets.QDialog.DialogCode.Accepted:
-            self.parent.class_db.add_starting_equipment_item(
-                self.parent.current_class_id,
-                self.parent.current_spec_id,
-                cb_type.currentText(),
-                inp_item.text().strip()
-            )
-            self.reload_equipment_table()
+            # Extract just the ID from the input (before the " - " separator if present)
+            item_text = inp_item.text().strip()
+            if " - " in item_text:
+                item_id = item_text.split(" - ")[0].strip()
+            else:
+                item_id = item_text
+            
+            if item_id:
+                self.parent.class_db.add_starting_equipment_item(
+                    self.parent.current_class_id,
+                    self.parent.current_spec_id,
+                    cb_type.currentText(),
+                    item_id
+                )
+                self.reload_equipment_table()
     
     def delete_equipment_row(self):
         """Delete the selected equipment row"""

@@ -119,13 +119,14 @@ class ClassEditorTabs:
         
         # Equipment table
         self.eq_table = QtWidgets.QTableWidget()
-        self.eq_table.setColumnCount(5)
-        self.eq_table.setHorizontalHeaderLabels(["entry_id", "Típus", "Tárgy ID", "Min pénz", "Max pénz"])
+        self.eq_table.setColumnCount(6)
+        self.eq_table.setHorizontalHeaderLabels(["entry_id", "Típus", "Tárgy ID", "Tárgy név", "Min pénz", "Max pénz"])
         self.eq_table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
         self.eq_table.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
-        self.eq_table.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
-        self.eq_table.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
+        self.eq_table.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
+        self.eq_table.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.Stretch)
         self.eq_table.horizontalHeader().setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeToContents)
+        self.eq_table.horizontalHeader().setSectionResizeMode(5, QtWidgets.QHeaderView.ResizeToContents)
         self.eq_table.setColumnHidden(0, True)
         eq_layout.addWidget(self.eq_table)
         
