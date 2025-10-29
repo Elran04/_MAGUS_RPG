@@ -12,11 +12,14 @@ class CharacterWizardQt(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Karakteralkotás varázsló")
-        self.resize(600, 600)
+        # Larger window to show class and specialization side-by-side
+        self.resize(1000, 700)
         self.class_db = ClassDBManager()
         self.data = {}
         self.step = 0
         self.specializations = ["Nincs"]
+        self.spec_data = {}
+        self.selected_class_id = None
         self.init_ui()
         self.show_step()
 
@@ -40,51 +43,77 @@ class CharacterWizardQt(QtWidgets.QDialog):
             if widget:
                 widget.setParent(None)
         if self.step == 0:
-            self.show_basic_data()
+            # Merged step: basic data + specialization
+            self.show_basic_and_specialization()
             self.back_btn.setEnabled(False)
             self.next_btn.setText("Következő")
         elif self.step == 1:
-            self.show_specialization()
-            self.back_btn.setEnabled(True)
-            self.next_btn.setText("Következő")
-        elif self.step == 2:
             self.show_skills()
             self.back_btn.setEnabled(True)
             self.next_btn.setText("Következő")
-        elif self.step == 3:
+        elif self.step == 2:
             self.show_equipment()
             self.back_btn.setEnabled(True)
             self.next_btn.setText("Következő")
-        elif self.step == 4:
+        elif self.step == 3:
             self.show_summary()
             self.back_btn.setEnabled(True)
             self.next_btn.setText("Mentés")
 
-    def show_basic_data(self):
+    def show_basic_and_specialization(self):
+        """Show a merged step with basic data on the left and specialization on the right"""
+        container = QtWidgets.QWidget()
+        hlayout = QtWidgets.QHBoxLayout(container)
+        hlayout.setContentsMargins(0, 0, 0, 0)
+        hlayout.setSpacing(16)
+
+        # Left pane: Basic data
+        left = QtWidgets.QWidget()
+        left_form = QtWidgets.QFormLayout(left)
+        left_form.setLabelAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
+
         self.name_edit = QtWidgets.QLineEdit()
-        self.gender_combo = QtWidgets.QComboBox()
-        self.gender_combo.addItems(["Férfi", "Nő"])
+        self.gender_combo = QtWidgets.QComboBox(); self.gender_combo.addItems(["Férfi", "Nő"])
         self.age_edit = QtWidgets.QLineEdit()
-        self.race_combo = QtWidgets.QComboBox()
-        self.race_combo.addItems(ALL_RACES)
+        self.race_combo = QtWidgets.QComboBox(); self.race_combo.addItems(ALL_RACES)
         self.class_combo = QtWidgets.QComboBox()
         self.result_label = QtWidgets.QLabel("")
+        self.result_label.setStyleSheet("color:#c33;")
         self.age_limits_label = QtWidgets.QLabel("")
-        self.step_layout.addWidget(QtWidgets.QLabel("Név:"))
-        self.step_layout.addWidget(self.name_edit)
-        self.step_layout.addWidget(QtWidgets.QLabel("Nem:"))
-        self.step_layout.addWidget(self.gender_combo)
-        self.step_layout.addWidget(QtWidgets.QLabel("Kor:"))
-        self.step_layout.addWidget(self.age_edit)
-        self.step_layout.addWidget(self.age_limits_label)
-        self.step_layout.addWidget(QtWidgets.QLabel("Faj:"))
-        self.step_layout.addWidget(self.race_combo)
-        self.step_layout.addWidget(QtWidgets.QLabel("Kaszt:"))
-        self.step_layout.addWidget(self.class_combo)
-        self.step_layout.addWidget(self.result_label)
+
+        left_form.addRow("Név:", self.name_edit)
+        left_form.addRow("Nem:", self.gender_combo)
+        left_form.addRow("Kor:", self.age_edit)
+        left_form.addRow("Korhatár:", self.age_limits_label)
+        left_form.addRow("Faj:", self.race_combo)
+        left_form.addRow("Kaszt:", self.class_combo)
+        left_form.addRow("", self.result_label)
+
+        # Right pane: Specialization selection and description
+        right = QtWidgets.QWidget()
+        right_layout = QtWidgets.QVBoxLayout(right)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        right_layout.addWidget(QtWidgets.QLabel("Specializáció:"))
+        self.spec_combo = QtWidgets.QComboBox()
+        self.spec_combo.currentTextChanged.connect(self.load_specialization_description)
+        right_layout.addWidget(self.spec_combo)
+        right_layout.addWidget(QtWidgets.QLabel("Leírás:"))
+        self.spec_desc = QtWidgets.QTextBrowser()
+        self.spec_desc.setOpenExternalLinks(False)
+        self.spec_desc.setPlaceholderText("Válassz egy specializációt a leírás megtekintéséhez...")
+        right_layout.addWidget(self.spec_desc, stretch=1)
+
+        hlayout.addWidget(left, stretch=1)
+        hlayout.addWidget(right, stretch=2)
+
+        self.step_layout.addWidget(container)
+
+        # Wire changes
         self.race_combo.currentTextChanged.connect(self.update_age_limits)
         self.race_combo.currentTextChanged.connect(self.update_class_options)
         self.gender_combo.currentTextChanged.connect(self.update_class_options)
+
+        # Initial fills
         self.update_age_limits()
         self.update_class_options()
 
@@ -94,14 +123,58 @@ class CharacterWizardQt(QtWidgets.QDialog):
         self.age_limits_label.setText(f"Engedélyezett kor: {limits[0]} - {limits[1]}")
 
     def update_class_options(self):
+        """Populate class options based on race/gender restrictions and refresh specs."""
         race = self.race_combo.currentText()
         gender = self.gender_combo.currentText()
         restricted_by_gender = GENDER_RESTRICTIONS.get(gender, set())
         restricted_by_race = RACE_RESTRICTIONS.get(race, set())
-        all_classes = [name for _, name in self.class_db.list_classes()]
-        allowed_classes = [k for k in all_classes if k not in restricted_by_gender and k not in restricted_by_race]
+        classes = list(self.class_db.list_classes())
+        allowed = [name for (_cid, name) in classes if name not in restricted_by_gender and name not in restricted_by_race]
+        current_class = self.class_combo.currentText() if self.class_combo.count() > 0 else None
+        self.class_combo.blockSignals(True)
         self.class_combo.clear()
-        self.class_combo.addItems(allowed_classes)
+        self.class_combo.addItems(allowed)
+        # Try keep previous selection if still allowed
+        if current_class in allowed:
+            self.class_combo.setCurrentText(current_class)
+        self.class_combo.blockSignals(False)
+
+        # After classes updated, repopulate specs for selected class
+        self.populate_specializations_for_selected_class()
+
+        # React to direct user change too
+        self.class_combo.currentTextChanged.connect(self.populate_specializations_for_selected_class)
+
+    def populate_specializations_for_selected_class(self):
+        """Fill specialization combo based on selected class and load description."""
+        sel_name = self.class_combo.currentText()
+        self.selected_class_id = None
+        for class_id, class_name in self.class_db.list_classes():
+            if class_name == sel_name:
+                self.selected_class_id = class_id
+                break
+
+        # Default spec list
+        self.specializations = ["Nincs"]
+        self.spec_data = {}
+        if self.selected_class_id:
+            try:
+                specs = self.class_db.list_specialisations(self.selected_class_id)
+                for spec in specs:
+                    spec_name = spec["specialisation_name"]
+                    self.specializations.append(spec_name)
+                    self.spec_data[spec_name] = spec
+            except Exception:
+                pass
+
+        # Update combo
+        self.spec_combo.blockSignals(True)
+        self.spec_combo.clear()
+        self.spec_combo.addItems(self.specializations)
+        self.spec_combo.blockSignals(False)
+
+        # Load description for current selection (or base class if "Nincs")
+        self.load_specialization_description(self.spec_combo.currentText())
 
     def validate_basic_data(self):
         name = self.name_edit.text()
@@ -136,43 +209,7 @@ class CharacterWizardQt(QtWidgets.QDialog):
         }
         return True
 
-    def show_specialization(self):
-        # Load specializations for selected class
-        selected_class_id = None
-        for class_id, class_name in self.class_db.list_classes():
-            if class_name == self.data.get("Kaszt"):
-                selected_class_id = class_id
-                break
-        
-        self.selected_class_id = selected_class_id  # Store for base class description loading
-        self.specializations = ["Nincs"]
-        self.spec_data = {}  # Map spec name to spec data
-        if selected_class_id:
-            try:
-                specs = self.class_db.list_specialisations(selected_class_id)
-                for spec in specs:
-                    spec_name = spec["specialisation_name"]
-                    self.specializations.append(spec_name)
-                    self.spec_data[spec_name] = spec
-            except Exception:
-                pass
-        
-        self.spec_combo = QtWidgets.QComboBox()
-        self.spec_combo.addItems(self.specializations)
-        self.spec_combo.currentTextChanged.connect(self.load_specialization_description)
-        
-        # Use QTextBrowser for markdown rendering
-        self.spec_desc = QtWidgets.QTextBrowser()
-        self.spec_desc.setOpenExternalLinks(False)
-        self.spec_desc.setPlaceholderText("Válassz egy specializációt a leírás megtekintéséhez...")
-        
-        self.step_layout.addWidget(QtWidgets.QLabel("Specializáció:"))
-        self.step_layout.addWidget(self.spec_combo)
-        self.step_layout.addWidget(QtWidgets.QLabel("Leírás:"))
-        self.step_layout.addWidget(self.spec_desc)
-        
-        # Load initial description if default selection is not "Nincs"
-        self.load_specialization_description(self.spec_combo.currentText())
+    # Removed standalone specialization step; merged into step 0
     
     def load_specialization_description(self, spec_name):
         """Load specialization description from .md file"""
@@ -253,13 +290,13 @@ class CharacterWizardQt(QtWidgets.QDialog):
 
     def next_step(self):
         if self.step == 0:
+            # Validate and capture both basic data and specialization
             if not self.validate_basic_data():
                 return
-        elif self.step == 1:
             self.data["Specializáció"] = self.spec_combo.currentText()
             self.data["Spec_leírás"] = self.spec_desc.toPlainText().strip()
         self.step += 1
-        if self.step > 4:
+        if self.step > 3:
             self.finish()
         else:
             self.show_step()

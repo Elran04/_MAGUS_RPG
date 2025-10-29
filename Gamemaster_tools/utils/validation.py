@@ -95,6 +95,14 @@ def validate_armor(armor: Dict[str, Any]) -> None:
         raise ValidationError("weight must be number")
     if not isinstance(armor.get("price"), int):
         raise ValidationError("price must be int in base units")
+    # armor_type: optional but if present must be one of expected values
+    armor_type = armor.get("armor_type", None)
+    if armor_type is not None and armor_type not in {"plate", "flexible_metal", "leather"}:
+        raise ValidationError("armor_type must be one of 'plate', 'flexible_metal', 'leather'")
+    # layer: optional but if present must be 1, 2, or 3
+    layer = armor.get("layer", None)
+    if layer is not None and (not isinstance(layer, int) or layer not in {1, 2, 3}):
+        raise ValidationError("layer must be int 1, 2, or 3")
 
 
 def validate_general_equipment(item: Dict[str, Any]) -> None:

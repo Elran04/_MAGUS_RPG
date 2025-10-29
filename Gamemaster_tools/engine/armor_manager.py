@@ -49,6 +49,21 @@ class ArmorManager:
             self.armors = json.load(f)
         self.modifiers = []  # ideiglenes módosítók listája
 
+        # Armor type priorities for mechanics
+        self.ARMOR_TYPE_PRIORITY = {
+            "plate": 1,
+            "flexible_metal": 2,
+            "leather": 3,
+        }
+
+    def get_armor_type(self, armor):
+        """Visszaadja a páncél típusát (plate, flexible_metal, leather). Alapértelmezett: 'leather'."""
+        return armor.get("armor_type", "leather")
+
+    def get_layer(self, armor) -> int:
+        """Visszaadja a páncél rétegszámát (1..3), hiány esetén 3-at."""
+        return armor.get("layer", 3)
+
     def get_zone_protection(self, armor, zone):
         # 1. protection_overrides előnyben
         if "protection_overrides" in armor and zone in armor["protection_overrides"]:

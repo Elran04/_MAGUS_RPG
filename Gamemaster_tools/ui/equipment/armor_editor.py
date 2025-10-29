@@ -33,6 +33,8 @@ class ArmorEditorQt(QMainWindow):
         self.selected_idx = None
         self.abc_sort_asc = True
         self.sfe_sort_asc = False
+        # Avoid premature signal handling before UI is fully built
+        self._ui_ready = False
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -47,7 +49,6 @@ class ArmorEditorQt(QMainWindow):
         left.addWidget(title)
         self.listbox = QListWidget()
         left.addWidget(self.listbox, stretch=1)
-        self.listbox.currentRowChanged.connect(self.on_select)
 
         btns_row = QHBoxLayout()
         self.btn_new = QPushButton("Új páncél")
@@ -147,6 +148,24 @@ class ArmorEditorQt(QMainWindow):
         form_layout.addWidget(self.spn_weight, r, 1)
         r += 1
 
+        # Armor construction type
+        form_layout.addWidget(QLabel("Páncél típusa:"), r, 0)
+        self.cmb_armor_type = QComboBox()
+        self.cmb_armor_type.addItem("Lemezpáncél", userData="plate")
+        self.cmb_armor_type.addItem("Rugalmas fém", userData="flexible_metal")
+        self.cmb_armor_type.addItem("Bőr / Textil", userData="leather")
+        form_layout.addWidget(self.cmb_armor_type, r, 1)
+        r += 1
+
+        # Layer number (for layered armor system)
+        form_layout.addWidget(QLabel("Réteg szám:"), r, 0)
+        self.spn_layer = QSpinBox()
+        self.spn_layer.setRange(1, 3)
+        self.spn_layer.setValue(3)
+        self.spn_layer.setSuffix(". réteg")
+        form_layout.addWidget(self.spn_layer, r, 1)
+        r += 1
+
         # Price
         form_layout.addWidget(QLabel("Ár:"), r, 0, alignment=Qt.AlignTop)
         price_row = QHBoxLayout()
@@ -177,6 +196,9 @@ class ArmorEditorQt(QMainWindow):
 
         self._load_zone_menus()
         self.refresh_list()
+        # Now UI is ready; connect selection signal
+        self.listbox.currentRowChanged.connect(self.on_select)
+        self._ui_ready = True
 
     # Helpers
     def _load_zone_menus(self):
@@ -272,6 +294,8 @@ class ArmorEditorQt(QMainWindow):
 
     # Selection and data binding
     def on_select(self, row):
+        if not getattr(self, "_ui_ready", False):
+            return
         if row < 0 or row >= len(self.armors):
             self.selected_idx = None
             return
@@ -302,6 +326,22 @@ class ArmorEditorQt(QMainWindow):
             self.price_spins[curr].setValue(int(parts_price.get(curr, 0)))
         # description
         self.txt_desc.setPlainText(armor.get('description', ''))
+        # armor type
+        armor_type = armor.get('armor_type', 'leather')
+        found = False
+        for i in range(self.cmb_armor_type.count()):
+            if self.cmb_armor_type.itemData(i) == armor_type:
+                self.cmb_armor_type.setCurrentIndex(i)
+                found = True
+                break
+        if not found:
+            # fallback to leather
+            for i in range(self.cmb_armor_type.count()):
+                if self.cmb_armor_type.itemData(i) == 'leather':
+                    self.cmb_armor_type.setCurrentIndex(i)
+                    break
+        # layer number
+        self.spn_layer.setValue(int(armor.get('layer', 3)))
 
     def _collect_parts(self):
         result = {}
@@ -323,18 +363,38 @@ class ArmorEditorQt(QMainWindow):
             'weight': float(self.spn_weight.value()),
             'price': int(self._parts_to_price()),
             'description': self.txt_desc.toPlainText().strip(),
+            'armor_type': self.cmb_armor_type.currentData(),
+            'layer': int(self.spn_layer.value()),
         }
         if not ArmorJsonManager(ARMOR_JSON).validate(armor):
             QMessageBox.critical(self, "Hiba", "Hiányzó vagy hibás mező!")
             return
-        if self.selected_idx is not None:
-            self.armors[self.selected_idx] = armor
+        # Determine target index to select after save without being affected by signals
+        target_idx = self.selected_idx
+        # If nothing is selected but an item with same ID exists, update that instead of appending
+        if target_idx is None and armor['id']:
+            for i, a in enumerate(self.armors):
+                if a.get('id') == armor['id']:
+                    target_idx = i
+                    break
+
+        if target_idx is not None:
+            self.armors[target_idx] = armor
         else:
             self.armors.append(armor)
-            self.selected_idx = len(self.armors) - 1
+            target_idx = len(self.armors) - 1
+
+        # Persist and refresh list while blocking selection-change signals
         self.manager.save(self.armors)
+        self.listbox.blockSignals(True)
         self.refresh_list()
-        self.listbox.setCurrentRow(self.selected_idx)
+        # Clamp target index just in case
+        if 0 <= target_idx < len(self.armors):
+            self.listbox.setCurrentRow(target_idx)
+        self.listbox.blockSignals(False)
+        # Update internal selection state and UI fields
+        self.selected_idx = target_idx
+        self.on_select(target_idx)
         QMessageBox.information(self, "Mentés", "Páncél mentve!")
 
     def new_armor(self):
