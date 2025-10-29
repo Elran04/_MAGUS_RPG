@@ -1,120 +1,70 @@
 """
-Equipment Editor Hub - PySide6 version with dark mode
-Launch point for armor, weapons, and general equipment editors
+Equipment Editor - PySide6 version with dark mode
+Tabbed interface for managing armor, weapons/shields, and general equipment
 """
-from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QPushButton, QLabel
-)
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QTabWidget
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
 import sys
 import os
 
+# Add parent directories to path for imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
+from ui.equipment.armor_editor import ArmorEditorQt
+from ui.equipment.weapons_and_shields_editor import WeaponsAndShieldsEditor
+from ui.equipment.general_equipment_editor import GeneralEquipmentEditorQt
+
 
 class EquipmentEditorQt(QMainWindow):
-    """Equipment editor hub window"""
+    """Tabbed equipment editor for armor, weapons, and general equipment"""
     
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Felszerelés szerkesztő")
-        self.resize(600, 500)
+        self.resize(1400, 800)
+        
+        # Standard window controls
+        self.setWindowFlags(
+            Qt.WindowType.Window
+            | Qt.WindowType.WindowMinimizeButtonHint
+            | Qt.WindowType.WindowMaximizeButtonHint
+            | Qt.WindowType.WindowCloseButtonHint
+        )
+        
         self.init_ui()
     
     def init_ui(self):
-        """Initialize the user interface"""
+        """Initialize the tabbed user interface"""
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         
-        layout = QVBoxLayout()
-        layout.setSpacing(20)
-        layout.setContentsMargins(50, 50, 50, 50)
-        central_widget.setLayout(layout)
+        layout = QVBoxLayout(central_widget)
+        layout.setContentsMargins(0, 0, 0, 0)
         
-        # Title
-        title_label = QLabel("Felszerelés szerkesztő")
-        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_font = QFont()
-        title_font.setPointSize(18)
-        title_font.setBold(True)
-        title_label.setFont(title_font)
-        layout.addWidget(title_label)
+        # Create tab widget
+        tab_widget = QTabWidget()
+        layout.addWidget(tab_widget)
         
-        layout.addStretch()
+        # Create editor instances (but don't show them as separate windows)
+        # Armor tab
+        self.armor_editor = ArmorEditorQt()
+        # Extract the central widget from the QMainWindow and use it as a tab
+        armor_widget = self.armor_editor.centralWidget()
+        tab_widget.addTab(armor_widget, "Páncélok")
         
-        # Armor button
-        btn_armor = QPushButton("Páncélok szerkesztése")
-        btn_armor.setMinimumHeight(50)
-        btn_armor.clicked.connect(self.open_armor_editor)
-        layout.addWidget(btn_armor)
+        # Weapons and shields tab
+        self.weapons_editor = WeaponsAndShieldsEditor()
+        weapons_widget = self.weapons_editor.centralWidget()
+        tab_widget.addTab(weapons_widget, "Fegyverek és pajzsok")
         
-        # Weapons button
-        btn_weapons = QPushButton("Fegyverek és pajzsok szerkesztése")
-        btn_weapons.setMinimumHeight(50)
-        btn_weapons.clicked.connect(self.open_weapons_editor)
-        layout.addWidget(btn_weapons)
-        
-        # General equipment button
-        btn_general = QPushButton("Általános felszerelés szerkesztése")
-        btn_general.setMinimumHeight(50)
-        btn_general.clicked.connect(self.open_general_editor)
-        layout.addWidget(btn_general)
-        
-        layout.addStretch()
-        
-        # Close button
-        btn_close = QPushButton("Bezárás")
-        btn_close.setMinimumHeight(40)
-        btn_close.clicked.connect(self.close)
-        layout.addWidget(btn_close)
-    
-    def open_armor_editor(self):
-        """Open armor editor"""
-        try:
-            # Use absolute import since this file runs as a script
-            from ui.equipment.armor_editor import ArmorEditorQt
-            if not hasattr(self, '_children'):
-                self._children = []
-            win = ArmorEditorQt()
-            win.setAttribute(Qt.WA_DeleteOnClose, True)
-            self._children.append(win)
-            win.show()
-        except Exception as e:
-            from PySide6.QtWidgets import QMessageBox
-            QMessageBox.critical(self, "Hiba", f"Nem sikerült megnyitni a páncél szerkesztőt.\n{e}")
-    
-    def open_weapons_editor(self):
-        """Open weapons and shields editor"""
-        try:
-            from ui.equipment.weapons_and_shields_editor import WeaponsAndShieldsEditor
-            if not hasattr(self, '_children'):
-                self._children = []
-            win = WeaponsAndShieldsEditor()
-            win.setAttribute(Qt.WA_DeleteOnClose, True)
-            self._children.append(win)
-            win.show()
-        except Exception as e:
-            from PySide6.QtWidgets import QMessageBox
-            QMessageBox.critical(self, "Hiba", f"Nem sikerült megnyitni a fegyver/pajzs szerkesztőt.\n{e}")
-    
-    def open_general_editor(self):
-        """Open general equipment editor"""
-        try:
-            # Use absolute import since this file runs as a script
-            from ui.equipment.general_equipment_editor import GeneralEquipmentEditorQt
-            if not hasattr(self, '_children'):
-                self._children = []
-            win = GeneralEquipmentEditorQt()
-            win.setAttribute(Qt.WA_DeleteOnClose, True)
-            self._children.append(win)
-            win.show()
-        except Exception as e:
-            from PySide6.QtWidgets import QMessageBox
-            QMessageBox.critical(self, "Hiba", f"Nem sikerült megnyitni az általános felszerelés szerkesztőt.\n{e}")
+        # General equipment tab
+        self.general_editor = GeneralEquipmentEditorQt()
+        general_widget = self.general_editor.centralWidget()
+        tab_widget.addTab(general_widget, "Általános felszerelés")
 
 
 if __name__ == "__main__":
     from PySide6.QtWidgets import QApplication
-    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
     from utils.dark_mode import apply_dark_mode
     
     app = QApplication(sys.argv)
