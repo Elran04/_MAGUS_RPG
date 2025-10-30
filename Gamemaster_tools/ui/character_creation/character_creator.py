@@ -6,7 +6,7 @@ from utils.class_db_manager import ClassDBManager
 from utils.character_storage import save_character
 from utils.placeholder_manager import PlaceholderManager
 from ui.character_creation.steps.skills_step import SkillsStepWidget
-from engine.character import generate_character
+from engine.character import generate_character, calculate_combat_stats, calculate_skill_points
 
 # Base directory for data paths
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -157,15 +157,12 @@ class CharacterWizardQt(QtWidgets.QDialog):
             # Keep selected class/spec info for later steps
             self.selected_class_id = self.basic_spec_step.get_selected_class_id()
             self.spec_data = self.basic_spec_step.get_spec_data()
-            # Generate full character data to get KP values for skills step
-            temp_char = generate_character(
-                self.data["Név"], self.data["Nem"], self.data["Kor"], 
-                self.data["Faj"], self.data["Kaszt"]
-            )
-            # Store KP info in data for skills step
-            self.data["Képzettségpontok"] = temp_char.get("Képzettségpontok", {})
-            self.data["Tulajdonságok"] = temp_char.get("Tulajdonságok", {})
-            self.data["Harci értékek"] = temp_char.get("Harci értékek", {})
+            # Calculate KP from class info (needed for skills step display)
+            try:
+                self.data["Képzettségpontok"] = calculate_skill_points(self.data["Kaszt"])
+            except Exception as e:
+                print(f"Error calculating KP: {e}")
+                self.data["Képzettségpontok"] = {"Alap": 0, "Szintenként": 0}
             # If skills step already exists (user is returning to it), refresh attributes explicitly now
             if hasattr(self, 'skills_step') and getattr(self, 'skills_step') is not None:
                 try:
@@ -181,8 +178,29 @@ class CharacterWizardQt(QtWidgets.QDialog):
             if hasattr(self, 'skills_step'):
                 try:
                     self.placeholder_choices = dict(self.skills_step.placeholder_choices)
+                    # Also persist concrete selected skills into wizard data
+                    try:
+                        self.data["Képzettségek"] = self.skills_step.get_selected_skills()
+                    except Exception:
+                        pass
                 except Exception:
                     pass
+            # Calculate KP and combat values from user's selected attributes
+            # Attributes are in self.data["Tulajdonságok"] from the attributes widget
+            if "Tulajdonságok" in self.data:
+                # Build a temporary character dict with user's attributes to calculate combat stats
+                temp_char = {
+                    "Név": self.data["Név"],
+                    "Nem": self.data["Nem"],
+                    "Kor": self.data["Kor"],
+                    "Faj": self.data["Faj"],
+                    "Kaszt": self.data["Kaszt"],
+                    "Tulajdonságok": self.data["Tulajdonságok"]
+                }
+                temp_char = calculate_combat_stats(temp_char)
+                # Store KP and combat values
+                self.data["Képzettségpontok"] = temp_char.get("Képzettségpontok", {})
+                self.data["Harci értékek"] = temp_char.get("Harci értékek", {})
         elif self.step == 2:
             # Optionally validate and collect equipment data (placeholder)
             if hasattr(self, 'equipment_step') and not self.equipment_step.validate():
@@ -212,9 +230,23 @@ class CharacterWizardQt(QtWidgets.QDialog):
             self.show_step()
 
     def finish(self):
-        char = generate_character(
-            self.data["Név"], self.data["Nem"], self.data["Kor"], self.data["Faj"], self.data["Kaszt"]
-        )
+        # Build final character payload: only base info, attributes, skills, equipment
+        final_data = None
+        if hasattr(self, 'summary_step') and self.summary_step is not None:
+            try:
+                final_data = self.summary_step.get_result()
+            except Exception:
+                final_data = None
+        if not final_data:
+            # Fallback: filter self.data directly
+            src = dict(self.data or {})
+            allowed = {"Név", "Nem", "Kor", "Faj", "Kaszt", "Specializáció", "Tulajdonságok", "Képzettségek", "Felszerelés", "Képzettségpontok", "Harci értékek"}
+            final_data = {k: v for k, v in src.items() if k in allowed and not k.startswith("_")}
+            final_data.setdefault("Képzettségek", [])
+            final_data.setdefault("Felszerelés", [])
+
+        char = final_data
+
         # Save character to JSON file
         filename = f"{self.data['Név'].replace(' ', '_')}.json"
         save_character(char, filename)

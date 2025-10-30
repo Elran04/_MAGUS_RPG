@@ -78,6 +78,32 @@ class SkillsStepWidget(QtWidgets.QWidget):
         splitter.setStretchFactor(1, 1)
         
         main_layout.addWidget(splitter)
+
+    def get_selected_skills(self):
+        """Export current selected skills (fixed + placeholder resolutions) as a list of dicts.
+        Each entry contains: {"id": skill_id, "Képzettség": name( (param)), "Szint": int, "%": int}.
+        """
+        skills = []
+        current_map = self._build_current_skills_map()
+        if not current_map:
+            return skills
+        try:
+            with sqlite3.connect(self._get_db_path('skill')) as sconn:
+                for sid, req in current_map.items():
+                    row = sconn.execute("SELECT name, parameter FROM skills WHERE id=?", (sid,)).fetchone()
+                    if not row:
+                        continue
+                    name, parameter = row
+                    display = f"{name} ({parameter})" if parameter else name
+                    skills.append({
+                        "id": sid,
+                        "Képzettség": display,
+                        "Szint": int(req.get("level", 0)),
+                        "%": int(req.get("%", 0)),
+                    })
+        except Exception as e:
+            print("Error exporting selected skills:", e)
+        return skills
     
     def _get_db_path(self, db_type: str) -> str:
         """Get database path for given type ('class' or 'skill')."""

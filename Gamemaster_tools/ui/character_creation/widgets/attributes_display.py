@@ -78,19 +78,25 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
         self.selection_widget = QtWidgets.QWidget()
         sel_layout = QtWidgets.QVBoxLayout(self.selection_widget)
         sel_layout.setContentsMargins(0, 8, 0, 8)
-        prompt = QtWidgets.QLabel("Válassz módszert a tulajdonságok meghatározásához:")
+        prompt = QtWidgets.QLabel("Válassz módot a tulajdonságok meghatározásához:")
         prompt.setStyleSheet("font-weight: bold; padding: 4px;")
         sel_layout.addWidget(prompt)
         btn_row = QtWidgets.QHBoxLayout()
         btn_row.addStretch()
-        self.choose_roll_btn = QtWidgets.QPushButton("Dobás")
+        # Add dice emoji to Dobás and set button colors
+        self.choose_roll_btn = QtWidgets.QPushButton("🎲 Dobás")
         self.choose_pointbuy_btn = QtWidgets.QPushButton("Pontelosztás")
-        # Square-ish styling
-        for b in (self.choose_roll_btn, self.choose_pointbuy_btn):
-            b.setMinimumSize(100, 100)
-            b.setStyleSheet(
-                "QPushButton { font-size: 14px; font-weight: bold; padding: 8px; border-radius: 6px; }"
-            )
+        # Square-ish styling and color
+        self.choose_roll_btn.setMinimumSize(100, 100)
+        self.choose_roll_btn.setStyleSheet(
+            "QPushButton { font-size: 14px; font-weight: bold; padding: 8px; border-radius: 6px; background-color: #4caf50; color: white; }"
+            "QPushButton:hover { background-color: #388e3c; }"
+        )
+        self.choose_pointbuy_btn.setMinimumSize(100, 100)
+        self.choose_pointbuy_btn.setStyleSheet(
+            "QPushButton { font-size: 14px; font-weight: bold; padding: 8px; border-radius: 6px; background-color: #ffe082; color: #333; }"
+            "QPushButton:hover { background-color: #ffd54f; }"
+        )
         btn_row.addWidget(self.choose_roll_btn)
         btn_row.addSpacing(20)
         btn_row.addWidget(self.choose_pointbuy_btn)
@@ -138,8 +144,9 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
         
         body_layout.addWidget(self.points_widget)
         self.points_widget.setVisible(True)
-        # Disable reset-to-minimums in roll mode to respect ±2 hybrid limits
+        # Disable and hide reset-to-minimums in roll mode to respect ±2 hybrid limits
         self.reset_btn.setEnabled(self.mode == "pointbuy")
+        self.reset_btn.setVisible(self.mode == "pointbuy")
         
         # Attributes grid
         grid = QtWidgets.QGridLayout()
@@ -307,6 +314,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
         initial_roll_done = self._get_character_data().get("_InitialRollDone", False)
         self.roll_button.setVisible(self.mode == "roll" and not initial_roll_done)
         self.reset_btn.setEnabled(self.mode == "pointbuy")
+        self.reset_btn.setVisible(self.mode == "pointbuy")
         
         # Configure spinboxes and update display
         self._configure_spinboxes(race, age)
@@ -469,7 +477,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
         else:
             remaining = self.attribute_manager.get_hybrid_remaining_points()
             spent, generated = self.attribute_manager.get_hybrid_spent_and_generated()
-            text = f"Hibrid szabad pontok: <b>{remaining}</b> <span style='color: #888;'>(növelésre költött: {spent}, csökkentéssel nyert: {generated})</span>"
+            text = f"Hibrid szabad pontok: <b>{remaining}</b> <span style='color: #888;'>(költött: {spent}, nyert: {generated})</span>"
         
         self.points_label.setText(text)
         

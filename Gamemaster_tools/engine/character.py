@@ -111,6 +111,32 @@ def calculate_combat_stats(character):
     return character
 
 
+def calculate_skill_points(klass: str) -> dict:
+    """Calculate skill points (KP) for a given class without needing attributes.
+    
+    Args:
+        klass: The class name (e.g., "Harcos", "Varázsló")
+    
+    Returns:
+        Dict with "Alap" and "Szintenként" keys containing the KP values
+    """
+    # Get class_id from name
+    classes = class_db.list_classes()
+    class_id = next((cid for cid, name in classes if name == klass), None)
+    if class_id is None:
+        raise ValueError(f"Class '{klass}' not found in DB")
+    
+    details = class_db.get_class_details(class_id)
+    data = details["combat_stats"]
+    if not data:
+        return {"Alap": 0, "Szintenként": 0}
+    
+    return {
+        "Alap": data[6] if len(data) > 6 else 0,
+        "Szintenként": data[7] if len(data) > 7 else 0
+    }
+
+
 def generate_character(name, gender, age, race, klass):
     stats = generate_stats(klass)
     stats = apply_age_modifiers(stats, race, age)

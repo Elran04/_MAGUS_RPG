@@ -27,8 +27,35 @@ class SummaryStepWidget(QtWidgets.QWidget):
 
         layout.addStretch(1)
 
+    def _filtered_data(self) -> dict:
+        """Return only the fields we want to present and save.
+        Includes: base info (Név, Nem, Kor, Faj, Kaszt, Specializáció),
+        Tulajdonságok, Képzettségek, Felszerelés.
+        Excludes: any keys starting with '_', descriptions, KP/Harci értékek, etc.
+        """
+        src = dict(self._get_data() or {})
+        allowed_keys = {
+            "Név", "Nem", "Kor", "Faj", "Kaszt", "Specializáció",
+            "Tulajdonságok", "Képzettségek", "Felszerelés",
+            "Képzettségpontok", "Harci értékek",
+        }
+        out = {}
+        for k, v in src.items():
+            if k.startswith("_"):
+                continue
+            if k == "Spec_leírás":
+                continue
+            if k in ("Fejleszthető",):
+                continue
+            if k in allowed_keys:
+                out[k] = v
+        # Ensure required collections exist
+        out.setdefault("Képzettségek", [])
+        out.setdefault("Felszerelés", [])
+        return out
+
     def refresh(self):
-        data = self._get_data() or {}
+        data = self._filtered_data()
         # Build a simple key: value listing; nested dicts pretty-printed lightly
         lines = []
         for k, v in data.items():
@@ -41,5 +68,5 @@ class SummaryStepWidget(QtWidgets.QWidget):
         self.summary_view.setPlainText("\n".join(lines))
 
     def get_result(self) -> dict:
-        """Return the current data for downstream save/finish operations."""
-        return dict(self._get_data() or {})
+        """Return filtered data for downstream save/finish operations."""
+        return self._filtered_data()
