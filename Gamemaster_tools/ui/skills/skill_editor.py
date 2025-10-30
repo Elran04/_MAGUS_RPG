@@ -125,6 +125,19 @@ class SkillEditorQt(QMainWindow):
         
         self.current_skill = self.all_skills[index]
         self.actions.load_skill_to_ui()
+
+        # Also suggest this skill in the Placeholder tab's search/selection, if it's not a placeholder itself
+        try:
+            if getattr(self.tabs, 'placeholder_tab', None):
+                skill = self.current_skill
+                if skill and skill.get('placeholder', 0) != 1:
+                    name = skill.get('name', '')
+                    param = skill.get('parameter', '')
+                    display = f"{name} ({param})" if param else name
+                    self.tabs.placeholder_tab.suggest_skill_selection(skill.get('id'), display)
+        except Exception:
+            # Non-fatal: ignore wiring errors
+            pass
     
     def update_type_dependent_fields(self):
         """Enable/disable KP fields depending on skill type selection."""

@@ -90,6 +90,8 @@ class PlaceholderEditorTab:
         
         # Load initial data
         self.load_placeholders()
+        # Ensure available skills are populated so search/select works even before picking a placeholder
+        self.populate_available_skills()
     
     def create_placeholder_list_panel(self):
         """Create the left panel with placeholder list"""
@@ -253,6 +255,28 @@ class PlaceholderEditorTab:
                     display += f" ({skill['parameter']})"
                 
                 self.available_skills_combo.addItem(display, skill['id'])
+
+    def suggest_skill_selection(self, skill_id: str | None, display_text: str | None = None):
+        """Suggest/select a skill in the available skills combo based on a left-tree selection.
+
+        If the skill_id exists in the combo's data, selects it. Otherwise, if display_text is provided,
+        sets the editable text so the user sees it in the search bar.
+        """
+        if self.available_skills_combo is None:
+            return
+        # Populate if empty to maximize chance of a match
+        if self.available_skills_combo.count() == 0:
+            self.populate_available_skills()
+
+        if skill_id:
+            idx = self.available_skills_combo.findData(skill_id)
+            if idx != -1:
+                self.available_skills_combo.setCurrentIndex(idx)
+                return
+        # Fallback: set search text for visibility
+        if display_text:
+            # Only works when combo is editable (it is)
+            self.available_skills_combo.setEditText(display_text)
     
     def add_resolution(self):
         """Add a new resolution for the current placeholder"""
