@@ -22,7 +22,7 @@ class CharacterWizardQt(QtWidgets.QDialog):
         super().__init__(parent)
         self.setWindowTitle("Karakteralkotás varázsló")
         # Larger window to show class and specialization side-by-side
-        self.resize(1000, 700)
+        self.resize(1200, 700)
         self.class_db = ClassDBManager()
         self.placeholder_mgr = PlaceholderManager()
         self.data = {}
@@ -166,6 +166,16 @@ class CharacterWizardQt(QtWidgets.QDialog):
             self.data["Képzettségpontok"] = temp_char.get("Képzettségpontok", {})
             self.data["Tulajdonságok"] = temp_char.get("Tulajdonságok", {})
             self.data["Harci értékek"] = temp_char.get("Harci értékek", {})
+            # If skills step already exists (user is returning to it), refresh attributes explicitly now
+            if hasattr(self, 'skills_step') and getattr(self, 'skills_step') is not None:
+                try:
+                    class_name = self.data.get("Kaszt")
+                    race = self.data.get("Faj", "Ember")
+                    age = int(self.data.get("Kor", 20))
+                    if getattr(self.skills_step, 'attributes_widget', None) is not None and class_name and race:
+                        self.skills_step.attributes_widget.refresh_from_basic_selection(class_name, race, age)
+                except Exception:
+                    pass
         elif self.step == 1:
             # Persist skills placeholder choices from widget back to wizard state
             if hasattr(self, 'skills_step'):
