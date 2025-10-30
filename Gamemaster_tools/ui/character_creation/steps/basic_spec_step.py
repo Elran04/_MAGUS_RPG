@@ -219,3 +219,43 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
 
     def get_spec_data(self):
         return self.spec_data
+
+    # --- Prefill from existing data ---
+    def set_data(self, data: dict):
+        """Prefill the form from a provided data dict produced by get_data().
+
+        Keys used: Név, Nem, Kor, Faj, Kaszt, Specializáció.
+        """
+        if not data:
+            return
+        # Basic fields
+        name = data.get("Név")
+        if name:
+            self.name_edit.setText(str(name))
+        gender = data.get("Nem")
+        if gender and gender in [self.gender_combo.itemText(i) for i in range(self.gender_combo.count())]:
+            self.gender_combo.setCurrentText(gender)
+        race = data.get("Faj")
+        if race and race in [self.race_combo.itemText(i) for i in range(self.race_combo.count())]:
+            self.race_combo.setCurrentText(race)
+        age = data.get("Kor")
+        if age is not None:
+            self.age_edit.setText(str(age))
+
+        # Ensure class options reflect current race/gender
+        self.update_class_options()
+
+        # Class selection
+        klass = data.get("Kaszt")
+        if klass and klass in [self.class_combo.itemText(i) for i in range(self.class_combo.count())]:
+            self.class_combo.setCurrentText(klass)
+
+        # Populate specs for the selected class and set selection
+        self.populate_specializations_for_selected_class()
+        spec = data.get("Specializáció")
+        if spec and spec in [self.spec_combo.itemText(i) for i in range(self.spec_combo.count())]:
+            self.spec_combo.setCurrentText(spec)
+        else:
+            # Default to "Nincs" if not provided or missing
+            if self.spec_combo.findText("Nincs") != -1:
+                self.spec_combo.setCurrentText("Nincs")

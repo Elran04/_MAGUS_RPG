@@ -1,4 +1,4 @@
-from PySide6 import QtWidgets, QtCore
+from PySide6 import QtWidgets, QtCore, QtGui
 import os
 import sqlite3
 from typing import Callable, Dict, Any
@@ -27,7 +27,40 @@ class SkillsStepWidget(QtWidgets.QWidget):
         self._build_ui()
 
     def _build_ui(self):
-        layout = QtWidgets.QVBoxLayout(self)
+        # Main horizontal splitter: left = attributes, right = skills table
+        main_layout = QtWidgets.QHBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        
+        splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
+        
+        # Left panel: Attributes display
+        from ui.character_creation.widgets.attributes_display import AttributesDisplayWidget
+        
+        def _set_character_data(key, value):
+            """Helper to set data in the wizard's data dict."""
+            data = self.get_character_data() or {}
+            data[key] = value
+        
+        def _get_class_db():
+            """Return the class DB instance (we'll need to get this from somewhere)."""
+            # We need to import this here to avoid circular imports
+            from utils.class_db_manager import ClassDBManager
+            return ClassDBManager()
+        
+        self.attributes_widget = AttributesDisplayWidget(
+            self.get_character_data,
+            _set_character_data,
+            _get_class_db
+        )
+        
+        # Connect attribute changes to refresh skills (for prereq checks)
+        self.attributes_widget.attributes_changed.connect(self._on_attributes_changed)
+        
+        splitter.addWidget(self.attributes_widget)
+        
+        # Right panel: Skills table and KP info
+        right_panel = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(right_panel)
         layout.setContentsMargins(0, 0, 0, 0)
 
         # Header with KP
@@ -43,8 +76,8 @@ class SkillsStepWidget(QtWidgets.QWidget):
         # Table
         layout.addWidget(QtWidgets.QLabel("Kaszt/Specializáció képzettségei:"))
         self.skills_table = QtWidgets.QTableWidget()
-        self.skills_table.setColumnCount(5)
-        self.skills_table.setHorizontalHeaderLabels(["Képzettség", "Szint", "%", "KP költség", "Forrás"]) 
+        self.skills_table.setColumnCount(6)
+        self.skills_table.setHorizontalHeaderLabels(["Képzettség", "Szint", "%", "KP költség", "Forrás", "Előfeltételek"]) 
         self.skills_table.horizontalHeader().setStretchLastSection(False)
         self.skills_table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
         self.skills_table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
@@ -65,9 +98,33 @@ class SkillsStepWidget(QtWidgets.QWidget):
         note.setWordWrap(True)
         note.setStyleSheet("color: #888; font-size: 9pt; padding: 8px;")
         layout.addWidget(note)
+        
+        splitter.addWidget(right_panel)
+        
+        # Set initial splitter sizes: ~25% left, ~75% right
+        splitter.setSizes([250, 750])
+        splitter.setStretchFactor(0, 0)
+        splitter.setStretchFactor(1, 1)
+        
+        main_layout.addWidget(splitter)
 
     def refresh(self):
         """Rebuild the table based on current selected class/spec and character data."""
+        # Initialize and refresh attributes display
+        if hasattr(self, 'attributes_widget'):
+            data = self.get_character_data() or {}
+            class_name = data.get("Kaszt")
+            race = data.get("Faj", "Ember")
+            age = int(data.get("Kor", 20))
+            
+            if class_name and race:
+                try:
+                    self.attributes_widget.initialize(class_name, race, age)
+                except Exception as e:
+                    print(f"Error initializing attributes: {e}")
+            
+            self.attributes_widget.refresh()
+        
         # KP header
         data = self.get_character_data() or {}
         kp_alap = data.get("Képzettségpontok", {}).get("Alap", 0)
@@ -88,6 +145,11 @@ class SkillsStepWidget(QtWidgets.QWidget):
             )
         else:
             self.empty_msg.setText("")
+    
+    def _on_attributes_changed(self, attributes: dict):
+        """Handle attribute changes - refresh skills to update prereq checks."""
+        # Reload skills table to revalidate prerequisites
+        self._load_skills()
 
     def _on_row_double_click(self, index):
         row = index.row()
@@ -118,6 +180,9 @@ class SkillsStepWidget(QtWidgets.QWidget):
             req_percent = int(combo.property('skill_percent') or 0)
             combo.clear()
             combo.addItem("-- válassz --", None)
+            # Build current skill map for prereq checks
+            attributes = (self.get_character_data() or {}).get("Tulajdonságok", {})
+            current_map = self._build_current_skills_map(req_override_instance=instance_key)
             for res in resolutions:
                 disp = res['skill_name']
                 if res['parameter']:
@@ -125,7 +190,13 @@ class SkillsStepWidget(QtWidgets.QWidget):
                 tid = res['target_skill_id']
                 if tid in taken:
                     continue
-                combo.addItem(disp, tid)
+                # Prerequisite check for hypothetical selection
+                # temporarily include candidate in current_map
+                check_map = dict(current_map)
+                check_map[tid] = {"level": req_level, "%": req_percent}
+                ok, _ = self._check_prerequisites(tid, req_level, req_percent, check_map, attributes)
+                if ok:
+                    combo.addItem(disp, tid)
             if current_selected is not None:
                 idx = combo.findData(current_selected)
                 if idx != -1:
@@ -232,6 +303,9 @@ class SkillsStepWidget(QtWidgets.QWidget):
                     return "?"
                 return "?"
 
+            # Precompute current skill map from fixed skills and selected placeholder resolutions
+            current_map = self._build_current_skills_map_from_entries(entries)
+
             # Phase 2: render
             for (skill_id, class_level, req_level, req_percent, from_spec, is_placeholder, display_name) in entries:
                 try:
@@ -243,6 +317,8 @@ class SkillsStepWidget(QtWidgets.QWidget):
                     self.skills_table.setItem(row, 3, QtWidgets.QTableWidgetItem(str(kp_cost)))
                     source = "Specializáció" if from_spec else "Alap kaszt"
                     self.skills_table.setItem(row, 4, QtWidgets.QTableWidgetItem(source))
+                    # Prerequisite check base
+                    attributes = (self.get_character_data() or {}).get("Tulajdonságok", {})
 
                     if is_placeholder == 1:
                         base_key = (skill_id, int(class_level or 0), int(req_level or 0), int(req_percent or 0), bool(from_spec))
@@ -256,6 +332,8 @@ class SkillsStepWidget(QtWidgets.QWidget):
                         combo.addItem("-- válassz --", None)
                         resolutions = self.placeholder_mgr.get_resolutions(skill_id)
                         taken = self._compute_taken_skills(exclude_instance=instance_key)
+                        # Build map excluding this instance
+                        map_excl = self._build_current_skills_map(req_override_instance=instance_key)
                         for res in resolutions:
                             disp = res['skill_name']
                             if res['parameter']:
@@ -263,7 +341,12 @@ class SkillsStepWidget(QtWidgets.QWidget):
                             tid = res['target_skill_id']
                             if tid in taken:
                                 continue
-                            combo.addItem(disp, tid)
+                            # prereq check if we select this target
+                            temp_map = dict(map_excl)
+                            temp_map[tid] = {"level": int(req_level or 0), "%": int(req_percent or 0)}
+                            ok, _ = self._check_prerequisites(tid, int(req_level or 0), int(req_percent or 0), temp_map, attributes)
+                            if ok:
+                                combo.addItem(disp, tid)
                         combo.setProperty('instance_key', instance_key)
                         combo.setProperty('row', row)
                         combo.setProperty('skill_level', int(req_level or 0))
@@ -284,9 +367,16 @@ class SkillsStepWidget(QtWidgets.QWidget):
                         self.skills_table.setCellWidget(row, 0, combo)
                     else:
                         name_item = QtWidgets.QTableWidgetItem(display_name)
-                        name_item.setData(QtCore.Qt.UserRole, skill_id)
-                        name_item.setData(QtCore.Qt.UserRole + 1, is_placeholder)
                         self.skills_table.setItem(row, 0, name_item)
+                        # Check prereqs for fixed skill itself
+                        ok, reasons = self._check_prerequisites(skill_id, int(req_level or 0), int(req_percent or 0), current_map, attributes)
+                        prereq_item = QtWidgets.QTableWidgetItem("OK" if ok else "Hiányzik")
+                        if ok:
+                            prereq_item.setForeground(QtGui.QBrush(QtGui.QColor("#2e7d32")))
+                        else:
+                            prereq_item.setForeground(QtGui.QBrush(QtGui.QColor("#c62828")))
+                            prereq_item.setToolTip("\n".join(reasons))
+                        self.skills_table.setItem(row, 5, prereq_item)
                 except Exception as e:
                     print(f"Error rendering skill row {skill_id}: {e}")
                     continue
@@ -331,4 +421,135 @@ class SkillsStepWidget(QtWidgets.QWidget):
                     self.skills_table.item(row, 3).setText("?")
         # Refresh combos to enforce uniqueness
         self._refresh_placeholder_combos()
+
+    def _build_current_skills_map_from_entries(self, entries):
+        """Construct a map of concrete skills -> assigned level/percent from fixed skills
+        and currently selected placeholder resolutions.
+        """
+        current_map = {}
+        counters = {}
+        for (skill_id, class_level, req_level, req_percent, from_spec, is_placeholder, _display_name) in entries:
+            if is_placeholder == 1:
+                base_key = (skill_id, int(class_level or 0), int(req_level or 0), int(req_percent or 0), bool(from_spec))
+                occur = counters.get(base_key, 0)
+                counters[base_key] = occur + 1
+                instance_key = (*base_key, occur)
+                chosen = self.placeholder_choices.get(instance_key)
+                if chosen:
+                    current_map[chosen] = {"level": int(req_level or 0), "%": int(req_percent or 0)}
+            else:
+                current_map[skill_id] = {"level": int(req_level or 0), "%": int(req_percent or 0)}
+        return current_map
+
+    def _build_current_skills_map(self, req_override_instance=None):
+        """Build map based on current table/choices, excluding a specific instance if provided."""
+        current_map = {}
+        # Fixed skills: infer id by name + parameter from DB
+        db_skill_path = os.path.join(self.BASE_DIR, 'data', 'skills', 'skills_data.db')
+        try:
+            with sqlite3.connect(db_skill_path) as sconn:
+                for row in range(self.skills_table.rowCount()):
+                    name_widget = self.skills_table.cellWidget(row, 0)
+                    if name_widget is None:
+                        name_item = self.skills_table.item(row, 0)
+                        if not name_item:
+                            continue
+                        display = name_item.text()
+                        # Parse "Name (Param)" pattern
+                        name = display
+                        param = ""
+                        if "(" in display and display.endswith(")"):
+                            try:
+                                base, p = display.rsplit("(", 1)
+                                name = base.strip()
+                                param = p[:-1].strip()
+                            except Exception:
+                                name = display
+                                param = ""
+                        res = sconn.execute("SELECT id FROM skills WHERE name=? AND IFNULL(parameter,'')=?", (name, param)).fetchone()
+                        if not res:
+                            continue
+                        sid = res[0]
+                        # level and percent from columns 1 and 2
+                        lvl_item = self.skills_table.item(row, 1)
+                        pct_item = self.skills_table.item(row, 2)
+                        try:
+                            lvl = int(lvl_item.text()) if lvl_item and lvl_item.text().isdigit() else 0
+                        except Exception:
+                            lvl = 0
+                        try:
+                            pct = int(pct_item.text()) if pct_item and pct_item.text().isdigit() else 0
+                        except Exception:
+                            pct = 0
+                        current_map[sid] = {"level": lvl, "%": pct}
+        except Exception as e:
+            print("Error building current skills map:", e)
+        # Use placeholder choices with instance keys
+        for ikey, chosen in self.placeholder_choices.items():
+            if req_override_instance is not None and ikey == req_override_instance:
+                continue
+            _, _class_level, req_level, req_percent, _from_spec, _occ = ikey
+            current_map[chosen] = {"level": int(req_level or 0), "%": int(req_percent or 0)}
+        return current_map
+
+    def _check_prerequisites(self, skill_id: str, req_level: int, req_percent: int, current_skills: dict, attributes: dict):
+        """Check attribute and skill prerequisites for a concrete skill at a given target level/percent.
+
+        Returns (ok: bool, reasons: list[str]) listing unmet requirements.
+        Aggregates requirements up to the requested level.
+        """
+        reasons = []
+        try:
+            db_skill_path = os.path.join(self.BASE_DIR, 'data', 'skills', 'skills_data.db')
+            with sqlite3.connect(db_skill_path) as sconn:
+                max_check_level = max(1, int(req_level or 0))
+                # Attributes
+                rows = sconn.execute(
+                    "SELECT attribute, min_value, level FROM skill_prerequisites_attributes WHERE skill_id=? ORDER BY level",
+                    (skill_id,)
+                ).fetchall()
+                for attr, min_val, lvl in rows:
+                    if lvl and int(lvl) > max_check_level:
+                        continue
+                    current_val = attributes.get(attr, None)
+                    if current_val is None or int(current_val) < int(min_val):
+                        reasons.append(f"Képesség: {attr} {min_val}+ (most: {current_val if current_val is not None else '-'})")
+                # Skills
+                srows = sconn.execute(
+                    "SELECT required_skill_id, min_level, level FROM skill_prerequisites_skills WHERE skill_id=? ORDER BY level",
+                    (skill_id,)
+                ).fetchall()
+                for req_id, min_lvl, lvl in srows:
+                    if lvl and int(lvl) > max_check_level:
+                        continue
+                    # Determine required skill type
+                    trow = sconn.execute("SELECT type FROM skills WHERE id=?", (req_id,)).fetchone()
+                    req_type = trow[0] if trow else 1
+                    have = current_skills.get(req_id)
+                    if not have:
+                        # try also accept if skill_id equals requirement and requested level itself satisfies? avoid circular; treat as missing
+                        reasons.append(self._format_skill_req(req_id, min_lvl, sconn))
+                    else:
+                        if req_type == 1:
+                            if int(have.get("level", 0)) < int(min_lvl or 0):
+                                reasons.append(self._format_skill_req(req_id, min_lvl, sconn, have.get("level")))
+                        else:
+                            # percent-based: interpret min_level as minimum percent
+                            if int(have.get("%", 0)) < int(min_lvl or 0):
+                                reasons.append(self._format_skill_req(req_id, min_lvl, sconn, have.get("%"), percent=True))
+        except Exception as e:
+            print("Prereq check error:", e)
+        return (len(reasons) == 0, reasons)
+
+    def _format_skill_req(self, skill_id, min_lvl, conn, have_val=None, percent: bool=False):
+        name_row = conn.execute("SELECT name, parameter FROM skills WHERE id=?", (skill_id,)).fetchone()
+        if name_row:
+            name, param = name_row
+            base = f"{name}{f' ({param})' if param else ''}"
+        else:
+            base = str(skill_id)
+        if percent:
+            return f"Képzettség: {base} {int(min_lvl)}%+ (most: {have_val if have_val is not None else '-'}%)"
+        else:
+            return f"Képzettség: {base} {int(min_lvl)}. szint (most: {have_val if have_val is not None else '-'.strip()})"
 

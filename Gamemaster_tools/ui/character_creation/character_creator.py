@@ -74,7 +74,15 @@ class CharacterWizardQt(QtWidgets.QDialog):
     def show_basic_spec_modular(self):
         """Show the Basic+Spec step via modular widget."""
         from ui.character_creation.steps.basic_spec_step import BasicSpecStepWidget
-        self.basic_spec_step = BasicSpecStepWidget(BASE_DIR, self.class_db)
+        # Reuse existing widget instance if present to preserve user input
+        if not hasattr(self, 'basic_spec_step') or self.basic_spec_step is None:
+            self.basic_spec_step = BasicSpecStepWidget(BASE_DIR, self.class_db)
+            # Prefill if we already have data
+            if getattr(self, 'data', None):
+                try:
+                    self.basic_spec_step.set_data(self.data)
+                except Exception:
+                    pass
         self.step_layout.addWidget(self.basic_spec_step)
 
     # Basic+Spec step moved to BasicSpecStepWidget
@@ -87,16 +95,18 @@ class CharacterWizardQt(QtWidgets.QDialog):
             return self.spec_data
         def _get_data():
             return self.data
-        self.skills_step = SkillsStepWidget(
-            BASE_DIR,
-            self.placeholder_mgr,
-            _get_class_id,
-            _get_spec_data,
-            _get_data,
-        )
-        # if we previously had choices, pass them in
-        if hasattr(self, 'placeholder_choices') and self.placeholder_choices:
-            self.skills_step.placeholder_choices = dict(self.placeholder_choices)
+        # Reuse existing instance to preserve inline selections
+        if not hasattr(self, 'skills_step') or self.skills_step is None:
+            self.skills_step = SkillsStepWidget(
+                BASE_DIR,
+                self.placeholder_mgr,
+                _get_class_id,
+                _get_spec_data,
+                _get_data,
+            )
+            # if we previously had choices, pass them in
+            if hasattr(self, 'placeholder_choices') and self.placeholder_choices:
+                self.skills_step.placeholder_choices = dict(self.placeholder_choices)
         self.skills_step.refresh()
         self.step_layout.addWidget(self.skills_step)
     
@@ -117,12 +127,13 @@ class CharacterWizardQt(QtWidgets.QDialog):
         def _get_data():
             return self.data
 
-        self.equipment_step = EquipmentStepWidget(self)
-        self.equipment_step.set_context(
+        if not hasattr(self, 'equipment_step') or self.equipment_step is None:
+            self.equipment_step = EquipmentStepWidget(self)
+            self.equipment_step.set_context(
             get_class_id=_get_class_id,
             get_spec_data=_get_spec_data,
             get_data=_get_data,
-        )
+            )
         self.step_layout.addWidget(self.equipment_step)
 
     def show_summary(self):
@@ -132,7 +143,8 @@ class CharacterWizardQt(QtWidgets.QDialog):
         def _get_data():
             return self.data
 
-        self.summary_step = SummaryStepWidget(_get_data, self)
+        if not hasattr(self, 'summary_step') or self.summary_step is None:
+            self.summary_step = SummaryStepWidget(_get_data, self)
         self.summary_step.refresh()
         self.step_layout.addWidget(self.summary_step)
 
@@ -154,6 +166,13 @@ class CharacterWizardQt(QtWidgets.QDialog):
             self.data["Képzettségpontok"] = temp_char.get("Képzettségpontok", {})
             self.data["Tulajdonságok"] = temp_char.get("Tulajdonságok", {})
             self.data["Harci értékek"] = temp_char.get("Harci értékek", {})
+        elif self.step == 1:
+            # Persist skills placeholder choices from widget back to wizard state
+            if hasattr(self, 'skills_step'):
+                try:
+                    self.placeholder_choices = dict(self.skills_step.placeholder_choices)
+                except Exception:
+                    pass
         elif self.step == 2:
             # Optionally validate and collect equipment data (placeholder)
             if hasattr(self, 'equipment_step') and not self.equipment_step.validate():
