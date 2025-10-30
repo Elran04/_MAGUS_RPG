@@ -36,7 +36,7 @@ def open_equipment_editor():
 # --- KARAKTERALKOTÁS MEGNYITÁSA ---
 def open_character_creator():
     try:
-        from ui.character_creator import CharacterWizardQt
+        from Gamemaster_tools.ui.character_creation.character_creator import CharacterWizardQt
         dlg = CharacterWizardQt()
         # Non-modal to avoid blocking main window; keep reference
         _windows.append(dlg)

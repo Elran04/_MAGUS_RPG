@@ -1,6 +1,6 @@
 """
 Skill Editor Tabs
-Handles creation of all editor tabs (Basic Info, Levels & KP, Description)
+Handles creation of all editor tabs (Basic Info, Levels & KP, Description, Placeholders)
 """
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFormLayout, QGridLayout,
@@ -12,6 +12,7 @@ from PySide6.QtGui import QFont
 
 from .skill_editor_constants import CATEGORIES, ACQ_METHOD_MAP, ACQ_DIFF_MAP, TYPE_MAP
 from .skill_prerequisite_editor import SkillPrerequisiteEditorWidget
+from .skill_editor_placeholders import PlaceholderEditorTab
 
 
 class SkillEditorTabs:
@@ -42,11 +43,13 @@ class SkillEditorTabs:
         self.kp_cost_spins = []
         self.prereq_labels = []
         self.desc_text_editor = None
+        self.placeholder_tab = None  # Reference to placeholder editor tab
         
         # Create all tabs
         self.create_basic_info_tab()
         self.create_levels_tab()
         self.create_description_tab()
+        self.create_placeholders_tab()
     
     def create_basic_info_tab(self):
         """Create the basic information tab"""
@@ -276,6 +279,11 @@ class SkillEditorTabs:
         layout.addStretch()
         
         self.tab_widget.addTab(tab, "Leírás")
+    
+    def create_placeholders_tab(self):
+        """Create the placeholder management tab"""
+        # Delegate to PlaceholderEditorTab class
+        self.placeholder_tab = PlaceholderEditorTab(self.tab_widget, self.parent)
     
     def on_main_category_changed(self, main_category):
         """Update subcategory combo when main category changes"""
