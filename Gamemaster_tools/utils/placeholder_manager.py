@@ -8,6 +8,10 @@ and the actual skills they can resolve to (e.g., specific weapon skills).
 import os
 import sqlite3
 
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 DB_SKILLS_PATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "data", "skills", "skills_data.db")
 )
@@ -187,7 +191,7 @@ class PlaceholderManager:
         for skill_id in belharc_prereq_weapons:
             self.add_resolution("close_quarters_combat_prereq", skill_id, "close_quarters")
 
-        print("✅ Default placeholder resolutions populated!")
+        logger.info("Default placeholder resolutions populated successfully")
 
     def get_resolution_summary(self):
         """Get a summary of all placeholder resolutions for debugging/display."""

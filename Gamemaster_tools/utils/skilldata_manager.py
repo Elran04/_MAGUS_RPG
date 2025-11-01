@@ -2,6 +2,10 @@ import os
 import re
 import sqlite3
 
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 DB_PATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "data", "skills", "skills_data.db")
 )
@@ -15,42 +19,45 @@ class SkillManager:
         """
         Betölti a helyfoglaló (placeholder=1) képzettségeket a skills táblából.
         """
-        conn = sqlite3.connect(self.db_path)
-        c = conn.cursor()
-        c.execute("SELECT * FROM skills WHERE placeholder=1")
-        placeholders = []
-        for row in c.fetchall():
-            skill = {
-                "id": row[0],
-                "name": row[1],
-                "parameter": row[2],
-                "main_category": row[3],
-                "sub_category": row[4],
-                "acquisition_method": row[5],
-                "acquisition_difficulty": row[6],
-                "skill_type": row[7],
-                "description_file": row[8],
-                # Új mező: placeholder
-                "placeholder": row[9] if len(row) > 9 else 0,
-            }
-            # Leírás betöltése .md-ből, ha van
-            desc_path = (
-                os.path.join(self.desc_dir, skill["description_file"])
-                if skill.get("description_file")
-                else None
-            )
-            if desc_path and os.path.exists(desc_path):
-                with open(desc_path, encoding="utf-8") as f:
-                    skill["description"] = f.read()
-            else:
-                skill["description"] = ""
-            # KP költségek, szintleírások, előfeltételek üresen
-            skill["kp_costs"] = {}
-            skill["level_descriptions"] = {}
-            skill["prerequisites"] = {}
-            skill["is_parametric"] = bool(skill["parameter"])
-            placeholders.append(skill)
-        conn.close()
+        with sqlite3.connect(self.db_path) as conn:
+            c = conn.cursor()
+            c.execute("SELECT * FROM skills WHERE placeholder=1")
+            placeholders = []
+            for row in c.fetchall():
+                skill = {
+                    "id": row[0],
+                    "name": row[1],
+                    "parameter": row[2],
+                    "main_category": row[3],
+                    "sub_category": row[4],
+                    "acquisition_method": row[5],
+                    "acquisition_difficulty": row[6],
+                    "skill_type": row[7],
+                    "description_file": row[8],
+                    # Új mező: placeholder
+                    "placeholder": row[9] if len(row) > 9 else 0,
+                }
+                # Leírás betöltése .md-ből, ha van
+                desc_path = (
+                    os.path.join(self.desc_dir, skill["description_file"])
+                    if skill.get("description_file")
+                    else None
+                )
+                if desc_path and os.path.exists(desc_path):
+                    try:
+                        with open(desc_path, encoding="utf-8") as f:
+                            skill["description"] = f.read()
+                    except (OSError, IOError) as e:
+                        logger.error(f"Failed to load description for {skill['id']}: {e}")
+                        skill["description"] = ""
+                else:
+                    skill["description"] = ""
+                # KP költségek, szintleírások, előfeltételek üresen
+                skill["kp_costs"] = {}
+                skill["level_descriptions"] = {}
+                skill["prerequisites"] = {}
+                skill["is_parametric"] = bool(skill["parameter"])
+                placeholders.append(skill)
         return placeholders
 
     def __init__(self):
@@ -61,83 +68,90 @@ class SkillManager:
         """
         Törli a megadott skill-t és minden hivatkozását az adatbázisból (skills tábla, placeholder mezőtől függetlenül).
         """
-        conn = sqlite3.connect(self.db_path)
-        c = conn.cursor()
-        # Fő skill törlése (normál és placeholder is)
-        c.execute("DELETE FROM skills WHERE id=?", (skill_id,))
-        # KP költségek törlése
-        c.execute("DELETE FROM skill_level_costs WHERE skill_id=?", (skill_id,))
-        c.execute("DELETE FROM skill_percent_costs WHERE skill_id=?", (skill_id,))
-        # Előfeltételek törlése
-        c.execute("DELETE FROM skill_prerequisites_skills WHERE skill_id=?", (skill_id,))
-        c.execute("DELETE FROM skill_prerequisites_attributes WHERE skill_id=?", (skill_id,))
-        # Más skillek előfeltételeiben hivatkozás törlése
-        c.execute("DELETE FROM skill_prerequisites_skills WHERE required_skill_id=?", (skill_id,))
-        conn.commit()
-        conn.close()
-        # Leírás törlése a descriptions mappából
-        desc_file = os.path.join(self.desc_dir, f"{skill_id}.md")
-        if os.path.exists(desc_file):
-            try:
-                os.remove(desc_file)
-            except Exception as e:
-                print(f"Leírás törlése sikertelen: {desc_file}, hiba: {e}")
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                c = conn.cursor()
+                # Fő skill törlése (normál és placeholder is)
+                c.execute("DELETE FROM skills WHERE id=?", (skill_id,))
+                # KP költségek törlése
+                c.execute("DELETE FROM skill_level_costs WHERE skill_id=?", (skill_id,))
+                c.execute("DELETE FROM skill_percent_costs WHERE skill_id=?", (skill_id,))
+                # Előfeltételek törlése
+                c.execute("DELETE FROM skill_prerequisites_skills WHERE skill_id=?", (skill_id,))
+                c.execute("DELETE FROM skill_prerequisites_attributes WHERE skill_id=?", (skill_id,))
+                # Más skillek előfeltételeiben hivatkozás törlése
+                c.execute("DELETE FROM skill_prerequisites_skills WHERE required_skill_id=?", (skill_id,))
+                conn.commit()
+            
+            # Leírás törlése a descriptions mappából
+            desc_file = os.path.join(self.desc_dir, f"{skill_id}.md")
+            if os.path.exists(desc_file):
+                try:
+                    os.remove(desc_file)
+                except Exception as e:
+                    logger.error(f"Leírás törlése sikertelen: {desc_file}, hiba: {e}")
+        except sqlite3.Error as e:
+            logger.error(f"Failed to delete skill {skill_id}: {e}")
+            raise
 
     def load(self):
         """
         Betölti az összes képzettséget az adatbázisból, minden metaadatot, költséget, előfeltételt.
         """
-        conn = sqlite3.connect(self.db_path)
-        c = conn.cursor()
-        c.execute("SELECT * FROM skills")
-        skills = []
-        for row in c.fetchall():
-            skill = {
-                "id": row[0],
-                "name": row[1],
-                "parameter": row[2],
-                "main_category": row[3],
-                "sub_category": row[4],
-                "acquisition_method": row[5],
-                "acquisition_difficulty": row[6],
-                "skill_type": row[7],
-                "description_file": row[8] if row[8] is not None else "",
-                "placeholder": row[9] if len(row) > 9 else 0,
-            }
-            # Csak akkor próbáljuk betölteni a leírást, ha nem placeholder
-            if not skill.get("placeholder", 0):
-                desc_path = (
-                    os.path.join(self.desc_dir, skill["description_file"])
-                    if skill["description_file"]
-                    else None
-                )
-                if desc_path and os.path.exists(desc_path):
-                    with open(desc_path, encoding="utf-8") as f:
-                        skill["description"] = f.read()
+        with sqlite3.connect(self.db_path) as conn:
+            c = conn.cursor()
+            c.execute("SELECT * FROM skills")
+            skills = []
+            for row in c.fetchall():
+                skill = {
+                    "id": row[0],
+                    "name": row[1],
+                    "parameter": row[2],
+                    "main_category": row[3],
+                    "sub_category": row[4],
+                    "acquisition_method": row[5],
+                    "acquisition_difficulty": row[6],
+                    "skill_type": row[7],
+                    "description_file": row[8] if row[8] is not None else "",
+                    "placeholder": row[9] if len(row) > 9 else 0,
+                }
+                # Csak akkor próbáljuk betölteni a leírást, ha nem placeholder
+                if not skill.get("placeholder", 0):
+                    desc_path = (
+                        os.path.join(self.desc_dir, skill["description_file"])
+                        if skill["description_file"]
+                        else None
+                    )
+                    if desc_path and os.path.exists(desc_path):
+                        try:
+                            with open(desc_path, encoding="utf-8") as f:
+                                skill["description"] = f.read()
+                        except (OSError, IOError) as e:
+                            logger.error(f"Failed to load description for {skill['id']}: {e}")
+                            skill["description"] = ""
+                    else:
+                        skill["description"] = ""
                 else:
                     skill["description"] = ""
-            else:
-                skill["description"] = ""
-            # KP költségek
-            if skill["skill_type"] == 1:
-                c.execute(
-                    "SELECT level, kp_cost FROM skill_level_costs WHERE skill_id=? ORDER BY level",
-                    (skill["id"],),
-                )
-                skill["kp_costs"] = {str(lvl): kp for lvl, kp in c.fetchall()}
-            elif skill["skill_type"] == 2:
-                c.execute(
-                    "SELECT kp_per_3percent FROM skill_percent_costs WHERE skill_id=?",
-                    (skill["id"],),
-                )
-                res = c.fetchone()
-                skill["kp_per_3_percent"] = res[0] if res else None
-            # Szintenkénti leírások
-            skill["level_descriptions"] = self._load_level_descriptions(skill["description"])
-            # Előfeltételek
-            skill["prerequisites"] = self._load_prerequisites(c, skill["id"])
-            skills.append(skill)
-        conn.close()
+                # KP költségek
+                if skill["skill_type"] == 1:
+                    c.execute(
+                        "SELECT level, kp_cost FROM skill_level_costs WHERE skill_id=? ORDER BY level",
+                        (skill["id"],),
+                    )
+                    skill["kp_costs"] = {str(lvl): kp for lvl, kp in c.fetchall()}
+                elif skill["skill_type"] == 2:
+                    c.execute(
+                        "SELECT kp_per_3percent FROM skill_percent_costs WHERE skill_id=?",
+                        (skill["id"],),
+                    )
+                    res = c.fetchone()
+                    skill["kp_per_3_percent"] = res[0] if res else None
+                # Szintenkénti leírások
+                skill["level_descriptions"] = self._load_level_descriptions(skill["description"])
+                # Előfeltételek
+                skill["prerequisites"] = self._load_prerequisites(c, skill["id"])
+                skills.append(skill)
         return skills
 
     def _load_level_descriptions(self, desc_text):
@@ -202,122 +216,133 @@ class SkillManager:
         """
         Helyfoglaló (placeholder) skill mentése a skills táblába, csak a kötelező mezőkkel, minden más NULL/üres.
         """
-        conn = sqlite3.connect(self.db_path)
-        c = conn.cursor()
-        c.execute(
-            """
-            INSERT OR REPLACE INTO skills (id, name, parameter, category, subcategory, acquisition, difficulty, type, description_file, placeholder)
-            VALUES (?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, 1)
-        """,
-            (
-                skill.get("id"),
-                skill.get("name"),
-                skill.get("parameter", ""),
-                skill.get("main_category", ""),
-                skill.get("sub_category", ""),
-            ),
-        )
-        conn.commit()
-        conn.close()
-
-    def _save_skill(self, skill, valid_levels_dict=None):
-        conn = sqlite3.connect(self.db_path)
-        c = conn.cursor()
-        # Fő adatok mentése
-        c.execute(
-            """
-            INSERT INTO skills (id, name, parameter, category, subcategory, acquisition, difficulty, type, description_file, placeholder)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(id) DO UPDATE SET
-                name=excluded.name,
-                parameter=excluded.parameter,
-                category=excluded.category,
-                subcategory=excluded.subcategory,
-                acquisition=excluded.acquisition,
-                difficulty=excluded.difficulty,
-                type=excluded.type,
-                description_file=excluded.description_file,
-                placeholder=excluded.placeholder
-        """,
-            (
-                skill.get("id"),
-                skill.get("name"),
-                skill.get("parameter", ""),
-                skill.get("main_category", ""),
-                skill.get("sub_category", ""),
-                skill.get("acquisition_method", None),
-                skill.get("acquisition_difficulty", None),
-                skill.get("skill_type", 1),
-                skill.get("description_file", f"{skill.get('id')}.md"),
-                skill.get("placeholder", 0),
-            ),
-        )
-        # KP költségek mentése
-        kp_costs = skill.get("kp_costs", {})
-        if skill.get("skill_type") == 1:
-            for lvl, kp in kp_costs.items():
-                c.execute(
-                    "INSERT INTO skill_level_costs (skill_id, level, kp_cost) VALUES (?, ?, ?) ON CONFLICT(skill_id, level) DO UPDATE SET kp_cost=excluded.kp_cost",
-                    (skill.get("id"), int(lvl), int(kp)),
-                )
-        elif skill.get("skill_type") == 2:
-            kp3 = skill.get("kp_per_3_percent")
-            if kp3 is not None:
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                c = conn.cursor()
                 c.execute(
                     """
-                    INSERT OR REPLACE INTO skill_percent_costs (skill_id, kp_per_3percent) VALUES (?, ?)
+                    INSERT OR REPLACE INTO skills (id, name, parameter, category, subcategory, acquisition, difficulty, type, description_file, placeholder)
+                    VALUES (?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, 1)
                 """,
-                    (skill.get("id"), int(kp3)),
+                    (
+                        skill.get("id"),
+                        skill.get("name"),
+                        skill.get("parameter", ""),
+                        skill.get("main_category", ""),
+                        skill.get("sub_category", ""),
+                    ),
                 )
-        # Előfeltételek
-        for lvl, prereq in skill.get("prerequisites", {}).items():
-            # --- Képzettség előfeltételek: először törlés, majd beszúrás ---
-            c.execute(
-                "DELETE FROM skill_prerequisites_skills WHERE skill_id=? AND level=?",
-                (skill.get("id"), int(lvl)),
-            )
-            skill_prereqs = []
-            for skill_str in prereq.get("képzettség", []):
-                m = re.match(r"(.+?)(?: \((.+?)\))? (\d+)\. szint", skill_str)
-                if m:
-                    name = m.group(1)
-                    param = m.group(2) or ""
-                    min_lvl = int(m.group(3))
-                    # Skill id keresése név+param alapján
-                    c.execute("SELECT id FROM skills WHERE name=? AND parameter=?", (name, param))
-                    res = c.fetchone()
-                    req_id = res[0] if res else name
-                    skill_prereqs.append((req_id, min_lvl))
-            for req_id, min_lvl in skill_prereqs:
+                conn.commit()
+        except sqlite3.Error as e:
+            logger.error(f"Failed to save placeholder skill {skill.get('id')}: {e}")
+            raise
+
+    def _save_skill(self, skill, valid_levels_dict=None):
+        """Save a complete skill to the database with all metadata."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                c = conn.cursor()
+                # Fő adatok mentése
                 c.execute(
-                    "INSERT INTO skill_prerequisites_skills (skill_id, level, required_skill_id, min_level) VALUES (?, ?, ?, ?)",
-                    (skill.get("id"), int(lvl), req_id, min_lvl),
+                    """
+                    INSERT INTO skills (id, name, parameter, category, subcategory, acquisition, difficulty, type, description_file, placeholder)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(id) DO UPDATE SET
+                        name=excluded.name,
+                        parameter=excluded.parameter,
+                        category=excluded.category,
+                        subcategory=excluded.subcategory,
+                        acquisition=excluded.acquisition,
+                        difficulty=excluded.difficulty,
+                        type=excluded.type,
+                        description_file=excluded.description_file,
+                        placeholder=excluded.placeholder
+                """,
+                    (
+                        skill.get("id"),
+                        skill.get("name"),
+                        skill.get("parameter", ""),
+                        skill.get("main_category", ""),
+                        skill.get("sub_category", ""),
+                        skill.get("acquisition_method", None),
+                        skill.get("acquisition_difficulty", None),
+                        skill.get("skill_type", 1),
+                        skill.get("description_file", f"{skill.get('id')}.md"),
+                        skill.get("placeholder", 0),
+                    ),
                 )
-            # --- Képesség előfeltételek: először törlés, majd beszúrás ---
-            c.execute(
-                "DELETE FROM skill_prerequisites_attributes WHERE skill_id=? AND level=?",
-                (skill.get("id"), int(lvl)),
-            )
-            for stat_str in prereq.get("képesség", []):
-                parts = stat_str.split()
-                if len(parts) == 2 and parts[1].endswith("+"):
-                    attr = parts[0]
-                    min_val = int(parts[1][:-1])
+                # KP költségek mentése
+                kp_costs = skill.get("kp_costs", {})
+                if skill.get("skill_type") == 1:
+                    for lvl, kp in kp_costs.items():
+                        c.execute(
+                            "INSERT INTO skill_level_costs (skill_id, level, kp_cost) VALUES (?, ?, ?) ON CONFLICT(skill_id, level) DO UPDATE SET kp_cost=excluded.kp_cost",
+                            (skill.get("id"), int(lvl), int(kp)),
+                        )
+                elif skill.get("skill_type") == 2:
+                    kp3 = skill.get("kp_per_3_percent")
+                    if kp3 is not None:
+                        c.execute(
+                            """
+                            INSERT OR REPLACE INTO skill_percent_costs (skill_id, kp_per_3percent) VALUES (?, ?)
+                        """,
+                            (skill.get("id"), int(kp3)),
+                        )
+                # Előfeltételek
+                for lvl, prereq in skill.get("prerequisites", {}).items():
+                    # --- Képzettség előfeltételek: először törlés, majd beszúrás ---
                     c.execute(
-                        "INSERT INTO skill_prerequisites_attributes (skill_id, level, attribute, min_value) VALUES (?, ?, ?, ?)",
-                        (skill.get("id"), int(lvl), attr, min_val),
+                        "DELETE FROM skill_prerequisites_skills WHERE skill_id=? AND level=?",
+                        (skill.get("id"), int(lvl)),
                     )
-        # Leírás mentése .md-be
-        desc_file = skill.get("description_file", f"{skill.get('id')}.md")
-        desc_path = os.path.join(self.desc_dir, desc_file)
-        # Ensure the descriptions directory exists
-        os.makedirs(self.desc_dir, exist_ok=True)
-        with open(desc_path, "w", encoding="utf-8") as f:
-            f.write(skill.get("description", ""))
-            for lvl, txt in skill.get("level_descriptions", {}).items():
-                f.write(f"\n\n## Szint {lvl}\n{txt}")
-        conn.commit()
-        conn.close()
+                    skill_prereqs = []
+                    for skill_str in prereq.get("képzettség", []):
+                        m = re.match(r"(.+?)(?: \((.+?)\))? (\d+)\. szint", skill_str)
+                        if m:
+                            name = m.group(1)
+                            param = m.group(2) or ""
+                            min_lvl = int(m.group(3))
+                            # Skill id keresése név+param alapján
+                            c.execute("SELECT id FROM skills WHERE name=? AND parameter=?", (name, param))
+                            res = c.fetchone()
+                            req_id = res[0] if res else name
+                            skill_prereqs.append((req_id, min_lvl))
+                    for req_id, min_lvl in skill_prereqs:
+                        c.execute(
+                            "INSERT INTO skill_prerequisites_skills (skill_id, level, required_skill_id, min_level) VALUES (?, ?, ?, ?)",
+                            (skill.get("id"), int(lvl), req_id, min_lvl),
+                        )
+                    # --- Képesség előfeltételek: először törlés, majd beszúrás ---
+                    c.execute(
+                        "DELETE FROM skill_prerequisites_attributes WHERE skill_id=? AND level=?",
+                        (skill.get("id"), int(lvl)),
+                    )
+                    for stat_str in prereq.get("képesség", []):
+                        parts = stat_str.split()
+                        if len(parts) == 2 and parts[1].endswith("+"):
+                            attr = parts[0]
+                            min_val = int(parts[1][:-1])
+                            c.execute(
+                                "INSERT INTO skill_prerequisites_attributes (skill_id, level, attribute, min_value) VALUES (?, ?, ?, ?)",
+                                (skill.get("id"), int(lvl), attr, min_val),
+                            )
+                conn.commit()
+            
+            # Leírás mentése .md-be (outside transaction)
+            desc_file = skill.get("description_file", f"{skill.get('id')}.md")
+            desc_path = os.path.join(self.desc_dir, desc_file)
+            # Ensure the descriptions directory exists
+            os.makedirs(self.desc_dir, exist_ok=True)
+            try:
+                with open(desc_path, "w", encoding="utf-8") as f:
+                    f.write(skill.get("description", ""))
+                    for lvl, txt in skill.get("level_descriptions", {}).items():
+                        f.write(f"\n\n## Szint {lvl}\n{txt}")
+            except (OSError, IOError) as e:
+                logger.error(f"Failed to save description file for {skill.get('id')}: {e}")
+        except sqlite3.Error as e:
+            logger.error(f"Failed to save skill {skill.get('id')}: {e}")
+            raise
 
     def validate(self, skill):
         # Helyfoglaló képzettségnél csak az alap mezők legyenek kötelezőek

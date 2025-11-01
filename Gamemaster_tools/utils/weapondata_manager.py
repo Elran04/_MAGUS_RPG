@@ -2,6 +2,9 @@ import os
 import sqlite3
 
 from utils.json_manager import JsonManager
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class WeaponDataManager(JsonManager):
@@ -118,22 +121,22 @@ class WeaponDataManager(JsonManager):
         db_path = os.path.join(os.path.dirname(__file__), "..", "data", "skills", "skills_data.db")
         categories: set[str] = set()
         try:
-            conn = sqlite3.connect(db_path)
-            c = conn.cursor()
-            if type_value in ["közelharci", "távolsági"]:
-                c.execute(
-                    "SELECT parameter FROM skills WHERE name='Fegyverhasználat' AND parameter IS NOT NULL AND parameter != ''"
-                )
-                categories.update(row[0] for row in c.fetchall())
-            elif type_value == "hajító":
-                c.execute(
-                    "SELECT parameter FROM skills WHERE name='Fegyverdobás' AND parameter IS NOT NULL AND parameter != ''"
-                )
-                categories.update(row[0] for row in c.fetchall())
-            # pajzs esetén üres
-            conn.close()
+            with sqlite3.connect(db_path) as conn:
+                c = conn.cursor()
+                if type_value in ["közelharci", "távolsági"]:
+                    c.execute(
+                        "SELECT parameter FROM skills WHERE name='Fegyverhasználat' AND parameter IS NOT NULL AND parameter != ''"
+                    )
+                    categories.update(row[0] for row in c.fetchall())
+                elif type_value == "hajító":
+                    c.execute(
+                        "SELECT parameter FROM skills WHERE name='Fegyverdobás' AND parameter IS NOT NULL AND parameter != ''"
+                    )
+                    categories.update(row[0] for row in c.fetchall())
+                # pajzs esetén üres
             return sorted(categories)
-        except Exception:
+        except sqlite3.Error as e:
+            logger.error(f"Failed to load weapon categories for type '{type_value}': {e}")
             return []
 
     # További UI-független adatkezelő metódusok ide jöhetnek

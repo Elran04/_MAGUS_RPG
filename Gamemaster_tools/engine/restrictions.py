@@ -8,15 +8,11 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-# Source gender restrictions from character.py to avoid duplication
-try:
-    from engine.character import GENDER_RESTRICTIONS
-except Exception:
-    # Fallback (should rarely be used)
-    GENDER_RESTRICTIONS = {
-        "Nő": {"Lovag", "Paplovag", "Barbár", "Boszorkánymester"},
-        "Férfi": {"Boszorkány", "Amazon"},
-    }
+# Gender-based class restrictions
+GENDER_RESTRICTIONS = {
+    "Nő": {"Lovag", "Paplovag", "Barbár", "Boszorkánymester"},
+    "Férfi": {"Boszorkány", "Amazon"},
+}
 
 
 def is_class_allowed(gender: str, klass: str, allowed_for_race: Iterable[str] | None) -> bool:

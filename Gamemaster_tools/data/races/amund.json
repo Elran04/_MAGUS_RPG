@@ -172,13 +172,7 @@
       }
     ]
   },
-  "racial_skills": [
-    {
-      "skill_id": "language_common",
-      "level": "native",
-      "optional": false
-    }
-  ],
+  "racial_skills": [],
   "forbidden_skills": [],
   "origins": [
     {
@@ -205,7 +199,7 @@
   ],
   "metadata": {
     "created_at": "2025-11-01T19:17:24.176220",
-    "updated_at": "2025-11-01T19:47:52.960296",
+    "updated_at": "2025-11-01T23:30:14.689617",
     "version": "1.0",
     "migrated_from": "race_age_stat_modifiers.py"
   }
