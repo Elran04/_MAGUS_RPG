@@ -83,11 +83,13 @@ class AttributeManager:
 
     def _get_class_id(self, class_name: str) -> int:
         """Get class ID from class name."""
-        classes = self.class_db.list_classes()
-        class_id = next((cid for cid, name in classes if name == class_name), None)
+        from typing import cast
+
+        classes = cast(list[tuple[int, str]], self.class_db.list_classes())
+        class_id: int | None = next((cid for cid, name in classes if name == class_name), None)
         if class_id is None:
             raise ValueError(f"Class '{class_name}' not found in DB")
-        return class_id
+        return int(class_id)
 
     def _parse_stat_ranges(self, stats_data):
         """Parse stat ranges and double-roll flags from class data."""

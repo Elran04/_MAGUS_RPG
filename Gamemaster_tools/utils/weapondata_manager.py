@@ -116,7 +116,7 @@ class WeaponDataManager(JsonManager):
         Lekérdezi a fegyverkategóriákat a skills_data.db adatbázisból, a típus alapján.
         """
         db_path = os.path.join(os.path.dirname(__file__), "..", "data", "skills", "skills_data.db")
-        categories = set()
+        categories: set[str] = set()
         try:
             conn = sqlite3.connect(db_path)
             c = conn.cursor()

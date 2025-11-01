@@ -53,19 +53,19 @@ class SkillEditorQt(QMainWindow):
             display_name = f"{name} ({param})" if param else name
             self.skill_names.append(display_name)
 
-        self.current_skill = None
-        self.current_prerequisites = {}
+        self.current_skill: dict | None = None
+        self.current_prerequisites: dict = {}
 
         # Initialize component handlers
-        self.skill_list_panel = None
-        self.tabs = None
-        self.actions = None
+        self.skill_list_panel: SkillListPanel | None = None
+        self.tabs: SkillEditorTabs | None = None
+        self.editor_actions: SkillEditorActions | None = None
 
         # Initialize UI
         self.init_ui()
 
         # Load first skill if available
-        if self.all_skills:
+        if self.all_skills and self.skill_list_panel is not None:
             self.skill_list_panel.set_current_row(0)
 
     def init_ui(self):
@@ -82,15 +82,19 @@ class SkillEditorQt(QMainWindow):
         main_layout.addWidget(splitter)
 
         # Initialize actions handler
-        self.actions = SkillEditorActions(self)
+        self.editor_actions = SkillEditorActions(self)
 
         # Left panel - Skill list
         self.skill_list_panel = SkillListPanel(
             splitter,
             on_skill_selected=self.on_skill_selected,
-            on_new_skill=self.actions.new_skill,
-            on_duplicate_skill=self.actions.duplicate_skill,
-            on_delete_skill=self.actions.delete_skill,
+            on_new_skill=self.editor_actions.new_skill if self.editor_actions else (lambda: None),
+            on_duplicate_skill=(
+                self.editor_actions.duplicate_skill if self.editor_actions else (lambda: None)
+            ),
+            on_delete_skill=(
+                self.editor_actions.delete_skill if self.editor_actions else (lambda: None)
+            ),
         )
         self.skill_list_panel.populate(self.all_skills)
 
@@ -113,13 +117,19 @@ class SkillEditorQt(QMainWindow):
         # Initialize tabs
         self.tabs = SkillEditorTabs(tab_widget, self)
         # Live-update prereq editor skill names as the user edits name/parameter
-        self.tabs.name_edit.textChanged.connect(self.on_basic_info_changed)
-        self.tabs.param_edit.textChanged.connect(self.on_basic_info_changed)
+        if (
+            self.tabs is not None
+            and self.tabs.name_edit is not None
+            and self.tabs.param_edit is not None
+        ):
+            self.tabs.name_edit.textChanged.connect(self.on_basic_info_changed)
+            self.tabs.param_edit.textChanged.connect(self.on_basic_info_changed)
 
         # Save button
         btn_save = QPushButton("Mentés")
         btn_save.setMinimumHeight(40)
-        btn_save.clicked.connect(self.actions.save_skill)
+        if self.editor_actions is not None:
+            btn_save.clicked.connect(self.editor_actions.save_skill)
         editor_layout.addWidget(btn_save)
 
         parent.addWidget(editor_widget)
@@ -130,39 +140,48 @@ class SkillEditorQt(QMainWindow):
             return
 
         self.current_skill = self.all_skills[index]
-        self.actions.load_skill_to_ui()
+        if self.editor_actions is not None:
+            self.editor_actions.load_skill_to_ui()
 
         # Also suggest this skill in the Placeholder tab's search/selection, if it's not a placeholder itself
         try:
-            if getattr(self.tabs, "placeholder_tab", None):
-                skill = self.current_skill
-                if skill and skill.get("placeholder", 0) != 1:
-                    name = skill.get("name", "")
-                    param = skill.get("parameter", "")
-                    display = f"{name} ({param})" if param else name
-                    self.tabs.placeholder_tab.suggest_skill_selection(skill.get("id"), display)
+            if self.tabs is not None:
+                placeholder_tab = getattr(self.tabs, "placeholder_tab", None)
+                if placeholder_tab is not None:
+                    skill = self.current_skill
+                    if skill and skill.get("placeholder", 0) != 1:
+                        name = skill.get("name", "")
+                        param = skill.get("parameter", "")
+                        display = f"{name} ({param})" if param else name
+                        placeholder_tab.suggest_skill_selection(skill.get("id"), display)
         except Exception:
             # Non-fatal: ignore wiring errors
             pass
 
     def update_type_dependent_fields(self):
         """Enable/disable KP fields depending on skill type selection."""
+        if self.tabs is None or self.tabs.type_combo is None:
+            return
         current = self.tabs.type_combo.currentText()
         st = TYPE_MAP_REV.get(current, 1)
         is_level = st == 1
         # Level-based: enable per-level KP, disable KP/3%
         for spin in self.tabs.kp_cost_spins:
             spin.setEnabled(is_level)
-        self.tabs.kp_per_3_spin.setEnabled(not is_level)
+        if self.tabs.kp_per_3_spin is not None:
+            self.tabs.kp_per_3_spin.setEnabled(not is_level)
 
     def update_prereq_summary(self):
         """Update prerequisite summary labels - delegates to actions"""
-        self.actions.update_prereq_summary()
+        if self.editor_actions is not None:
+            self.editor_actions.update_prereq_summary()
 
     def on_basic_info_changed(self):
         """Rebuild the list of displayable skill names and propagate to prereq editors.
         Includes the current unsaved name/parameter so self-referencing is possible immediately.
         """
+        if self.tabs is None or self.tabs.name_edit is None or self.tabs.param_edit is None:
+            return
         names = []
         for s in self.all_skills:
             # Use live UI values for the current skill to allow self-referencing before save
@@ -183,11 +202,13 @@ class SkillEditorQt(QMainWindow):
 
     def open_description_file(self):
         """Open description file - delegates to actions"""
-        self.actions.open_description_file()
+        if self.editor_actions is not None:
+            self.editor_actions.open_description_file()
 
     def save_description_file(self):
         """Save description file - delegates to actions"""
-        self.actions.save_description_file()
+        if self.editor_actions is not None:
+            self.editor_actions.save_description_file()
 
 
 if __name__ == "__main__":

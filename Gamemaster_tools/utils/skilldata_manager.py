@@ -416,7 +416,7 @@ class SkillManager:
 
     def prereq_from_string(self, prerequisites):
         # ...existing code...
-        prereq_vars = [[] for _ in range(6)]
+        prereq_vars: list[list[dict]] = [[] for _ in range(6)]
         for idx in range(6):
             prereq = prerequisites.get(str(idx + 1), {})
             # Tulajdonságok

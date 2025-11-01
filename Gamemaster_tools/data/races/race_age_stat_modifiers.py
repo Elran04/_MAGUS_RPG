@@ -159,8 +159,9 @@ RACE_MODIFIERS = {
 
 
 def get_full_stat_limits(race: str) -> dict:
-    race_data = RACE_MODIFIERS.get(race, {})
-    custom_limits = race_data.get("limits", {})
+    race_data_obj = RACE_MODIFIERS.get(race, {})
+    race_data: dict = race_data_obj if isinstance(race_data_obj, dict) else {}
+    custom_limits: dict = race_data.get("limits", {})
     full_limits = {}
 
     for stat in ALL_STATS:
@@ -251,7 +252,8 @@ def get_age_modifiers(race: str, age: int) -> dict:
 
 
 def apply_race_modifiers(stats: dict, race: str) -> dict:
-    mods = RACE_MODIFIERS.get(race, {})
+    mods_obj = RACE_MODIFIERS.get(race, {})
+    mods: dict = mods_obj if isinstance(mods_obj, dict) else {}
     modified_stats = stats.copy()
 
     for stat, bonus in mods.get("modifiers", {}).items():

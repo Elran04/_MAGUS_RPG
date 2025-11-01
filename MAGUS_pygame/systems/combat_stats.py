@@ -11,15 +11,16 @@ stats are calculated across the codebase. This encapsulates:
 Returned breakdown can be used by both UI and game logic to ensure
 consistency and to make future additions (like conditions) easy.
 """
+
 from __future__ import annotations
-from typing import Dict, Any, TYPE_CHECKING
+
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from core.unit_manager import Unit
 
 # Local import to avoid circular dependencies during module import time
 from systems.weapon_wielding import get_wielding_info
-
 
 STAT_KEYS = ("KE", "TE", "VE", "CE")
 
@@ -31,7 +32,7 @@ def _int(value: Any) -> int:
         return 0
 
 
-def compute_effective_combat_stats(unit: "Unit") -> Dict[str, Dict[str, int]]:
+def compute_effective_combat_stats(unit: Unit) -> dict[str, dict[str, int]]:
     """
     Compute effective combat stats with full breakdown.
 
@@ -51,7 +52,7 @@ def compute_effective_combat_stats(unit: "Unit") -> Dict[str, Dict[str, int]]:
     }
 
     # Weapon modifiers (English short keys)
-    weapon = {k: 0 for k in STAT_KEYS}
+    weapon = dict.fromkeys(STAT_KEYS, 0)
     if getattr(unit, "weapon", None):
         weapon["KE"] = _int(unit.weapon.get("KE", 0))
         weapon["TE"] = _int(unit.weapon.get("TE", 0))
@@ -69,7 +70,7 @@ def compute_effective_combat_stats(unit: "Unit") -> Dict[str, Dict[str, int]]:
         # CE has no wielding effect currently
 
     # Conditions placeholder (to be integrated later)
-    conditions = {k: 0 for k in STAT_KEYS}
+    conditions = dict.fromkeys(STAT_KEYS, 0)
 
     # Totals
     total = {}

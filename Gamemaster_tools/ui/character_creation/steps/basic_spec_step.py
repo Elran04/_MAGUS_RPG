@@ -46,6 +46,7 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         left = QtWidgets.QWidget()
         self.left_form = QtWidgets.QFormLayout(left)
         self.left_form.setLabelAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
+        self.left_form.setVerticalSpacing(10)  # Control spacing between rows
 
         self.name_edit = QtWidgets.QLineEdit()
         self.gender_combo = QtWidgets.QComboBox()
@@ -55,17 +56,34 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         race_names = _race_manager.get_race_names()
         self.race_combo = QtWidgets.QComboBox()
         self.race_combo.addItems(race_names)
-        self.class_combo = QtWidgets.QComboBox()
+
+        # Class tree view instead of combo box
+        self.class_tree = QtWidgets.QTreeWidget()
+        self.class_tree.setHeaderHidden(True)
+        self.class_tree.setMaximumHeight(200)
+        self.class_tree.setAlternatingRowColors(True)
+
         self.result_label = QtWidgets.QLabel("")
         self.result_label.setStyleSheet("color:#c33;")
         self.age_limits_label = QtWidgets.QLabel("")
+        self.age_limits_label.setStyleSheet(
+            "color:#888; font-size:9pt; font-style:italic; margin-top: 2px; margin-bottom: 2px;"
+        )
 
         self.left_form.addRow("Név:", self.name_edit)
         self.left_form.addRow("Nem:", self.gender_combo)
         self.left_form.addRow("Kor:", self.age_edit)
-        self.left_form.addRow("Korhatár:", self.age_limits_label)
+
+        # Add age limits as a compact info row (no label, just widget)
+        age_limits_container = QtWidgets.QWidget()
+        age_limits_container.setMaximumHeight(20)
+        age_limits_layout = QtWidgets.QHBoxLayout(age_limits_container)
+        age_limits_layout.setContentsMargins(0, 0, 0, 0)
+        age_limits_layout.addWidget(self.age_limits_label)
+        self.left_form.addRow("", age_limits_container)
+
         self.left_form.addRow("Faj:", self.race_combo)
-        self.left_form.addRow("Kaszt:", self.class_combo)
+        self.left_form.addRow("Kaszt:", self.class_tree)
         self.left_form.addRow("", self.result_label)
 
         # Right panel
@@ -89,7 +107,7 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         self.race_combo.currentTextChanged.connect(self.update_age_limits)
         self.race_combo.currentTextChanged.connect(self.update_class_options)
         self.gender_combo.currentTextChanged.connect(self.update_class_options)
-        self.class_combo.currentTextChanged.connect(
+        self.class_tree.itemSelectionChanged.connect(
             self.populate_specializations_for_selected_class
         )
 
@@ -137,26 +155,123 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         restricted_by_gender = set(GENDER_RESTRICTIONS.get(gender, set()))
 
         allowed = [
-            name
-            for (_cid, name) in classes
+            (cid, name)
+            for (cid, name) in classes
             if name in allowed_by_race and name not in restricted_by_gender
         ]
-        current_class = self.class_combo.currentText() if self.class_combo.count() > 0 else None
-        self.class_combo.blockSignals(True)
-        self.class_combo.clear()
-        self.class_combo.addItems(sorted(allowed))
-        if current_class and current_class in allowed:
-            self.class_combo.setCurrentText(current_class)
-        self.class_combo.blockSignals(False)
+
+        # Remember current selection
+        current_class = None
+        selected_items = self.class_tree.selectedItems()
+        if selected_items:
+            current_class = selected_items[0].text(0)
+
+        # Clear and rebuild tree
+        self.class_tree.blockSignals(True)
+        self.class_tree.clear()
+
+        # Group classes by category (you can customize this categorization)
+        categories: dict[str, list[tuple[str, str]]] = {
+            "Harcos": [],
+            "Szerencsevadász": [],
+            "Harcművész": [],
+            "Pap": [],
+            "Varázshasználó": [],
+            "Egyéb": [],
+        }
+
+        # Categorize classes (customize based on your class structure)
+        warrior_classes = {
+            "Harcos",
+            "Lovag",
+            "Gladiátor",
+            "Barbár",
+            "Amazon",
+            "Fejvadász",
+            "Bajvívó",
+        }
+        magic_classes = {"Varázsló", "Tűzvarázsló", "Boszorkány", "Boszorkánymester"}
+        rogue_classes = {"Tolvaj", "Bárd"}
+        martial_classes = {"Harcművész", "Kardművész"}
+        priest_classes = {"Pap", "Szerzetes", "Paplovag", "Sámán"}
+
+        for cid, name in sorted(allowed, key=lambda x: x[1]):
+            if name in warrior_classes:
+                categories["Harcos"].append((cid, name))
+            elif name in magic_classes:
+                categories["Varázshasználó"].append((cid, name))
+            elif name in rogue_classes:
+                categories["Szerencsevadász"].append((cid, name))
+            elif name in martial_classes:
+                categories["Harcművész"].append((cid, name))
+            elif name in priest_classes:
+                categories["Pap"].append((cid, name))
+            else:
+                categories["Egyéb"].append((cid, name))
+
+        # Build tree structure
+        for category_name, class_list in categories.items():
+            if not class_list:
+                continue
+
+            if len(class_list) == 1:
+                # If only one class in category, don't create parent node
+                cid, name = class_list[0]
+                item = QtWidgets.QTreeWidgetItem(self.class_tree)
+                item.setText(0, name)
+                item.setData(0, QtCore.Qt.ItemDataRole.UserRole, cid)
+                if name == current_class:
+                    self.class_tree.setCurrentItem(item)
+            else:
+                # Create category parent
+                parent = QtWidgets.QTreeWidgetItem(self.class_tree)
+                parent.setText(0, category_name)
+                parent.setData(0, QtCore.Qt.ItemDataRole.UserRole, None)  # Category has no ID
+                parent.setFlags(parent.flags() & ~QtCore.Qt.ItemFlag.ItemIsSelectable)
+
+                for cid, name in class_list:
+                    item = QtWidgets.QTreeWidgetItem(parent)
+                    item.setText(0, name)
+                    item.setData(0, QtCore.Qt.ItemDataRole.UserRole, cid)
+                    if name == current_class:
+                        self.class_tree.setCurrentItem(item)
+
+                parent.setExpanded(True)
+
+        # If no selection was restored and we have items, select the first leaf
+        if not self.class_tree.selectedItems() and self.class_tree.topLevelItemCount() > 0:
+            first_item = self.class_tree.topLevelItem(0)
+            # If it has children, select first child; otherwise select it
+            if first_item and first_item.childCount() > 0:
+                first_child = first_item.child(0)
+                if first_child:
+                    self.class_tree.setCurrentItem(first_child)
+            elif first_item:
+                self.class_tree.setCurrentItem(first_item)
+
+        self.class_tree.blockSignals(False)
         self.populate_specializations_for_selected_class()
 
     def populate_specializations_for_selected_class(self):
-        sel_name = self.class_combo.currentText()
-        self.selected_class_id = None
-        for class_id, class_name in self.class_db.list_classes():
-            if class_name == sel_name:
-                self.selected_class_id = class_id
-                break
+        selected_items = self.class_tree.selectedItems()
+        if not selected_items:
+            self.selected_class_id = None
+            self.specializations = ["Nincs"]
+            self.spec_data = {}
+            self.spec_combo.blockSignals(True)
+            self.spec_combo.clear()
+            self.spec_combo.addItems(self.specializations)
+            self.spec_combo.blockSignals(False)
+            return
+
+        selected_item = selected_items[0]
+        sel_name = selected_item.text(0)
+        self.selected_class_id = selected_item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+
+        # If selected item is a category (no UserRole data), do nothing
+        if self.selected_class_id is None:
+            return
+
         self.specializations = ["Nincs"]
         self.spec_data = {}
         if self.selected_class_id:
@@ -226,7 +341,11 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         gender = self.gender_combo.currentText()
         age = self.age_edit.text().strip()
         race = self.race_combo.currentText()
-        klass = self.class_combo.currentText()
+
+        # Get selected class from tree
+        selected_items = self.class_tree.selectedItems()
+        klass = selected_items[0].text(0) if selected_items else ""
+
         if not name:
             self.result_label.setText("Adj meg egy nevet!")
             return False
@@ -282,12 +401,15 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         return True
 
     def get_data(self) -> dict:
+        selected_items = self.class_tree.selectedItems()
+        selected_class = selected_items[0].text(0) if selected_items else ""
+
         data = {
             "Név": self.name_edit.text().strip(),
             "Nem": self.gender_combo.currentText(),
             "Kor": self.age_edit.text().strip(),
             "Faj": self.race_combo.currentText(),
-            "Kaszt": self.class_combo.currentText(),
+            "Kaszt": selected_class,
             "Specializáció": self.spec_combo.currentText(),
             "Spec_leírás": self.spec_desc.toPlainText().strip(),
         }
@@ -326,12 +448,29 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         # Ensure class options reflect current race/gender
         self.update_class_options()
 
-        # Class selection
+        # Class selection - search for the class in the tree
         klass = data.get("Kaszt")
-        if klass and klass in [
-            self.class_combo.itemText(i) for i in range(self.class_combo.count())
-        ]:
-            self.class_combo.setCurrentText(klass)
+        if klass:
+            # Search through tree items
+            found = False
+            for i in range(self.class_tree.topLevelItemCount()):
+                top_item = self.class_tree.topLevelItem(i)
+                if not top_item:
+                    continue
+                # Check if top-level item matches
+                if top_item.text(0) == klass:
+                    self.class_tree.setCurrentItem(top_item)
+                    found = True
+                    break
+                # Check children
+                for j in range(top_item.childCount()):
+                    child_item = top_item.child(j)
+                    if child_item and child_item.text(0) == klass:
+                        self.class_tree.setCurrentItem(child_item)
+                        found = True
+                        break
+                if found:
+                    break
 
         # Populate specs for the selected class and set selection
         self.populate_specializations_for_selected_class()

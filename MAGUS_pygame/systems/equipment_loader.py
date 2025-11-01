@@ -2,9 +2,10 @@
 Equipment data loader for MAGUS_pygame.
 Loads weapon and equipment data from the Gamemaster_tools data folder.
 """
+
 import json
 import os
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 def repo_root() -> str:
@@ -14,10 +15,10 @@ def repo_root() -> str:
     return os.path.dirname(magus_pygame_dir)
 
 
-_WEAPONS_CACHE: Optional[list[Dict[str, Any]]] = None
+_WEAPONS_CACHE: list[dict[str, Any]] | None = None
 
 
-def load_weapons_data() -> list[Dict[str, Any]]:
+def load_weapons_data() -> list[dict[str, Any]]:
     """Load weapons and shields data from JSON.
 
     Returns:
@@ -31,19 +32,15 @@ def load_weapons_data() -> list[Dict[str, Any]]:
         return _WEAPONS_CACHE
 
     path = os.path.join(
-        repo_root(), 
-        "Gamemaster_tools", 
-        "data", 
-        "equipment", 
-        "weapons_and_shields.json"
+        repo_root(), "Gamemaster_tools", "data", "equipment", "weapons_and_shields.json"
     )
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
         _WEAPONS_CACHE = data
         return data
 
 
-def find_weapon_by_id(weapon_id: str) -> Optional[Dict[str, Any]]:
+def find_weapon_by_id(weapon_id: str) -> dict[str, Any] | None:
     """Find a weapon by its ID.
 
     Args:
@@ -58,7 +55,7 @@ def find_weapon_by_id(weapon_id: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-def get_weapon_combat_stats(weapon_data: Dict[str, Any]) -> Dict[str, Any]:
+def get_weapon_combat_stats(weapon_data: dict[str, Any]) -> dict[str, Any]:
     """Extract combat-relevant stats from weapon data.
 
     Args:

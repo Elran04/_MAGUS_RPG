@@ -18,14 +18,17 @@ HEX_BORDER = (200, 200, 220)
 HIGHLIGHT_COLOR = (255, 220, 0)  # yellow border for hovered hex
 HIGHLIGHT_BORDER_WIDTH = 4
 
+
 # --- ACTION MODES ---
 class ActionMode:
     """Action mode constants for game state."""
+
     MOVE = "move"
     ATTACK = "attack"
     CHANGE_FACING = "change_facing"
     CHARGE = "charge"
     CHANGE_WIELD = "change_wield"
+
 
 # --- GAMEPLAY ---
 # Max hexes a unit can move in one action

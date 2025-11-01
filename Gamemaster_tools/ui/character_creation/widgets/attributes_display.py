@@ -1,6 +1,7 @@
 import os
 import sys
 from collections.abc import Callable
+from typing import Any, cast
 
 from PySide6 import QtCore, QtWidgets
 
@@ -43,7 +44,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
     def __init__(
         self,
         get_character_data: Callable[[], dict],
-        set_character_data: Callable[[str, any], None],
+        set_character_data: Callable[[str, Any], None],
         get_class_db: Callable,
         parent=None,
     ):
@@ -56,7 +57,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
         self.attribute_spinboxes: dict[str, QtWidgets.QSpinBox] = {}
         self.final_value_labels: dict[str, QtWidgets.QLabel] = {}
         # External context record (class/race/age from first page)
-        self._last_ctx = None
+        self._last_ctx: tuple[str, str, int] | None = None
         self._build_ui()
 
     def _get_race_age(self) -> tuple[str, int]:
@@ -255,6 +256,8 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
 
     def _clamp_values_to_ranges(self, values: dict[str, int]) -> dict[str, int]:
         """Clamp provided class values to current stat ranges."""
+        if not self.attribute_manager:
+            return values
         clamped = {}
         for attr, _ in self.ATTRIBUTE_ORDER:
             min_val, max_val = self.attribute_manager.stat_ranges.get(attr, (8, 18))
@@ -290,6 +293,8 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
 
     def _restore_saved_state(self, race: str, age: int, data: dict):
         """Restore previously saved attribute state."""
+        if not self.attribute_manager:
+            return
         self.attribute_manager.set_class_values(data["_AttributeClassValues"], race, age)
 
         if data.get("_AttributeRolledBase"):
@@ -323,7 +328,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
             self._roll_attributes()
             self._set_character_data("_InitialRollDone", True)
             self.roll_button.setVisible(False)
-        else:
+        elif self.attribute_manager:
             self.attribute_manager.reset_to_minimums(race, age)
             self._save_and_emit()
             self._update_points_display()
@@ -348,6 +353,9 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
 
     def _configure_spinboxes(self, race: str, age: int):
         """Configure spinbox ranges and handlers based on current mode."""
+        if not self.attribute_manager:
+            return
+
         handler = (
             self._on_spinbox_changed if self.mode == "pointbuy" else self._on_roll_spinbox_changed
         )
@@ -428,6 +436,9 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
 
     def _update_spinbox_values(self):
         """Update all spinbox values from attribute manager."""
+        if not self.attribute_manager:
+            return
+
         for attr, spinbox in self.attribute_spinboxes.items():
             value = self.attribute_manager.class_values.get(
                 attr, self.attribute_manager.stat_ranges[attr][0]
@@ -438,6 +449,9 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
 
     def _revert_spinbox(self, spinbox: QtWidgets.QSpinBox, attr: str):
         """Revert spinbox to valid value when change is rejected."""
+        if not self.attribute_manager:
+            return
+
         if self.mode == "pointbuy":
             value = self.attribute_manager.class_values.get(
                 attr, self.attribute_manager.stat_ranges[attr][0]
@@ -455,7 +469,10 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
         if not self.attribute_manager or self.mode != "pointbuy":
             return
 
-        spinbox = self.sender()
+        sender_obj = self.sender()
+        if not isinstance(sender_obj, QtWidgets.QSpinBox):
+            return
+        spinbox: QtWidgets.QSpinBox = sender_obj
         attr = spinbox.property("attribute")
         race, age = self._get_race_age()
 
@@ -478,7 +495,10 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
         if not self.attribute_manager or self.mode != "roll":
             return
 
-        spinbox = self.sender()
+        sender_obj = self.sender()
+        if not isinstance(sender_obj, QtWidgets.QSpinBox):
+            return
+        spinbox: QtWidgets.QSpinBox = sender_obj
         attr = spinbox.property("attribute")
         race, age = self._get_race_age()
 
@@ -590,4 +610,12 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
             return self.attribute_manager.get_all_final_values()
 
         data = self._get_character_data() or {}
-        return data.get("Tulajdonságok", {})
+        # Ensure a typed dict[str, int] is returned
+        if isinstance(data, dict):
+            val = data.get("Tulajdonságok", {})
+            if isinstance(val, dict):
+                try:
+                    return cast(dict[str, int], val)
+                except Exception:
+                    return {}
+        return {}

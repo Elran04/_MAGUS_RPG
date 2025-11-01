@@ -3,9 +3,10 @@ Character JSON loader for MAGUS_pygame.
 Loads character sheets from the repository-level 'characters' folder
 and returns parsed dictionaries.
 """
+
 import json
 import os
-from typing import Any, Dict
+from typing import Any
 
 
 def repo_root() -> str:
@@ -14,7 +15,7 @@ def repo_root() -> str:
     return os.path.dirname(magus_pygame_dir)
 
 
-def load_character_json(filename: str) -> Dict[str, Any]:
+def load_character_json(filename: str) -> dict[str, Any]:
     """Load a character JSON by filename from the repo's characters folder.
 
     Args:
@@ -26,5 +27,5 @@ def load_character_json(filename: str) -> Dict[str, Any]:
         json.JSONDecodeError if invalid JSON.
     """
     path = os.path.join(repo_root(), "characters", filename)
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)

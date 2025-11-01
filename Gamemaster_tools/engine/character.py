@@ -1,6 +1,7 @@
 # engine/character.py
 import random
 from pathlib import Path
+from typing import Any
 
 from utils.class_db_manager import ClassDBManager
 
@@ -207,11 +208,11 @@ def generate_character(name, gender, age, race, klass):
     stats = generate_stats(klass)
     stats = apply_race_and_age_modifiers(stats, race, age)
     # For now, upgradable stats are not in DB, fallback to empty list
-    upgradable = []
+    upgradable: list[str] = []
 
     szint = 1
-    skills = []
-    equipment = []
+    skills: list[dict[str, Any]] = []
+    equipment: list[dict[str, Any]] = []
     xp = 0
 
     char = {

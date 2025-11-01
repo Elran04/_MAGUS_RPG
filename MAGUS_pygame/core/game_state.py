@@ -1,10 +1,12 @@
 """
 Game state container to centralize turn and UI state for cleaner module interfaces.
 """
+
 from dataclasses import dataclass, field
-from typing import Dict, Set, Tuple, List
-from core.unit_manager import Unit
+
 from config import ActionMode
+
+from core.unit_manager import Unit
 
 
 @dataclass
@@ -13,34 +15,36 @@ class GameState:
     round: int = 1  # Round counter
     turn: int = 0  # Turn counter (increments each action)
     active_unit: Unit = None  # The unit currently taking their turn
-    units_acted_this_round: Set[str] = field(default_factory=set)  # Track who has acted
-    action_mode: str = ActionMode.MOVE  # ActionMode.MOVE | ActionMode.ATTACK | ActionMode.CHANGE_FACING
+    units_acted_this_round: set[str] = field(default_factory=set)  # Track who has acted
+    action_mode: str = (
+        ActionMode.MOVE
+    )  # ActionMode.MOVE | ActionMode.ATTACK | ActionMode.CHANGE_FACING
 
     # Game over tracking
     game_over: bool = False
     winner: Unit = None
 
     # Initiative tracking
-    initiative_rolls: Dict[str, int] = field(default_factory=dict)  # unit_name -> d100+KÉ
+    initiative_rolls: dict[str, int] = field(default_factory=dict)  # unit_name -> d100+KÉ
     turn_order: list = field(default_factory=list)  # Ordered list of units for this round
 
     # Positions and overlays
-    turn_start_pos: Tuple[int, int] = (0, 0)
-    reachable_for_active: Set[Tuple[int, int]] = field(default_factory=set)
-    attackable_for_active: Set[Tuple[int, int]] = field(default_factory=set)
-    charge_targets: Set[Tuple[int, int]] = field(default_factory=set)  # Valid charge targets
-    enemy_zone_hexes: Set[Tuple[int, int]] = field(default_factory=set)  # Enemy's zone of control
-    preview_path: List[Tuple[int, int]] = field(default_factory=list)  # Path preview for movement
-    
+    turn_start_pos: tuple[int, int] = (0, 0)
+    reachable_for_active: set[tuple[int, int]] = field(default_factory=set)
+    attackable_for_active: set[tuple[int, int]] = field(default_factory=set)
+    charge_targets: set[tuple[int, int]] = field(default_factory=set)  # Valid charge targets
+    enemy_zone_hexes: set[tuple[int, int]] = field(default_factory=set)  # Enemy's zone of control
+    preview_path: list[tuple[int, int]] = field(default_factory=list)  # Path preview for movement
+
     # Combat messages
     combat_message: str = ""  # Display combat events (attacks, opportunity attacks, etc.)
     message_timer: int = 0  # Frame counter for message display
-    
+
     # Charge attack state
     charge_damage_multiplier: int = 1  # Damage multiplier for charge attacks
 
     # UI and units
-    ui_state: Dict[str, object] = field(default_factory=dict)
+    ui_state: dict[str, object] = field(default_factory=dict)
     unit_info_popup: object = None  # UnitInfoPopup instance
     warrior: Unit = None
     goblin: Unit = None
@@ -50,7 +54,7 @@ def check_defeat(state: GameState) -> bool:
     """
     Check if any unit has been defeated (ÉP <= 0).
     If so, set game_over flag and winner.
-    
+
     Returns:
         True if game is over, False otherwise
     """
@@ -58,12 +62,12 @@ def check_defeat(state: GameState) -> bool:
         state.game_over = True
         state.winner = state.goblin
         return True
-    
+
     if state.goblin.current_ep <= 0:
         state.game_over = True
         state.winner = state.warrior
         return True
-    
+
     return False
 
 
@@ -74,10 +78,10 @@ def next_turn(state: GameState) -> None:
     Resets action points when switching to a new unit.
     """
     from actions.action_handling import roll_initiative
-    
+
     # Mark current unit as having acted
     state.units_acted_this_round.add(state.active_unit.name)
-    
+
     # Check if both units have acted this round
     if len(state.units_acted_this_round) >= 2:
         # Round complete - roll new initiative for next round
@@ -92,9 +96,9 @@ def next_turn(state: GameState) -> None:
         next_idx = (current_idx + 1) % len(state.turn_order)
         state.active_unit = state.turn_order[next_idx]
         state.turn = 0 if state.active_unit == state.warrior else 1
-        
+
         # Reset action points for the new active unit
         state.active_unit.current_action_points = state.active_unit.max_action_points
-    
+
     # Set turn start position to current active unit's position
     state.turn_start_pos = state.active_unit.get_position()

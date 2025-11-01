@@ -36,7 +36,7 @@ class PlaceholderResolutionDialog(QtWidgets.QDialog):
                 display_name += f" ({res['parameter']})"
             # Category intentionally not shown
             item = QtWidgets.QListWidgetItem(display_name)
-            item.setData(QtCore.Qt.UserRole, res["target_skill_id"])
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, res["target_skill_id"])
             self.skill_list.addItem(item)
 
         layout.addWidget(self.skill_list)
@@ -57,7 +57,7 @@ class PlaceholderResolutionDialog(QtWidgets.QDialog):
         """Handle OK button or double-click"""
         current_item = self.skill_list.currentItem()
         if current_item:
-            self.chosen_skill_id = current_item.data(QtCore.Qt.UserRole)
+            self.chosen_skill_id = current_item.data(QtCore.Qt.ItemDataRole.UserRole)
             self.accept()
         else:
             QtWidgets.QMessageBox.warning(

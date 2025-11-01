@@ -2,6 +2,7 @@
 Skill Database Helper
 Handles all database access for skills during character creation.
 """
+
 import os
 import sqlite3
 from typing import Any
@@ -37,9 +38,7 @@ class SkillDatabaseHelper:
                 ).fetchall()
             return conn.execute(query.format("specialisation_id IS NULL"), (class_id,)).fetchall()
 
-    def process_skill_entries(
-        self, skills: list[tuple]
-    ) -> tuple[list[tuple], set[str]]:
+    def process_skill_entries(self, skills: list[tuple]) -> tuple[list[tuple], set[str]]:
         """Process raw skills data into entries with display names and fixed skill tracking."""
         entries = []
         fixed = set()

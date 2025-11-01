@@ -1,4 +1,5 @@
 import os
+from typing import Any
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -59,7 +60,7 @@ class GeneralEquipmentEditorQt(QMainWindow):
         left = QVBoxLayout()
         root.addLayout(left, stretch=1)
         title = QLabel("Felszerelések kategóriák szerint")
-        title.setAlignment(Qt.AlignHCenter)
+        title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         left.addWidget(title)
         self.tree = QTreeWidget()
         self.tree.setHeaderHidden(True)
@@ -143,7 +144,7 @@ class GeneralEquipmentEditorQt(QMainWindow):
     # Tree population
     def populate_treeview(self):
         self.tree.clear()
-        cat_map = {cat: [] for cat in self.CATEGORIES}
+        cat_map: dict[str, list[tuple[int, Any]]] = {cat: [] for cat in self.CATEGORIES}
         for idx, item in enumerate(self.items):
             cat = item.get("category", "egyéb")
             cat_map.setdefault(cat, []).append((idx, item))
@@ -153,7 +154,7 @@ class GeneralEquipmentEditorQt(QMainWindow):
             self.tree.addTopLevelItem(cat_item)
             self._cat_nodes[cat] = cat_item
             if cat == "speciális":
-                sub_map = {}
+                sub_map: dict[str, list[tuple[int, Any]]] = {}
                 for idx, it in cat_map.get(cat, []):
                     sub = it.get("subcategory", "Egyéb")
                     sub_map.setdefault(sub, []).append((idx, it))
@@ -162,12 +163,12 @@ class GeneralEquipmentEditorQt(QMainWindow):
                     cat_item.addChild(sub_item)
                     for idx, it in sub_map[sub]:
                         node = QTreeWidgetItem([it.get("name", "-")])
-                        node.setData(0, Qt.UserRole, idx)
+                        node.setData(0, Qt.ItemDataRole.UserRole, idx)
                         sub_item.addChild(node)
             else:
                 for idx, it in cat_map.get(cat, []):
                     node = QTreeWidgetItem([it.get("name", "-")])
-                    node.setData(0, Qt.UserRole, idx)
+                    node.setData(0, Qt.ItemDataRole.UserRole, idx)
                     cat_item.addChild(node)
         self.tree.expandAll()
 
@@ -210,7 +211,7 @@ class GeneralEquipmentEditorQt(QMainWindow):
     def on_tree_select(self, current, previous):
         if not current:
             return
-        idx = current.data(0, Qt.UserRole)
+        idx = current.data(0, Qt.ItemDataRole.UserRole)
         if idx is None:
             return
         self.selected_idx = int(idx)
@@ -310,12 +311,17 @@ class GeneralEquipmentEditorQt(QMainWindow):
         it = self.tree.currentItem()
         if not it:
             return
-        idx = it.data(0, Qt.UserRole)
+        idx = it.data(0, Qt.ItemDataRole.UserRole)
         if idx is None:
             return
         name = self.items[int(idx)].get("name", "-")
-        ans = QMessageBox.question(self, "Törlés", f"Biztosan törlöd ezt?\n{name}")
-        if ans == QMessageBox.Yes:
+        ans = QMessageBox.question(
+            self,
+            "Törlés",
+            f"Biztosan törlöd ezt?\n{name}",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        if ans == QMessageBox.StandardButton.Yes:
             del self.items[int(idx)]
             self.manager.save(self.items)
             self.populate_treeview()

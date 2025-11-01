@@ -197,7 +197,7 @@ class RaceEditorQt(QMainWindow):
         tab.setLayout(layout)
 
         # Splitter: balra elérhető képzettségek, jobbra hozzárendelt
-        splitter = QSplitter(Qt.Horizontal)
+        splitter = QSplitter(Qt.Orientation.Horizontal)
 
         # Bal oldal: Elérhető képzettségek fa
         left_widget = QWidget()
@@ -208,9 +208,9 @@ class RaceEditorQt(QMainWindow):
         self.skill_tree = QTreeWidget()
         self.skill_tree.setColumnCount(3)
         self.skill_tree.setHeaderLabels(["Kategória / Alkategória", "Azonosító", "Név"])
-        self.skill_tree.header().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.skill_tree.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
-        self.skill_tree.header().setSectionResizeMode(2, QHeaderView.Stretch)
+        self.skill_tree.header().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self.skill_tree.header().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        self.skill_tree.header().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
         left_layout.addWidget(self.skill_tree)
 
         splitter.addWidget(left_widget)
@@ -226,14 +226,16 @@ class RaceEditorQt(QMainWindow):
             ["Azonosító", "Név", "Szint", "Opcionális"]
         )
         self.racial_skills_table.horizontalHeader().setSectionResizeMode(
-            0, QHeaderView.ResizeToContents
-        )
-        self.racial_skills_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        self.racial_skills_table.horizontalHeader().setSectionResizeMode(
-            2, QHeaderView.ResizeToContents
+            0, QHeaderView.ResizeMode.ResizeToContents
         )
         self.racial_skills_table.horizontalHeader().setSectionResizeMode(
-            3, QHeaderView.ResizeToContents
+            1, QHeaderView.ResizeMode.Stretch
+        )
+        self.racial_skills_table.horizontalHeader().setSectionResizeMode(
+            2, QHeaderView.ResizeMode.ResizeToContents
+        )
+        self.racial_skills_table.horizontalHeader().setSectionResizeMode(
+            3, QHeaderView.ResizeMode.ResizeToContents
         )
         right_layout.addWidget(self.racial_skills_table)
 
@@ -280,7 +282,7 @@ class RaceEditorQt(QMainWindow):
         tab.setLayout(layout)
 
         # Splitter: elérhető vs hozzáadott
-        splitter = QSplitter(Qt.Horizontal)
+        splitter = QSplitter(Qt.Orientation.Horizontal)
 
         # Bal oldal: Elérhető képességek
         left_widget = QWidget()
@@ -387,7 +389,7 @@ class RaceEditorQt(QMainWindow):
         self.race_list.clear()
         for race in self.race_manager.get_all_races():
             item = QListWidgetItem(race.name)
-            item.setData(Qt.UserRole, race.id)
+            item.setData(Qt.ItemDataRole.UserRole, race.id)
             self.race_list.addItem(item)
         # Auto-select and load first race to display attributes on startup
         if self.race_list.count() > 0:
@@ -398,7 +400,7 @@ class RaceEditorQt(QMainWindow):
 
     def on_race_selected(self, item: QListWidgetItem):
         """Faj kiválasztva -> betöltés"""
-        race_id = item.data(Qt.UserRole)
+        race_id = item.data(Qt.ItemDataRole.UserRole)
         race = self.race_manager.get_race(race_id)
         if race:
             self.load_race(race)
@@ -509,7 +511,7 @@ class RaceEditorQt(QMainWindow):
                 parent = subcat_items[key]
             display_name = f"{name} ({parameter})" if parameter else name
             leaf = QTreeWidgetItem(["", str(skill_id), display_name])
-            leaf.setData(1, Qt.UserRole, str(skill_id))
+            leaf.setData(1, Qt.ItemDataRole.UserRole, str(skill_id))
             parent.addChild(leaf)
         self.skill_tree.expandAll()
 
@@ -536,8 +538,8 @@ class RaceEditorQt(QMainWindow):
         item = self.skill_tree.currentItem()
         if not item:
             return None
-        sid = item.data(1, Qt.UserRole)
-        return sid
+        sid = item.data(1, Qt.ItemDataRole.UserRole)
+        return str(sid) if sid is not None else None
 
     def add_racial_skill(self):
         """Képzettség hozzáadása a faji listához"""
@@ -572,8 +574,12 @@ class RaceEditorQt(QMainWindow):
         if row < 0 or not self.current_race:
             QMessageBox.information(self, "Info", "Válassz ki egy faji képzettséget!")
             return
-        sid = self.racial_skills_table.item(row, 0).text()
-        name = self.racial_skills_table.item(row, 1).text()
+        item0 = self.racial_skills_table.item(row, 0)
+        item1 = self.racial_skills_table.item(row, 1)
+        if not item0 or not item1:
+            return
+        sid = item0.text()
+        name = item1.text()
         # find existing
         idx = next(
             (i for i, rs in enumerate(self.current_race.racial_skills) if rs.skill_id == sid), None
@@ -592,7 +598,10 @@ class RaceEditorQt(QMainWindow):
         row = self.racial_skills_table.currentRow()
         if row < 0 or not self.current_race:
             return
-        sid = self.racial_skills_table.item(row, 0).text()
+        item0 = self.racial_skills_table.item(row, 0)
+        if not item0:
+            return
+        sid = item0.text()
         self.current_race.racial_skills = [
             rs for rs in self.current_race.racial_skills if rs.skill_id != sid
         ]
@@ -632,12 +641,14 @@ class RaceEditorQt(QMainWindow):
             opt_cb.setChecked(bool(optional_val))
         form.addRow("", opt_cb)
 
-        btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        btns = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
         lay.addWidget(btns)
         btns.accepted.connect(dlg.accept)
         btns.rejected.connect(dlg.reject)
 
-        if dlg.exec() == dlg.Accepted:
+        if dlg.exec() == QDialog.DialogCode.Accepted:
             return level_cb.currentData(), opt_cb.isChecked()
         return None, None
 
@@ -682,7 +693,7 @@ class RaceEditorQt(QMainWindow):
         for ability in all_abilities:
             if ability.id not in race_ability_ids:
                 item = QListWidgetItem(f"{ability.name} ({ability.category})")
-                item.setData(Qt.UserRole, ability.id)
+                item.setData(Qt.ItemDataRole.UserRole, ability.id)
                 self.list_available_abilities.addItem(item)
 
         # Faj képességei
@@ -690,7 +701,7 @@ class RaceEditorQt(QMainWindow):
         race_abilities = self.race_manager.get_race_special_abilities(self.current_race.id)
         for ability in race_abilities:
             item = QListWidgetItem(f"{ability.name} ({ability.category})")
-            item.setData(Qt.UserRole, ability.id)
+            item.setData(Qt.ItemDataRole.UserRole, ability.id)
             self.list_race_abilities.addItem(item)
 
     def load_origins(self):
@@ -719,7 +730,7 @@ class RaceEditorQt(QMainWindow):
 
     def show_ability_details(self, item: QListWidgetItem):
         """Speciális képesség részleteinek megjelenítése"""
-        ability_id = item.data(Qt.UserRole)
+        ability_id = item.data(Qt.ItemDataRole.UserRole)
         ability = self.race_manager.get_special_ability(ability_id)
         if ability:
             import json
@@ -741,7 +752,7 @@ class RaceEditorQt(QMainWindow):
             QMessageBox.information(self, "Info", "Válassz ki egy képességet a listából!")
             return
 
-        ability_id = current_item.data(Qt.UserRole)
+        ability_id = current_item.data(Qt.ItemDataRole.UserRole)
         if ability_id not in self.current_race.special_abilities:
             self.current_race.special_abilities.append(ability_id)
             self.load_special_abilities()
@@ -757,7 +768,7 @@ class RaceEditorQt(QMainWindow):
             QMessageBox.information(self, "Info", "Válassz ki egy képességet az eltávolításhoz!")
             return
 
-        ability_id = current_item.data(Qt.UserRole)
+        ability_id = current_item.data(Qt.ItemDataRole.UserRole)
         if ability_id in self.current_race.special_abilities:
             self.current_race.special_abilities.remove(ability_id)
             self.load_special_abilities()
@@ -779,17 +790,20 @@ class RaceEditorQt(QMainWindow):
                 return
 
             # Tulajdonságok - MAGYAR mezőnevek!
-            self.current_race.attributes.modifiers = AttributeModifiers(
-                Erő=self.spin_str.value(),
-                Állóképesség=self.spin_con.value(),
-                Gyorsaság=self.spin_spd.value(),
-                Ügyesség=self.spin_dex.value(),
-                Karizma=self.spin_cha.value(),
-                Egészség=self.spin_hea.value(),
-                Intelligencia=self.spin_int.value(),
-                Akaraterő=self.spin_wil.value(),
-                Asztrál=self.spin_ast.value(),
-                Érzékelés=self.spin_per.value(),
+            # Use model_validate with a dict to avoid mypy issues with non-ASCII keyword names
+            self.current_race.attributes.modifiers = AttributeModifiers.model_validate(
+                {
+                    "Erő": self.spin_str.value(),
+                    "Állóképesség": self.spin_con.value(),
+                    "Gyorsaság": self.spin_spd.value(),
+                    "Ügyesség": self.spin_dex.value(),
+                    "Karizma": self.spin_cha.value(),
+                    "Egészség": self.spin_hea.value(),
+                    "Intelligencia": self.spin_int.value(),
+                    "Akaraterő": self.spin_wil.value(),
+                    "Asztrál": self.spin_ast.value(),
+                    "Érzékelés": self.spin_per.value(),
+                }
             )
 
             # Életkor
@@ -861,10 +875,10 @@ class RaceEditorQt(QMainWindow):
             self,
             "Törlés megerősítése",
             f"Biztosan törölni szeretnéd: {self.current_race.name}?",
-            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
 
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             race_name = self.current_race.name
             if self.race_manager.delete_race(self.current_race.id):
                 self.current_race = None

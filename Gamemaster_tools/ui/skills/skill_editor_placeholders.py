@@ -191,6 +191,8 @@ class PlaceholderEditorTab:
 
     def load_placeholders(self):
         """Load all placeholder skills into the list"""
+        if self.placeholder_list is None:
+            return
         self.placeholder_list.clear()
         placeholders = self.placeholder_mgr.get_all_placeholders()
 
@@ -200,7 +202,7 @@ class PlaceholderEditorTab:
                 display += f" ({ph['parameter']})"
 
             item = QListWidgetItem(display)
-            item.setData(Qt.UserRole, ph["id"])
+            item.setData(Qt.ItemDataRole.UserRole, ph["id"])
             self.placeholder_list.addItem(item)
 
         if not placeholders:
@@ -213,7 +215,7 @@ class PlaceholderEditorTab:
         if not current:
             return
 
-        placeholder_id = current.data(Qt.UserRole)
+        placeholder_id = current.data(Qt.ItemDataRole.UserRole)
         if not placeholder_id:
             return
 
@@ -230,6 +232,8 @@ class PlaceholderEditorTab:
 
     def load_resolutions(self, placeholder_id):
         """Load resolutions for the selected placeholder"""
+        if self.resolution_list is None:
+            return
         self.resolution_list.clear()
         resolutions = self.placeholder_mgr.get_resolutions(placeholder_id)
 
@@ -243,9 +247,9 @@ class PlaceholderEditorTab:
                 display += f" - {res['notes']}"
 
             item = QListWidgetItem(display)
-            item.setData(Qt.UserRole, res["target_skill_id"])
-            item.setData(Qt.UserRole + 1, res["resolution_category"])
-            item.setData(Qt.UserRole + 2, res["notes"])
+            item.setData(Qt.ItemDataRole.UserRole, res["target_skill_id"])
+            item.setData(int(Qt.ItemDataRole.UserRole) + 1, res["resolution_category"])
+            item.setData(int(Qt.ItemDataRole.UserRole) + 2, res["notes"])
             self.resolution_list.addItem(item)
 
         if not resolutions:
@@ -255,6 +259,8 @@ class PlaceholderEditorTab:
 
     def populate_available_skills(self):
         """Populate combo with all non-placeholder skills"""
+        if self.available_skills_combo is None:
+            return
         self.available_skills_combo.clear()
 
         # Get all skills from parent editor
@@ -300,6 +306,13 @@ class PlaceholderEditorTab:
             )
             return
 
+        if (
+            self.available_skills_combo is None
+            or self.category_edit is None
+            or self.notes_edit is None
+        ):
+            return
+
         # Get selected skill
         idx = self.available_skills_combo.currentIndex()
         if idx < 0:
@@ -307,8 +320,10 @@ class PlaceholderEditorTab:
             return
 
         target_skill_id = self.available_skills_combo.currentData()
-        category = self.category_edit.text().strip() or None
-        notes = self.notes_edit.toPlainText().strip() or None
+        category_text = self.category_edit.text().strip()
+        category = category_text if category_text else None
+        notes_text = self.notes_edit.toPlainText().strip()
+        notes = notes_text if notes_text else None
 
         try:
             self.placeholder_mgr.add_resolution(
@@ -319,8 +334,10 @@ class PlaceholderEditorTab:
             self.load_resolutions(self.current_placeholder)
 
             # Clear form
-            self.category_edit.clear()
-            self.notes_edit.clear()
+            if self.category_edit is not None:
+                self.category_edit.clear()
+            if self.notes_edit is not None:
+                self.notes_edit.clear()
 
             QMessageBox.information(self.tab_widget, "Siker", "Feloldás hozzáadva!")
 
@@ -337,6 +354,9 @@ class PlaceholderEditorTab:
             )
             return
 
+        if self.resolution_list is None:
+            return
+
         current_item = self.resolution_list.currentItem()
         if not current_item:
             QMessageBox.warning(
@@ -346,7 +366,7 @@ class PlaceholderEditorTab:
             )
             return
 
-        target_skill_id = current_item.data(Qt.UserRole)
+        target_skill_id = current_item.data(Qt.ItemDataRole.UserRole)
         if not target_skill_id:
             return
 
@@ -355,10 +375,10 @@ class PlaceholderEditorTab:
             self.tab_widget,
             "Törlés megerősítése",
             f"Biztosan törölni szeretnéd ezt a feloldást?\n\n{current_item.text()}",
-            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
 
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             try:
                 self.placeholder_mgr.remove_resolution(self.current_placeholder, target_skill_id)
                 self.load_resolutions(self.current_placeholder)

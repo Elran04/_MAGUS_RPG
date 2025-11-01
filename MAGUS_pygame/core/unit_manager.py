@@ -5,11 +5,11 @@ Unit management: Unit class and combat/stat logic.
 
 class Unit:
     """Represents a game unit with combat stats, position, and action points."""
-    
+
     def __init__(self, q, r, sprite, name: str | None = None, combat: dict | None = None):
         """
         Initialize a unit.
-        
+
         Args:
             q, r: hex coordinates
             sprite: pygame.Surface for the unit's sprite
@@ -25,31 +25,31 @@ class Unit:
         self.weapon = {}  # Equipped weapon data
         self.base_combat = {}  # Base combat values before weapon modifiers
         self.character_data = {}  # Full character JSON data for reference
-        
+
         # Weapon wielding mode for variable weapons
         # "1-handed", "2-handed", or None (uses default based on weapon/attributes)
         self.wielding_mode_preference = None
-        
+
         # Action points (10 per turn by default, representing 10 seconds)
         self.max_action_points = 10
         self.current_action_points = 10
-        
+
         # Facing direction (0-5 for hex directions, 0 = north/top)
         # 0 = N, 1 = NE, 2 = SE, 3 = S, 4 = SW, 5 = NW
         self.facing = 0
-        
+
         # Combat state (current HP/FP)
         self.current_ep = 0
         self.current_fp = 0
-        
+
         # Zone of Control - opportunity attack tracking
         self.has_used_opportunity_attack = False
-    
+
     def move_to(self, q, r):
         """Move the unit to a new hex."""
         self.q = q
         self.r = r
-    
+
     def get_position(self):
         """Get the unit's current hex position."""
         return (self.q, self.r)
@@ -67,26 +67,30 @@ class Unit:
     def KE(self) -> int:
         """Initiative (computed via combat stat service)"""
         from systems.combat_stats import compute_effective_combat_stats
+
         return compute_effective_combat_stats(self)["total"]["KE"]
 
     @property
     def TE(self) -> int:
         """Attack value (computed via combat stat service)"""
         from systems.combat_stats import compute_effective_combat_stats
+
         return compute_effective_combat_stats(self)["total"]["TE"]
 
     @property
     def VE(self) -> int:
         """Defense value (computed via combat stat service)"""
         from systems.combat_stats import compute_effective_combat_stats
+
         return compute_effective_combat_stats(self)["total"]["VE"]
 
     @property
     def CE(self) -> int:
         """Ranged attack value (computed via combat stat service)"""
         from systems.combat_stats import compute_effective_combat_stats
+
         return compute_effective_combat_stats(self)["total"]["CE"]
-    
+
     # Deprecated: wielding bonus calculation is centralized in systems.combat_stats
 
     # Attribute getters (Tulajdonságok)
@@ -146,7 +150,7 @@ class Unit:
 
     def set_weapon(self, weapon_stats: dict):
         """Set equipped weapon data.
-        
+
         Args:
             weapon_stats: Dictionary with weapon combat stats (KE, TE, VE, damage, etc.)
         """

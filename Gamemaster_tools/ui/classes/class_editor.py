@@ -37,6 +37,9 @@ class ClassEditorQt(QtWidgets.QDialog):
         # Initialize class database manager
         self.class_db = ClassDBManager()
 
+        # Initialize actions handler early (non-optional for type checkers)
+        self.editor_actions = ClassEditorActions(self)
+
         # Ensure required tables exist (safe no-ops if already exist)
         try:
             self.class_db.ensure_specialisations_table()
@@ -58,12 +61,12 @@ class ClassEditorQt(QtWidgets.QDialog):
         # Initialize component handlers
         self.class_list_panel = None
         self.tabs = None
-        self.actions = None
 
         # Initialize UI
         self.init_ui()
 
         # Load tree
+        assert self.class_list_panel is not None
         self.class_list_panel.populate(self.class_db)
 
     def init_ui(self):
@@ -75,8 +78,7 @@ class ClassEditorQt(QtWidgets.QDialog):
         splitter.setOrientation(QtCore.Qt.Orientation.Horizontal)
         root.addWidget(splitter, stretch=1)
 
-        # Initialize actions handler
-        self.actions = ClassEditorActions(self)
+        # Actions handler already initialized in __init__
 
         # Left panel - Class/spec tree
         self.class_list_panel = ClassListPanel(
@@ -101,9 +103,9 @@ class ClassEditorQt(QtWidgets.QDialog):
         root.addLayout(actions_layout)
 
         # Connect action bar signals
-        self.btn_save_all.clicked.connect(self.actions.save_current)
-        self.btn_add_spec.clicked.connect(self.actions.add_specialisation)
-        self.btn_del_spec.clicked.connect(self.actions.delete_specialisation)
+        self.btn_save_all.clicked.connect(self.editor_actions.save_current)
+        self.btn_add_spec.clicked.connect(self.editor_actions.add_specialisation)
+        self.btn_del_spec.clicked.connect(self.editor_actions.delete_specialisation)
 
     def create_editor_panel(self, parent):
         """Create the editor panel on the right"""
@@ -123,28 +125,28 @@ class ClassEditorQt(QtWidgets.QDialog):
         """Handle class/spec selection from tree"""
         self.current_class_id = class_id
         self.current_spec_id = spec_id
-        self.actions.load_details()
+        self.editor_actions.load_details()
 
     # Delegate equipment actions to actions module
     def add_currency_row(self):
         """Add currency row - delegates to actions"""
-        self.actions.add_currency_row()
+        self.editor_actions.add_currency_row()
 
     def add_item_row(self):
         """Add item row - delegates to actions"""
-        self.actions.add_item_row()
+        self.editor_actions.add_item_row()
 
     def delete_equipment_row(self):
         """Delete equipment row - delegates to actions"""
-        self.actions.delete_equipment_row()
+        self.editor_actions.delete_equipment_row()
 
     def save_description_file(self):
         """Save description file - delegates to actions"""
-        self.actions.save_description_file()
+        self.editor_actions.save_description_file()
 
     def open_description_file(self):
         """Open description file - delegates to actions"""
-        self.actions.open_description_file()
+        self.editor_actions.open_description_file()
 
 
 if __name__ == "__main__":

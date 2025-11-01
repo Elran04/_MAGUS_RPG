@@ -60,7 +60,7 @@ class ArmorEditorQt(QMainWindow):
         left = QVBoxLayout()
         root.addLayout(left, stretch=1)
         title = QLabel("Páncélok listája")
-        title.setAlignment(Qt.AlignHCenter)
+        title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         left.addWidget(title)
         self.listbox = QListWidget()
         left.addWidget(self.listbox, stretch=1)
@@ -190,7 +190,7 @@ class ArmorEditorQt(QMainWindow):
         r += 1
 
         # Price
-        form_layout.addWidget(QLabel("Ár:"), r, 0, alignment=Qt.AlignTop)
+        form_layout.addWidget(QLabel("Ár:"), r, 0, alignment=Qt.AlignmentFlag.AlignTop)
         price_row = QHBoxLayout()
 
         self.price_spins = {}
@@ -204,7 +204,7 @@ class ArmorEditorQt(QMainWindow):
         r += 1
 
         # Description
-        form_layout.addWidget(QLabel("Leírás:"), r, 0, alignment=Qt.AlignTop)
+        form_layout.addWidget(QLabel("Leírás:"), r, 0, alignment=Qt.AlignmentFlag.AlignTop)
         self.txt_desc = QTextEdit()
         form_layout.addWidget(self.txt_desc, r, 1)
         r += 1
@@ -281,7 +281,7 @@ class ArmorEditorQt(QMainWindow):
         # check for duplicates by sub
         for i in range(self.override_list.count()):
             it = self.override_list.item(i)
-            data = it.data(Qt.UserRole)
+            data = it.data(Qt.ItemDataRole.UserRole)
             if data and data.get("sub") == sub:
                 QMessageBox.warning(
                     self, "Hiba", "Ez az alzóna már szerepel az override-ok között!"
@@ -293,7 +293,7 @@ class ArmorEditorQt(QMainWindow):
             "value": int(self.spn_override.value()),
         }
         lw_item = QListWidgetItem(f"{item['sub']} ({item['main']}): {item['value']}")
-        lw_item.setData(Qt.UserRole, item)
+        lw_item.setData(Qt.ItemDataRole.UserRole, item)
         self.override_list.addItem(lw_item)
 
     def _load_overrides_to_ui(self, overrides_dict):
@@ -306,13 +306,15 @@ class ArmorEditorQt(QMainWindow):
                 if sub in overrides_dict:
                     val = overrides_dict[sub]
                     lw_item = QListWidgetItem(f"{sub} ({main}): {val}")
-                    lw_item.setData(Qt.UserRole, {"main": main, "sub": sub, "value": val})
+                    lw_item.setData(
+                        Qt.ItemDataRole.UserRole, {"main": main, "sub": sub, "value": val}
+                    )
                     self.override_list.addItem(lw_item)
 
     def _overrides_from_ui(self):
         result = {}
         for i in range(self.override_list.count()):
-            data = self.override_list.item(i).data(Qt.UserRole)
+            data = self.override_list.item(i).data(Qt.ItemDataRole.UserRole)
             if data:
                 result[data["sub"]] = data["value"]
         return result
@@ -447,8 +449,13 @@ class ArmorEditorQt(QMainWindow):
             QMessageBox.warning(self, "Törlés", "Nincs kiválasztva páncél.")
             return
         name = self.armors[row].get("name", "-")
-        answer = QMessageBox.question(self, "Törlés", f"Biztosan törlöd ezt a páncélt?\n{name}")
-        if answer == QMessageBox.Yes:
+        answer = QMessageBox.question(
+            self,
+            "Törlés",
+            f"Biztosan törlöd ezt a páncélt?\n{name}",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        if answer == QMessageBox.StandardButton.Yes:
             self.armors.pop(row)
             self.manager.save(self.armors)
             self.refresh_list()

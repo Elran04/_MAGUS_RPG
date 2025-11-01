@@ -47,7 +47,11 @@ class PlaceholderManager:
             conn.commit()
 
     def add_resolution(
-        self, placeholder_id: str, target_skill_id: str, category: str = None, notes: str = None
+        self,
+        placeholder_id: str,
+        target_skill_id: str,
+        category: str | None = None,
+        notes: str | None = None,
     ):
         """Add a resolution mapping from placeholder to target skill."""
         with sqlite3.connect(self.db_path) as conn:
@@ -70,7 +74,7 @@ class PlaceholderManager:
             )
             conn.commit()
 
-    def get_resolutions(self, placeholder_id: str, category: str = None):
+    def get_resolutions(self, placeholder_id: str, category: str | None = None):
         """
         Get all skills that can replace a placeholder.
 

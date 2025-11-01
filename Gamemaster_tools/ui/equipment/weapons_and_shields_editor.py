@@ -1,5 +1,6 @@
 import os
 import sys
+from typing import cast
 
 from PySide6.QtCore import QModelIndex, Qt
 from PySide6.QtGui import QStandardItem, QStandardItemModel
@@ -76,11 +77,13 @@ class WeaponsAndShieldsEditor(QMainWindow):
         self.selected_idx = idx
         it = self.items[idx]
         self.fill_fields(it)  # Statikus mezők kitöltése
-        self.fields["type"].setCurrentText(it.get("type", self.manager.get_weapon_types()[0]))
+        type_combo = cast(QComboBox, self.fields["type"])
+        type_combo.setCurrentText(it.get("type", self.manager.get_weapon_types()[0]))
         self.build_type_fields(
             it.get("type", self.manager.get_weapon_types()[0]), item=it
         )  # Típusfüggő mezők
-        self.fields["category"].setCurrentText(it.get("category", ""))
+        category_combo = cast(QComboBox, self.fields["category"])
+        category_combo.setCurrentText(it.get("category", ""))
 
     def populate_treeview(self):
         """
@@ -93,7 +96,7 @@ class WeaponsAndShieldsEditor(QMainWindow):
         self.model.clear()
         self.model.setHorizontalHeaderLabels(["Fegyverek és pajzsok"])
         type_order = self.manager.get_weapon_types()
-        type_items = {}
+        type_items: dict[str, list[tuple[str, int, dict]]] = {}
         for idx, item in enumerate(self.items):
             type_val = item.get("type", "Egyéb")
             cat_val = item.get("category", "") or "Egyéb"
@@ -104,7 +107,7 @@ class WeaponsAndShieldsEditor(QMainWindow):
                 continue
             type_item = QStandardItem(t)
             self.model.appendRow(type_item)
-            cat_map = {}
+            cat_map: dict[str, list[tuple[int, dict]]] = {}
             for cat_val, idx, item in type_items[t]:
                 cat_map.setdefault(cat_val, []).append((idx, item))
             for cat_val in sorted(cat_map.keys()):
@@ -131,11 +134,11 @@ class WeaponsAndShieldsEditor(QMainWindow):
                 except Exception:
                     pass
             for i in range(self.edit_layout.rowCount()):
-                row_widget = self.edit_layout.itemAt(i, QFormLayout.FieldRole)
+                row_widget = self.edit_layout.itemAt(i, QFormLayout.ItemRole.FieldRole)
                 if row_widget is not None and row_widget.widget() is widget:
                     self.edit_layout.removeRow(i)
                     break
-        self.type_fields = {}
+        self.type_fields: dict[str, QWidget] = {}
 
     def set_widget_value(self, widget, value):
         """
@@ -269,7 +272,7 @@ class WeaponsAndShieldsEditor(QMainWindow):
         """
         # Csak engedélyezzük/letiltjuk a mezőket, nem generáljuk újra őket
         combo = self.type_fields.get("wield_mode")
-        if combo is None:
+        if combo is None or not isinstance(combo, QComboBox):
             return
         current = combo.currentText()
         enable = current == "Változó"
@@ -315,7 +318,7 @@ class WeaponsAndShieldsEditor(QMainWindow):
         main_layout.addWidget(self.edit_panel, 2)
 
         # Mezők
-        self.fields = {}
+        self.fields: dict[str, QWidget] = {}
         self.edit_layout = QFormLayout()
         # Az edit_layout-ot egy widgetbe csomagoljuk
         edit_fields_widget = QWidget()
@@ -325,9 +328,11 @@ class WeaponsAndShieldsEditor(QMainWindow):
         # Mentés gomb legalul
         btn_save = QPushButton("Mentés")
         btn_save.clicked.connect(self.save_item)
-        editor_vbox.addWidget(btn_save, alignment=Qt.AlignBottom)
+        editor_vbox.addWidget(btn_save, alignment=Qt.AlignmentFlag.AlignBottom)
         # Típusfüggő mezők generálása induláskor is
-        self.update_type_fields(self.fields["type"].currentText())
+        type_widget = self.fields.get("type")
+        if type_widget is not None and isinstance(type_widget, QComboBox):
+            self.update_type_fields(type_widget.currentText())
 
     def build_edit_fields(self):
         """
@@ -344,17 +349,19 @@ class WeaponsAndShieldsEditor(QMainWindow):
                 self.fields[key] = le
                 self.edit_layout.addRow(QLabel(key.capitalize() + ":"), le)
         # Típus mező (legördülő)
-        self.fields["type"] = QComboBox()
-        self.fields["type"].addItems(self.manager.get_weapon_types())
-        self.fields["type"].currentTextChanged.connect(self.update_type_fields)
-        self.edit_layout.addRow(QLabel("Típus:"), self.fields["type"])
+        type_combo = QComboBox()
+        type_combo.addItems(self.manager.get_weapon_types())
+        type_combo.currentTextChanged.connect(self.update_type_fields)
+        self.fields["type"] = type_combo
+        self.edit_layout.addRow(QLabel("Típus:"), type_combo)
         # Kategória mező (legördülő)
-        self.fields["category"] = QComboBox()
+        category_combo = QComboBox()
         # Töltsük fel az első típushoz tartozó kategóriákkal, hogy ne legyen üres
         default_type = self.manager.get_weapon_types()[0]
         default_categories = self.manager.get_weapon_categories(default_type)
-        self.fields["category"].addItems(default_categories)
-        self.edit_layout.addRow(QLabel("Kategória:"), self.fields["category"])
+        category_combo.addItems(default_categories)
+        self.fields["category"] = category_combo
+        self.edit_layout.addRow(QLabel("Kategória:"), category_combo)
         # Damage types egy sorban, Sebzés típus: label bal oldali oszlopban
         from PySide6.QtWidgets import QGridLayout, QSizePolicy, QSpacerItem, QWidget
 
@@ -368,10 +375,10 @@ class WeaponsAndShieldsEditor(QMainWindow):
             )
             cb.setStyleSheet("QCheckBox { margin-top: 0px; margin-bottom: 0px; }")
             self.damage_type_checks[typ] = cb
-            damage_grid.addWidget(cb, 0, i, alignment=Qt.AlignBottom)
+            damage_grid.addWidget(cb, 0, i, alignment=Qt.AlignmentFlag.AlignBottom)
         # Add a horizontal spacer to fill remaining space
         damage_grid.addItem(
-            QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum),
+            QSpacerItem(1, 1, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum),
             0,
             len(self.manager.DAMAGE_TYPES),
         )
@@ -387,8 +394,10 @@ class WeaponsAndShieldsEditor(QMainWindow):
         combined_grid.setSpacing(4)
         # Első sor: Sebzés típus
         damage_label = QLabel("Sebzés típus:")
-        damage_label.setAlignment(Qt.AlignLeft | Qt.AlignBottom)
-        combined_grid.addWidget(damage_label, 0, 0, alignment=Qt.AlignLeft | Qt.AlignBottom)
+        damage_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom)
+        combined_grid.addWidget(
+            damage_label, 0, 0, alignment=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom
+        )
         for i, typ in enumerate(self.manager.DAMAGE_TYPES):
             cb = QCheckBox(typ.capitalize())
             cb.setSizePolicy(
@@ -396,40 +405,44 @@ class WeaponsAndShieldsEditor(QMainWindow):
             )
             cb.setStyleSheet("QCheckBox { margin-top: 0px; margin-bottom: 0px; }")
             self.damage_type_checks[typ] = cb
-            combined_grid.addWidget(cb, 0, i + 1, alignment=Qt.AlignBottom)
+            combined_grid.addWidget(cb, 0, i + 1, alignment=Qt.AlignmentFlag.AlignBottom)
         combined_grid.addItem(
-            QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum),
+            QSpacerItem(1, 1, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum),
             0,
             len(self.manager.DAMAGE_TYPES) + 1,
         )
         # Második sor: Sebzés bónusz tulajdonsága
         bonus_label = QLabel("Sebzés bónusz tulajdonsága:")
-        bonus_label.setAlignment(Qt.AlignLeft | Qt.AlignBottom)
+        bonus_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom)
         bonus_label.setMinimumWidth(90)
-        combined_grid.addWidget(bonus_label, 1, 0, alignment=Qt.AlignLeft | Qt.AlignBottom)
+        combined_grid.addWidget(
+            bonus_label, 1, 0, alignment=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom
+        )
         for i, attr in enumerate(self.manager.DAMAGE_BONUS_ATTRS):
             cb = QCheckBox(attr.capitalize())
             cb.setStyleSheet("QCheckBox { margin-top: 0px; margin-bottom: 0px; }")
             self.damage_bonus_checks[attr] = cb
-            combined_grid.addWidget(cb, 1, i + 1, alignment=Qt.AlignBottom)
+            combined_grid.addWidget(cb, 1, i + 1, alignment=Qt.AlignmentFlag.AlignBottom)
         combined_grid.addItem(
-            QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum),
+            QSpacerItem(1, 1, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum),
             1,
             len(self.manager.DAMAGE_BONUS_ATTRS) + 1,
         )
         # Harmadik sor: Ár mezők
         price_labels = ["Réz", "Ezüst", "Arany", "Mithrill"]
         price_label = QLabel("Ár:")
-        price_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        price_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         price_label.setMinimumWidth(40)
-        combined_grid.addWidget(price_label, 2, 0, alignment=Qt.AlignLeft | Qt.AlignVCenter)
+        combined_grid.addWidget(
+            price_label, 2, 0, alignment=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        )
         from PySide6.QtWidgets import QVBoxLayout
 
         # Réz
         vbox_copper = QVBoxLayout()
         vbox_copper.setSpacing(2)
         lbl_copper = QLabel(price_labels[0])
-        lbl_copper.setAlignment(Qt.AlignHCenter | Qt.AlignBottom)
+        lbl_copper.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom)
         lbl_copper.setStyleSheet("QLabel { margin-bottom: 2px; }")
         sb_copper = QSpinBox()
         sb_copper.setMaximum(999999)
@@ -440,13 +453,13 @@ class WeaponsAndShieldsEditor(QMainWindow):
         price_widget_copper = QWidget()
         price_widget_copper.setLayout(vbox_copper)
         price_widget_copper.setFixedWidth(60)
-        combined_grid.addWidget(price_widget_copper, 2, 1, alignment=Qt.AlignTop)
+        combined_grid.addWidget(price_widget_copper, 2, 1, alignment=Qt.AlignmentFlag.AlignTop)
 
         # Ezüst
         vbox_silver = QVBoxLayout()
         vbox_silver.setSpacing(2)
         lbl_silver = QLabel(price_labels[1])
-        lbl_silver.setAlignment(Qt.AlignHCenter | Qt.AlignBottom)
+        lbl_silver.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom)
         lbl_silver.setStyleSheet("QLabel { margin-bottom: 2px; }")
         sb_silver = QSpinBox()
         sb_silver.setMaximum(999999)
@@ -457,7 +470,7 @@ class WeaponsAndShieldsEditor(QMainWindow):
         price_widget_silver = QWidget()
         price_widget_silver.setLayout(vbox_silver)
         price_widget_silver.setFixedWidth(60)
-        combined_grid.addWidget(price_widget_silver, 2, 2, alignment=Qt.AlignTop)
+        combined_grid.addWidget(price_widget_silver, 2, 2, alignment=Qt.AlignmentFlag.AlignTop)
 
         # Arany és Mithrill egy cellában, egy sorban
         hbox_gold_mithrill = QHBoxLayout()
@@ -466,7 +479,7 @@ class WeaponsAndShieldsEditor(QMainWindow):
         vbox_gold = QVBoxLayout()
         vbox_gold.setSpacing(2)
         lbl_gold = QLabel(price_labels[2])
-        lbl_gold.setAlignment(Qt.AlignHCenter | Qt.AlignBottom)
+        lbl_gold.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom)
         lbl_gold.setStyleSheet("QLabel { margin-bottom: 2px; }")
         sb_gold = QSpinBox()
         sb_gold.setMaximum(999999)
@@ -478,7 +491,7 @@ class WeaponsAndShieldsEditor(QMainWindow):
         vbox_mithrill = QVBoxLayout()
         vbox_mithrill.setSpacing(2)
         lbl_mithrill = QLabel(price_labels[3])
-        lbl_mithrill.setAlignment(Qt.AlignHCenter | Qt.AlignBottom)
+        lbl_mithrill.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom)
         lbl_mithrill.setStyleSheet("QLabel { margin-bottom: 2px; }")
         sb_mithrill = QSpinBox()
         sb_mithrill.setMaximum(999999)
@@ -492,7 +505,9 @@ class WeaponsAndShieldsEditor(QMainWindow):
         price_widget_gold_mithrill = QWidget()
         price_widget_gold_mithrill.setLayout(hbox_gold_mithrill)
         price_widget_gold_mithrill.setFixedWidth(120)
-        combined_grid.addWidget(price_widget_gold_mithrill, 2, 3, alignment=Qt.AlignTop)
+        combined_grid.addWidget(
+            price_widget_gold_mithrill, 2, 3, alignment=Qt.AlignmentFlag.AlignTop
+        )
         combined_grid_widget = QWidget()
         combined_grid_widget.setLayout(combined_grid)
         self.edit_layout.addRow(combined_grid_widget)
@@ -512,8 +527,9 @@ class WeaponsAndShieldsEditor(QMainWindow):
         """
         # Frissítsd a kategória mezőt a típus alapján
         categories = self.manager.get_weapon_categories(type_value)
-        self.fields["category"].clear()
-        self.fields["category"].addItems(categories)
+        category_combo = cast(QComboBox, self.fields["category"])
+        category_combo.clear()
+        category_combo.addItems(categories)
         self.build_type_fields(type_value)
 
     def new_item(self):
@@ -525,10 +541,13 @@ class WeaponsAndShieldsEditor(QMainWindow):
         """
         self.selected_idx = None
         self.clear_fields()
-        self.fields["type"].setCurrentIndex(0)
-        self.update_type_fields(self.fields["type"].currentText())
-        self.fields["category"].setCurrentIndex(0)
-        self.fields["name"].setFocus()
+        type_combo = cast(QComboBox, self.fields["type"])
+        category_combo = cast(QComboBox, self.fields["category"])
+        name_field = cast(QLineEdit, self.fields["name"])
+        type_combo.setCurrentIndex(0)
+        self.update_type_fields(type_combo.currentText())
+        category_combo.setCurrentIndex(0)
+        name_field.setFocus()
 
     def save_item(self):
         """
@@ -540,7 +559,7 @@ class WeaponsAndShieldsEditor(QMainWindow):
         - TreeView frissítése
         """
         # Collect field values
-        fields = {
+        fields: dict[str, str | int | bool | list[str]] = {
             key: (
                 widget.text()
                 if isinstance(widget, QLineEdit)
@@ -550,7 +569,7 @@ class WeaponsAndShieldsEditor(QMainWindow):
                     else (
                         widget.isChecked()
                         if isinstance(widget, QCheckBox)
-                        else widget.value() if isinstance(widget, QSpinBox) else None
+                        else widget.value() if isinstance(widget, QSpinBox) else ""
                     )
                 )
             )
@@ -603,9 +622,12 @@ class WeaponsAndShieldsEditor(QMainWindow):
             QMessageBox.warning(self, "Törlés", "Nincs kiválasztva fegyver/pajzs.")
             return
         answer = QMessageBox.question(
-            self, "Törlés", f"Biztosan törlöd ezt?\n{self.items[idx]['name']}"
+            self,
+            "Törlés",
+            f"Biztosan törlöd ezt?\n{self.items[idx]['name']}",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
-        if answer == QMessageBox.Yes:
+        if answer == QMessageBox.StandardButton.Yes:
             self.items.pop(idx)
             self.manager.save(self.items)
             self.populate_treeview()

@@ -91,14 +91,14 @@ class SkillAssignDialog(QtWidgets.QDialog):
 
         # Auto-validation based on skill type
         if self.skill_type == 1:  # Level-based
-            skill_percent = None
+            skill_percent_val: int | None = None
             if skill_level == 0:
                 QtWidgets.QMessageBox.critical(
                     self, "Hiba", "A szint alapú képzettségnél add meg a szintet!"
                 )
                 return
         elif self.skill_type == 2:  # Percentage-based
-            skill_level = None
+            skill_level_val: int | None = None
             if skill_percent == 0:
                 QtWidgets.QMessageBox.critical(
                     self, "Hiba", "A % alapú képzettségnél add meg a százalékot!"
@@ -111,11 +111,26 @@ class SkillAssignDialog(QtWidgets.QDialog):
                     self, "Hiba", "Csak az egyik mezőt töltsd ki: szint vagy százalék!"
                 )
                 return
+            skill_level_val = skill_level if skill_level != 0 else None
+            skill_percent_val = skill_percent if skill_percent != 0 else None
+
+        # Use the validated values
+        if self.skill_type == 1:
+            final_skill_level = int(skill_level) if skill_level != 0 else None
+            final_skill_percent = None
+        elif self.skill_type == 2:
+            final_skill_level = None
+            final_skill_percent = int(skill_percent) if skill_percent != 0 else None
+        else:
+            final_skill_level = int(skill_level) if skill_level and skill_level != 0 else None
+            final_skill_percent = (
+                int(skill_percent) if skill_percent and skill_percent != 0 else None
+            )
 
         self.result_values = (
             int(class_level),
-            int(skill_level) if skill_level and skill_level != 0 else None,
-            int(skill_percent) if skill_percent and skill_percent != 0 else None,
+            final_skill_level,
+            final_skill_percent,
         )
         self.accept()
 
@@ -157,9 +172,11 @@ class ClassSkillEditorWidget(QtWidgets.QWidget):
         self.skill_tree = QtWidgets.QTreeWidget()
         self.skill_tree.setColumnCount(3)
         self.skill_tree.setHeaderLabels(["Kategória / Alkategória", "Azonosító", "Név"])
-        self.skill_tree.header().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
-        self.skill_tree.header().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
-        self.skill_tree.header().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
+        self.skill_tree.header().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        self.skill_tree.header().setSectionResizeMode(
+            1, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
+        )
+        self.skill_tree.header().setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Stretch)
         left_layout.addWidget(self.skill_tree)
         splitter.addWidget(left_widget)
 
@@ -174,19 +191,19 @@ class ClassSkillEditorWidget(QtWidgets.QWidget):
             ["Azonosító", "Név", "Szint", "Képzettség szint", "Képzettség %"]
         )
         self.assigned_skills_table.horizontalHeader().setSectionResizeMode(
-            0, QtWidgets.QHeaderView.ResizeToContents
+            0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
         self.assigned_skills_table.horizontalHeader().setSectionResizeMode(
-            1, QtWidgets.QHeaderView.Stretch
+            1, QtWidgets.QHeaderView.ResizeMode.Stretch
         )
         self.assigned_skills_table.horizontalHeader().setSectionResizeMode(
-            2, QtWidgets.QHeaderView.ResizeToContents
+            2, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
         self.assigned_skills_table.horizontalHeader().setSectionResizeMode(
-            3, QtWidgets.QHeaderView.ResizeToContents
+            3, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
         self.assigned_skills_table.horizontalHeader().setSectionResizeMode(
-            4, QtWidgets.QHeaderView.ResizeToContents
+            4, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
         right_layout.addWidget(self.assigned_skills_table)
         splitter.addWidget(right_widget)
@@ -270,7 +287,7 @@ class ClassSkillEditorWidget(QtWidgets.QWidget):
             # Create skill leaf
             display_name = f"{skill_name} ({parameter})" if parameter else skill_name
             leaf = QtWidgets.QTreeWidgetItem(["", str(skill_id), display_name])
-            leaf.setData(1, QtCore.Qt.UserRole, str(skill_id))
+            leaf.setData(1, QtCore.Qt.ItemDataRole.UserRole, str(skill_id))
             parent.addChild(leaf)
 
         self.skill_tree.expandAll()
@@ -434,7 +451,7 @@ class ClassSkillEditorWidget(QtWidgets.QWidget):
             return
 
         # Must be a leaf with an ID
-        skill_id = item.data(1, QtCore.Qt.UserRole)
+        skill_id = item.data(1, QtCore.Qt.ItemDataRole.UserRole)
         if not skill_id:
             QtWidgets.QMessageBox.warning(
                 self, "Nincs kiválasztva", "Válassz ki egy képzettséget (nem kategóriát)!"
@@ -475,9 +492,10 @@ class ClassSkillEditorWidget(QtWidgets.QWidget):
                     self,
                     "Képzettség már hozzáadva",
                     f"A '{skill_name}' képzettség már hozzá van rendelve ehhez a kaszthoz.\n\nFrissíted a meglévő bejegyzést?",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                    QtWidgets.QMessageBox.StandardButton.Yes
+                    | QtWidgets.QMessageBox.StandardButton.No,
                 )
-                if reply == QtWidgets.QMessageBox.Yes:
+                if reply == QtWidgets.QMessageBox.StandardButton.Yes:
                     dlg = SkillAssignDialog(
                         self,
                         skill_id,
@@ -508,11 +526,17 @@ class ClassSkillEditorWidget(QtWidgets.QWidget):
             )
             return
 
-        skill_id = self.assigned_skills_table.item(row, 0).text()
-        skill_name = self.assigned_skills_table.item(row, 1).text()
-        class_level = self.assigned_skills_table.item(row, 2).text()
-        skill_level = self.assigned_skills_table.item(row, 3).text()
-        skill_percent = self.assigned_skills_table.item(row, 4).text()
+        item_id = self.assigned_skills_table.item(row, 0)
+        item_name = self.assigned_skills_table.item(row, 1)
+        item_cl = self.assigned_skills_table.item(row, 2)
+        item_sl = self.assigned_skills_table.item(row, 3)
+        item_sp = self.assigned_skills_table.item(row, 4)
+
+        skill_id = item_id.text() if item_id is not None else ""
+        skill_name = item_name.text() if item_name is not None else ""
+        class_level = item_cl.text() if item_cl is not None else ""
+        skill_level = item_sl.text() if item_sl is not None else ""
+        skill_percent = item_sp.text() if item_sp is not None else ""
 
         # Convert blanks to None
         cl = int(class_level) if class_level else None
@@ -536,7 +560,8 @@ class ClassSkillEditorWidget(QtWidgets.QWidget):
             )
             return
 
-        skill_id = self.assigned_skills_table.item(row, 0).text()
+        item_id = self.assigned_skills_table.item(row, 0)
+        skill_id = item_id.text() if item_id is not None else ""
         self._delete_class_skill(skill_id)
         self.populate_assigned_skills()
 
@@ -607,18 +632,22 @@ class ClassSkillEditorQt(QtWidgets.QMainWindow):
 
 if __name__ == "__main__":
     import sys
+    from collections.abc import Callable
+    from typing import Any
 
     # Make utils importable and apply dark mode
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
+    _apply_dark_mode: Callable[[Any], Any] | None
     try:
-        from utils.dark_mode import apply_dark_mode
+        from utils.dark_mode import apply_dark_mode as _apply_dark_mode
     except Exception:
-        apply_dark_mode = None
+        _apply_dark_mode = None
 
     app = QtWidgets.QApplication(sys.argv)
-    if apply_dark_mode:
-        apply_dark_mode(app)
+    if _apply_dark_mode is not None:
+        _apply_dark_mode(app)
     win = ClassSkillEditorQt()
     win.show()
     sys.exit(app.exec())

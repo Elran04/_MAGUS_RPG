@@ -40,7 +40,7 @@ class ClassListPanel:
         self.class_tree = QtWidgets.QTreeWidget()
         self.class_tree.setHeaderLabels(["Név"])
         self.class_tree.header().setStretchLastSection(True)
-        self.class_tree.header().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        self.class_tree.header().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
         self.class_tree.currentItemChanged.connect(self.on_tree_selection_changed)
         left_layout.addWidget(self.class_tree)
 
@@ -79,7 +79,9 @@ class ClassListPanel:
 
         # Select first if available
         if self.class_tree.topLevelItemCount() > 0:
-            self.class_tree.setCurrentItem(self.class_tree.topLevelItem(0))
+            first_item = self.class_tree.topLevelItem(0)
+            if first_item is not None:
+                self.class_tree.setCurrentItem(first_item)
 
     def on_tree_selection_changed(self, current: QtWidgets.QTreeWidgetItem, previous):
         """Handle tree item selection"""
@@ -98,6 +100,8 @@ class ClassListPanel:
         root_count = self.class_tree.topLevelItemCount()
         for i in range(root_count):
             item = self.class_tree.topLevelItem(i)
+            if item is None:
+                continue
             cid, _ = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
             if cid == class_id:
                 if spec_id is None:
@@ -106,6 +110,8 @@ class ClassListPanel:
                 # Find child spec
                 for j in range(item.childCount()):
                     child = item.child(j)
+                    if child is None:
+                        continue
                     cid2, sid = child.data(0, QtCore.Qt.ItemDataRole.UserRole)
                     if sid == spec_id:
                         self.class_tree.setCurrentItem(child)

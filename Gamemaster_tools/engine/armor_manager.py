@@ -110,7 +110,8 @@ class ArmorManager:
 
     def get_layer(self, armor) -> int:
         """Visszaadja a páncél rétegszámát (1..3), hiány esetén 3-at."""
-        return armor.get("layer", 3)
+        layer_value = armor.get("layer", 3)
+        return int(layer_value) if layer_value is not None else 3
 
     def get_zone_protection(self, armor, zone):
         # 1. protection_overrides előnyben

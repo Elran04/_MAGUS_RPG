@@ -90,7 +90,7 @@ class SkillEditorTabs:
 
         # Main category
         self.main_cat_combo = QComboBox()
-        self.main_cat_combo.addItems(CATEGORIES.keys())
+        self.main_cat_combo.addItems(list(CATEGORIES.keys()))
         self.main_cat_combo.currentTextChanged.connect(self.on_main_category_changed)
         layout.addRow("Főkategória:", self.main_cat_combo)
 
@@ -105,17 +105,17 @@ class SkillEditorTabs:
 
         # Acquisition method
         self.acq_method_combo = QComboBox()
-        self.acq_method_combo.addItems(ACQ_METHOD_MAP.values())
+        self.acq_method_combo.addItems(list(ACQ_METHOD_MAP.values()))
         layout.addRow("Elsajátítás módja:", self.acq_method_combo)
 
         # Acquisition difficulty
         self.acq_diff_combo = QComboBox()
-        self.acq_diff_combo.addItems(ACQ_DIFF_MAP.values())
+        self.acq_diff_combo.addItems(list(ACQ_DIFF_MAP.values()))
         layout.addRow("Elsajátítás nehézsége:", self.acq_diff_combo)
 
         # Type
         self.type_combo = QComboBox()
-        self.type_combo.addItems(TYPE_MAP.values())
+        self.type_combo.addItems(list(TYPE_MAP.values()))
         layout.addRow("Típus:", self.type_combo)
 
         # KP per 3 (percent-based)
@@ -302,6 +302,8 @@ class SkillEditorTabs:
     def on_main_category_changed(self, main_category):
         """Update subcategory combo when main category changes"""
         # Clear and repopulate subcategory combo
+        if self.sub_cat_combo is None:
+            return
         self.sub_cat_combo.clear()
 
         # Get subcategories for selected main category
@@ -311,8 +313,13 @@ class SkillEditorTabs:
 
             # Disable fields for placeholder category
             is_placeholder = main_category == "Helyfoglaló képzettségek"
-            self.sub_cat_combo.setEnabled(not is_placeholder)
-            self.acq_method_combo.setEnabled(not is_placeholder)
-            self.acq_diff_combo.setEnabled(not is_placeholder)
-            self.type_combo.setEnabled(not is_placeholder)
-            self.kp_per_3_spin.setEnabled(not is_placeholder)
+            if self.sub_cat_combo is not None:
+                self.sub_cat_combo.setEnabled(not is_placeholder)
+            if self.acq_method_combo is not None:
+                self.acq_method_combo.setEnabled(not is_placeholder)
+            if self.acq_diff_combo is not None:
+                self.acq_diff_combo.setEnabled(not is_placeholder)
+            if self.type_combo is not None:
+                self.type_combo.setEnabled(not is_placeholder)
+            if self.kp_per_3_spin is not None:
+                self.kp_per_3_spin.setEnabled(not is_placeholder)

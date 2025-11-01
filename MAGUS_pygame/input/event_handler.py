@@ -1,15 +1,16 @@
 """
 Event handling for user input and UI interactions.
 """
-from typing import Tuple
+
+
+from actions.action_attack import compute_attackable, handle_attack_click
+from actions.action_charge import compute_charge_targets, execute_charge_attack
+from actions.action_handling import process_action_ui_click
+from actions.action_movement import apply_move_if_valid, compute_reachable
+from actions.action_wield import toggle_wield_mode
 from config import AP_COST_FACING, ActionMode
 from core.game_state import GameState, next_turn
 from systems.hex_grid import pixel_to_hex
-from actions.action_handling import process_action_ui_click
-from actions.action_movement import compute_reachable, apply_move_if_valid, skip_turn
-from actions.action_attack import compute_attackable, handle_attack_click
-from actions.action_charge import compute_charge_targets, execute_charge_attack
-from actions.action_wield import toggle_wield_mode, can_change_wield_mode
 
 
 def handle_ui_click(state: GameState, ui_result: dict) -> None:
@@ -70,7 +71,9 @@ def handle_facing_change(state: GameState, new_facing: int) -> None:
     if state.active_unit.current_action_points >= AP_COST_FACING:
         state.active_unit.facing = new_facing
         state.active_unit.current_action_points -= AP_COST_FACING
-        print(f"{state.active_unit.name} changed facing to {new_facing}. AP remaining: {state.active_unit.current_action_points}/{state.active_unit.max_action_points}")
+        print(
+            f"{state.active_unit.name} changed facing to {new_facing}. AP remaining: {state.active_unit.current_action_points}/{state.active_unit.max_action_points}"
+        )
         # Check if AP depleted
         if state.active_unit.current_action_points <= 0:
             next_turn(state)
@@ -81,21 +84,25 @@ def handle_facing_change(state: GameState, new_facing: int) -> None:
             if state.action_mode == ActionMode.ATTACK:
                 compute_attackable(state)
     else:
-        print(f"{state.active_unit.name} doesn't have enough AP to change facing! (Need {AP_COST_FACING}, have {state.active_unit.current_action_points})")
+        print(
+            f"{state.active_unit.name} doesn't have enough AP to change facing! (Need {AP_COST_FACING}, have {state.active_unit.current_action_points})"
+        )
 
 
-def handle_grid_click(state: GameState, q: int, r: int, grid_bounds: Tuple[int, int, int, int]) -> None:
+def handle_grid_click(
+    state: GameState, q: int, r: int, grid_bounds: tuple[int, int, int, int]
+) -> None:
     """
     Process grid click based on action mode.
     Routes to movement, attack, charge, or wield handlers.
-    
+
     Args:
         state: Current game state
         q, r: Hex coordinates of clicked position
         grid_bounds: (MIN_Q, MAX_Q, MIN_R, MAX_R) boundaries
     """
     MIN_Q, MAX_Q, MIN_R, MAX_R = grid_bounds
-    
+
     # Only act if the clicked hex is on the grid
     if MIN_Q <= q < MAX_Q and MIN_R <= r < MAX_R:
         if state.action_mode == ActionMode.MOVE:
@@ -114,7 +121,7 @@ def handle_grid_click(state: GameState, q: int, r: int, grid_bounds: Tuple[int, 
 def handle_right_click(state: GameState, mx: int, my: int) -> None:
     """
     Handle right-click: show unit info popup if clicking on unit, close popup if clicking outside.
-    
+
     Args:
         state: Current game state
         mx, my: Mouse pixel coordinates
@@ -124,22 +131,24 @@ def handle_right_click(state: GameState, mx: int, my: int) -> None:
         if state.unit_info_popup.is_click_outside(mx, my):
             state.unit_info_popup.hide()
         return
-    
+
     # Check if right-clicking on a unit to show info
     q, r = pixel_to_hex(mx, my)
     warrior_pos = state.warrior.get_position()
     goblin_pos = state.goblin.get_position()
-    
+
     if (q, r) == warrior_pos:
         state.unit_info_popup.show(state.warrior)
     elif (q, r) == goblin_pos:
         state.unit_info_popup.show(state.goblin)
 
 
-def process_mouse_click(state: GameState, mx: int, my: int, button: int, grid_bounds: Tuple[int, int, int, int]) -> None:
+def process_mouse_click(
+    state: GameState, mx: int, my: int, button: int, grid_bounds: tuple[int, int, int, int]
+) -> None:
     """
     Main mouse click processor.
-    
+
     Args:
         state: Current game state
         mx, my: Mouse pixel coordinates
@@ -156,7 +165,7 @@ def process_mouse_click(state: GameState, mx: int, my: int, button: int, grid_bo
             if state.unit_info_popup.is_click_outside(mx, my):
                 state.unit_info_popup.hide()
             return
-        
+
         # Try UI click first
         ui_result = process_action_ui_click(mx, my, state.ui_state, state.active_unit)
         if ui_result:

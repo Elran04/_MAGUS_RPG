@@ -1,10 +1,11 @@
 """
 Központi logging konfiguráció a MAGUS pygame projekthez.
 """
+
 import logging
 import sys
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
 

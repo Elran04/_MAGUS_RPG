@@ -10,7 +10,7 @@ from collections.abc import Iterable
 
 # Source gender restrictions from character.py to avoid duplication
 try:
-    from engine.character import GENDER_RESTRICTIONS  # type: ignore
+    from engine.character import GENDER_RESTRICTIONS
 except Exception:
     # Fallback (should rarely be used)
     GENDER_RESTRICTIONS = {

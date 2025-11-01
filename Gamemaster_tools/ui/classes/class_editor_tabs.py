@@ -61,15 +61,17 @@ class ClassEditorTabs:
         self.stats_table = QtWidgets.QTableWidget()
         self.stats_table.setColumnCount(4)
         self.stats_table.setHorizontalHeaderLabels(["Tulajdonság", "Min", "Max", "Duplázási esély"])
-        self.stats_table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
         self.stats_table.horizontalHeader().setSectionResizeMode(
-            1, QtWidgets.QHeaderView.ResizeToContents
+            0, QtWidgets.QHeaderView.ResizeMode.Stretch
         )
         self.stats_table.horizontalHeader().setSectionResizeMode(
-            2, QtWidgets.QHeaderView.ResizeToContents
+            1, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
         self.stats_table.horizontalHeader().setSectionResizeMode(
-            3, QtWidgets.QHeaderView.ResizeToContents
+            2, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
+        )
+        self.stats_table.horizontalHeader().setSectionResizeMode(
+            3, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
         attr_layout.addRow("Tulajdonságok:", self.stats_table)
 
@@ -83,8 +85,12 @@ class ClassEditorTabs:
         self.combat_table = QtWidgets.QTableWidget()
         self.combat_table.setColumnCount(2)
         self.combat_table.setHorizontalHeaderLabels(["Mutató", "Érték"])
-        self.combat_table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
-        self.combat_table.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        self.combat_table.horizontalHeader().setSectionResizeMode(
+            0, QtWidgets.QHeaderView.ResizeMode.Stretch
+        )
+        self.combat_table.horizontalHeader().setSectionResizeMode(
+            1, QtWidgets.QHeaderView.ResizeMode.Stretch
+        )
         cs_layout.addWidget(self.combat_table)
 
         self.tab_widget.addTab(tab, "Harci statok")
@@ -97,8 +103,12 @@ class ClassEditorTabs:
         self.xp_table = QtWidgets.QTableWidget()
         self.xp_table.setColumnCount(2)
         self.xp_table.setHorizontalHeaderLabels(["Szint", "XP"])
-        self.xp_table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
-        self.xp_table.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        self.xp_table.horizontalHeader().setSectionResizeMode(
+            0, QtWidgets.QHeaderView.ResizeMode.Stretch
+        )
+        self.xp_table.horizontalHeader().setSectionResizeMode(
+            1, QtWidgets.QHeaderView.ResizeMode.Stretch
+        )
         xp_layout.addRow("Követelmények:", self.xp_table)
 
         self.extra_xp_edit = QtWidgets.QSpinBox()
@@ -130,20 +140,22 @@ class ClassEditorTabs:
             ["entry_id", "Típus", "Tárgy ID", "Tárgy név", "Min pénz", "Max pénz"]
         )
         self.eq_table.horizontalHeader().setSectionResizeMode(
-            0, QtWidgets.QHeaderView.ResizeToContents
+            0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
         self.eq_table.horizontalHeader().setSectionResizeMode(
-            1, QtWidgets.QHeaderView.ResizeToContents
+            1, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
         self.eq_table.horizontalHeader().setSectionResizeMode(
-            2, QtWidgets.QHeaderView.ResizeToContents
-        )
-        self.eq_table.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.Stretch)
-        self.eq_table.horizontalHeader().setSectionResizeMode(
-            4, QtWidgets.QHeaderView.ResizeToContents
+            2, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
         self.eq_table.horizontalHeader().setSectionResizeMode(
-            5, QtWidgets.QHeaderView.ResizeToContents
+            3, QtWidgets.QHeaderView.ResizeMode.Stretch
+        )
+        self.eq_table.horizontalHeader().setSectionResizeMode(
+            4, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
+        )
+        self.eq_table.horizontalHeader().setSectionResizeMode(
+            5, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
         self.eq_table.setColumnHidden(0, True)
         eq_layout.addWidget(self.eq_table)

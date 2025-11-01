@@ -3,7 +3,6 @@ from collections.abc import Callable
 from typing import Any
 
 from PySide6 import QtCore, QtGui, QtWidgets
-
 from ui.character_creation.helpers.skill_db_helper import SkillDatabaseHelper
 from ui.character_creation.helpers.skill_prerequisites import SkillPrerequisiteChecker
 from ui.character_creation.widgets.placeholder_skill_manager import PlaceholderSkillManager
@@ -25,12 +24,12 @@ class SkillsStepWidget(QtWidgets.QWidget):
         self.get_selected_class_id = get_selected_class_id
         self.get_spec_data = get_spec_data
         self.get_character_data = get_character_data
-        
+
         # Initialize helper classes
         self.db_helper = SkillDatabaseHelper(base_dir)
         self.prereq_checker = SkillPrerequisiteChecker(self.db_helper)
         self.placeholder_manager = PlaceholderSkillManager(placeholder_mgr, self.prereq_checker)
-        
+
         self._placeholder_row_counters: dict[tuple, int] = {}
         self._placeholder_combos: dict[tuple, QtWidgets.QComboBox] = {}
         self._build_ui()
@@ -73,9 +72,13 @@ class SkillsStepWidget(QtWidgets.QWidget):
             ["Képzettség", "Szint", "%", "KP költség", "Forrás", "Előfeltételek"]
         )
         self.skills_table.horizontalHeader().setStretchLastSection(False)
-        self.skills_table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        self.skills_table.horizontalHeader().setSectionResizeMode(
+            0, QtWidgets.QHeaderView.ResizeMode.Stretch
+        )
         self.skills_table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.skills_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        self.skills_table.setSelectionBehavior(
+            QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows
+        )
         self.skills_table.doubleClicked.connect(self._on_row_double_click)
         layout.addWidget(self.skills_table)
 
@@ -200,7 +203,7 @@ class SkillsStepWidget(QtWidgets.QWidget):
             req_percent = int(combo.property("skill_percent") or 0)
             combo.clear()
             combo.addItem("-- válassz --", None)
-            
+
             # Get valid resolutions using the placeholder manager
             attributes = (self.get_character_data() or {}).get("Tulajdonságok", {})
             current_map = self._build_current_skills_map(req_override_instance=instance_key)
@@ -212,13 +215,13 @@ class SkillsStepWidget(QtWidgets.QWidget):
                 current_map,
                 attributes,
             )
-            
+
             for res in valid_resolutions:
                 disp = res["skill_name"]
                 if res["parameter"]:
                     disp += f" ({res['parameter']})"
                 combo.addItem(disp, res["target_skill_id"])
-                
+
             if current_selected is not None:
                 idx = combo.findData(current_selected)
                 if idx != -1:
@@ -373,9 +376,7 @@ class SkillsStepWidget(QtWidgets.QWidget):
                 combo.setCurrentIndex(idx)
                 item = self.skills_table.item(row, 3)
                 if item:
-                    item.setText(
-                        self.db_helper.calc_kp_cost(chosen, req_level, req_percent)
-                    )
+                    item.setText(self.db_helper.calc_kp_cost(chosen, req_level, req_percent))
             else:
                 combo.setCurrentIndex(0)
 

@@ -342,7 +342,8 @@ class ClassEditorActions:
         hint.setWordWrap(True)
         form.addRow(hint)
         btns = QtWidgets.QDialogButtonBox(
-            QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
+            QtWidgets.QDialogButtonBox.StandardButton.Ok
+            | QtWidgets.QDialogButtonBox.StandardButton.Cancel
         )
         form.addRow(btns)
         btns.accepted.connect(dlg.accept)
@@ -371,10 +372,10 @@ class ClassEditorActions:
             self.parent,
             "Megerősítés",
             "Biztosan törlöd a specializációt?",
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
         )
 
-        if reply == QtWidgets.QMessageBox.Yes:
+        if reply == QtWidgets.QMessageBox.StandardButton.Yes:
             self.parent.class_db.delete_specialisation(
                 self.parent.current_class_id, self.parent.current_spec_id
             )
@@ -399,7 +400,8 @@ class ClassEditorActions:
         form.addRow("Min:", inp_min)
         form.addRow("Max:", inp_max)
         btns = QtWidgets.QDialogButtonBox(
-            QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
+            QtWidgets.QDialogButtonBox.StandardButton.Ok
+            | QtWidgets.QDialogButtonBox.StandardButton.Cancel
         )
         form.addRow(btns)
         btns.accepted.connect(dlg.accept)
@@ -466,7 +468,8 @@ class ClassEditorActions:
 
         # Buttons
         btns = QtWidgets.QDialogButtonBox(
-            QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
+            QtWidgets.QDialogButtonBox.StandardButton.Ok
+            | QtWidgets.QDialogButtonBox.StandardButton.Cancel
         )
         form.addRow(btns)
         btns.accepted.connect(dlg.accept)

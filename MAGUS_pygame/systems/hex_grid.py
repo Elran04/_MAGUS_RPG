@@ -1,22 +1,24 @@
 """
 Hex grid logic and rendering for the MAGUS pygame game.
 """
-import pygame
+
 import math
+
+import pygame
 from config import (
-    WIDTH,
-    HEIGHT,
-    HEX_SIZE,
-    HEX_COLOR,
-    HEX_BORDER,
-    HIGHLIGHT_COLOR,
-    HIGHLIGHT_BORDER_WIDTH,
-    REACHABLE_TINT,
-    HOVER_TINT,
     ATTACKABLE_TINT,
     CHARGE_AREA_TINT,
     CHARGE_TINT,
     ENEMY_ZONE_TINT,
+    HEIGHT,
+    HEX_BORDER,
+    HEX_COLOR,
+    HEX_SIZE,
+    HIGHLIGHT_BORDER_WIDTH,
+    HIGHLIGHT_COLOR,
+    HOVER_TINT,
+    REACHABLE_TINT,
+    WIDTH,
 )
 
 
@@ -41,7 +43,7 @@ def hex_to_pixel(q, r):
 
 def pixel_to_hex(x, y):
     """Convert pixel coordinates to hex coordinates (inverse of hex_to_pixel)."""
-    q = (x / (HEX_SIZE * math.sqrt(3)) - y / (HEX_SIZE * 3 / 2) / 2)
+    q = x / (HEX_SIZE * math.sqrt(3)) - y / (HEX_SIZE * 3 / 2) / 2
     r = y / (HEX_SIZE * 3 / 2)
     # Round to nearest hex
     rq = round(q)
