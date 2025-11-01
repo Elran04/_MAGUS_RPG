@@ -2,12 +2,18 @@
 Skill Editor List Panel
 Handles the skill list panel on the left side with tree view
 """
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QPushButton, QTreeWidget, QTreeWidgetItem, 
-    QTreeWidgetItemIterator, QHeaderView
-)
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
+    QHeaderView,
+    QLabel,
+    QPushButton,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QTreeWidgetItemIterator,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 class SkillListPanel:

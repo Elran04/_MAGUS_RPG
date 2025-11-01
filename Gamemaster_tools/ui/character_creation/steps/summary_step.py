@@ -1,5 +1,7 @@
-from PySide6 import QtWidgets
 from typing import Callable
+
+from PySide6 import QtWidgets
+
 
 class SummaryStepWidget(QtWidgets.QWidget):
     """

@@ -2,7 +2,7 @@
 Class Editor List Panel
 Handles the class/specialization tree panel on the left side
 """
-from PySide6 import QtWidgets, QtCore
+from PySide6 import QtCore, QtWidgets
 from PySide6.QtGui import QFont
 
 

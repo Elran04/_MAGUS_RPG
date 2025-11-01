@@ -2,9 +2,9 @@
 Dark mode utility for PySide6 applications.
 Provides automatic dark mode support with OS theme detection.
 """
-from PySide6.QtWidgets import QApplication
-from PySide6.QtGui import QPalette, QColor
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QPalette
+from PySide6.QtWidgets import QApplication
 
 
 def apply_dark_mode(app: QApplication):

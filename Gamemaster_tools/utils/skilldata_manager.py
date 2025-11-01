@@ -1,6 +1,6 @@
-import sqlite3
 import os
 import re
+import sqlite3
 
 DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "skills", "skills_data.db"))
 DESC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "skills", "descriptions"))

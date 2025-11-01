@@ -2,17 +2,23 @@
 Skill Editor Actions
 Handles all action operations (new, duplicate, delete, save, load, etc.)
 """
-from PySide6.QtWidgets import QMessageBox
-import sys
+import copy
 import os
 import subprocess
-import copy
+import sys
+
+from PySide6.QtWidgets import QMessageBox
+from utils.validation import ValidationError, validate_skill
 
 from .skill_editor_constants import (
-    CATEGORIES, ACQ_METHOD_MAP, ACQ_METHOD_MAP_REV,
-    ACQ_DIFF_MAP, ACQ_DIFF_MAP_REV, TYPE_MAP, TYPE_MAP_REV
+    ACQ_DIFF_MAP,
+    ACQ_DIFF_MAP_REV,
+    ACQ_METHOD_MAP,
+    ACQ_METHOD_MAP_REV,
+    CATEGORIES,
+    TYPE_MAP,
+    TYPE_MAP_REV,
 )
-from utils.validation import validate_skill, ValidationError
 
 
 class SkillEditorActions:

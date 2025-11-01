@@ -2,17 +2,28 @@
 Skill Editor Tabs
 Handles creation of all editor tabs (Basic Info, Levels & KP, Description, Placeholders)
 """
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QFormLayout, QGridLayout,
-    QLabel, QLineEdit, QComboBox, QPushButton, QTextEdit, QSpinBox,
-    QScrollArea, QTabWidget, QSplitter
-)
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
+    QComboBox,
+    QFormLayout,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QScrollArea,
+    QSpinBox,
+    QSplitter,
+    QTabWidget,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
-from .skill_editor_constants import CATEGORIES, ACQ_METHOD_MAP, ACQ_DIFF_MAP, TYPE_MAP
-from .skill_prerequisite_editor import SkillPrerequisiteEditorWidget
+from .skill_editor_constants import ACQ_DIFF_MAP, ACQ_METHOD_MAP, CATEGORIES, TYPE_MAP
 from .skill_editor_placeholders import PlaceholderEditorTab
+from .skill_prerequisite_editor import SkillPrerequisiteEditorWidget
 
 
 class SkillEditorTabs:

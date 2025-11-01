@@ -4,8 +4,8 @@ Placeholder Skill Resolution Manager
 Handles the mapping between placeholder skills (e.g., "Fegyverhasználat (Választható)")
 and the actual skills they can resolve to (e.g., specific weapon skills).
 """
-import sqlite3
 import os
+import sqlite3
 
 DB_SKILLS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "skills", "skills_data.db"))
 

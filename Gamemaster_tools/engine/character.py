@@ -1,7 +1,8 @@
 # engine/character.py
 import random
+
+from data.race.race_age_stat_modifiers import apply_age_modifiers, apply_race_modifiers
 from utils.class_db_manager import ClassDBManager
-from data.race.race_age_stat_modifiers import apply_age_modifiers , apply_race_modifiers
 
 class_db = ClassDBManager()
 

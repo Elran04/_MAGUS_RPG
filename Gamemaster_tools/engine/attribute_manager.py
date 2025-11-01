@@ -3,14 +3,15 @@ Attribute management system for character creation.
 Handles dice rolling, point-buy allocation, and modifier tracking.
 """
 import random
-from typing import Dict, Tuple, Optional
-from utils.class_db_manager import ClassDBManager
+from typing import Dict, Optional, Tuple
+
 from data.race.race_age_stat_modifiers import (
-    apply_age_modifiers, 
+    RACE_MODIFIERS,
+    apply_age_modifiers,
     apply_race_modifiers,
     get_age_modifiers,
-    RACE_MODIFIERS
 )
+from utils.class_db_manager import ClassDBManager
 
 
 class AttributeManager:

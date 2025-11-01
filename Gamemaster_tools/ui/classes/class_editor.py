@@ -3,17 +3,18 @@ Class Editor - PySide6 version with dark mode support
 Modern tabbed interface for M.A.G.U.S. class management
 Refactored into modular components for better maintainability
 """
-from PySide6 import QtWidgets, QtCore
-import sys
 import os
+import sys
+
+from PySide6 import QtCore, QtWidgets
 
 # Add grandparent directory to path (Gamemaster_tools)
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-from utils.class_db_manager import ClassDBManager
+from ui.classes.class_editor_actions import ClassEditorActions
 from ui.classes.class_editor_list import ClassListPanel
 from ui.classes.class_editor_tabs import ClassEditorTabs
-from ui.classes.class_editor_actions import ClassEditorActions
+from utils.class_db_manager import ClassDBManager
 
 
 class ClassEditorQt(QtWidgets.QDialog):

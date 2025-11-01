@@ -1,12 +1,26 @@
 import os
-from utils.json_manager import JsonManager
-from utils.validation import validate_general_equipment, ValidationError
-from PySide6.QtWidgets import (
-    QWidget, QMainWindow, QApplication, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QTreeWidget, QTreeWidgetItem, QLineEdit, QTextEdit, QDoubleSpinBox, QSpinBox, QComboBox,
-    QMessageBox, QFormLayout
-)
+
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QApplication,
+    QComboBox,
+    QDoubleSpinBox,
+    QFormLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QSpinBox,
+    QTextEdit,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
+from utils.json_manager import JsonManager
+from utils.validation import ValidationError, validate_general_equipment
 
 
 class GeneralEquipmentJsonManager(JsonManager):
@@ -301,8 +315,8 @@ class GeneralEquipmentEditorQt(QMainWindow):
 
 
 if __name__ == "__main__":
-    import sys
     import os as _os
+    import sys
     sys.path.insert(0, _os.path.abspath(_os.path.join(_os.path.dirname(__file__), '..', '..')))
     from utils.dark_mode import apply_dark_mode
     app = QApplication(sys.argv)

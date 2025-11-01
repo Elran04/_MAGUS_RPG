@@ -2,18 +2,30 @@
 Placeholder Skill Editor Tab
 Manages placeholder skill resolutions through a visual interface
 """
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
-    QLabel, QPushButton, QListWidget, QListWidgetItem,
-    QComboBox, QTextEdit, QSplitter, QMessageBox, QLineEdit
-)
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
-import sqlite3
 import os
+import sqlite3
 
 # Import placeholder manager
 import sys
+
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
+    QComboBox,
+    QFormLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QPushButton,
+    QSplitter,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from utils.placeholder_manager import PlaceholderManager
 

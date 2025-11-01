@@ -1,12 +1,28 @@
 import os
-from utils.json_manager import JsonManager
-from utils.validation import validate_armor, ValidationError
-from PySide6.QtWidgets import (
-    QWidget, QMainWindow, QApplication, QVBoxLayout, QHBoxLayout, QLabel, QListWidget,
-    QPushButton, QMessageBox, QLineEdit, QCheckBox, QSpinBox, QDoubleSpinBox, QTextEdit,
-    QComboBox, QGridLayout, QListWidgetItem, QScrollArea
-)
+
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QComboBox,
+    QDoubleSpinBox,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QSpinBox,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
+from utils.json_manager import JsonManager
+from utils.validation import ValidationError, validate_armor
 
 
 class ArmorJsonManager(JsonManager):
@@ -426,8 +442,8 @@ class ArmorEditorQt(QMainWindow):
 
 
 if __name__ == "__main__":
-    import sys
     import os as _os
+    import sys
     sys.path.insert(0, _os.path.abspath(_os.path.join(_os.path.dirname(__file__), '..', '..')))
     from utils.dark_mode import apply_dark_mode
     app = QApplication(sys.argv)

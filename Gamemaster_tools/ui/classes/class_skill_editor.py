@@ -3,9 +3,10 @@ Class Skill Editor Widget
 Reusable widget for managing class/specialization skill assignments
 Can be used standalone or embedded in other editors
 """
-from PySide6 import QtWidgets, QtCore
-import sqlite3
 import os
+import sqlite3
+
+from PySide6 import QtCore, QtWidgets
 
 # Database paths
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))

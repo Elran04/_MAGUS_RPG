@@ -1,6 +1,7 @@
 import json
 import os
 
+
 class ArmorManager:
     # Páncél részegységek és az általuk védett alzónák
     PARTS = {

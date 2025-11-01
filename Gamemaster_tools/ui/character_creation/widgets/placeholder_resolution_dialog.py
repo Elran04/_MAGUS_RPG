@@ -1,4 +1,5 @@
-from PySide6 import QtWidgets, QtCore
+from PySide6 import QtCore, QtWidgets
+
 
 class PlaceholderResolutionDialog(QtWidgets.QDialog):
     """Dialog for choosing which skill to use for a placeholder.

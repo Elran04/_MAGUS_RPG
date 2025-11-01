@@ -5,13 +5,19 @@ Modern tabbed interface for editing skill prerequisites
 Refactored to provide reusable prerequisite editor components:
 - SkillPrerequisiteEditorWidget: Embeddable widget for inline editing
 """
-from PySide6.QtWidgets import (
-    QVBoxLayout, QHBoxLayout,
-    QLabel, QComboBox, QPushButton, QSpinBox, QListWidget,
-    QWidget, QScrollArea, QCompleter
-)
 from PySide6.QtCore import Qt
- 
+from PySide6.QtWidgets import (
+    QComboBox,
+    QCompleter,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QPushButton,
+    QScrollArea,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
+)
 
 # Stat names (tulajdonságok)
 STAT_NAMES = [

@@ -2,17 +2,18 @@
 Equipment Editor - PySide6 version with dark mode
 Tabbed interface for managing armor, weapons/shields, and general equipment
 """
-from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QTabWidget
-from PySide6.QtCore import Qt
-import sys
 import os
+import sys
+
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QMainWindow, QTabWidget, QVBoxLayout, QWidget
 
 # Add parent directories to path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from ui.equipment.armor_editor import ArmorEditorQt
-from ui.equipment.weapons_and_shields_editor import WeaponsAndShieldsEditor
 from ui.equipment.general_equipment_editor import GeneralEquipmentEditorQt
+from ui.equipment.weapons_and_shields_editor import WeaponsAndShieldsEditor
 
 
 class EquipmentEditorQt(QMainWindow):

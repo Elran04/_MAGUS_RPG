@@ -1,14 +1,15 @@
-from PySide6 import QtWidgets, QtCore
 import os
 import sys
+
+from PySide6 import QtCore, QtWidgets
 
 # Ensure Gamemaster_tools root on path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-from utils.class_db_manager import ClassDBManager
-from data.race.race_list import ALL_RACES
 from data.race.race_age_stat_modifiers import AGE_LIMITS
-from engine.character import is_valid_character, GENDER_RESTRICTIONS, RACE_RESTRICTIONS
+from data.race.race_list import ALL_RACES
+from engine.character import GENDER_RESTRICTIONS, RACE_RESTRICTIONS, is_valid_character
+from utils.class_db_manager import ClassDBManager
 
 
 class BasicSpecStepWidget(QtWidgets.QWidget):

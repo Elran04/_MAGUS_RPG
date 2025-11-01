@@ -1,5 +1,7 @@
-from PySide6 import QtWidgets
 from typing import Callable, Optional
+
+from PySide6 import QtWidgets
+
 
 class EquipmentStepWidget(QtWidgets.QWidget):
     """

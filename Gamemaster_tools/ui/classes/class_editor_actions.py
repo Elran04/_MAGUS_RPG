@@ -2,11 +2,12 @@
 Class Editor Actions
 Handles all action operations (load, save, add/delete spec, equipment, description file handling)
 """
-from PySide6 import QtWidgets, QtCore
-import sys
+import json
 import os
 import subprocess
-import json
+import sys
+
+from PySide6 import QtCore, QtWidgets
 
 from .class_editor_constants import EQUIPMENT_TYPES
 

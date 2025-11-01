@@ -2,7 +2,7 @@
 Centralized validation helpers for GM Tools editors.
 Avoid heavy dependencies; perform lightweight schema checks.
 """
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 class ValidationError(Exception):

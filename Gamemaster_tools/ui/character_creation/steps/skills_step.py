@@ -1,7 +1,9 @@
-from PySide6 import QtWidgets, QtCore, QtGui
 import os
 import sqlite3
-from typing import Callable, Dict, Any
+from typing import Any, Callable, Dict
+
+from PySide6 import QtCore, QtGui, QtWidgets
+
 
 class SkillsStepWidget(QtWidgets.QWidget):
     """Skills step widget displaying class/spec skills with inline placeholder resolution."""

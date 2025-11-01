@@ -10,3 +10,25 @@ project_folderstructure_scanner.py
 *.zip
 *.rar
 characters/
+# Poetry
+poetry.lock
+
+# Logs
+logs/
+*.log
+
+# MyPy
+.mypy_cache/
+
+# Ruff
+.ruff_cache/
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
+
+# Database
+*.db
+*.sqlite
+*.sqlite3

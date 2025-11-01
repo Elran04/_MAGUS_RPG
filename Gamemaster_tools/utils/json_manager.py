@@ -3,6 +3,7 @@ import json
 import os
 from abc import ABC, abstractmethod
 
+
 class JsonManager(ABC):
     def __init__(self, json_path):
         self.json_path = json_path

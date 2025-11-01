@@ -1,11 +1,25 @@
-from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
-    QTreeView, QLineEdit, QComboBox, QCheckBox, QPushButton, QMessageBox, QLabel, QSpinBox
-)
-from PySide6.QtCore import Qt, QAbstractItemModel, QModelIndex
-from PySide6.QtGui import QStandardItemModel, QStandardItem
-import sys
 import os
+import sys
+
+from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt
+from PySide6.QtGui import QStandardItem, QStandardItemModel
+from PySide6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QComboBox,
+    QFormLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QSpinBox,
+    QTreeView,
+    QVBoxLayout,
+    QWidget,
+)
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from utils.weapondata_manager import WeaponDataManager
 
@@ -28,7 +42,7 @@ class WeaponsAndShieldsEditor(QMainWindow):
         left_panel.addWidget(QLabel("Fegyverek és pajzsok listája"))
         self.tree = QTreeView()
         left_panel.addWidget(self.tree)
-        from PySide6.QtGui import QStandardItemModel, QStandardItem
+        from PySide6.QtGui import QStandardItem, QStandardItemModel
         self.model = QStandardItemModel()
         self.model.setHorizontalHeaderLabels(["Fegyverek és pajzsok"])
         self.tree.setModel(self.model)
@@ -333,7 +347,7 @@ class WeaponsAndShieldsEditor(QMainWindow):
         self.fields['category'].addItems(default_categories)
         self.edit_layout.addRow(QLabel("Kategória:"), self.fields['category'])
         # Damage types egy sorban, Sebzés típus: label bal oldali oszlopban
-        from PySide6.QtWidgets import QGridLayout, QWidget, QSpacerItem, QSizePolicy
+        from PySide6.QtWidgets import QGridLayout, QSizePolicy, QSpacerItem, QWidget
         self.damage_type_checks = {}
         damage_grid = QGridLayout()
         damage_grid.setSpacing(4)
@@ -348,7 +362,7 @@ class WeaponsAndShieldsEditor(QMainWindow):
         damage_grid_widget = QWidget()
         damage_grid_widget.setLayout(damage_grid)
         # Sebzés típus, Sebzés bónusz tulajdonsága, Ár: egy közös grid layoutban, három sorban
-        from PySide6.QtWidgets import QGridLayout, QSpacerItem, QSizePolicy
+        from PySide6.QtWidgets import QGridLayout, QSizePolicy, QSpacerItem
         self.damage_type_checks = {}
         self.damage_bonus_checks = {}
         self.price_fields = {}

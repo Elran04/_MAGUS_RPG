@@ -3,23 +3,28 @@ Skill Editor - PySide6 version with dark mode support
 Modern tabbed interface for M.A.G.U.S. skill management
 Refactored into modular components for better maintainability
 """
-from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QHBoxLayout, QPushButton, QSplitter,
-    QTabWidget, QVBoxLayout
-)
-from PySide6.QtCore import Qt
-import sys
 import os
+import sys
+
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QMainWindow,
+    QPushButton,
+    QSplitter,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-from utils.skilldata_manager import SkillManager
+from ui.skills.skill_editor_actions import SkillEditorActions
 from ui.skills.skill_editor_constants import TYPE_MAP_REV
 from ui.skills.skill_editor_list import SkillListPanel
 from ui.skills.skill_editor_tabs import SkillEditorTabs
-from ui.skills.skill_editor_actions import SkillEditorActions
-
+from utils.skilldata_manager import SkillManager
 
 
 class SkillEditorQt(QMainWindow):

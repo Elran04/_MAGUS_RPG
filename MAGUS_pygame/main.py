@@ -8,11 +8,16 @@ from actions.action_handling import setup_action_ui, roll_initiative
 from actions.action_movement import compute_reachable, find_path
 from core.game_state import GameState
 from core.game_setup import setup_game
+from core.logger import get_logger
 from input.event_handler import process_mouse_click
 from rendering.renderer import draw_game_screen, draw_victory_screen, draw_hud
 from ui.unit_info_popup import UnitInfoPopup
 
+# Logger inicializálása
+logger = get_logger(__name__)
+
 # Initialize pygame
+logger.info("Pygame inicializálása")
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("MAGUS Hexgrid Turn-Based Demo")
@@ -26,6 +31,9 @@ warrior, goblin, background = setup_game()
 
 def main():
     """Main game loop."""
+    logger.info("=" * 60)
+    logger.info("MAGUS RPG játék indítása")
+    logger.info("=" * 60)
     running = True
     
     # Initialize game state
@@ -47,6 +55,7 @@ def main():
 
     # Roll initiative to determine who starts
     roll_initiative(state)
+    logger.info(f"Kezdeményezés dobva: {state.active_unit.name if state.active_unit else 'N/A'} kezd")
     state.turn_start_pos = state.active_unit.get_position()
     
     # Initial compute for active unit's turn
@@ -145,6 +154,7 @@ def main():
         pygame.display.flip()
         clock.tick(60)
 
+    logger.info("Játék befejezve, pygame leállítása")
     pygame.quit()
 
 if __name__ == "__main__":
