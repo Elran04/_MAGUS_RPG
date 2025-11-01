@@ -15,7 +15,6 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPushButton,
-    QScrollArea,
     QSpinBox,
     QTextEdit,
     QVBoxLayout,
@@ -85,7 +84,7 @@ class ArmorEditorQt(QMainWindow):
         left.addLayout(sort_row)
 
         # Right: editor form in a scroll area
-        from engine.armor_manager import ArmorManager
+
         right_container = QWidget()
         right_layout = QVBoxLayout(right_container)
         form = QWidget()
@@ -107,7 +106,15 @@ class ArmorEditorQt(QMainWindow):
         form_layout.addWidget(QLabel("Részegységek és SFÉ:"), r, 0)
         r += 1
         parts = [
-            "sisak", "mellvért", "vállvédő", "felkarvédő", "alkarvédő", "kesztyű", "combvédő", "lábszárvédő", "csizma"
+            "sisak",
+            "mellvért",
+            "vállvédő",
+            "felkarvédő",
+            "alkarvédő",
+            "kesztyű",
+            "combvédő",
+            "lábszárvédő",
+            "csizma",
         ]
         self.parts_checks = {}
         self.parts_sfe = {}
@@ -185,7 +192,7 @@ class ArmorEditorQt(QMainWindow):
         # Price
         form_layout.addWidget(QLabel("Ár:"), r, 0, alignment=Qt.AlignTop)
         price_row = QHBoxLayout()
-        from engine.currency_manager import CurrencyManager
+
         self.price_spins = {}
         for curr in ["réz", "ezüst", "arany", "mithrill"]:
             price_row.addWidget(QLabel(curr))
@@ -219,22 +226,25 @@ class ArmorEditorQt(QMainWindow):
     # Helpers
     def _load_zone_menus(self):
         from engine.armor_manager import ArmorManager
+
         self._main_to_sub = ArmorManager.MAIN_ZONES
         self.cmb_main.clear()
         self.cmb_main.addItems(list(self._main_to_sub.keys()))
         self._on_main_zone_changed(self.cmb_main.currentText())
 
     def _on_main_zone_changed(self, main):
-        subs = self._main_to_sub.get(main, []) if hasattr(self, '_main_to_sub') else []
+        subs = self._main_to_sub.get(main, []) if hasattr(self, "_main_to_sub") else []
         self.cmb_sub.clear()
         self.cmb_sub.addItems(subs)
 
     def _price_to_parts(self, price):
         from engine.currency_manager import CurrencyManager
+
         return CurrencyManager().from_base(int(price or 0))
 
     def _parts_to_price(self):
         from engine.currency_manager import CurrencyManager
+
         total = 0
         for curr in ["réz", "ezüst", "arany", "mithrill"]:
             total += CurrencyManager().to_base(self.price_spins[curr].value(), curr)
@@ -247,15 +257,16 @@ class ArmorEditorQt(QMainWindow):
 
     # Sorting
     def sort_abc(self):
-        self.armors.sort(key=lambda a: a.get('name', '').lower(), reverse=not self.abc_sort_asc)
+        self.armors.sort(key=lambda a: a.get("name", "").lower(), reverse=not self.abc_sort_asc)
         self.abc_sort_asc = not self.abc_sort_asc
         self.btn_sort_abc.setText(f"ABC {'▲' if self.abc_sort_asc else '▼'}")
         self.refresh_list()
 
     def sort_sfe(self):
         def max_sfe(armor):
-            parts = armor.get('parts', {})
+            parts = armor.get("parts", {})
             return max(parts.values()) if parts else 0
+
         self.armors.sort(key=max_sfe, reverse=not self.sfe_sort_asc)
         self.sfe_sort_asc = not self.sfe_sort_asc
         self.btn_sort_sfe.setText(f"SFÉ {'▲' if self.sfe_sort_asc else '▼'}")
@@ -271,13 +282,15 @@ class ArmorEditorQt(QMainWindow):
         for i in range(self.override_list.count()):
             it = self.override_list.item(i)
             data = it.data(Qt.UserRole)
-            if data and data.get('sub') == sub:
-                QMessageBox.warning(self, "Hiba", "Ez az alzóna már szerepel az override-ok között!")
+            if data and data.get("sub") == sub:
+                QMessageBox.warning(
+                    self, "Hiba", "Ez az alzóna már szerepel az override-ok között!"
+                )
                 return
         item = {
-            'main': self.cmb_main.currentText(),
-            'sub': sub,
-            'value': int(self.spn_override.value())
+            "main": self.cmb_main.currentText(),
+            "sub": sub,
+            "value": int(self.spn_override.value()),
         }
         lw_item = QListWidgetItem(f"{item['sub']} ({item['main']}): {item['value']}")
         lw_item.setData(Qt.UserRole, item)
@@ -287,12 +300,13 @@ class ArmorEditorQt(QMainWindow):
         self.override_list.clear()
         # Build from dict of sub->value; infer main by mapping
         from engine.armor_manager import ArmorManager
+
         for main, subs in ArmorManager.MAIN_ZONES.items():
             for sub in subs:
                 if sub in overrides_dict:
                     val = overrides_dict[sub]
                     lw_item = QListWidgetItem(f"{sub} ({main}): {val}")
-                    lw_item.setData(Qt.UserRole, {'main': main, 'sub': sub, 'value': val})
+                    lw_item.setData(Qt.UserRole, {"main": main, "sub": sub, "value": val})
                     self.override_list.addItem(lw_item)
 
     def _overrides_from_ui(self):
@@ -300,7 +314,7 @@ class ArmorEditorQt(QMainWindow):
         for i in range(self.override_list.count()):
             data = self.override_list.item(i).data(Qt.UserRole)
             if data:
-                result[data['sub']] = data['value']
+                result[data["sub"]] = data["value"]
         return result
 
     def delete_selected_override(self):
@@ -317,33 +331,33 @@ class ArmorEditorQt(QMainWindow):
             return
         self.selected_idx = row
         armor = self.armors[row]
-        self.inp_name.setText(armor.get('name', ''))
-        self.inp_id.setText(armor.get('id', ''))
+        self.inp_name.setText(armor.get("name", ""))
+        self.inp_id.setText(armor.get("id", ""))
         # parts
-        parts = armor.get('parts', {})
+        parts = armor.get("parts", {})
         for part, chk in self.parts_checks.items():
             val = int(parts.get(part, 0))
             chk.setChecked(val > 0)
             self.parts_sfe[part].setValue(val)
         # overrides
-        self._load_overrides_to_ui(armor.get('protection_overrides', {}))
+        self._load_overrides_to_ui(armor.get("protection_overrides", {}))
         # mgt, weight
         try:
-            self.spn_mgt.setValue(int(armor.get('mgt', 0)))
+            self.spn_mgt.setValue(int(armor.get("mgt", 0)))
         except Exception:
             self.spn_mgt.setValue(0)
         try:
-            self.spn_weight.setValue(float(armor.get('weight', 0)))
+            self.spn_weight.setValue(float(armor.get("weight", 0)))
         except Exception:
             self.spn_weight.setValue(0.0)
         # price
-        parts_price = self._price_to_parts(armor.get('price', 0))
+        parts_price = self._price_to_parts(armor.get("price", 0))
         for curr in ["réz", "ezüst", "arany", "mithrill"]:
             self.price_spins[curr].setValue(int(parts_price.get(curr, 0)))
         # description
-        self.txt_desc.setPlainText(armor.get('description', ''))
+        self.txt_desc.setPlainText(armor.get("description", ""))
         # armor type
-        armor_type = armor.get('armor_type', 'leather')
+        armor_type = armor.get("armor_type", "leather")
         found = False
         for i in range(self.cmb_armor_type.count()):
             if self.cmb_armor_type.itemData(i) == armor_type:
@@ -353,11 +367,11 @@ class ArmorEditorQt(QMainWindow):
         if not found:
             # fallback to leather
             for i in range(self.cmb_armor_type.count()):
-                if self.cmb_armor_type.itemData(i) == 'leather':
+                if self.cmb_armor_type.itemData(i) == "leather":
                     self.cmb_armor_type.setCurrentIndex(i)
                     break
         # layer number
-        self.spn_layer.setValue(int(armor.get('layer', 3)))
+        self.spn_layer.setValue(int(armor.get("layer", 3)))
 
     def _collect_parts(self):
         result = {}
@@ -371,16 +385,16 @@ class ArmorEditorQt(QMainWindow):
     def save_armor(self):
         # Build armor dict
         armor = {
-            'name': self.inp_name.text().strip(),
-            'id': self.inp_id.text().strip(),
-            'parts': self._collect_parts(),
-            'protection_overrides': self._overrides_from_ui(),
-            'mgt': int(self.spn_mgt.value()),
-            'weight': float(self.spn_weight.value()),
-            'price': int(self._parts_to_price()),
-            'description': self.txt_desc.toPlainText().strip(),
-            'armor_type': self.cmb_armor_type.currentData(),
-            'layer': int(self.spn_layer.value()),
+            "name": self.inp_name.text().strip(),
+            "id": self.inp_id.text().strip(),
+            "parts": self._collect_parts(),
+            "protection_overrides": self._overrides_from_ui(),
+            "mgt": int(self.spn_mgt.value()),
+            "weight": float(self.spn_weight.value()),
+            "price": int(self._parts_to_price()),
+            "description": self.txt_desc.toPlainText().strip(),
+            "armor_type": self.cmb_armor_type.currentData(),
+            "layer": int(self.spn_layer.value()),
         }
         if not ArmorJsonManager(ARMOR_JSON).validate(armor):
             QMessageBox.critical(self, "Hiba", "Hiányzó vagy hibás mező!")
@@ -388,9 +402,9 @@ class ArmorEditorQt(QMainWindow):
         # Determine target index to select after save without being affected by signals
         target_idx = self.selected_idx
         # If nothing is selected but an item with same ID exists, update that instead of appending
-        if target_idx is None and armor['id']:
+        if target_idx is None and armor["id"]:
             for i, a in enumerate(self.armors):
-                if a.get('id') == armor['id']:
+                if a.get("id") == armor["id"]:
                     target_idx = i
                     break
 
@@ -432,7 +446,7 @@ class ArmorEditorQt(QMainWindow):
         if row < 0:
             QMessageBox.warning(self, "Törlés", "Nincs kiválasztva páncél.")
             return
-        name = self.armors[row].get('name', '-')
+        name = self.armors[row].get("name", "-")
         answer = QMessageBox.question(self, "Törlés", f"Biztosan törlöd ezt a páncélt?\n{name}")
         if answer == QMessageBox.Yes:
             self.armors.pop(row)
@@ -444,8 +458,10 @@ class ArmorEditorQt(QMainWindow):
 if __name__ == "__main__":
     import os as _os
     import sys
-    sys.path.insert(0, _os.path.abspath(_os.path.join(_os.path.dirname(__file__), '..', '..')))
+
+    sys.path.insert(0, _os.path.abspath(_os.path.join(_os.path.dirname(__file__), "..", "..")))
     from utils.dark_mode import apply_dark_mode
+
     app = QApplication(sys.argv)
     apply_dark_mode(app)
     w = ArmorEditorQt()

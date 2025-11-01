@@ -1,0 +1,250 @@
+{
+  "id": "torpe",
+  "name": "Törpe",
+  "description_file": "races/descriptions/torpe.md",
+  "attributes": {
+    "modifiers": {
+      "Erő": 1,
+      "Állóképesség": 1,
+      "Gyorsaság": 0,
+      "Ügyesség": 0,
+      "Karizma": -2,
+      "Egészség": 1,
+      "Intelligencia": -1,
+      "Akaraterő": 0,
+      "Asztrál": -1,
+      "Érzékelés": 0
+    },
+    "limits": {
+      "Erő": {
+        "min": 4,
+        "max": 19
+      },
+      "Állóképesség": {
+        "min": 4,
+        "max": 19
+      },
+      "Gyorsaság": null,
+      "Ügyesség": null,
+      "Karizma": {
+        "min": 1,
+        "max": 15
+      },
+      "Egészség": {
+        "min": 4,
+        "max": 21
+      },
+      "Intelligencia": {
+        "min": 2,
+        "max": 18
+      },
+      "Akaraterő": null,
+      "Asztrál": {
+        "min": 1,
+        "max": 16
+      },
+      "Érzékelés": null
+    },
+    "hard_limits": {
+      "Erő": {
+        "min": 1,
+        "max": 21
+      },
+      "Állóképesség": {
+        "min": 1,
+        "max": 21
+      },
+      "Gyorsaság": null,
+      "Ügyesség": null,
+      "Karizma": {
+        "min": 1,
+        "max": 15
+      },
+      "Egészség": {
+        "min": 1,
+        "max": 21
+      },
+      "Intelligencia": {
+        "min": 1,
+        "max": 18
+      },
+      "Akaraterő": null,
+      "Asztrál": {
+        "min": 1,
+        "max": 16
+      },
+      "Érzékelés": null
+    }
+  },
+  "age": {
+    "min": 25,
+    "max": 800,
+    "age_categories": [
+      {
+        "name": "Gyermek",
+        "min": 25,
+        "max": 39,
+        "modifiers": {
+          "Erő": -3,
+          "Állóképesség": -3,
+          "Gyorsaság": 0,
+          "Ügyesség": -1,
+          "Karizma": -1,
+          "Egészség": 0,
+          "Intelligencia": -1,
+          "Akaraterő": -1,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      },
+      {
+        "name": "Fiatal felnőtt",
+        "min": 40,
+        "max": 349,
+        "modifiers": {
+          "Erő": 0,
+          "Állóképesség": 0,
+          "Gyorsaság": 0,
+          "Ügyesség": 0,
+          "Karizma": 0,
+          "Egészség": 0,
+          "Intelligencia": 0,
+          "Akaraterő": 0,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      },
+      {
+        "name": "Felnőtt",
+        "min": 350,
+        "max": 599,
+        "modifiers": {
+          "Erő": 0,
+          "Állóképesség": 0,
+          "Gyorsaság": -1,
+          "Ügyesség": -1,
+          "Karizma": 1,
+          "Egészség": 0,
+          "Intelligencia": 1,
+          "Akaraterő": 1,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      },
+      {
+        "name": "Középkorú",
+        "min": 600,
+        "max": 679,
+        "modifiers": {
+          "Erő": -1,
+          "Állóképesség": -1,
+          "Gyorsaság": -1,
+          "Ügyesség": -1,
+          "Karizma": 1,
+          "Egészség": -1,
+          "Intelligencia": 1,
+          "Akaraterő": 1,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      },
+      {
+        "name": "Idős",
+        "min": 680,
+        "max": 749,
+        "modifiers": {
+          "Erő": -2,
+          "Állóképesség": -2,
+          "Gyorsaság": -2,
+          "Ügyesség": -2,
+          "Karizma": 0,
+          "Egészség": -2,
+          "Intelligencia": 1,
+          "Akaraterő": 1,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      },
+      {
+        "name": "Öreg",
+        "min": 750,
+        "max": 800,
+        "modifiers": {
+          "Erő": -4,
+          "Állóképesség": -4,
+          "Gyorsaság": -4,
+          "Ügyesség": -4,
+          "Karizma": 0,
+          "Egészség": -4,
+          "Intelligencia": 0,
+          "Akaraterő": 0,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      }
+    ]
+  },
+  "racial_skills": [
+    {
+      "skill_id": "language_dwarven",
+      "level": "native",
+      "optional": false
+    },
+    {
+      "skill_id": "language_common",
+      "level": 1,
+      "optional": false
+    },
+    {
+      "skill_id": "mining_knowledge",
+      "level": 2,
+      "optional": false
+    }
+  ],
+  "forbidden_skills": [
+    "elven_magic",
+    "swimming_advanced"
+  ],
+  "origins": [
+    {
+      "id": "mountain_kingdoms",
+      "name": "Hegyi királyságok",
+      "probability": 80
+    },
+    {
+      "id": "underground_cities",
+      "name": "Föld alatti városok",
+      "probability": 15
+    },
+    {
+      "id": "exile",
+      "name": "Száműzött",
+      "probability": 5
+    }
+  ],
+  "class_restrictions": {
+    "allowed_classes": [
+      "Gladiátor",
+      "Harcos",
+      "Pap",
+      "Tolvaj",
+      "Varázsló"
+    ],
+    "forbidden_specializations": [
+      "arcane_archer",
+      "wizard",
+      "sorcerer"
+    ]
+  },
+  "special_abilities": [
+    "infravision",
+    "stone_cunning",
+    "poison_resistance"
+  ],
+  "metadata": {
+    "created_at": "2025-11-01T19:17:24.173219",
+    "updated_at": "2025-11-01T19:47:52.967719",
+    "version": "1.0",
+    "migrated_from": "race_age_stat_modifiers.py"
+  }
+}

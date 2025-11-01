@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 from PySide6 import QtWidgets
 
@@ -12,6 +12,7 @@ class SummaryStepWidget(QtWidgets.QWidget):
     - refresh(): recompute and display summary from current data
     - get_result(): return the same data (future hook for finalized payload)
     """
+
     def __init__(self, get_data: Callable[[], dict], parent=None):
         super().__init__(parent)
         self._get_data = get_data
@@ -37,9 +38,17 @@ class SummaryStepWidget(QtWidgets.QWidget):
         """
         src = dict(self._get_data() or {})
         allowed_keys = {
-            "Név", "Nem", "Kor", "Faj", "Kaszt", "Specializáció",
-            "Tulajdonságok", "Képzettségek", "Felszerelés",
-            "Képzettségpontok", "Harci értékek",
+            "Név",
+            "Nem",
+            "Kor",
+            "Faj",
+            "Kaszt",
+            "Specializáció",
+            "Tulajdonságok",
+            "Képzettségek",
+            "Felszerelés",
+            "Képzettségpontok",
+            "Harci értékek",
         }
         out = {}
         for k, v in src.items():

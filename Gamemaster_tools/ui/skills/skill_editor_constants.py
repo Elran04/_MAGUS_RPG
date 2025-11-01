@@ -7,11 +7,23 @@ Contains all constant values used in the skill editor
 CATEGORIES = {
     "Harci képzettségek": ["Közkeletű", "Szakértő", "Titkos"],
     "Szociális képzettségek": ["Általános", "Nemesi", "Polgári", "Póri", "Művész"],
-    "Alvilági képzettségek": ["Álcázó", "Kommunikációs", "Pénzszerző", "Harci", "Behatoló", "Ellenálló"],
+    "Alvilági képzettségek": [
+        "Álcázó",
+        "Kommunikációs",
+        "Pénzszerző",
+        "Harci",
+        "Behatoló",
+        "Ellenálló",
+    ],
     "Túlélő képzettségek": ["Vadonjáró", "Atlétikai"],
     "Elméleti képzettségek": ["Közkeletű", "Szakértő", "Titkos elméleti", "Titkos szervezeti"],
-    "Helyfoglaló képzettségek": ["Harci képzettségek", "Szociális képzettségek", "Alvilági képzettségek", 
-                                  "Túlélő képzettségek", "Elméleti képzettségek"]
+    "Helyfoglaló képzettségek": [
+        "Harci képzettségek",
+        "Szociális képzettségek",
+        "Alvilági képzettségek",
+        "Túlélő képzettségek",
+        "Elméleti képzettségek",
+    ],
 }
 
 # Acquisition method mappings

@@ -1,7 +1,7 @@
 import os
 import sys
 
-from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt
+from PySide6.QtCore import QModelIndex, Qt
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QApplication,
@@ -20,10 +20,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from utils.weapondata_manager import WeaponDataManager
 
-WEAPONS_JSON = os.path.join(os.path.dirname(__file__), "..", "..", "data", "equipment", "weapons_and_shields.json")
+WEAPONS_JSON = os.path.join(
+    os.path.dirname(__file__), "..", "..", "data", "equipment", "weapons_and_shields.json"
+)
+
 
 class WeaponsAndShieldsEditor(QMainWindow):
     # --- Fő Qt ablak: fegyverek és pajzsok szerkesztője ---
@@ -42,7 +45,7 @@ class WeaponsAndShieldsEditor(QMainWindow):
         left_panel.addWidget(QLabel("Fegyverek és pajzsok listája"))
         self.tree = QTreeView()
         left_panel.addWidget(self.tree)
-        from PySide6.QtGui import QStandardItem, QStandardItemModel
+
         self.model = QStandardItemModel()
         self.model.setHorizontalHeaderLabels(["Fegyverek és pajzsok"])
         self.tree.setModel(self.model)
@@ -73,9 +76,11 @@ class WeaponsAndShieldsEditor(QMainWindow):
         self.selected_idx = idx
         it = self.items[idx]
         self.fill_fields(it)  # Statikus mezők kitöltése
-        self.fields['type'].setCurrentText(it.get('type', self.manager.get_weapon_types()[0]))
-        self.build_type_fields(it.get('type', self.manager.get_weapon_types()[0]), item=it)  # Típusfüggő mezők
-        self.fields['category'].setCurrentText(it.get('category', ""))
+        self.fields["type"].setCurrentText(it.get("type", self.manager.get_weapon_types()[0]))
+        self.build_type_fields(
+            it.get("type", self.manager.get_weapon_types()[0]), item=it
+        )  # Típusfüggő mezők
+        self.fields["category"].setCurrentText(it.get("category", ""))
 
     def populate_treeview(self):
         """
@@ -90,8 +95,8 @@ class WeaponsAndShieldsEditor(QMainWindow):
         type_order = self.manager.get_weapon_types()
         type_items = {}
         for idx, item in enumerate(self.items):
-            type_val = item.get('type', 'Egyéb')
-            cat_val = item.get('category', '') or 'Egyéb'
+            type_val = item.get("type", "Egyéb")
+            cat_val = item.get("category", "") or "Egyéb"
             type_items.setdefault(type_val, []).append((cat_val, idx, item))
         # Típusok sorrendje: először a manager által definiáltak, majd az egyéb típusok
         for t in type_order + [t for t in type_items if t not in type_order]:
@@ -131,6 +136,7 @@ class WeaponsAndShieldsEditor(QMainWindow):
                     self.edit_layout.removeRow(i)
                     break
         self.type_fields = {}
+
     def set_widget_value(self, widget, value):
         """
         Általános widget értékbeállítás (QLineEdit, QComboBox, QCheckBox, QSpinBox)
@@ -187,18 +193,19 @@ class WeaponsAndShieldsEditor(QMainWindow):
                 self.set_widget_value(self.fields[key], it.get(key, False))
         try:
             from engine.currency_manager import CurrencyManager
-            price = int(it.get('price', 0))
+
+            price = int(it.get("price", 0))
             price_parts = CurrencyManager().from_base(price)
             for key in self.manager.PRICE_FIELDS:
-                curr = key.split('_')[1]
+                curr = key.split("_")[1]
                 self.set_widget_value(self.fields[key], price_parts.get(curr, 0))
         except Exception:
             for key in self.manager.PRICE_FIELDS:
                 self.set_widget_value(self.fields[key], 0)
         for typ, cb in self.damage_type_checks.items():
-            cb.setChecked(typ in it.get('damage_types', []))
+            cb.setChecked(typ in it.get("damage_types", []))
         for attr, cb in self.damage_bonus_checks.items():
-            cb.setChecked(attr in it.get('damage_bonus_attributes', []))
+            cb.setChecked(attr in it.get("damage_bonus_attributes", []))
 
     def build_type_fields(self, type_value, item=None):
         """
@@ -220,9 +227,9 @@ class WeaponsAndShieldsEditor(QMainWindow):
             wield_combo = QComboBox()
             wield_combo.addItems(["Egykezes", "Kétkezes", "Változó"])
             wield_combo.currentTextChanged.connect(self.wield_mode_changed)
-            self.type_fields['wield_mode'] = wield_combo
+            self.type_fields["wield_mode"] = wield_combo
             self.edit_layout.addRow(QLabel("Használati mód:"), wield_combo)
-            wield_mode_val = item.get('wield_mode', 'Egykezes') if item is not None else 'Egykezes'
+            wield_mode_val = item.get("wield_mode", "Egykezes") if item is not None else "Egykezes"
             self.set_widget_value(wield_combo, wield_mode_val)
             # A 'Változó' mezőket mindig létrehozzuk, de csak akkor engedélyezzük, ha a wield_mode 'Változó'
             for label, key in [
@@ -238,10 +245,10 @@ class WeaponsAndShieldsEditor(QMainWindow):
                 if item is not None:
                     self.set_widget_value(le, item.get(key, ""))
             dual_cb = QCheckBox("Kétkezes harc lehetséges")
-            self.type_fields['variable_dual_wield'] = dual_cb
+            self.type_fields["variable_dual_wield"] = dual_cb
             self.edit_layout.addRow(dual_cb)
             if item is not None:
-                self.set_widget_value(dual_cb, item.get('variable_dual_wield', False))
+                self.set_widget_value(dual_cb, item.get("variable_dual_wield", False))
             # Engedélyezés/letiltás az aktuális wield_mode alapján
             enable = wield_mode_val == "Változó"
             for key in [
@@ -250,17 +257,18 @@ class WeaponsAndShieldsEditor(QMainWindow):
                 "variable_bonus_KE",
                 "variable_bonus_TE",
                 "variable_bonus_VE",
-                "variable_dual_wield"
+                "variable_dual_wield",
             ]:
                 if key in self.type_fields:
                     self.type_fields[key].setEnabled(enable)
+
     def wield_mode_changed(self):
         """
         Ha a wield_mode mező 'Változó' <-> más mód között vált, újragenerálja a típusfüggő mezőket.
         - Csak akkor, ha tényleg változás történt
         """
         # Csak engedélyezzük/letiltjuk a mezőket, nem generáljuk újra őket
-        combo = self.type_fields.get('wield_mode')
+        combo = self.type_fields.get("wield_mode")
         if combo is None:
             return
         current = combo.currentText()
@@ -271,10 +279,11 @@ class WeaponsAndShieldsEditor(QMainWindow):
             "variable_bonus_KE",
             "variable_bonus_TE",
             "variable_bonus_VE",
-            "variable_dual_wield"
+            "variable_dual_wield",
         ]:
             if key in self.type_fields:
                 self.type_fields[key].setEnabled(enable)
+
     def __init__(self):
         """
         Fő ablak inicializálása, manager példány, itemek betöltése, UI felépítése
@@ -318,7 +327,7 @@ class WeaponsAndShieldsEditor(QMainWindow):
         btn_save.clicked.connect(self.save_item)
         editor_vbox.addWidget(btn_save, alignment=Qt.AlignBottom)
         # Típusfüggő mezők generálása induláskor is
-        self.update_type_fields(self.fields['type'].currentText())
+        self.update_type_fields(self.fields["type"].currentText())
 
     def build_edit_fields(self):
         """
@@ -330,39 +339,47 @@ class WeaponsAndShieldsEditor(QMainWindow):
         # Csak egyszer generáljuk a fő mezőket, ne töröljük minden új itemnél/kiválasztásnál
         # Alap mezők (kivéve 'type' és 'category')
         for key in self.manager.BASE_FIELDS:
-            if key not in ('type', 'category'):
+            if key not in ("type", "category"):
                 le = QLineEdit()
                 self.fields[key] = le
                 self.edit_layout.addRow(QLabel(key.capitalize() + ":"), le)
         # Típus mező (legördülő)
-        self.fields['type'] = QComboBox()
-        self.fields['type'].addItems(self.manager.get_weapon_types())
-        self.fields['type'].currentTextChanged.connect(self.update_type_fields)
-        self.edit_layout.addRow(QLabel("Típus:"), self.fields['type'])
+        self.fields["type"] = QComboBox()
+        self.fields["type"].addItems(self.manager.get_weapon_types())
+        self.fields["type"].currentTextChanged.connect(self.update_type_fields)
+        self.edit_layout.addRow(QLabel("Típus:"), self.fields["type"])
         # Kategória mező (legördülő)
-        self.fields['category'] = QComboBox()
+        self.fields["category"] = QComboBox()
         # Töltsük fel az első típushoz tartozó kategóriákkal, hogy ne legyen üres
         default_type = self.manager.get_weapon_types()[0]
         default_categories = self.manager.get_weapon_categories(default_type)
-        self.fields['category'].addItems(default_categories)
-        self.edit_layout.addRow(QLabel("Kategória:"), self.fields['category'])
+        self.fields["category"].addItems(default_categories)
+        self.edit_layout.addRow(QLabel("Kategória:"), self.fields["category"])
         # Damage types egy sorban, Sebzés típus: label bal oldali oszlopban
         from PySide6.QtWidgets import QGridLayout, QSizePolicy, QSpacerItem, QWidget
+
         self.damage_type_checks = {}
         damage_grid = QGridLayout()
         damage_grid.setSpacing(4)
         for i, typ in enumerate(self.manager.DAMAGE_TYPES):
             cb = QCheckBox(typ.capitalize())
-            cb.setSizePolicy(cb.sizePolicy().horizontalPolicy(), QWidget().sizePolicy().verticalPolicy())
+            cb.setSizePolicy(
+                cb.sizePolicy().horizontalPolicy(), QWidget().sizePolicy().verticalPolicy()
+            )
             cb.setStyleSheet("QCheckBox { margin-top: 0px; margin-bottom: 0px; }")
             self.damage_type_checks[typ] = cb
             damage_grid.addWidget(cb, 0, i, alignment=Qt.AlignBottom)
         # Add a horizontal spacer to fill remaining space
-        damage_grid.addItem(QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum), 0, len(self.manager.DAMAGE_TYPES))
+        damage_grid.addItem(
+            QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum),
+            0,
+            len(self.manager.DAMAGE_TYPES),
+        )
         damage_grid_widget = QWidget()
         damage_grid_widget.setLayout(damage_grid)
         # Sebzés típus, Sebzés bónusz tulajdonsága, Ár: egy közös grid layoutban, három sorban
         from PySide6.QtWidgets import QGridLayout, QSizePolicy, QSpacerItem
+
         self.damage_type_checks = {}
         self.damage_bonus_checks = {}
         self.price_fields = {}
@@ -374,11 +391,17 @@ class WeaponsAndShieldsEditor(QMainWindow):
         combined_grid.addWidget(damage_label, 0, 0, alignment=Qt.AlignLeft | Qt.AlignBottom)
         for i, typ in enumerate(self.manager.DAMAGE_TYPES):
             cb = QCheckBox(typ.capitalize())
-            cb.setSizePolicy(cb.sizePolicy().horizontalPolicy(), QWidget().sizePolicy().verticalPolicy())
+            cb.setSizePolicy(
+                cb.sizePolicy().horizontalPolicy(), QWidget().sizePolicy().verticalPolicy()
+            )
             cb.setStyleSheet("QCheckBox { margin-top: 0px; margin-bottom: 0px; }")
             self.damage_type_checks[typ] = cb
             combined_grid.addWidget(cb, 0, i + 1, alignment=Qt.AlignBottom)
-        combined_grid.addItem(QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum), 0, len(self.manager.DAMAGE_TYPES) + 1)
+        combined_grid.addItem(
+            QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum),
+            0,
+            len(self.manager.DAMAGE_TYPES) + 1,
+        )
         # Második sor: Sebzés bónusz tulajdonsága
         bonus_label = QLabel("Sebzés bónusz tulajdonsága:")
         bonus_label.setAlignment(Qt.AlignLeft | Qt.AlignBottom)
@@ -389,7 +412,11 @@ class WeaponsAndShieldsEditor(QMainWindow):
             cb.setStyleSheet("QCheckBox { margin-top: 0px; margin-bottom: 0px; }")
             self.damage_bonus_checks[attr] = cb
             combined_grid.addWidget(cb, 1, i + 1, alignment=Qt.AlignBottom)
-        combined_grid.addItem(QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum), 1, len(self.manager.DAMAGE_BONUS_ATTRS) + 1)
+        combined_grid.addItem(
+            QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum),
+            1,
+            len(self.manager.DAMAGE_BONUS_ATTRS) + 1,
+        )
         # Harmadik sor: Ár mezők
         price_labels = ["Réz", "Ezüst", "Arany", "Mithrill"]
         price_label = QLabel("Ár:")
@@ -397,6 +424,7 @@ class WeaponsAndShieldsEditor(QMainWindow):
         price_label.setMinimumWidth(40)
         combined_grid.addWidget(price_label, 2, 0, alignment=Qt.AlignLeft | Qt.AlignVCenter)
         from PySide6.QtWidgets import QVBoxLayout
+
         # Réz
         vbox_copper = QVBoxLayout()
         vbox_copper.setSpacing(2)
@@ -470,7 +498,7 @@ class WeaponsAndShieldsEditor(QMainWindow):
         self.edit_layout.addRow(combined_grid_widget)
         # Egyéb mezők, checkboxok
         for key in self.manager.CHECKBOX_FIELDS:
-            cb = QCheckBox(key.replace('_', ' ').capitalize())
+            cb = QCheckBox(key.replace("_", " ").capitalize())
             self.fields[key] = cb
             self.edit_layout.addRow(cb)
         # Típusfüggő mezők (dinamikusan, csak Qt váz)
@@ -484,8 +512,8 @@ class WeaponsAndShieldsEditor(QMainWindow):
         """
         # Frissítsd a kategória mezőt a típus alapján
         categories = self.manager.get_weapon_categories(type_value)
-        self.fields['category'].clear()
-        self.fields['category'].addItems(categories)
+        self.fields["category"].clear()
+        self.fields["category"].addItems(categories)
         self.build_type_fields(type_value)
 
     def new_item(self):
@@ -497,10 +525,10 @@ class WeaponsAndShieldsEditor(QMainWindow):
         """
         self.selected_idx = None
         self.clear_fields()
-        self.fields['type'].setCurrentIndex(0)
-        self.update_type_fields(self.fields['type'].currentText())
-        self.fields['category'].setCurrentIndex(0)
-        self.fields['name'].setFocus()
+        self.fields["type"].setCurrentIndex(0)
+        self.update_type_fields(self.fields["type"].currentText())
+        self.fields["category"].setCurrentIndex(0)
+        self.fields["name"].setFocus()
 
     def save_item(self):
         """
@@ -512,10 +540,29 @@ class WeaponsAndShieldsEditor(QMainWindow):
         - TreeView frissítése
         """
         # Collect field values
-        fields = {key: widget.text() if isinstance(widget, QLineEdit) else widget.currentText() if isinstance(widget, QComboBox) else widget.isChecked() if isinstance(widget, QCheckBox) else widget.value() if isinstance(widget, QSpinBox) else None for key, widget in self.fields.items()}
+        fields = {
+            key: (
+                widget.text()
+                if isinstance(widget, QLineEdit)
+                else (
+                    widget.currentText()
+                    if isinstance(widget, QComboBox)
+                    else (
+                        widget.isChecked()
+                        if isinstance(widget, QCheckBox)
+                        else widget.value() if isinstance(widget, QSpinBox) else None
+                    )
+                )
+            )
+            for key, widget in self.fields.items()
+        }
         # Damage types and bonus attributes
-        fields['damage_types'] = [typ for typ, cb in self.damage_type_checks.items() if cb.isChecked()]
-        fields['damage_bonus_attributes'] = [attr for attr, cb in self.damage_bonus_checks.items() if cb.isChecked()]
+        fields["damage_types"] = [
+            typ for typ, cb in self.damage_type_checks.items() if cb.isChecked()
+        ]
+        fields["damage_bonus_attributes"] = [
+            attr for attr, cb in self.damage_bonus_checks.items() if cb.isChecked()
+        ]
         # Típusfüggő mezők
         for key, widget in self.type_fields.items():
             if isinstance(widget, QLineEdit):
@@ -555,20 +602,23 @@ class WeaponsAndShieldsEditor(QMainWindow):
         if idx is None:
             QMessageBox.warning(self, "Törlés", "Nincs kiválasztva fegyver/pajzs.")
             return
-        answer = QMessageBox.question(self, "Törlés", f"Biztosan törlöd ezt?\n{self.items[idx]['name']}")
+        answer = QMessageBox.question(
+            self, "Törlés", f"Biztosan törlöd ezt?\n{self.items[idx]['name']}"
+        )
         if answer == QMessageBox.Yes:
             self.items.pop(idx)
             self.manager.save(self.items)
             self.populate_treeview()
             self.new_item()
 
+
 if __name__ == "__main__":
-    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
     from utils.dark_mode import apply_dark_mode
-    
+
     app = QApplication(sys.argv)
     apply_dark_mode(app)
-    
+
     win = WeaponsAndShieldsEditor()
     win.show()
     sys.exit(app.exec())

@@ -2,10 +2,8 @@ import os
 import sqlite3
 
 # Resolve DB path relative to this file (.. / data / Class / class_data.db)
-DB_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)),
-    "data", "Class", "class_data.db"
-)
+DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "Class", "class_data.db")
+
 
 class ClassDBManager:
     def __init__(self, db_path=DB_PATH):
@@ -68,11 +66,17 @@ class ClassDBManager:
                 )
                 """
             )
-            c.execute("CREATE INDEX IF NOT EXISTS idx_starting_equipment_class_spec ON starting_equipment (class_id, COALESCE(specialisation_id, ''))")
-            c.execute("CREATE INDEX IF NOT EXISTS idx_starting_equipment_type ON starting_equipment (item_type)")
+            c.execute(
+                "CREATE INDEX IF NOT EXISTS idx_starting_equipment_class_spec ON starting_equipment (class_id, COALESCE(specialisation_id, ''))"
+            )
+            c.execute(
+                "CREATE INDEX IF NOT EXISTS idx_starting_equipment_type ON starting_equipment (item_type)"
+            )
             conn.commit()
 
-    def add_starting_equipment_currency(self, class_id: str, specialisation_id: str | None, min_currency: int, max_currency: int):
+    def add_starting_equipment_currency(
+        self, class_id: str, specialisation_id: str | None, min_currency: int, max_currency: int
+    ):
         """Insert a currency row for a class/spec."""
         with self.get_connection() as conn:
             c = conn.cursor()
@@ -81,11 +85,13 @@ class ClassDBManager:
                 INSERT INTO starting_equipment (class_id, specialisation_id, item_type, item_id, min_currency, max_currency)
                 VALUES (?, ?, 'currency', NULL, ?, ?)
                 """,
-                (class_id, specialisation_id, int(min_currency), int(max_currency))
+                (class_id, specialisation_id, int(min_currency), int(max_currency)),
             )
             conn.commit()
 
-    def add_starting_equipment_item(self, class_id: str, specialisation_id: str | None, item_type: str, item_id: str):
+    def add_starting_equipment_item(
+        self, class_id: str, specialisation_id: str | None, item_type: str, item_id: str
+    ):
         """Insert a non-currency starting item for a class/spec."""
         with self.get_connection() as conn:
             c = conn.cursor()
@@ -94,11 +100,13 @@ class ClassDBManager:
                 INSERT INTO starting_equipment (class_id, specialisation_id, item_type, item_id, min_currency, max_currency)
                 VALUES (?, ?, ?, ?, NULL, NULL)
                 """,
-                (class_id, specialisation_id, item_type, item_id)
+                (class_id, specialisation_id, item_type, item_id),
             )
             conn.commit()
 
-    def update_starting_equipment_currency(self, entry_id: int, min_currency: int, max_currency: int):
+    def update_starting_equipment_currency(
+        self, entry_id: int, min_currency: int, max_currency: int
+    ):
         """Update a currency row identified by entry_id."""
         with self.get_connection() as conn:
             c = conn.cursor()
@@ -108,7 +116,7 @@ class ClassDBManager:
                 SET min_currency = ?, max_currency = ?
                 WHERE entry_id = ? AND item_type = 'currency'
                 """,
-                (int(min_currency), int(max_currency), int(entry_id))
+                (int(min_currency), int(max_currency), int(entry_id)),
             )
             conn.commit()
 
@@ -122,7 +130,7 @@ class ClassDBManager:
                 SET item_type = ?, item_id = ?
                 WHERE entry_id = ? AND item_type <> 'currency'
                 """,
-                (item_type, item_id, int(entry_id))
+                (item_type, item_id, int(entry_id)),
             )
             conn.commit()
 
@@ -148,7 +156,7 @@ class ClassDBManager:
                     WHERE class_id = ? AND specialisation_id IS NULL
                     ORDER BY entry_id
                     """,
-                    (class_id,)
+                    (class_id,),
                 )
             else:
                 c.execute(
@@ -158,7 +166,7 @@ class ClassDBManager:
                     WHERE class_id = ? AND specialisation_id = ?
                     ORDER BY entry_id
                     """,
-                    (class_id, specialisation_id)
+                    (class_id, specialisation_id),
                 )
             rows = [dict(row) for row in c.fetchall()]
             return rows
@@ -193,11 +201,13 @@ class ClassDBManager:
                 WHERE class_id = ?
                 ORDER BY specialisation_name
                 """,
-                (class_id,)
+                (class_id,),
             )
             return [dict(row) for row in c.fetchall()]
 
-    def upsert_specialisation(self, class_id: str, specialisation_id: str, name: str, description_file: str | None):
+    def upsert_specialisation(
+        self, class_id: str, specialisation_id: str, name: str, description_file: str | None
+    ):
         """Insert or update a specialisation row."""
         with self.get_connection() as conn:
             c = conn.cursor()
@@ -209,7 +219,7 @@ class ClassDBManager:
                     specialisation_name=excluded.specialisation_name,
                     specialisation_description=excluded.specialisation_description
                 """,
-                (class_id, specialisation_id, name, description_file)
+                (class_id, specialisation_id, name, description_file),
             )
             conn.commit()
 
@@ -218,7 +228,7 @@ class ClassDBManager:
             c = conn.cursor()
             c.execute(
                 "DELETE FROM specialisations WHERE class_id = ? AND specialisation_id = ?",
-                (class_id, specialisation_id)
+                (class_id, specialisation_id),
             )
             conn.commit()
 
@@ -241,7 +251,7 @@ class ClassDBManager:
                     WHERE class_id = ? AND specialisation_id = ? AND item_type = 'currency'
                     LIMIT 1
                     """,
-                    (class_id, specialisation_id)
+                    (class_id, specialisation_id),
                 )
                 row = c.fetchone()
                 if row:
@@ -254,13 +264,15 @@ class ClassDBManager:
                 WHERE class_id = ? AND specialisation_id IS NULL AND item_type = 'currency'
                 LIMIT 1
                 """,
-                (class_id,)
+                (class_id,),
             )
             row = c.fetchone()
             if row:
                 return row[0], row[1]
             # 3) Fallback to starting_currency
-            c.execute("SELECT min_gold, max_gold FROM starting_currency WHERE class_id = ?", (class_id,))
+            c.execute(
+                "SELECT min_gold, max_gold FROM starting_currency WHERE class_id = ?", (class_id,)
+            )
             row = c.fetchone()
             if row:
                 return row[0], row[1]
@@ -276,34 +288,46 @@ class ClassDBManager:
         with self.get_connection() as conn:
             cursor = conn.cursor()
             # Get class name
-            cursor.execute("SELECT name, COALESCE(description_file, '') FROM classes WHERE id = ?", (class_id,))
+            cursor.execute(
+                "SELECT name, COALESCE(description_file, '') FROM classes WHERE id = ?", (class_id,)
+            )
             row = cursor.fetchone()
             name = row[0]
             class_description_file = row[1] if row and len(row) > 1 else ""
             # Get stat ranges, including double_chance
-            cursor.execute("SELECT stat_name, min_value, max_value, double_chance FROM stats WHERE class_id = ?", (class_id,))
+            cursor.execute(
+                "SELECT stat_name, min_value, max_value, double_chance FROM stats WHERE class_id = ?",
+                (class_id,),
+            )
             stats = cursor.fetchall()
             # Get combat stats
             cursor.execute("SELECT * FROM combat_stats WHERE class_id = ?", (class_id,))
             combat_stats = cursor.fetchone()
             # Get level requirements
-            cursor.execute("SELECT level, xp FROM level_requirements WHERE class_id = ? ORDER BY level", (class_id,))
+            cursor.execute(
+                "SELECT level, xp FROM level_requirements WHERE class_id = ? ORDER BY level",
+                (class_id,),
+            )
             level_requirements = cursor.fetchall()
             # Get starting currency
-            cursor.execute("SELECT min_gold, max_gold FROM starting_currency WHERE class_id = ?", (class_id,))
+            cursor.execute(
+                "SELECT min_gold, max_gold FROM starting_currency WHERE class_id = ?", (class_id,)
+            )
             starting_currency = cursor.fetchone()
             # Get starting equipment (base class level, no specialisation)
             try:
                 cursor.execute(
                     "SELECT item_type, item_id, min_currency, max_currency FROM starting_equipment WHERE class_id = ? AND specialisation_id IS NULL ORDER BY entry_id",
-                    (class_id,)
+                    (class_id,),
                 )
                 starting_equipment = cursor.fetchall()
             except sqlite3.OperationalError:
                 # Table may not exist yet
                 starting_equipment = []
             # Get further level requirements
-            cursor.execute("SELECT extra_xp FROM further_level_requirements WHERE class_id = ?", (class_id,))
+            cursor.execute(
+                "SELECT extra_xp FROM further_level_requirements WHERE class_id = ?", (class_id,)
+            )
             extra_xp = cursor.fetchone()
             return {
                 "name": name,
@@ -327,5 +351,7 @@ class ClassDBManager:
     def update_class_description_file(self, class_id: str, description_file: str | None):
         with self.get_connection() as conn:
             c = conn.cursor()
-            c.execute("UPDATE classes SET description_file = ? WHERE id = ?", (description_file, class_id))
+            c.execute(
+                "UPDATE classes SET description_file = ? WHERE id = ?", (description_file, class_id)
+            )
             conn.commit()

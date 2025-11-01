@@ -1,0 +1,212 @@
+{
+  "id": "amund",
+  "name": "Amund",
+  "description_file": "races/descriptions/amund.md",
+  "attributes": {
+    "modifiers": {
+      "Erő": 1,
+      "Állóképesség": 1,
+      "Gyorsaság": 0,
+      "Ügyesség": 0,
+      "Karizma": 2,
+      "Egészség": 0,
+      "Intelligencia": 0,
+      "Akaraterő": 0,
+      "Asztrál": -1,
+      "Érzékelés": 0
+    },
+    "limits": {
+      "Erő": {
+        "min": 4,
+        "max": 19
+      },
+      "Állóképesség": {
+        "min": 4,
+        "max": 19
+      },
+      "Gyorsaság": null,
+      "Ügyesség": null,
+      "Karizma": {
+        "min": 5,
+        "max": 20
+      },
+      "Egészség": null,
+      "Intelligencia": null,
+      "Akaraterő": null,
+      "Asztrál": {
+        "min": 2,
+        "max": 17
+      },
+      "Érzékelés": null
+    },
+    "hard_limits": {
+      "Erő": {
+        "min": 1,
+        "max": 20
+      },
+      "Állóképesség": {
+        "min": 1,
+        "max": 20
+      },
+      "Gyorsaság": null,
+      "Ügyesség": null,
+      "Karizma": {
+        "min": 1,
+        "max": 22
+      },
+      "Egészség": null,
+      "Intelligencia": null,
+      "Akaraterő": null,
+      "Asztrál": {
+        "min": 1,
+        "max": 17
+      },
+      "Érzékelés": null
+    }
+  },
+  "age": {
+    "min": 30,
+    "max": 120,
+    "age_categories": [
+      {
+        "name": "Gyermek",
+        "min": 30,
+        "max": 17,
+        "modifiers": {
+          "Erő": -3,
+          "Állóképesség": -3,
+          "Gyorsaság": 0,
+          "Ügyesség": -1,
+          "Karizma": -1,
+          "Egészség": 0,
+          "Intelligencia": -1,
+          "Akaraterő": -1,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      },
+      {
+        "name": "Fiatal felnőtt",
+        "min": 18,
+        "max": 34,
+        "modifiers": {
+          "Erő": 0,
+          "Állóképesség": 0,
+          "Gyorsaság": 0,
+          "Ügyesség": 0,
+          "Karizma": 0,
+          "Egészség": 0,
+          "Intelligencia": 0,
+          "Akaraterő": 0,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      },
+      {
+        "name": "Felnőtt",
+        "min": 35,
+        "max": 54,
+        "modifiers": {
+          "Erő": 0,
+          "Állóképesség": 0,
+          "Gyorsaság": -1,
+          "Ügyesség": -1,
+          "Karizma": 1,
+          "Egészség": 0,
+          "Intelligencia": 1,
+          "Akaraterő": 1,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      },
+      {
+        "name": "Középkorú",
+        "min": 55,
+        "max": 69,
+        "modifiers": {
+          "Erő": -1,
+          "Állóképesség": -1,
+          "Gyorsaság": -1,
+          "Ügyesség": -1,
+          "Karizma": 1,
+          "Egészség": -1,
+          "Intelligencia": 1,
+          "Akaraterő": 1,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      },
+      {
+        "name": "Idős",
+        "min": 70,
+        "max": 89,
+        "modifiers": {
+          "Erő": -2,
+          "Állóképesség": -2,
+          "Gyorsaság": -2,
+          "Ügyesség": -2,
+          "Karizma": 0,
+          "Egészség": -2,
+          "Intelligencia": 1,
+          "Akaraterő": 1,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      },
+      {
+        "name": "Öreg",
+        "min": 90,
+        "max": 120,
+        "modifiers": {
+          "Erő": -4,
+          "Állóképesség": -4,
+          "Gyorsaság": -4,
+          "Ügyesség": -4,
+          "Karizma": 0,
+          "Egészség": -4,
+          "Intelligencia": 0,
+          "Akaraterő": 0,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      }
+    ]
+  },
+  "racial_skills": [
+    {
+      "skill_id": "language_common",
+      "level": "native",
+      "optional": false
+    }
+  ],
+  "forbidden_skills": [],
+  "origins": [
+    {
+      "id": "unknown",
+      "name": "Ismeretlen",
+      "probability": 100
+    }
+  ],
+  "class_restrictions": {
+    "allowed_classes": [
+      "Bajvívó",
+      "Boszorkány",
+      "Gladiátor",
+      "Harcos",
+      "Lovag",
+      "Paplovag",
+      "Tolvaj"
+    ],
+    "forbidden_specializations": []
+  },
+  "special_abilities": [
+    "keen_smell",
+    "natural_armor"
+  ],
+  "metadata": {
+    "created_at": "2025-11-01T19:17:24.176220",
+    "updated_at": "2025-11-01T19:47:52.960296",
+    "version": "1.0",
+    "migrated_from": "race_age_stat_modifiers.py"
+  }
+}

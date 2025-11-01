@@ -1,0 +1,192 @@
+{
+  "id": "wier",
+  "name": "Wier",
+  "description_file": "races/descriptions/wier.md",
+  "attributes": {
+    "modifiers": {
+      "Erő": 0,
+      "Állóképesség": 0,
+      "Gyorsaság": 0,
+      "Ügyesség": 0,
+      "Karizma": 0,
+      "Egészség": 0,
+      "Intelligencia": 0,
+      "Akaraterő": 0,
+      "Asztrál": 0,
+      "Érzékelés": 0
+    },
+    "limits": {
+      "Erő": null,
+      "Állóképesség": null,
+      "Gyorsaság": null,
+      "Ügyesség": null,
+      "Karizma": null,
+      "Egészség": null,
+      "Intelligencia": null,
+      "Akaraterő": null,
+      "Asztrál": null,
+      "Érzékelés": null
+    },
+    "hard_limits": {
+      "Erő": null,
+      "Állóképesség": null,
+      "Gyorsaság": null,
+      "Ügyesség": null,
+      "Karizma": null,
+      "Egészség": null,
+      "Intelligencia": null,
+      "Akaraterő": null,
+      "Asztrál": null,
+      "Érzékelés": null
+    }
+  },
+  "age": {
+    "min": 10,
+    "max": 130,
+    "age_categories": [
+      {
+        "name": "Gyermek",
+        "min": 10,
+        "max": 14,
+        "modifiers": {
+          "Erő": -3,
+          "Állóképesség": -3,
+          "Gyorsaság": 0,
+          "Ügyesség": -1,
+          "Karizma": -1,
+          "Egészség": 0,
+          "Intelligencia": -1,
+          "Akaraterő": -1,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      },
+      {
+        "name": "Fiatal felnőtt",
+        "min": 15,
+        "max": 39,
+        "modifiers": {
+          "Erő": 0,
+          "Állóképesség": 0,
+          "Gyorsaság": 0,
+          "Ügyesség": 0,
+          "Karizma": 0,
+          "Egészség": 0,
+          "Intelligencia": 0,
+          "Akaraterő": 0,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      },
+      {
+        "name": "Felnőtt",
+        "min": 40,
+        "max": 69,
+        "modifiers": {
+          "Erő": 0,
+          "Állóképesség": 0,
+          "Gyorsaság": -1,
+          "Ügyesség": -1,
+          "Karizma": 1,
+          "Egészség": 0,
+          "Intelligencia": 1,
+          "Akaraterő": 1,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      },
+      {
+        "name": "Középkorú",
+        "min": 70,
+        "max": 89,
+        "modifiers": {
+          "Erő": -1,
+          "Állóképesség": -1,
+          "Gyorsaság": -1,
+          "Ügyesség": -1,
+          "Karizma": 1,
+          "Egészség": -1,
+          "Intelligencia": 1,
+          "Akaraterő": 1,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      },
+      {
+        "name": "Idős",
+        "min": 90,
+        "max": 109,
+        "modifiers": {
+          "Erő": -2,
+          "Állóképesség": -2,
+          "Gyorsaság": -2,
+          "Ügyesség": -2,
+          "Karizma": 0,
+          "Egészség": -2,
+          "Intelligencia": 1,
+          "Akaraterő": 1,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      },
+      {
+        "name": "Öreg",
+        "min": 110,
+        "max": 130,
+        "modifiers": {
+          "Erő": -4,
+          "Állóképesség": -4,
+          "Gyorsaság": -4,
+          "Ügyesség": -4,
+          "Karizma": 0,
+          "Egészség": -4,
+          "Intelligencia": 0,
+          "Akaraterő": 0,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      }
+    ]
+  },
+  "racial_skills": [
+    {
+      "skill_id": "language_common",
+      "level": "native",
+      "optional": false
+    }
+  ],
+  "forbidden_skills": [],
+  "origins": [
+    {
+      "id": "unknown",
+      "name": "Ismeretlen",
+      "probability": 100
+    }
+  ],
+  "class_restrictions": {
+    "allowed_classes": [
+      "Bajvívó",
+      "Boszorkány",
+      "Boszorkánymester",
+      "Fejvadász",
+      "Harcos",
+      "Lovag",
+      "Paplovag",
+      "Pszi mester",
+      "Szerzetes",
+      "Tolvaj",
+      "Varázsló"
+    ],
+    "forbidden_specializations": []
+  },
+  "special_abilities": [
+    "shape_shifter",
+    "keen_senses"
+  ],
+  "metadata": {
+    "created_at": "2025-11-01T19:17:24.178061",
+    "updated_at": "2025-11-01T19:47:52.969038",
+    "version": "1.0",
+    "migrated_from": "race_age_stat_modifiers.py"
+  }
+}

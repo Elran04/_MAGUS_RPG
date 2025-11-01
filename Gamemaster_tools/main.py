@@ -1,6 +1,7 @@
 # --- IMPORTOK ÉS KONFIGURÁCIÓ ---
 import os
 import sys
+from typing import Any
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
@@ -11,10 +12,10 @@ from utils.logger import get_logger
 # Logger inicializálása
 logger = get_logger(__name__)
 
-last_character = {}
+last_character: dict[str, Any] = {}
 
 # Keep references to child windows/dialogs to prevent garbage collection
-_windows = []
+_windows: list[Any] = []
 
 
 # --- KÉPZETTSÉG SZERKESZTŐ ABLAK MEGNYITÁSA ---
@@ -24,7 +25,7 @@ def open_skill_editor():
         from ui.skills.skill_editor import SkillEditorQt
 
         win = SkillEditorQt()
-        win.setAttribute(Qt.WA_DeleteOnClose, True)
+        win.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
         _windows.append(win)
         win.show()
         logger.debug("Képzettség szerkesztő sikeresen megnyitva")
@@ -40,7 +41,7 @@ def open_equipment_editor():
         from ui.equipment.equipment_editor import EquipmentEditorQt
 
         win = EquipmentEditorQt()
-        win.setAttribute(Qt.WA_DeleteOnClose, True)
+        win.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
         _windows.append(win)
         win.show()
         logger.debug("Felszerelés szerkesztő sikeresen megnyitva")
@@ -78,6 +79,22 @@ def open_class_editor():
     except Exception as e:
         logger.error(f"Hiba a kaszt szerkesztő megnyitásakor: {e}", exc_info=True)
         print(f"Failed to open Class Editor: {e}")
+
+
+# --- FAJ SZERKESZTŐ MEGNYITÁSA ---
+def open_race_editor():
+    try:
+        logger.info("Faj szerkesztő megnyitása")
+        from ui.races.race_editor import RaceEditorQt
+
+        win = RaceEditorQt()
+        win.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
+        _windows.append(win)
+        win.show()
+        logger.debug("Faj szerkesztő sikeresen megnyitva")
+    except Exception as e:
+        logger.error(f"Hiba a faj szerkesztő megnyitásakor: {e}", exc_info=True)
+        print(f"Failed to open Race Editor: {e}")
 
 
 class MagusGMTools(QMainWindow):
@@ -120,6 +137,16 @@ class MagusGMTools(QMainWindow):
         btn_create_char.clicked.connect(open_character_creator)
         layout.addWidget(btn_create_char)
 
+        btn_race_editor = QPushButton("🧝 Faj szerkesztő")
+        btn_race_editor.setMinimumHeight(40)
+        btn_race_editor.clicked.connect(open_race_editor)
+        layout.addWidget(btn_race_editor)
+
+        btn_class_editor = QPushButton("Kaszt szerkesztő")
+        btn_class_editor.setMinimumHeight(40)
+        btn_class_editor.clicked.connect(open_class_editor)
+        layout.addWidget(btn_class_editor)
+
         btn_skill_editor = QPushButton("Képzettség szerkesztő")
         btn_skill_editor.setMinimumHeight(40)
         btn_skill_editor.clicked.connect(open_skill_editor)
@@ -129,11 +156,6 @@ class MagusGMTools(QMainWindow):
         btn_equipment_editor.setMinimumHeight(40)
         btn_equipment_editor.clicked.connect(open_equipment_editor)
         layout.addWidget(btn_equipment_editor)
-
-        btn_class_editor = QPushButton("Kaszt szerkesztő")
-        btn_class_editor.setMinimumHeight(40)
-        btn_class_editor.clicked.connect(open_class_editor)
-        layout.addWidget(btn_class_editor)
 
         layout.addStretch()
 

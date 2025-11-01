@@ -7,8 +7,23 @@ class ArmorManager:
     PARTS = {
         "sisak": ["agykoponya", "homlok", "halánték", "arckoponya", "nyak"],
         "mellvért": [
-            "jobb kulcscsont", "bal kulcscsont", "szegycsont", "bal mellkas", "jobb mellkas", "gyomorszáj", "has jobboldala", "has baloldala", "ágyék",
-            "jobb lapocka", "bal lapocka", "jobb hát", "bal hát", "jobb derék", "bal derék", "ülep", "gerinc"
+            "jobb kulcscsont",
+            "bal kulcscsont",
+            "szegycsont",
+            "bal mellkas",
+            "jobb mellkas",
+            "gyomorszáj",
+            "has jobboldala",
+            "has baloldala",
+            "ágyék",
+            "jobb lapocka",
+            "bal lapocka",
+            "jobb hát",
+            "bal hát",
+            "jobb derék",
+            "bal derék",
+            "ülep",
+            "gerinc",
         ],
         "vállvédő": ["bal váll", "jobb váll"],
         "felkarvédő": ["bal felkar", "jobb felkar", "bal könyök", "jobb könyök"],
@@ -16,7 +31,7 @@ class ArmorManager:
         "kesztyű": ["bal csukló", "jobb csukló", "bal kézfej", "jobb kézfej"],
         "combvédő": ["bal comb", "jobb comb"],
         "lábszárvédő": ["bal lábszár", "jobb lábszár", "bal térd", "jobb térd"],
-        "csizma": ["bal boka", "jobb boka", "bal lábfej", "jobb lábfej"]
+        "csizma": ["bal boka", "jobb boka", "bal lábfej", "jobb lábfej"],
         # ...bővíthető...
     }
 
@@ -31,21 +46,53 @@ class ArmorManager:
         Visszaadja, hogy egy adott részegység milyen alzónákat véd.
         """
         return self.PARTS.get(part_name, [])
+
     MAIN_ZONES = {
         "fej": ["agykoponya", "homlok", "halánték", "arckoponya", "nyak"],
         "torzó": [
-            "jobb kulcscsont", "bal kulcscsont", "szegycsont", "bal mellkas", "jobb mellkas", "gyomorszáj", "has jobboldala", "has baloldala", "ágyék",
-            "jobb lapocka", "bal lapocka", "jobb hát", "bal hát", "jobb derék", "bal derék", "ülep", "gerinc"
+            "jobb kulcscsont",
+            "bal kulcscsont",
+            "szegycsont",
+            "bal mellkas",
+            "jobb mellkas",
+            "gyomorszáj",
+            "has jobboldala",
+            "has baloldala",
+            "ágyék",
+            "jobb lapocka",
+            "bal lapocka",
+            "jobb hát",
+            "bal hát",
+            "jobb derék",
+            "bal derék",
+            "ülep",
+            "gerinc",
         ],
-        "kar_jobb": ["jobb váll", "jobb felkar", "jobb könyök", "jobb alkar", "jobb csukló", "jobb kézfej"],
-        "kar_bal": ["bal váll", "bal felkar", "bal könyök", "bal alkar", "bal csukló", "bal kézfej"],
+        "kar_jobb": [
+            "jobb váll",
+            "jobb felkar",
+            "jobb könyök",
+            "jobb alkar",
+            "jobb csukló",
+            "jobb kézfej",
+        ],
+        "kar_bal": [
+            "bal váll",
+            "bal felkar",
+            "bal könyök",
+            "bal alkar",
+            "bal csukló",
+            "bal kézfej",
+        ],
         "láb_jobb": ["jobb comb", "jobb térd", "jobb lábszár", "jobb boka", "jobb lábfej"],
-        "láb_bal": ["bal comb", "bal térd", "bal lábszár", "bal boka", "bal lábfej"]
+        "láb_bal": ["bal comb", "bal térd", "bal lábszár", "bal boka", "bal lábfej"],
     }
 
     def __init__(self, json_path=None):
         if json_path is None:
-            json_path = os.path.join(os.path.dirname(__file__), "..", "data", "equipment", "armor.json")
+            json_path = os.path.join(
+                os.path.dirname(__file__), "..", "data", "equipment", "armor.json"
+            )
         with open(json_path, encoding="utf-8") as f:
             self.armors = json.load(f)
         self.modifiers = []  # ideiglenes módosítók listája
@@ -81,7 +128,9 @@ class ArmorManager:
                         break
         # 3. ideiglenes módosítók alkalmazása
         for mod in self.modifiers:
-            if mod.get("armor_name") == armor["name"] and (mod.get("zone") == zone or mod.get("zone") == "*"):
+            if mod.get("armor_name") == armor["name"] and (
+                mod.get("zone") == zone or mod.get("zone") == "*"
+            ):
                 base += mod.get("value", 0)
         return base
 
@@ -94,13 +143,15 @@ class ArmorManager:
         duration: körök száma vagy None
         source: opcionális forrás (pl. varázslat, sérülés)
         """
-        self.modifiers.append({
-            "armor_name": armor_name,
-            "zone": zone,
-            "value": value,
-            "duration": duration,
-            "source": source
-        })
+        self.modifiers.append(
+            {
+                "armor_name": armor_name,
+                "zone": zone,
+                "value": value,
+                "duration": duration,
+                "source": source,
+            }
+        )
 
     def tick_modifiers(self):
         """

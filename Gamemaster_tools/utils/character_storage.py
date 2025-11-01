@@ -3,15 +3,17 @@ import os
 
 CHARACTER_DIR = "characters"
 
+
 def save_character(character, filename):
     os.makedirs(CHARACTER_DIR, exist_ok=True)
     path = os.path.join(CHARACTER_DIR, filename)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(character, f, ensure_ascii=False, indent=2)
 
+
 def load_character(filename):
     path = os.path.join(CHARACTER_DIR, filename)
     if not os.path.exists(path):
         return None
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)

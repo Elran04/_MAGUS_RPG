@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from PySide6 import QtWidgets
 
@@ -13,11 +13,12 @@ class EquipmentStepWidget(QtWidgets.QWidget):
     - validate() -> bool: step-specific validation before moving forward
     - get_data() -> dict: returns equipment-related data to merge into wizard data
     """
+
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._get_class_id: Optional[Callable[[], Optional[int]]] = None
-        self._get_spec_data: Optional[Callable[[], dict]] = None
-        self._get_data: Optional[Callable[[], dict]] = None
+        self._get_class_id: Callable[[], int | None] | None = None
+        self._get_spec_data: Callable[[], dict] | None = None
+        self._get_data: Callable[[], dict] | None = None
 
         self._build_ui()
 
@@ -32,10 +33,12 @@ class EquipmentStepWidget(QtWidgets.QWidget):
         layout.addWidget(placeholder)
         layout.addStretch(1)
 
-    def set_context(self,
-                    get_class_id: Optional[Callable[[], Optional[int]]] = None,
-                    get_spec_data: Optional[Callable[[], dict]] = None,
-                    get_data: Optional[Callable[[], dict]] = None):
+    def set_context(
+        self,
+        get_class_id: Callable[[], int | None] | None = None,
+        get_spec_data: Callable[[], dict] | None = None,
+        get_data: Callable[[], dict] | None = None,
+    ):
         """Optionally provide callbacks to access earlier wizard data."""
         self._get_class_id = get_class_id
         self._get_spec_data = get_spec_data

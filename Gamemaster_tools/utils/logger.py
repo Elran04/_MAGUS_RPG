@@ -2,6 +2,7 @@
 Központi logging konfiguráció a MAGUS RPG projekthez.
 Egységes log formátumot és kezelést biztosít az alkalmazás minden részéhez.
 """
+
 import logging
 import sys
 from datetime import datetime

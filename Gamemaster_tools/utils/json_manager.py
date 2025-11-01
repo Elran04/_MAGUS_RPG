@@ -11,7 +11,7 @@ class JsonManager(ABC):
     def load(self):
         if not os.path.exists(self.json_path):
             return []
-        with open(self.json_path, "r", encoding="utf-8") as f:
+        with open(self.json_path, encoding="utf-8") as f:
             return json.load(f)
 
     def save(self, data):

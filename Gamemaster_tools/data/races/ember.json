@@ -1,0 +1,216 @@
+{
+  "id": "ember",
+  "name": "Ember",
+  "description_file": "races/descriptions/ember.md",
+  "attributes": {
+    "modifiers": {
+      "Erő": 0,
+      "Állóképesség": 0,
+      "Gyorsaság": 0,
+      "Ügyesség": 0,
+      "Karizma": 0,
+      "Egészség": 0,
+      "Intelligencia": 0,
+      "Akaraterő": 0,
+      "Asztrál": 0,
+      "Érzékelés": 0
+    },
+    "limits": {
+      "Erő": null,
+      "Állóképesség": null,
+      "Gyorsaság": null,
+      "Ügyesség": null,
+      "Karizma": null,
+      "Egészség": null,
+      "Intelligencia": null,
+      "Akaraterő": null,
+      "Asztrál": null,
+      "Érzékelés": null
+    },
+    "hard_limits": {
+      "Erő": null,
+      "Állóképesség": null,
+      "Gyorsaság": null,
+      "Ügyesség": null,
+      "Karizma": null,
+      "Egészség": null,
+      "Intelligencia": null,
+      "Akaraterő": null,
+      "Asztrál": null,
+      "Érzékelés": null
+    }
+  },
+  "age": {
+    "min": 13,
+    "max": 100,
+    "age_categories": [
+      {
+        "name": "Gyermek",
+        "min": 13,
+        "max": 16,
+        "modifiers": {
+          "Erő": -3,
+          "Állóképesség": -3,
+          "Gyorsaság": 0,
+          "Ügyesség": -1,
+          "Karizma": -1,
+          "Egészség": 0,
+          "Intelligencia": -1,
+          "Akaraterő": -1,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      },
+      {
+        "name": "Fiatal felnőtt",
+        "min": 17,
+        "max": 29,
+        "modifiers": {
+          "Erő": 0,
+          "Állóképesség": 0,
+          "Gyorsaság": 0,
+          "Ügyesség": 0,
+          "Karizma": 0,
+          "Egészség": 0,
+          "Intelligencia": 0,
+          "Akaraterő": 0,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      },
+      {
+        "name": "Felnőtt",
+        "min": 30,
+        "max": 42,
+        "modifiers": {
+          "Erő": 0,
+          "Állóképesség": 0,
+          "Gyorsaság": -1,
+          "Ügyesség": -1,
+          "Karizma": 1,
+          "Egészség": 0,
+          "Intelligencia": 1,
+          "Akaraterő": 1,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      },
+      {
+        "name": "Középkorú",
+        "min": 43,
+        "max": 54,
+        "modifiers": {
+          "Erő": -1,
+          "Állóképesség": -1,
+          "Gyorsaság": -1,
+          "Ügyesség": -1,
+          "Karizma": 1,
+          "Egészség": -1,
+          "Intelligencia": 1,
+          "Akaraterő": 1,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      },
+      {
+        "name": "Idős",
+        "min": 55,
+        "max": 74,
+        "modifiers": {
+          "Erő": -2,
+          "Állóképesség": -2,
+          "Gyorsaság": -2,
+          "Ügyesség": -2,
+          "Karizma": 0,
+          "Egészség": -2,
+          "Intelligencia": 1,
+          "Akaraterő": 1,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      },
+      {
+        "name": "Öreg",
+        "min": 75,
+        "max": 100,
+        "modifiers": {
+          "Erő": -4,
+          "Állóképesség": -4,
+          "Gyorsaság": -4,
+          "Ügyesség": -4,
+          "Karizma": 0,
+          "Egészség": -4,
+          "Intelligencia": 0,
+          "Akaraterő": 0,
+          "Asztrál": 0,
+          "Érzékelés": 0
+        }
+      }
+    ]
+  },
+  "racial_skills": [
+    {
+      "skill_id": "language_common",
+      "level": "native",
+      "optional": false
+    },
+    {
+      "skill_id": "regional_knowledge",
+      "level": 1,
+      "optional": true
+    }
+  ],
+  "forbidden_skills": [],
+  "origins": [
+    {
+      "id": "pyarron_empire",
+      "name": "Pyarron Birodalom",
+      "probability": 60
+    },
+    {
+      "id": "shadoni_cities",
+      "name": "Shadoni városállamok",
+      "probability": 30
+    },
+    {
+      "id": "northern_tribes",
+      "name": "Északi törzsek",
+      "probability": 10
+    }
+  ],
+  "class_restrictions": {
+    "allowed_classes": [
+      "Amazon",
+      "Bajvívó",
+      "Barbár",
+      "Boszorkány",
+      "Boszorkánymester",
+      "Bárd",
+      "Fejvadász",
+      "Gladiátor",
+      "Harcművész",
+      "Harcos",
+      "Kardművész",
+      "Lovag",
+      "Pap",
+      "Paplovag",
+      "Pszi mester",
+      "Szerzetes",
+      "Sámán",
+      "Tolvaj",
+      "Tűzvarázsló",
+      "Varázsló"
+    ],
+    "forbidden_specializations": []
+  },
+  "special_abilities": [
+    "adaptability",
+    "versatile_learning"
+  ],
+  "metadata": {
+    "created_at": "2025-11-01T19:17:24.170726",
+    "updated_at": "2025-11-01T19:47:52.963513",
+    "version": "1.0",
+    "migrated_from": "race_age_stat_modifiers.py"
+  }
+}

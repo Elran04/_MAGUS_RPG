@@ -32,7 +32,9 @@ class GeneralEquipmentJsonManager(JsonManager):
             return False
 
 
-GENERAL_JSON = os.path.join(os.path.dirname(__file__), "..", "..", "data", "equipment", "general_equipment.json")
+GENERAL_JSON = os.path.join(
+    os.path.dirname(__file__), "..", "..", "data", "equipment", "general_equipment.json"
+)
 
 
 class GeneralEquipmentEditorQt(QMainWindow):
@@ -91,7 +93,7 @@ class GeneralEquipmentEditorQt(QMainWindow):
         form.addRow("Súly (kg):", self.spn_weight)
 
         # Price
-        from engine.currency_manager import CurrencyManager
+
         self.price_spins = {}
         price_row = QHBoxLayout()
         for curr in ["réz", "ezüst", "arany", "mithrill"]:
@@ -127,10 +129,12 @@ class GeneralEquipmentEditorQt(QMainWindow):
     # Helpers
     def _price_to_parts(self, price):
         from engine.currency_manager import CurrencyManager
+
         return CurrencyManager().from_base(int(price or 0))
 
     def _parts_to_price(self):
         from engine.currency_manager import CurrencyManager
+
         total = 0
         for curr in ["réz", "ezüst", "arany", "mithrill"]:
             total += CurrencyManager().to_base(self.price_spins[curr].value(), curr)
@@ -141,7 +145,7 @@ class GeneralEquipmentEditorQt(QMainWindow):
         self.tree.clear()
         cat_map = {cat: [] for cat in self.CATEGORIES}
         for idx, item in enumerate(self.items):
-            cat = item.get('category', 'egyéb')
+            cat = item.get("category", "egyéb")
             cat_map.setdefault(cat, []).append((idx, item))
         self._cat_nodes = {}
         for cat in self.CATEGORIES:
@@ -151,18 +155,18 @@ class GeneralEquipmentEditorQt(QMainWindow):
             if cat == "speciális":
                 sub_map = {}
                 for idx, it in cat_map.get(cat, []):
-                    sub = it.get('subcategory', 'Egyéb')
+                    sub = it.get("subcategory", "Egyéb")
                     sub_map.setdefault(sub, []).append((idx, it))
                 for sub in sorted(sub_map.keys()):
                     sub_item = QTreeWidgetItem([sub])
                     cat_item.addChild(sub_item)
                     for idx, it in sub_map[sub]:
-                        node = QTreeWidgetItem([it.get('name', '-')])
+                        node = QTreeWidgetItem([it.get("name", "-")])
                         node.setData(0, Qt.UserRole, idx)
                         sub_item.addChild(node)
             else:
                 for idx, it in cat_map.get(cat, []):
-                    node = QTreeWidgetItem([it.get('name', '-')])
+                    node = QTreeWidgetItem([it.get("name", "-")])
                     node.setData(0, Qt.UserRole, idx)
                     cat_item.addChild(node)
         self.tree.expandAll()
@@ -212,67 +216,71 @@ class GeneralEquipmentEditorQt(QMainWindow):
         self.selected_idx = int(idx)
         item = self.items[self.selected_idx]
         # Fill fields
-        self.inp_id.setText(str(item.get('id', '')))
-        self.inp_name.setText(str(item.get('name', '')))
-        self.txt_desc.setPlainText(str(item.get('description', '')))
+        self.inp_id.setText(str(item.get("id", "")))
+        self.inp_name.setText(str(item.get("name", "")))
+        self.txt_desc.setPlainText(str(item.get("description", "")))
         try:
-            self.spn_weight.setValue(float(item.get('weight', 0)))
+            self.spn_weight.setValue(float(item.get("weight", 0)))
         except Exception:
             self.spn_weight.setValue(0.0)
-        parts_price = self._price_to_parts(item.get('price', 0))
+        parts_price = self._price_to_parts(item.get("price", 0))
         for curr in ["réz", "ezüst", "arany", "mithrill"]:
             self.price_spins[curr].setValue(int(parts_price.get(curr, 0)))
         # Category and dependent
-        cat = item.get('category', '')
+        cat = item.get("category", "")
         self.cmb_category.setCurrentText(cat)
         # After update_category_fields, set dependent values
-        if cat == 'speciális' and 'subcategory' in item and self.cmb_subcategory is not None:
-            self.cmb_subcategory.setCurrentText(item.get('subcategory', self.SPECIAL_SUBCATEGORIES[0]))
-        if cat in ['eszköz', 'élelem', 'speciális'] and self.inp_space is not None:
+        if cat == "speciális" and "subcategory" in item and self.cmb_subcategory is not None:
+            self.cmb_subcategory.setCurrentText(
+                item.get("subcategory", self.SPECIAL_SUBCATEGORIES[0])
+            )
+        if cat in ["eszköz", "élelem", "speciális"] and self.inp_space is not None:
             try:
-                self.inp_space.setValue(int(item.get('space', 0)))
+                self.inp_space.setValue(int(item.get("space", 0)))
             except Exception:
                 self.inp_space.setValue(0)
-        if cat == 'tároló' and self.inp_capacity is not None:
+        if cat == "tároló" and self.inp_capacity is not None:
             try:
-                self.inp_capacity.setValue(int(item.get('capacity', 0)))
+                self.inp_capacity.setValue(int(item.get("capacity", 0)))
             except Exception:
                 self.inp_capacity.setValue(0)
-        if cat == 'élelem':
+        if cat == "élelem":
             if self.inp_freshness is not None:
-                self.inp_freshness.setValue(int(item.get('freshness', 0)))
+                self.inp_freshness.setValue(int(item.get("freshness", 0)))
             if self.inp_durability is not None:
-                self.inp_durability.setValue(int(item.get('durability', 0)))
+                self.inp_durability.setValue(int(item.get("durability", 0)))
             if self.inp_nutritional is not None:
                 try:
-                    self.inp_nutritional.setValue(int(item.get('nutritional_value', 0)))
+                    self.inp_nutritional.setValue(int(item.get("nutritional_value", 0)))
                 except Exception:
                     self.inp_nutritional.setValue(0)
 
     def save_item(self):
         # Build
         item = {
-            'id': self.inp_id.text().strip(),
-            'name': self.inp_name.text().strip(),
-            'description': self.txt_desc.toPlainText().strip(),
-            'weight': float(self.spn_weight.value()),
-            'price': int(self._parts_to_price()),
-            'category': self.cmb_category.currentText(),
+            "id": self.inp_id.text().strip(),
+            "name": self.inp_name.text().strip(),
+            "description": self.txt_desc.toPlainText().strip(),
+            "weight": float(self.spn_weight.value()),
+            "price": int(self._parts_to_price()),
+            "category": self.cmb_category.currentText(),
         }
-        cat = item['category']
-        if cat == 'speciális' and self.cmb_subcategory is not None:
-            item['subcategory'] = self.cmb_subcategory.currentText() or self.SPECIAL_SUBCATEGORIES[0]
-        if cat in ['eszköz', 'élelem', 'speciális'] and self.inp_space is not None:
-            item['space'] = int(self.inp_space.value())
-        if cat == 'tároló' and self.inp_capacity is not None:
-            item['capacity'] = int(self.inp_capacity.value())
-        if cat == 'élelem':
+        cat = item["category"]
+        if cat == "speciális" and self.cmb_subcategory is not None:
+            item["subcategory"] = (
+                self.cmb_subcategory.currentText() or self.SPECIAL_SUBCATEGORIES[0]
+            )
+        if cat in ["eszköz", "élelem", "speciális"] and self.inp_space is not None:
+            item["space"] = int(self.inp_space.value())
+        if cat == "tároló" and self.inp_capacity is not None:
+            item["capacity"] = int(self.inp_capacity.value())
+        if cat == "élelem":
             if self.inp_freshness is not None:
-                item['freshness'] = int(self.inp_freshness.value())
+                item["freshness"] = int(self.inp_freshness.value())
             if self.inp_durability is not None:
-                item['durability'] = int(self.inp_durability.value())
+                item["durability"] = int(self.inp_durability.value())
             if self.inp_nutritional is not None:
-                item['nutritional_value'] = int(self.inp_nutritional.value())
+                item["nutritional_value"] = int(self.inp_nutritional.value())
         # Validate
         if not self.manager.validate(item):
             QMessageBox.critical(self, "Hiba", "Hiányzó vagy hibás mezők!")
@@ -305,7 +313,7 @@ class GeneralEquipmentEditorQt(QMainWindow):
         idx = it.data(0, Qt.UserRole)
         if idx is None:
             return
-        name = self.items[int(idx)].get('name', '-')
+        name = self.items[int(idx)].get("name", "-")
         ans = QMessageBox.question(self, "Törlés", f"Biztosan törlöd ezt?\n{name}")
         if ans == QMessageBox.Yes:
             del self.items[int(idx)]
@@ -317,8 +325,10 @@ class GeneralEquipmentEditorQt(QMainWindow):
 if __name__ == "__main__":
     import os as _os
     import sys
-    sys.path.insert(0, _os.path.abspath(_os.path.join(_os.path.dirname(__file__), '..', '..')))
+
+    sys.path.insert(0, _os.path.abspath(_os.path.join(_os.path.dirname(__file__), "..", "..")))
     from utils.dark_mode import apply_dark_mode
+
     app = QApplication(sys.argv)
     apply_dark_mode(app)
     w = GeneralEquipmentEditorQt()

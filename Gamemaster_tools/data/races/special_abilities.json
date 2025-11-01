@@ -1,0 +1,275 @@
+{
+  "adaptability": {
+    "id": "adaptability",
+    "name": "Alkalmazkodóképesség",
+    "description": "Az emberek gyorsabban tanulnak új képzettségeket, mint más fajok.",
+    "category": "learning",
+    "game_effect": {
+      "skill_learning_speed": 1.2,
+      "description": "20%-kal gyorsabb képzettség fejlődés minden területen"
+    },
+    "icon": null
+  },
+  
+  "versatile_learning": {
+    "id": "versatile_learning",
+    "name": "Sokoldalú tanulás",
+    "description": "Emberek könnyebben tanulnak különböző szakmákat és képzettségeket.",
+    "category": "learning",
+    "game_effect": {
+      "cross_class_penalty": -0.5,
+      "description": "Csökkentett büntetés más osztályú képzettségek tanulásánál"
+    },
+    "icon": null
+  },
+
+  "infravision": {
+    "id": "infravision",
+    "name": "Infralátás",
+    "description": "A karakter 30 méter távolságig lát a sötétben hőkibocsátás alapján.",
+    "category": "vision",
+    "game_effect": {
+      "range_meters": 30,
+      "conditions": ["darkness", "low_light"],
+      "limitations": "Nem működik teljes hideggel szemben",
+      "description": "Hőérzékelés alapú éjjellátás"
+    },
+    "icon": null
+  },
+
+  "darkvision": {
+    "id": "darkvision",
+    "name": "Sötétlátás",
+    "description": "Teljesen sötétben is lát 20 méter távolságig fekete-fehérben.",
+    "category": "vision",
+    "game_effect": {
+      "range_meters": 20,
+      "conditions": ["total_darkness"],
+      "color": "grayscale",
+      "description": "Fekete-fehér látás teljes sötétben"
+    },
+    "icon": null
+  },
+
+  "ultravision": {
+    "id": "ultravision",
+    "name": "Ultralátás",
+    "description": "Tökéletes éjjeli látás, látja a mágikus aurát is 60 méteren belül.",
+    "category": "vision",
+    "game_effect": {
+      "range_meters": 60,
+      "conditions": ["total_darkness"],
+      "bonus": "Mágikus aura detektálás",
+      "description": "Színes éjjellátás + mágikus érzékelés"
+    },
+    "icon": null
+  },
+
+  "keen_hearing": {
+    "id": "keen_hearing",
+    "name": "Kitűnő hallás",
+    "description": "+2 bónusz Észlelés próbákra hanggal kapcsolatban.",
+    "category": "senses",
+    "game_effect": {
+      "skill_bonus": {
+        "skill": "perception",
+        "modifier": 2,
+        "condition": "sound_based"
+      },
+      "description": "Rendkívül éles hallás"
+    },
+    "icon": null
+  },
+
+  "keen_smell": {
+    "id": "keen_smell",
+    "name": "Kitűnő szaglás",
+    "description": "Képes nyomkövetésre szaglás alapján, felismeri az ismerős illatokat.",
+    "category": "senses",
+    "game_effect": {
+      "skill_bonus": {
+        "skill": "tracking",
+        "modifier": 3,
+        "condition": "scent_available"
+      },
+      "special": "Azonosítja a lényeket szagról 10 méteren belül",
+      "description": "Fejlett szaglószerv"
+    },
+    "icon": null
+  },
+
+  "keen_senses": {
+    "id": "keen_senses",
+    "name": "Éles érzékek",
+    "description": "+1 bónusz minden Észlelés próbára.",
+    "category": "senses",
+    "game_effect": {
+      "skill_bonus": {
+        "skill": "perception",
+        "modifier": 1,
+        "condition": "all"
+      },
+      "description": "Általánosan jobb érzékelés"
+    },
+    "icon": null
+  },
+
+  "forest_affinity": {
+    "id": "forest_affinity",
+    "name": "Erdei affinitás",
+    "description": "+1 bónusz minden próbára erdőben és természetes környezetben.",
+    "category": "environmental",
+    "game_effect": {
+      "terrain_bonus": {
+        "terrain": "forest",
+        "modifier": 1,
+        "all_skills": true
+      },
+      "description": "Otthonosan mozog erdőben"
+    },
+    "icon": null
+  },
+
+  "stone_cunning": {
+    "id": "stone_cunning",
+    "name": "Kőismeret",
+    "description": "+2 bónusz kő- és bányászati munkákhoz, valamint csapdák észleléséhez kőben.",
+    "category": "environmental",
+    "game_effect": {
+      "skill_bonus": {
+        "skill": "mining",
+        "modifier": 2
+      },
+      "trap_detection_stone": 2,
+      "description": "Természetes affinitás a kőhöz"
+    },
+    "icon": null
+  },
+
+  "resistance_charm": {
+    "id": "resistance_charm",
+    "name": "Ellenállás bűvöletnek",
+    "description": "+4 mentődobás bűvölet és varázslat típusú mágia ellen.",
+    "category": "resistance",
+    "game_effect": {
+      "saving_throw_bonus": {
+        "type": "charm",
+        "modifier": 4
+      },
+      "description": "Megnövelt mentődobás bűvölet ellen"
+    },
+    "icon": null
+  },
+
+  "poison_resistance": {
+    "id": "poison_resistance",
+    "name": "Méregellenállás",
+    "description": "+4 mentődobás mérgekkel szemben. A méreg hatása felére csökken.",
+    "category": "resistance",
+    "game_effect": {
+      "saving_throw_bonus": {
+        "type": "poison",
+        "modifier": 4
+      },
+      "damage_reduction": 0.5,
+      "description": "Kiváló méregellenállás"
+    },
+    "icon": null
+  },
+
+  "psionic_resistance": {
+    "id": "psionic_resistance",
+    "name": "Pszi ellenállás",
+    "description": "+3 mentődobás pszionikus támadások ellen.",
+    "category": "resistance",
+    "game_effect": {
+      "saving_throw_bonus": {
+        "type": "psionic",
+        "modifier": 3
+      },
+      "description": "Védelem mentális támadások ellen"
+    },
+    "icon": null
+  },
+
+  "natural_armor": {
+    "id": "natural_armor",
+    "name": "Természetes páncél",
+    "description": "+1 SFÉ bónusz természetes bőrkeménység miatt.",
+    "category": "combat",
+    "game_effect": {
+      "armor_bonus": 1,
+      "type": "natural",
+      "description": "Vastag, kemény bőr"
+    },
+    "icon": null
+  },
+
+  "natural_weapons": {
+    "id": "natural_weapons",
+    "name": "Természetes fegyverek",
+    "description": "Karom és agyar: 1d4+Erő sebzés.",
+    "category": "combat",
+    "game_effect": {
+      "unarmed_damage": "1d4",
+      "damage_type": "slashing/piercing",
+      "description": "Halálos karmok és agyarak"
+    },
+    "icon": null
+  },
+
+  "regeneration": {
+    "id": "regeneration",
+    "name": "Regeneráció",
+    "description": "1 ÉP regenerálása körenként, ha az ÉP nem 0 vagy negatív.",
+    "category": "combat",
+    "game_effect": {
+      "hp_regen_per_round": 1,
+      "conditions": "ÉP > 0",
+      "description": "Gyors gyógyulás harcon kívül is"
+    },
+    "icon": null
+  },
+
+  "small_size": {
+    "id": "small_size",
+    "name": "Kicsi méret",
+    "description": "+1 bónusz VÉ-re méretből adódóan. -1 büntetés Erő alapú támadásokra.",
+    "category": "combat",
+    "game_effect": {
+      "defense_bonus": 1,
+      "attack_penalty": -1,
+      "size_category": "small",
+      "description": "Kisebb célpont, de gyengébb csapások"
+    },
+    "icon": null
+  },
+
+  "telepathy": {
+    "id": "telepathy",
+    "name": "Telepátia",
+    "description": "Kommunikáció gondolatokkal 30 méteren belül.",
+    "category": "psionic",
+    "game_effect": {
+      "range_meters": 30,
+      "type": "communication",
+      "language_independent": true,
+      "description": "Mentális kapcsolat teremtés"
+    },
+    "icon": null
+  },
+
+  "shape_shifter": {
+    "id": "shape_shifter",
+    "name": "Alakváltás",
+    "description": "Képes állat formát ölteni naponta egyszer, 1 órára.",
+    "category": "transformation",
+    "game_effect": {
+      "uses_per_day": 1,
+      "duration_hours": 1,
+      "animal_forms": ["wolf", "bear", "eagle"],
+      "description": "Átváltozás állat formába"
+    },
+    "icon": null
+  }
+}

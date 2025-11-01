@@ -1,10 +1,5 @@
 class CurrencyManager:
-    RATES = {
-        "réz": 1,
-        "ezüst": 100,
-        "arany": 1000,
-        "mithrill": 100000
-    }
+    RATES = {"réz": 1, "ezüst": 100, "arany": 1000, "mithrill": 100000}
     ORDER = ["réz", "ezüst", "arany", "mithrill"]
 
     def to_base(self, amount, currency):
@@ -45,4 +40,4 @@ class CurrencyManager:
             if count:
                 parts.append(f"{count} {curr}")
                 amount -= count * self.RATES[curr]
-        return ', '.join(parts) if parts else "0 réz"
+        return ", ".join(parts) if parts else "0 réz"

@@ -2,20 +2,21 @@
 Centralized validation helpers for GM Tools editors.
 Avoid heavy dependencies; perform lightweight schema checks.
 """
-from typing import Any, Dict
+
+from typing import Any
 
 
 class ValidationError(Exception):
     pass
 
 
-def _require_keys(data: Dict[str, Any], keys: list[str], ctx: str = ""):
+def _require_keys(data: dict[str, Any], keys: list[str], ctx: str = ""):
     for k in keys:
         if k not in data:
             raise ValidationError(f"Missing required field '{k}' in {ctx or 'data'}")
 
 
-def validate_skill(skill: Dict[str, Any]) -> None:
+def validate_skill(skill: dict[str, Any]) -> None:
     """Validate a skill dict before saving.
     Supports two types:
     - skill_type == 1: level-based costs using kp_costs {'1'..'6': int}
@@ -24,14 +25,26 @@ def validate_skill(skill: Dict[str, Any]) -> None:
     """
     # Light validation for placeholders
     if skill.get("placeholder", 0) == 1 or skill.get("main_category") == "Helyfoglaló képzettségek":
-        _require_keys(skill, ["id", "name", "main_category", "sub_category"], ctx="skill (placeholder)")
+        _require_keys(
+            skill, ["id", "name", "main_category", "sub_category"], ctx="skill (placeholder)"
+        )
         return
 
-    _require_keys(skill, [
-        "name", "id", "main_category", "sub_category",
-        "acquisition_method", "acquisition_difficulty", "skill_type",
-        "prerequisites", "description_file"
-    ], ctx="skill")
+    _require_keys(
+        skill,
+        [
+            "name",
+            "id",
+            "main_category",
+            "sub_category",
+            "acquisition_method",
+            "acquisition_difficulty",
+            "skill_type",
+            "prerequisites",
+            "description_file",
+        ],
+        ctx="skill",
+    )
 
     st = skill.get("skill_type", 1)
     if st == 1:
@@ -47,9 +60,11 @@ def validate_skill(skill: Dict[str, Any]) -> None:
             if not isinstance(val, int) or val < 0:
                 raise ValidationError(f"kp_costs['{key}'] must be non-negative int")
     elif st == 2:
-        kp3 = skill.get("kp_per_3_percent", None)
+        kp3 = skill.get("kp_per_3_percent")
         if kp3 is None or not isinstance(kp3, int) or kp3 < 0:
-            raise ValidationError("kp_per_3_percent must be a non-negative int for percent-based skills")
+            raise ValidationError(
+                "kp_per_3_percent must be a non-negative int for percent-based skills"
+            )
     else:
         raise ValidationError("skill_type must be 1 (szint) or 2 (%)")
 
@@ -72,8 +87,10 @@ def validate_skill(skill: Dict[str, Any]) -> None:
         raise ValidationError("description_file must be a string")
 
 
-def validate_armor(armor: Dict[str, Any]) -> None:
-    _require_keys(armor, ["id", "name", "parts", "mgt", "weight", "price", "description"], ctx="armor")
+def validate_armor(armor: dict[str, Any]) -> None:
+    _require_keys(
+        armor, ["id", "name", "parts", "mgt", "weight", "price", "description"], ctx="armor"
+    )
     # parts: dict of part->int
     parts = armor.get("parts", {})
     if not isinstance(parts, dict):
@@ -96,17 +113,19 @@ def validate_armor(armor: Dict[str, Any]) -> None:
     if not isinstance(armor.get("price"), int):
         raise ValidationError("price must be int in base units")
     # armor_type: optional but if present must be one of expected values
-    armor_type = armor.get("armor_type", None)
+    armor_type = armor.get("armor_type")
     if armor_type is not None and armor_type not in {"plate", "flexible_metal", "leather"}:
         raise ValidationError("armor_type must be one of 'plate', 'flexible_metal', 'leather'")
     # layer: optional but if present must be 1, 2, or 3
-    layer = armor.get("layer", None)
+    layer = armor.get("layer")
     if layer is not None and (not isinstance(layer, int) or layer not in {1, 2, 3}):
         raise ValidationError("layer must be int 1, 2, or 3")
 
 
-def validate_general_equipment(item: Dict[str, Any]) -> None:
-    _require_keys(item, ["id", "name", "description", "weight", "price", "category"], ctx="equipment")
+def validate_general_equipment(item: dict[str, Any]) -> None:
+    _require_keys(
+        item, ["id", "name", "description", "weight", "price", "category"], ctx="equipment"
+    )
     cat = item.get("category")
     if cat in ("eszköz", "élelem", "speciális") and "space" not in item:
         raise ValidationError("space is required for selected category")
