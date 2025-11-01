@@ -122,7 +122,7 @@ class CharacterWizardQt(QtWidgets.QDialog):
             )
             # if we previously had choices, pass them in
             if hasattr(self, "placeholder_choices") and self.placeholder_choices:
-                self.skills_step.placeholder_choices = dict(self.placeholder_choices)
+                self.skills_step.placeholder_manager.placeholder_choices = dict(self.placeholder_choices)
         self.skills_step.refresh()
         self.step_layout.addWidget(self.skills_step)
 
@@ -203,7 +203,7 @@ class CharacterWizardQt(QtWidgets.QDialog):
             # Persist skills placeholder choices from widget back to wizard state
             if hasattr(self, "skills_step") and self.skills_step is not None:
                 try:
-                    self.placeholder_choices = dict(self.skills_step.placeholder_choices)
+                    self.placeholder_choices = dict(self.skills_step.placeholder_manager.placeholder_choices)
                     # Also persist concrete selected skills into wizard data
                     try:
                         self.data["Képzettségek"] = self.skills_step.get_selected_skills()
