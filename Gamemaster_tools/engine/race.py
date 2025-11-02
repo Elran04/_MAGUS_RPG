@@ -84,11 +84,10 @@ class AgeData(BaseModel):
 
 
 class RacialSkill(BaseModel):
-    """Faji képzettség."""
+    """Faji képzettség (szint 1-6)."""
 
     skill_id: str
-    level: int | Literal["native"] = 0
-    optional: bool = False
+    level: int = Field(default=1, ge=1, le=6)
 
 
 # === Origin Models ===
@@ -235,22 +234,13 @@ class GameEffect(BaseModel):
     model_config = {"extra": "allow"}  # Engedélyezi az extra mezőket
 
 
+
 class SpecialAbility(BaseModel):
     """Speciális képesség."""
 
     id: str
     name: str
     description: str
-    category: Literal[
-        "vision",
-        "senses",
-        "environmental",
-        "resistance",
-        "learning",
-        "combat",
-        "psionic",
-        "transformation",
-    ]
     game_effect: dict[str, Any]  # Flexible JSON object
     icon: str | None = None
 

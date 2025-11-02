@@ -184,23 +184,7 @@
       }
     ]
   },
-  "racial_skills": [
-    {
-      "skill_id": "language_orcish",
-      "level": "native",
-      "optional": false
-    },
-    {
-      "skill_id": "language_common",
-      "level": 1,
-      "optional": false
-    },
-    {
-      "skill_id": "intimidation",
-      "level": 1,
-      "optional": false
-    }
-  ],
+  "racial_skills": [],
   "forbidden_skills": [],
   "origins": [
     {
@@ -220,13 +204,10 @@
     ],
     "forbidden_specializations": []
   },
-  "special_abilities": [
-    "darkvision",
-    "keen_smell"
-  ],
+  "special_abilities": [],
   "metadata": {
     "created_at": "2025-11-01T19:17:24.173751",
-    "updated_at": "2025-11-01T19:47:52.968381",
+    "updated_at": "2025-11-02T18:18:17.099072",
     "version": "1.0",
     "migrated_from": "race_age_stat_modifiers.py"
   }

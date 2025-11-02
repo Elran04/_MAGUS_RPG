@@ -34,6 +34,7 @@ from PySide6.QtWidgets import (
 from engine.race import Race
 from engine.race_manager import RaceManager
 from ui.races.race_editor_constants import ATTRIBUTE_NAMES
+from ui.races.special_ability_editor import SpecialAbilityEditor
 
 
 class RaceEditorTabs:
@@ -86,6 +87,7 @@ class RaceEditorTabs:
         self.tab_widget.addTab(self.create_tab_skills(), "Képzettségek")
         self.tab_widget.addTab(self.create_tab_special_abilities(), "Speciális képességek")
         self.tab_widget.addTab(self.create_tab_classes(), "Kaszt korlátozások")
+        self.tab_widget.addTab(self.create_tab_ability_editor(), "Képesség szerkesztő")
 
     def create_tab_basic(self) -> QWidget:
         """Alapadatok & Leírás tab - Splitter layout with left (attrs/age + origins) and right (description)"""
@@ -204,9 +206,9 @@ class RaceEditorTabs:
         top_widget.setLayout(top_layout)
         top_layout.addWidget(QLabel("<b>Faji képzettségek</b>"))
 
-        self.racial_skills_table.setColumnCount(4)
+        self.racial_skills_table.setColumnCount(3)
         self.racial_skills_table.setHorizontalHeaderLabels(
-            ["Azonosító", "Név", "Szint", "Opcionális"]
+            ["Azonosító", "Név", "Szint"]
         )
         self.racial_skills_table.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeMode.ResizeToContents
@@ -216,9 +218,6 @@ class RaceEditorTabs:
         )
         self.racial_skills_table.horizontalHeader().setSectionResizeMode(
             2, QHeaderView.ResizeMode.ResizeToContents
-        )
-        self.racial_skills_table.horizontalHeader().setSectionResizeMode(
-            3, QHeaderView.ResizeMode.ResizeToContents
         )
         top_layout.addWidget(self.racial_skills_table)
 
@@ -320,6 +319,14 @@ class RaceEditorTabs:
         return tab
 
     # Note: Leírás tab removed – description editor integrated into the first tab
+
+    def create_tab_ability_editor(self) -> QWidget:
+        """Képesség szerkesztő tab (CRUD for Special Abilities)."""
+        # Pass a callback to refresh available abilities in the main tab when changed
+        def refresh_abilities():
+            self.load_special_abilities()
+        editor = SpecialAbilityEditor(self.race_manager, on_change=refresh_abilities)
+        return editor
 
     # === Helper Methods ===
 
@@ -436,11 +443,9 @@ class RaceEditorTabs:
             self.racial_skills_table.insertRow(row)
             self.racial_skills_table.setItem(row, 0, QTableWidgetItem(rs.skill_id))
             self.racial_skills_table.setItem(row, 1, QTableWidgetItem(name))
-            level_text = "native" if rs.level == "native" else str(rs.level)
+            # Display level in 1-6 scale
+            level_text = str(rs.level)
             self.racial_skills_table.setItem(row, 2, QTableWidgetItem(level_text))
-            self.racial_skills_table.setItem(
-                row, 3, QTableWidgetItem("igen" if rs.optional else "nem")
-            )
 
         # Forbidden skills list
         self.list_forbidden_skills.clear()

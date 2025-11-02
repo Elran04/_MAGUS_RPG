@@ -178,27 +178,8 @@
       }
     ]
   },
-  "racial_skills": [
-    {
-      "skill_id": "language_elven",
-      "level": "native",
-      "optional": false
-    },
-    {
-      "skill_id": "language_common",
-      "level": 2,
-      "optional": false
-    },
-    {
-      "skill_id": "forest_knowledge",
-      "level": 2,
-      "optional": false
-    }
-  ],
-  "forbidden_skills": [
-    "heavy_armor_mastery",
-    "dwarven_runecraft"
-  ],
+  "racial_skills": [],
+  "forbidden_skills": [],
   "origins": [
     {
       "id": "erion_forest",
@@ -230,15 +211,10 @@
       "berserker"
     ]
   },
-  "special_abilities": [
-    "infravision",
-    "keen_hearing",
-    "forest_affinity",
-    "resistance_charm"
-  ],
+  "special_abilities": [],
   "metadata": {
     "created_at": "2025-11-01T19:17:24.171786",
-    "updated_at": "2025-11-01T19:47:52.962723",
+    "updated_at": "2025-11-02T18:17:45.753678",
     "version": "1.0",
     "migrated_from": "race_age_stat_modifiers.py"
   }

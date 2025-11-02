@@ -184,27 +184,8 @@
       }
     ]
   },
-  "racial_skills": [
-    {
-      "skill_id": "language_goblin",
-      "level": "native",
-      "optional": false
-    },
-    {
-      "skill_id": "stealth",
-      "level": 2,
-      "optional": false
-    },
-    {
-      "skill_id": "survival",
-      "level": 1,
-      "optional": false
-    }
-  ],
-  "forbidden_skills": [
-    "heavy_armor_mastery",
-    "mounted_combat"
-  ],
+  "racial_skills": [],
+  "forbidden_skills": [],
   "origins": [
     {
       "id": "unknown",
@@ -226,14 +207,10 @@
       "heavy_infantry"
     ]
   },
-  "special_abilities": [
-    "darkvision",
-    "keen_hearing",
-    "small_size"
-  ],
+  "special_abilities": [],
   "metadata": {
     "created_at": "2025-11-01T19:17:24.175504",
-    "updated_at": "2025-11-01T19:47:52.966024",
+    "updated_at": "2025-11-02T18:18:01.656035",
     "version": "1.0",
     "migrated_from": "race_age_stat_modifiers.py"
   }

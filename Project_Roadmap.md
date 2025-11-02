@@ -52,9 +52,9 @@ Planned / Ongoing Enhancements:
 
 🟥 Item Templates (not started)
 
-🟥 Race Editor (not started) → Now a priority
+🟨 Race Editor → Now a priority
 
-🟥 Race Descriptions and Special Ability Handling
+🟨 Race Descriptions and Special Ability Handling
 
 Save race data to JSON (currently .py modules).
 
@@ -228,7 +228,7 @@ Inventory use, fatigue, and travel modifiers.
 11. 🧭 Major Milestones
 1️⃣ Character System Completion
 
-🟥 Race editor and JSON data
+🟨 Race editor and JSON data
 
 🟨 Skill/class integration from SQLite
 

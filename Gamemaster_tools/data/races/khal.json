@@ -190,17 +190,8 @@
       }
     ]
   },
-  "racial_skills": [
-    {
-      "skill_id": "language_common",
-      "level": "native",
-      "optional": false
-    }
-  ],
-  "forbidden_skills": [
-    "arcane_magic",
-    "divine_magic"
-  ],
+  "racial_skills": [],
+  "forbidden_skills": [],
   "origins": [
     {
       "id": "unknown",
@@ -217,14 +208,10 @@
     ],
     "forbidden_specializations": []
   },
-  "special_abilities": [
-    "regeneration",
-    "natural_weapons",
-    "keen_smell"
-  ],
+  "special_abilities": [],
   "metadata": {
     "created_at": "2025-11-01T19:17:24.177551",
-    "updated_at": "2025-11-01T19:47:52.966756",
+    "updated_at": "2025-11-02T18:18:07.247018",
     "version": "1.0",
     "migrated_from": "race_age_stat_modifiers.py"
   }

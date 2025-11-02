@@ -5,7 +5,6 @@ Handles all user actions (save, create, delete, skill management, etc.)
 
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtWidgets import (
-    QCheckBox,
     QComboBox,
     QDialog,
     QDialogButtonBox,
@@ -58,7 +57,7 @@ class RaceEditorActions:
             return
 
         name = self.editor.tabs.resolve_skill_name(sid)
-        level, optional = self.ask_racial_skill_params(sid, name)
+        level = self.ask_racial_skill_params(sid, name)
         if level is None:
             return
 
@@ -73,10 +72,9 @@ class RaceEditorActions:
         )
         if existing_idx is not None:
             self.editor.tabs.current_race.racial_skills[existing_idx].level = level
-            self.editor.tabs.current_race.racial_skills[existing_idx].optional = optional
         else:
             self.editor.tabs.current_race.racial_skills.append(
-                RacialSkill(skill_id=sid, level=level, optional=optional)
+                RacialSkill(skill_id=sid, level=level)
             )
         self.editor.tabs.load_skills()
 
@@ -108,12 +106,11 @@ class RaceEditorActions:
             return
 
         current = self.editor.tabs.current_race.racial_skills[idx]
-        level, optional = self.ask_racial_skill_params(sid, name, current.level, current.optional)
+        level = self.ask_racial_skill_params(sid, name, current.level)
         if level is None:
             return
 
         current.level = level
-        current.optional = optional
         self.editor.tabs.load_skills()
 
     def delete_racial_skill(self):
@@ -133,9 +130,9 @@ class RaceEditorActions:
         self.editor.tabs.load_skills()
 
     def ask_racial_skill_params(
-        self, skill_id: str, skill_name: str, level_val=None, optional_val: bool | None = None
-    ):
-        """Egyszerű párbeszédablak a faji skill paramétereihez (szint/native + opcionális)."""
+        self, skill_id: str, skill_name: str, level_val=None
+    ) -> int | None:
+        """Egyszerű párbeszédablak a faji skill paramétereihez (szint 1-6)."""
         dlg = QDialog(self.editor)
         dlg.setWindowTitle(f"Képzettség hozzárendelése: {skill_name}")
         lay = QVBoxLayout(dlg)
@@ -145,22 +142,14 @@ class RaceEditorActions:
         lay.addLayout(form)
 
         level_cb = QComboBox()
-        level_cb.addItem("native", userData="native")
         for i in range(1, 7):
             level_cb.addItem(str(i), userData=i)
 
         # Set current
-        if level_val == "native":
-            level_cb.setCurrentIndex(0)
-        elif isinstance(level_val, int) and 1 <= level_val <= 6:
-            level_cb.setCurrentIndex(level_val)
+        if isinstance(level_val, int) and 1 <= level_val <= 6:
+            level_cb.setCurrentIndex(level_val - 1)
 
         form.addRow("Szint:", level_cb)
-
-        opt_cb = QCheckBox("Opcionális")
-        if optional_val is not None:
-            opt_cb.setChecked(bool(optional_val))
-        form.addRow("", opt_cb)
 
         btns = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
@@ -170,8 +159,8 @@ class RaceEditorActions:
         btns.rejected.connect(dlg.reject)
 
         if dlg.exec() == QDialog.DialogCode.Accepted:
-            return level_cb.currentData(), opt_cb.isChecked()
-        return None, None
+            return level_cb.currentData()
+        return None
 
     # === Forbidden Skills Actions ===
 
@@ -273,6 +262,7 @@ class RaceEditorActions:
             self.editor.tabs.current_race.age.min = self.editor.tabs.spin_age_min.value()
             self.editor.tabs.current_race.age.max = self.editor.tabs.spin_age_max.value()
 
+            # Leírás mentése
             # Leírás mentése
             desc_file = (
                 self.editor.race_manager.data_dir

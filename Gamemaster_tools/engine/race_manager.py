@@ -288,3 +288,35 @@ class RaceManager:
         except Exception as e:
             logger.error(f"Hiba képesség mentése során ({ability.name}): {e}", exc_info=True)
             raise
+
+    def delete_special_ability(self, ability_id: str) -> bool:
+        """Speciális képesség törlése az adatbázisból és a cache-ből."""
+        try:
+            # Betöltjük az összes képességet
+            if self.special_abilities_file.exists():
+                with open(self.special_abilities_file, encoding="utf-8") as f:
+                    all_abilities = json.load(f)
+            else:
+                all_abilities = {}
+
+            if ability_id not in all_abilities:
+                return False
+
+            # Törlés
+            all_abilities.pop(ability_id, None)
+
+            # Visszamentjük
+            with open(self.special_abilities_file, "w", encoding="utf-8") as f:
+                json.dump(all_abilities, f, ensure_ascii=False, indent=2)
+
+            # Cache frissítése
+            self._special_abilities.pop(ability_id, None)
+
+            logger.info(f"✓ Speciális képesség törölve: {ability_id}")
+            return True
+
+        except Exception as e:
+            logger.error(
+                f"Hiba képesség törlése során ({ability_id}): {e}", exc_info=True
+            )
+            return False
