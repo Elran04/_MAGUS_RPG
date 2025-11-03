@@ -1,4 +1,5 @@
 import os
+import json
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -20,18 +21,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from utils.json_manager import JsonManager
 from utils.validation import ValidationError, validate_armor
-
-
-class ArmorJsonManager(JsonManager):
-    def validate(self, item):
-        # Delegate to centralized validator for consistency
-        try:
-            validate_armor(item)
-            return True
-        except ValidationError:
-            return False
 
 
 ARMOR_JSON = os.path.join(os.path.dirname(__file__), "..", "..", "data", "equipment", "armor.json")
@@ -43,8 +33,9 @@ class ArmorEditorQt(QMainWindow):
         self.setWindowTitle("Páncél szerkesztő")
         self.resize(1200, 760)
 
-        self.manager = ArmorJsonManager(ARMOR_JSON)
-        self.armors = self.manager.load()
+        # JSON storage
+        self._armor_json_path = ARMOR_JSON
+        self.armors = self._load_armors()
         self.selected_idx = None
         self.abc_sort_asc = True
         self.sfe_sort_asc = False
@@ -223,6 +214,21 @@ class ArmorEditorQt(QMainWindow):
         self.listbox.currentRowChanged.connect(self.on_select)
         self._ui_ready = True
 
+    # JSON helpers (replace JsonManager usage)
+    def _load_armors(self):
+        try:
+            if not os.path.exists(self._armor_json_path):
+                return []
+            with open(self._armor_json_path, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return []
+
+    def _save_armors(self):
+        os.makedirs(os.path.dirname(self._armor_json_path), exist_ok=True)
+        with open(self._armor_json_path, "w", encoding="utf-8") as f:
+            json.dump(self.armors, f, ensure_ascii=False, indent=2)
+
     # Helpers
     def _load_zone_menus(self):
         from engine.armor_manager import ArmorManager
@@ -398,7 +404,10 @@ class ArmorEditorQt(QMainWindow):
             "armor_type": self.cmb_armor_type.currentData(),
             "layer": int(self.spn_layer.value()),
         }
-        if not ArmorJsonManager(ARMOR_JSON).validate(armor):
+        # Validate armor using centralized validator
+        try:
+            validate_armor(armor)
+        except ValidationError:
             QMessageBox.critical(self, "Hiba", "Hiányzó vagy hibás mező!")
             return
         # Determine target index to select after save without being affected by signals
@@ -417,7 +426,7 @@ class ArmorEditorQt(QMainWindow):
             target_idx = len(self.armors) - 1
 
         # Persist and refresh list while blocking selection-change signals
-        self.manager.save(self.armors)
+        self._save_armors()
         self.listbox.blockSignals(True)
         self.refresh_list()
         # Clamp target index just in case
@@ -457,7 +466,7 @@ class ArmorEditorQt(QMainWindow):
         )
         if answer == QMessageBox.StandardButton.Yes:
             self.armors.pop(row)
-            self.manager.save(self.armors)
+            self._save_armors()
             self.refresh_list()
             self.selected_idx = None
 

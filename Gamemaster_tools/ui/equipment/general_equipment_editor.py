@@ -1,4 +1,5 @@
 import os
+import json
 from typing import Any
 
 from PySide6.QtCore import Qt
@@ -20,17 +21,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from utils.json_manager import JsonManager
 from utils.validation import ValidationError, validate_general_equipment
-
-
-class GeneralEquipmentJsonManager(JsonManager):
-    def validate(self, item):
-        try:
-            validate_general_equipment(item)
-            return True
-        except ValidationError:
-            return False
 
 
 GENERAL_JSON = os.path.join(
@@ -47,8 +38,9 @@ class GeneralEquipmentEditorQt(QMainWindow):
         self.setWindowTitle("Általános felszerelés szerkesztő")
         self.resize(1200, 760)
 
-        self.manager = GeneralEquipmentJsonManager(GENERAL_JSON)
-        self.items = self.manager.load()
+        # JSON storage
+        self._general_json_path = GENERAL_JSON
+        self.items = self._load_items()
         self.selected_idx = None
 
         central = QWidget()
@@ -126,6 +118,21 @@ class GeneralEquipmentEditorQt(QMainWindow):
 
         self.populate_treeview()
         self.update_category_fields(self.cmb_category.currentText())
+
+    # JSON helpers (replace JsonManager usage)
+    def _load_items(self):
+        try:
+            if not os.path.exists(self._general_json_path):
+                return []
+            with open(self._general_json_path, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return []
+
+    def _save_items(self):
+        os.makedirs(os.path.dirname(self._general_json_path), exist_ok=True)
+        with open(self._general_json_path, "w", encoding="utf-8") as f:
+            json.dump(self.items, f, ensure_ascii=False, indent=2)
 
     # Helpers
     def _price_to_parts(self, price):
@@ -282,8 +289,10 @@ class GeneralEquipmentEditorQt(QMainWindow):
                 item["durability"] = int(self.inp_durability.value())
             if self.inp_nutritional is not None:
                 item["nutritional_value"] = int(self.inp_nutritional.value())
-        # Validate
-        if not self.manager.validate(item):
+        # Validate using centralized validator
+        try:
+            validate_general_equipment(item)
+        except ValidationError:
             QMessageBox.critical(self, "Hiba", "Hiányzó vagy hibás mezők!")
             return
         # Save
@@ -292,7 +301,7 @@ class GeneralEquipmentEditorQt(QMainWindow):
         else:
             self.items.append(item)
             self.selected_idx = len(self.items) - 1
-        self.manager.save(self.items)
+        self._save_items()
         self.populate_treeview()
         QMessageBox.information(self, "Mentés", "Felszerelés mentve!")
 
@@ -323,7 +332,7 @@ class GeneralEquipmentEditorQt(QMainWindow):
         )
         if ans == QMessageBox.StandardButton.Yes:
             del self.items[int(idx)]
-            self.manager.save(self.items)
+            self._save_items()
             self.populate_treeview()
             self.new_item()
 

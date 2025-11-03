@@ -466,7 +466,7 @@ class RaceEditorTabs:
         self.list_available_abilities.clear()
         for ability in all_abilities:
             if ability.id not in race_ability_ids:
-                item = QListWidgetItem(f"{ability.name} ({ability.category})")
+                item = QListWidgetItem(f"{ability.name}")
                 item.setData(Qt.ItemDataRole.UserRole, ability.id)
                 self.list_available_abilities.addItem(item)
 
@@ -474,7 +474,7 @@ class RaceEditorTabs:
         self.list_race_abilities.clear()
         race_abilities = self.race_manager.get_race_special_abilities(self.current_race.id)
         for ability in race_abilities:
-            item = QListWidgetItem(f"{ability.name} ({ability.category})")
+            item = QListWidgetItem(f"{ability.name}")
             item.setData(Qt.ItemDataRole.UserRole, ability.id)
             self.list_race_abilities.addItem(item)
 
@@ -506,7 +506,6 @@ class RaceEditorTabs:
         ability = self.race_manager.get_special_ability(ability_id)
         if ability:
             details = f"<h3>{ability.name}</h3>"
-            details += f"<p><i>Kategória: {ability.category}</i></p>"
             details += f"<p>{ability.description}</p>"
             details += "<p><b>Játékmechanikai hatás:</b></p>"
             details += f"<pre>{json.dumps(ability.game_effect, indent=2, ensure_ascii=False)}</pre>"

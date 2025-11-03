@@ -1,13 +1,12 @@
 import os
+import json
 import sqlite3
-
-from utils.json_manager import JsonManager
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-class WeaponDataManager(JsonManager):
+class WeaponDataManager:
     # Központi meződefiníciók
     BASE_FIELDS = [
         "name",
@@ -75,7 +74,26 @@ class WeaponDataManager(JsonManager):
             json_path = os.path.join(
                 os.path.dirname(__file__), "..", "data", "equipment", "weapons_and_shields.json"
             )
-        super().__init__(json_path)
+        self._json_path = os.path.abspath(json_path)
+
+    # JSON helpers (replace JsonManager usage)
+    def load(self):
+        try:
+            if not os.path.exists(self._json_path):
+                return []
+            with open(self._json_path, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Failed to load weapons data: {e}")
+            return []
+
+    def save(self, items):
+        try:
+            os.makedirs(os.path.dirname(self._json_path), exist_ok=True)
+            with open(self._json_path, "w", encoding="utf-8") as f:
+                json.dump(items, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.error(f"Failed to save weapons data: {e}")
 
     def validate(self, item):
         required = [
