@@ -191,19 +191,30 @@ class SkillEditorTabs:
         overview_scroll.setWidget(overview_widget)
         splitter.addWidget(overview_scroll)
 
-        # Bottom section: Nested tab widget for prerequisite editing
-        self.levels_tab_widget = QTabWidget()
+        # Bottom section: Autofill button + Nested tab widget for prerequisite editing
+        bottom_widget = QWidget()
+        bottom_layout = QVBoxLayout()
+        bottom_widget.setLayout(bottom_layout)
 
+        btn_autofill = QPushButton("Szint előfeltételek kitöltése")
+        btn_autofill.setToolTip("Kitölti a 2-5. (és 6. ha KP>0) szint előfeltételeit az előző szinttel.")
+        btn_autofill.setMinimumHeight(32)
+        # Call parent's autofill method
+        btn_autofill.clicked.connect(self.parent.autofill_level_prereqs)
+        bottom_layout.addWidget(btn_autofill)
+
+        self.levels_tab_widget = QTabWidget()
         for i in range(6):
             level = i + 1
             prereq_widget = self.create_prereq_editor(level)
             self.prereq_widgets.append(prereq_widget)
             self.levels_tab_widget.addTab(prereq_widget, f"{level}. szint előfeltételei")
+        bottom_layout.addWidget(self.levels_tab_widget)
 
-        splitter.addWidget(self.levels_tab_widget)
+        splitter.addWidget(bottom_widget)
 
-        # Set splitter ratio: 60% top, 40% bottom
-        splitter.setSizes([600, 400])
+        # Set splitter ratio: 40% top, 60% bottom
+        splitter.setSizes([400, 600])
 
         main_layout.addWidget(splitter)
 

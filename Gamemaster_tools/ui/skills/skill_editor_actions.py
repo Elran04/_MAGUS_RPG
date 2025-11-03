@@ -250,10 +250,20 @@ class SkillEditorActions:
         self.update_prereq_summary()
 
     def update_prereq_summary(self):
-        """Update prerequisite summary labels for all levels"""
+        """Update prerequisite summary labels for all levels, mapping id (param) to name (param) for display."""
         tabs = self.parent.tabs
         if not hasattr(self.parent, "current_prerequisites"):
             self.parent.current_prerequisites = {}
+
+        # Build id(param) -> name(param) mapping
+        id_to_name = {}
+        for s in self.parent.all_skills:
+            skill_id = s.get("id", "")
+            name = s.get("name", "")
+            param = s.get("parameter", "")
+            id_with_param = f"{skill_id} ({param})" if param else skill_id
+            name_with_param = f"{name} ({param})" if param else name
+            id_to_name[id_with_param] = name_with_param
 
         # Update summary labels and load data into inline editors for each level (1-6)
         for i in range(6):
@@ -272,7 +282,23 @@ class SkillEditorActions:
                 if skill_list:
                     if stat_list:
                         summary += "\n"
-                    summary += "\n".join(skill_list)
+                    # Map id(param) to name(param) for display
+                    display_skills = []
+                    for skill_req in skill_list:
+                        # skill_req is like "id (param) N. szint" or "name (param) N. szint"
+                        # Extract the id/name part (everything before the last "N. szint" pattern)
+                        import re
+                        match = re.match(r'^(.+?)\s+(\d+)\.\s+szint$', skill_req)
+                        if match:
+                            id_or_name_part = match.group(1).strip()
+                            level_num = match.group(2)
+                            # Try to map id to name
+                            name_part = id_to_name.get(id_or_name_part, id_or_name_part)
+                            display_skills.append(f"{name_part} {level_num}. szint")
+                        else:
+                            # Fallback: use as-is
+                            display_skills.append(skill_req)
+                    summary += "\n".join(display_skills)
 
             # Update the summary label
             if i < len(tabs.prereq_labels):

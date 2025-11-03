@@ -168,16 +168,28 @@ class SkillPrerequisiteEditorWidget(QWidget):
         if current_item:
             self.stat_list.takeItem(self.stat_list.row(current_item))
 
-    def add_skill_prereq(self):
-        """Add a skill prerequisite"""
+    def add_skill_prereq(self, skill_id=None, skill_name=None, param=None, level=None):
+        """Add a skill prerequisite. Autofill stores id(param) for saving, manual adds use name(param) as before."""
+        from PySide6.QtCore import Qt
+        from PySide6.QtWidgets import QListWidgetItem
+        if skill_id is not None and skill_name is not None and level is not None:
+            # Autofill: store id (with param) in UserRole, display name (with param) as text
+            id_with_param = f"{skill_id} ({param})" if param else skill_id
+            name_with_param = f"{skill_name} ({param})" if param else skill_name
+            text = f"{name_with_param} {level}. szint"
+            item = QListWidgetItem(text)
+            item.setData(Qt.ItemDataRole.UserRole, f"{id_with_param} {level}. szint")
+            self.skill_list.addItem(item)
+            return
+        # Manual add: use display name for both text and storage (original behavior)
         skill = self.skill_combo.currentText().strip()
         level = self.skill_level_spin.value()
-
         if not skill:
             return
-
         text = f"{skill} {level}. szint"
-        self.skill_list.addItem(text)
+        item = QListWidgetItem(text)
+        item.setData(Qt.ItemDataRole.UserRole, text)
+        self.skill_list.addItem(item)
 
     def remove_skill_prereq(self):
         """Remove selected skill prerequisite"""
@@ -198,16 +210,32 @@ class SkillPrerequisiteEditorWidget(QWidget):
                 self.stat_list.addItem(stat_req)
 
             for skill_req in skill_list:
-                self.skill_list.addItem(skill_req)
+                # If it's a tuple (display, id), use display as text, id as UserRole
+                from PySide6.QtCore import Qt
+                from PySide6.QtWidgets import QListWidgetItem
+                if isinstance(skill_req, tuple) and len(skill_req) == 2:
+                    item = QListWidgetItem(skill_req[0])
+                    item.setData(Qt.ItemDataRole.UserRole, skill_req[1])
+                    self.skill_list.addItem(item)
+                else:
+                    # Fallback: treat as string, both text and UserRole
+                    item = QListWidgetItem(skill_req)
+                    item.setData(Qt.ItemDataRole.UserRole, skill_req)
+                    self.skill_list.addItem(item)
 
     def get_prerequisites(self):
-        """Get current prerequisites from the widget"""
+        """Get current prerequisites from the widget (skills: use UserRole for saving, text for display)."""
         stats = []
         for i in range(self.stat_list.count()):
             stats.append(self.stat_list.item(i).text())
 
         skills = []
         for i in range(self.skill_list.count()):
-            skills.append(self.skill_list.item(i).text())
+            item = self.skill_list.item(i)
+            val = item.data(256) if item is not None else None  # Qt.UserRole = 256
+            if val:
+                skills.append(val)
+            else:
+                skills.append(item.text() if item else "")
 
         return {"képesség": stats, "képzettség": skills}
