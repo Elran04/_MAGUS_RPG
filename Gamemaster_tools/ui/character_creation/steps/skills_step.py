@@ -6,9 +6,17 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from ui.character_creation.helpers.skill_db_helper import SkillDatabaseHelper
 from ui.character_creation.helpers.skill_prerequisites import SkillPrerequisiteChecker
 from ui.character_creation.widgets.placeholder_skill_manager import PlaceholderSkillManager
+from ui.character_creation.widgets.skills_table import SkillsTableRenderer
+from engine.race_manager import RaceManager
+from config.paths import DATA_DIR
 from utils.log.logger import get_logger
+from utils.ui.themes import CharacterCreationTheme, warning_label_style, info_label_style, header_label_style
 
 logger = get_logger(__name__)
+
+# Initialize race manager for accessing racial skills
+_race_manager = RaceManager(DATA_DIR)
+_race_manager.load_all()
 
 
 class SkillsStepWidget(QtWidgets.QWidget):
@@ -62,12 +70,10 @@ class SkillsStepWidget(QtWidgets.QWidget):
 
         # Header with KP
         self.kp_info_label = QtWidgets.QLabel("")
-        self.kp_info_label.setStyleSheet(
-            "font-size: 12pt; padding: 8px; background-color: rgba(100,100,120,50); border-radius: 4px;"
-        )
+        self.kp_info_label.setStyleSheet(header_label_style())
         layout.addWidget(self.kp_info_label)
 
-        # Table
+    # Table
         layout.addWidget(QtWidgets.QLabel("Kaszt/Specializáció képzettségei:"))
         self.skills_table = QtWidgets.QTableWidget()
         self.skills_table.setColumnCount(6)
@@ -85,12 +91,20 @@ class SkillsStepWidget(QtWidgets.QWidget):
         self.skills_table.doubleClicked.connect(self._on_row_double_click)
         layout.addWidget(self.skills_table)
 
+        # Renderer for table rows and placeholder logic
+        self.table_renderer = SkillsTableRenderer(
+            table=self.skills_table,
+            db_helper=self.db_helper,
+            placeholder_manager=self.placeholder_manager,
+            prereq_checker=self.prereq_checker,
+            build_current_map_cb=self._build_current_skills_map,
+            attributes_getter=lambda: (self.get_character_data() or {}).get("Tulajdonságok", {}),
+        )
+
         # Empty note
         self.empty_msg = QtWidgets.QLabel("")
         self.empty_msg.setWordWrap(True)
-        self.empty_msg.setStyleSheet(
-            "color: #cc8800; font-size: 10pt; padding: 12px; background-color: rgba(200,150,50,30); border-radius: 4px;"
-        )
+        self.empty_msg.setStyleSheet(warning_label_style())
         layout.addWidget(self.empty_msg)
 
         # Footer note
@@ -98,7 +112,7 @@ class SkillsStepWidget(QtWidgets.QWidget):
             "<i>Megjegyzés: A képzettségek szerkesztése a karakter mentése után a külön karakterszerkesztőben lehetséges.</i>"
         )
         note.setWordWrap(True)
-        note.setStyleSheet("color: #888; font-size: 9pt; padding: 8px;")
+        note.setStyleSheet(info_label_style())
         layout.addWidget(note)
 
         splitter.addWidget(right_panel)
@@ -108,14 +122,134 @@ class SkillsStepWidget(QtWidgets.QWidget):
 
         main_layout.addWidget(splitter)
 
+    def validate(self) -> bool:
+        """
+        Validate skill selection before allowing progression.
+        Returns True if valid, False otherwise (with user warning).
+        
+        Checks:
+        1. All placeholder skills are resolved (chosen from combo)
+        2. All mandatory skill prerequisites are fulfilled
+        """
+        # Check for unresolved placeholders
+        unresolved_placeholders = []
+        for row_idx in range(self.skills_table.rowCount()):
+            name_widget = self.skills_table.cellWidget(row_idx, 0)
+            if isinstance(name_widget, QtWidgets.QComboBox):
+                chosen = name_widget.currentData()
+                if chosen is None:  # No selection made
+                    # Get the placeholder name from line edit placeholder text
+                    line_edit = name_widget.lineEdit()
+                    placeholder_text = line_edit.placeholderText() if line_edit else "Ismeretlen"
+                    unresolved_placeholders.append(placeholder_text.split(" — ")[0] if " — " in placeholder_text else placeholder_text)
+
+        if unresolved_placeholders:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Hiányos képzettség választás",
+                f"Válassza ki a következő helyettesítő képzettség(ek)et:\n\n• " + "\n• ".join(unresolved_placeholders),
+            )
+            return False
+
+        # Check for unmet prerequisites
+        unmet_prereqs = []
+        current_map = self._build_current_skills_map()
+        attributes = (self.get_character_data() or {}).get("Tulajdonságok", {})
+
+        for row_idx in range(self.skills_table.rowCount()):
+            # Only check fixed skills (placeholders are validated when resolved)
+            name_widget = self.skills_table.cellWidget(row_idx, 0)
+            if name_widget is not None:
+                continue  # Skip placeholder rows
+            
+            name_item = self.skills_table.item(row_idx, 0)
+            if not name_item:
+                continue
+            
+            display = name_item.text()
+            skill_id = self.db_helper.get_skill_by_display(display)
+            if not skill_id:
+                continue
+            
+            # Get level and percent
+            lvl_item = self.skills_table.item(row_idx, 1)
+            pct_item = self.skills_table.item(row_idx, 2)
+            req_level = int(lvl_item.text()) if lvl_item and lvl_item.text().isdigit() else 0
+            req_percent = int(pct_item.text()) if pct_item and pct_item.text().isdigit() else 0
+            
+            # Check prerequisites
+            ok, reasons = self.prereq_checker.check_prerequisites(
+                skill_id, req_level, req_percent, current_map, attributes
+            )
+            if not ok:
+                unmet_prereqs.append(f"{display}: {', '.join(reasons)}")
+
+        if unmet_prereqs:
+            # Create custom dialog with Continue/Back buttons
+            msg_box = QtWidgets.QMessageBox(self)
+            msg_box.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+            msg_box.setWindowTitle("Előfeltételek nem teljesülnek")
+            msg_box.setText(
+                "Nem teljesül minden előfeltétel — bizonyos képzettségek nem lesznek elérhetők.\n\n"
+                + "\n".join(unmet_prereqs[:5])  # Show max 5 to avoid giant dialog
+                + ("\n\n... és további hiányosságok" if len(unmet_prereqs) > 5 else "")
+                + "\n\nHa folytatja, ezek a képzettségek nem kerülnek hozzáadásra a karakterhez."
+            )
+            
+            # Add custom buttons
+            continue_btn = msg_box.addButton("Folytatás", QtWidgets.QMessageBox.ButtonRole.AcceptRole)
+            back_btn = msg_box.addButton("Vissza", QtWidgets.QMessageBox.ButtonRole.RejectRole)
+            msg_box.setDefaultButton(back_btn)
+            
+            msg_box.exec()
+            
+            # Check which button was clicked
+            if msg_box.clickedButton() == back_btn:
+                return False  # Stay on current step
+            # else: continue_btn was clicked, return True to proceed (invalid skills will be filtered out)
+
+        return True
+
     def get_selected_skills(self):
         """Export current selected skills (fixed + placeholder resolutions) as a list of dicts.
-        Each entry contains: {"id": skill_id, "Képzettség": name( (param)), "Szint": int, "%": int}.
+        Each entry contains: {"id": skill_id, "Képzettség": name( (param)), "Szint": int, "%": int, "Forrás": source}.
+        Only includes skills with fulfilled prerequisites.
         """
         skills: list[dict[str, Any]] = []
+        
+        # Build a map from the table to get source information
+        skill_sources = {}
+        try:
+            for row_idx in range(self.skills_table.rowCount()):
+                # Get skill ID
+                name_widget = self.skills_table.cellWidget(row_idx, 0)
+                if name_widget is None:
+                    name_item = self.skills_table.item(row_idx, 0)
+                    if name_item:
+                        display = name_item.text()
+                        sid = self.db_helper.get_skill_by_display(display)
+                        if sid:
+                            source_item = self.skills_table.item(row_idx, 4)
+                            if source_item:
+                                skill_sources[sid] = source_item.text()
+                else:
+                    # Placeholder - get chosen skill
+                    if isinstance(name_widget, QtWidgets.QComboBox):
+                        chosen = name_widget.currentData()
+                        if chosen:
+                            source_item = self.skills_table.item(row_idx, 4)
+                            if source_item:
+                                skill_sources[chosen] = source_item.text()
+        except Exception as e:
+            logger.error(f"Error building skill sources map: {e}", exc_info=True)
+        
         current_map = self._build_current_skills_map()
         if not current_map:
             return skills
+        
+        # Get current attributes for prerequisite checking
+        attributes = (self.get_character_data() or {}).get("Tulajdonságok", {})
+        
         try:
             with sqlite3.connect(self.db_helper.get_db_path("skill")) as sconn:
                 for sid, req in current_map.items():
@@ -126,12 +260,29 @@ class SkillsStepWidget(QtWidgets.QWidget):
                         continue
                     name, parameter = row
                     display = f"{name} ({parameter})" if parameter else name
+                    
+                    # Check prerequisites before adding to export list
+                    req_level = int(req.get("level", 0))
+                    req_percent = int(req.get("%", 0))
+                    ok, _ = self.prereq_checker.check_prerequisites(
+                        sid, req_level, req_percent, current_map, attributes
+                    )
+                    
+                    # Only add skills with fulfilled prerequisites
+                    if not ok:
+                        logger.info(f"Skipping skill {display} due to unmet prerequisites")
+                        continue
+                    
+                    # Get source from table or default to "Előismeret"
+                    source = skill_sources.get(sid, "Előismeret")
+                    
                     skills.append(
                         {
                             "id": sid,
                             "Képzettség": display,
-                            "Szint": int(req.get("level", 0)),
-                            "%": int(req.get("%", 0)),
+                            "Szint": req_level,
+                            "%": req_percent,
+                            "Forrás": source,
                         }
                     )
         except Exception as e:
@@ -147,6 +298,55 @@ class SkillsStepWidget(QtWidgets.QWidget):
         info = spec_data.get(spec_name)
         return info.get("specialisation_id") if info else None
 
+    def _get_racial_skill_entries(self, data: dict) -> list[tuple]:
+        """
+        Get racial skill entries from character's race.
+        
+        Returns:
+            List of tuples in the same format as class skills:
+            (skill_id, class_level, req_level, req_percent, from_racial, is_placeholder, display_name)
+            where from_racial is a string "Faji" to distinguish from class/spec skills
+        """
+        racial_entries = []
+        race_name = data.get("Faj", "Ember")
+        
+        try:
+            race_obj = _race_manager.get_race_by_name(race_name)
+            if not race_obj or not race_obj.racial_skills:
+                return racial_entries
+
+            # Fetch skill names and placeholder status from database
+            with sqlite3.connect(self.db_helper.get_db_path("skill")) as skill_conn:
+                for racial_skill in race_obj.racial_skills:
+                    try:
+                        row = skill_conn.execute(
+                            "SELECT name, parameter, placeholder FROM skills WHERE id=?",
+                            (racial_skill.skill_id,)
+                        ).fetchone()
+                        
+                        if row:
+                            name, parameter, is_placeholder = row
+                            display_name = f"{name} ({parameter})" if parameter else name
+                            
+                            # Format: (skill_id, class_level, req_level, req_percent, from_source, is_placeholder, display_name)
+                            # Use "Faji" as the from_source marker instead of boolean
+                            racial_entries.append((
+                                racial_skill.skill_id,
+                                None,  # class_level not applicable for racial skills
+                                racial_skill.level,  # required level from race definition
+                                0,  # no % requirement for racial skills (level-based only)
+                                "Faji",  # source marker
+                                is_placeholder,  # 0 or 1 from database
+                                display_name
+                            ))
+                    except Exception as e:
+                        logger.error(f"Error loading racial skill {racial_skill.skill_id}: {e}", exc_info=True)
+                        
+        except Exception as e:
+            logger.error(f"Error getting racial skills for race {race_name}: {e}", exc_info=True)
+        
+        return racial_entries
+
     def refresh(self):
         """Rebuild the table based on current selected class/spec and character data."""
         data = self.get_character_data() or {}
@@ -159,10 +359,13 @@ class SkillsStepWidget(QtWidgets.QWidget):
 
             if class_name and race:
                 try:
-                    self.attributes_widget.initialize(class_name, race, age)
+                    # Preserve current values/mode; only (re)initialize if needed or class changed
+                    self.attributes_widget.refresh_from_basic_selection(class_name, race, age)
                 except Exception as e:
-                    logger.error(f"Error initializing attributes: {e}", exc_info=True)
-            self.attributes_widget.refresh()
+                    logger.error(f"Error refreshing attributes: {e}", exc_info=True)
+            else:
+                # Fallback simple repaint
+                self.attributes_widget.refresh()
 
         # Update KP header
         kp_alap = data.get("Képzettségpontok", {}).get("Alap", 0)
@@ -196,50 +399,11 @@ class SkillsStepWidget(QtWidgets.QWidget):
             widget.showPopup()
 
     def _refresh_placeholder_combos(self):
-        """Refresh all placeholder combo boxes to enforce uniqueness and prerequisites."""
-        for instance_key, combo in self._placeholder_combos.items():
-            ph_id = instance_key[0]
-            current_selected = combo.currentData()
-            combo.blockSignals(True)
-            cur_row = combo.property("row")
-            req_level = int(combo.property("skill_level") or 0)
-            req_percent = int(combo.property("skill_percent") or 0)
-            combo.clear()
-            combo.addItem("-- válassz --", None)
-
-            # Get valid resolutions using the placeholder manager
-            attributes = (self.get_character_data() or {}).get("Tulajdonságok", {})
-            current_map = self._build_current_skills_map(req_override_instance=instance_key)
-            valid_resolutions = self.placeholder_manager.get_valid_resolutions(
-                ph_id,
-                instance_key,
-                req_level,
-                req_percent,
-                current_map,
-                attributes,
-            )
-
-            for res in valid_resolutions:
-                disp = res["skill_name"]
-                if res["parameter"]:
-                    disp += f" ({res['parameter']})"
-                combo.addItem(disp, res["target_skill_id"])
-
-            if current_selected is not None:
-                idx = combo.findData(current_selected)
-                if idx != -1:
-                    combo.setCurrentIndex(idx)
-                else:
-                    combo.setCurrentIndex(0)
-                    self.placeholder_manager.set_choice(instance_key, None)
-                    if isinstance(cur_row, int) and 0 <= cur_row < self.skills_table.rowCount():
-                        item = self.skills_table.item(cur_row, 3)
-                        if item:
-                            item.setText("?")
-            combo.blockSignals(False)
+        """Delegate to table renderer to refresh placeholder combos."""
+        self.table_renderer.refresh_placeholder_combos()
 
     def _load_skills(self):
-        """Load and display class/spec skills with placeholder resolution."""
+        """Load and display class/spec skills with placeholder resolution and racial skills."""
         self.skills_table.setRowCount(0)
         self._placeholder_row_counters = {}
         self._placeholder_combos = {}
@@ -251,6 +415,9 @@ class SkillsStepWidget(QtWidgets.QWidget):
         data = self.get_character_data() or {}
         spec_id = self._get_spec_id(data)
 
+        # Get racial skills
+        racial_entries = self._get_racial_skill_entries(data)
+
         try:
             skills = self.db_helper.fetch_class_skills(class_id, spec_id)
         except Exception as e:
@@ -261,184 +428,21 @@ class SkillsStepWidget(QtWidgets.QWidget):
 
         # Process skill entries using the helper
         entries, fixed_skill_ids = self.db_helper.process_skill_entries(skills)
+        
+        # Add non-placeholder racial skill IDs to fixed skills to prevent them from being selected as placeholders
+        # Placeholder racial skills should remain available as resolution options
+        racial_skill_ids = {entry[0] for entry in racial_entries if entry[5] != 1}  # entry[5] is is_placeholder
+        fixed_skill_ids.update(racial_skill_ids)
+        
         self.placeholder_manager.set_fixed_skills(fixed_skill_ids)
 
-        with sqlite3.connect(self.db_helper.get_db_path("skill")) as skill_conn:
-            current_map = self._build_current_skills_map_from_entries(entries)
-            self._render_skill_rows(skill_conn, entries, current_map)
-
-    def _render_skill_rows(self, skill_conn, entries, current_map):
-        """Render skill entries into table rows with placeholders and prerequisites."""
-        attributes = (self.get_character_data() or {}).get("Tulajdonságok", {})
-
-        for (
-            skill_id,
-            class_level,
-            req_level,
-            req_percent,
-            from_spec,
-            is_placeholder,
-            display_name,
-        ) in entries:
-            try:
-                row = self.skills_table.rowCount()
-                self.skills_table.insertRow(row)
-                self.skills_table.setItem(
-                    row, 1, QtWidgets.QTableWidgetItem(str(req_level) if req_level else "-")
-                )
-                self.skills_table.setItem(
-                    row, 2, QtWidgets.QTableWidgetItem(str(req_percent) if req_percent else "-")
-                )
-                kp_cost = (
-                    self.db_helper.calc_kp_cost(skill_id, req_level, req_percent)
-                    if is_placeholder != 1
-                    else "?"
-                )
-                self.skills_table.setItem(row, 3, QtWidgets.QTableWidgetItem(str(kp_cost)))
-                source = "Specializáció" if from_spec else "Alap kaszt"
-                self.skills_table.setItem(row, 4, QtWidgets.QTableWidgetItem(source))
-
-                if is_placeholder == 1:
-                    self._render_placeholder_row(
-                        skill_conn,
-                        row,
-                        skill_id,
-                        class_level,
-                        req_level,
-                        req_percent,
-                        from_spec,
-                        display_name,
-                        attributes,
-                    )
-                else:
-                    self._render_fixed_skill_row(
-                        row, skill_id, req_level, req_percent, display_name, current_map, attributes
-                    )
-            except Exception as e:
-                logger.error(f"Error rendering skill row {skill_id}: {e}", exc_info=True)
-
-    def _render_placeholder_row(
-        self,
-        skill_conn,
-        row,
-        skill_id,
-        class_level,
-        req_level,
-        req_percent,
-        from_spec,
-        display_name,
-        attributes,
-    ):
-        """Render a placeholder skill row with combo box selector."""
-        base_key = (
-            skill_id,
-            int(class_level or 0),
-            int(req_level or 0),
-            int(req_percent or 0),
-            bool(from_spec),
-        )
-        occur = self._placeholder_row_counters.get(base_key, 0)
-        self._placeholder_row_counters[base_key] = occur + 1
-        instance_key = (*base_key, occur)
-
-        combo = QtWidgets.QComboBox()
-        combo.setEditable(True)
-        line_edit = combo.lineEdit()
-        if line_edit:
-            line_edit.setPlaceholderText(f"{display_name} — válassz feloldást")
-        combo.addItem("-- válassz --", None)
-
-        # Get valid resolutions using the placeholder manager
-        current_map = self._build_current_skills_map(req_override_instance=instance_key)
-        valid_resolutions = self.placeholder_manager.get_valid_resolutions(
-            skill_id,
-            instance_key,
-            int(req_level or 0),
-            int(req_percent or 0),
-            current_map,
-            attributes,
-        )
-
-        for res in valid_resolutions:
-            disp = res["skill_name"]
-            if res["parameter"]:
-                disp += f" ({res['parameter']})"
-            combo.addItem(disp, res["target_skill_id"])
-
-        combo.setProperty("instance_key", instance_key)
-        combo.setProperty("row", row)
-        combo.setProperty("skill_level", int(req_level or 0))
-        combo.setProperty("skill_percent", int(req_percent or 0))
-        combo.currentIndexChanged.connect(self._on_placeholder_changed)
-
-        # Restore prior choice using the manager
-        chosen = self.placeholder_manager.get_choice(instance_key)
-        if chosen:
-            idx = combo.findData(chosen)
-            if idx != -1:
-                combo.setCurrentIndex(idx)
-                item = self.skills_table.item(row, 3)
-                if item:
-                    item.setText(self.db_helper.calc_kp_cost(chosen, req_level, req_percent))
-            else:
-                combo.setCurrentIndex(0)
-
-        self._placeholder_combos[instance_key] = combo
-        self.skills_table.setCellWidget(row, 0, combo)
-
-    def _render_fixed_skill_row(
-        self, row, skill_id, req_level, req_percent, display_name, current_map, attributes
-    ):
-        """Render a fixed (non-placeholder) skill row with prerequisite check."""
-        name_item = QtWidgets.QTableWidgetItem(display_name)
-        self.skills_table.setItem(row, 0, name_item)
-
-        ok, reasons = self.prereq_checker.check_prerequisites(
-            skill_id, int(req_level or 0), int(req_percent or 0), current_map, attributes
-        )
-        prereq_item = QtWidgets.QTableWidgetItem("OK" if ok else "Hiányzik")
-        if ok:
-            prereq_item.setForeground(QtGui.QBrush(QtGui.QColor("#2e7d32")))
-        else:
-            prereq_item.setForeground(QtGui.QBrush(QtGui.QColor("#c62828")))
-            prereq_item.setToolTip("\n".join(reasons))
-        self.skills_table.setItem(row, 5, prereq_item)
-
-    def _on_placeholder_changed(self):
-        """Handle placeholder combo selection change."""
-        combo = self.sender()
-        if not isinstance(combo, QtWidgets.QComboBox):
-            return
-
-        instance_key = combo.property("instance_key")
-        row = combo.property("row")
-        chosen = combo.currentData()
-
-        if not instance_key:
-            return
-
-        # Update placeholder choice using the manager
-        self.placeholder_manager.set_choice(instance_key, chosen)
-
-        # Update KP cost cell
-        if isinstance(row, int) and 0 <= row < self.skills_table.rowCount():
-            if chosen:
-                req_level = int(combo.property("skill_level") or 0)
-                req_percent = int(combo.property("skill_percent") or 0)
-                try:
-                    cost = self.db_helper.calc_kp_cost(chosen, req_level, req_percent)
-                    item = self.skills_table.item(row, 3)
-                    if item:
-                        item.setText(cost)
-                except Exception as e:
-                    logger.error(f"Error updating KP cost: {e}", exc_info=True)
-            else:
-                item = self.skills_table.item(row, 3)
-                if item:
-                    item.setText("?")
-
-        # Refresh combos to enforce uniqueness
-        self._refresh_placeholder_combos()
+        # Combine racial and class/spec entries
+        all_entries = racial_entries + entries
+        current_map = self._build_current_skills_map_from_entries(all_entries)
+        # Use renderer
+        self.table_renderer.clear_state()
+        self.table_renderer.render_rows(all_entries, current_map)
+        
 
     def _build_current_skills_map_from_entries(self, entries):
         """Construct a map of concrete skills -> assigned level/percent from fixed skills
@@ -456,12 +460,16 @@ class SkillsStepWidget(QtWidgets.QWidget):
             _display_name,
         ) in entries:
             if is_placeholder == 1:
+                # Convert from_spec to boolean for placeholder key generation
+                # "Faji" is treated as False (not from spec) for key purposes
+                from_spec_bool = from_spec not in (False, 0, "Faji", None)
+                
                 base_key = (
                     skill_id,
                     int(class_level or 0),
                     int(req_level or 0),
                     int(req_percent or 0),
-                    bool(from_spec),
+                    from_spec_bool,
                 )
                 occur = counters.get(base_key, 0)
                 counters[base_key] = occur + 1

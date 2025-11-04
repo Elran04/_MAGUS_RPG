@@ -43,6 +43,7 @@ class CharacterWizardQt(QtWidgets.QDialog):
         # Step widgets (initialized lazily)
         self.basic_spec_step: Any | None = None
         self.skills_step: Any | None = None
+        self.skill_learning_step: Any | None = None  # NEW: Skill learning step
         self.equipment_step: Any | None = None
         self.summary_step: Any | None = None
 
@@ -69,19 +70,27 @@ class CharacterWizardQt(QtWidgets.QDialog):
             if widget:
                 widget.setParent(None)
         if self.step == 0:
-            # Merged step: basic data + specialization (modular)
+            # Step 0: Basic data + specialization
             self.show_basic_spec_modular()
             self.back_btn.setEnabled(False)
             self.next_btn.setText("Következő")
         elif self.step == 1:
+            # Step 1: Class skills + placeholder resolution
             self.show_skills_modular()
             self.back_btn.setEnabled(True)
             self.next_btn.setText("Következő")
         elif self.step == 2:
-            self.show_equipment()
+            # Step 2: NEW - Skill learning with KP spending
+            self.show_skill_learning()
             self.back_btn.setEnabled(True)
             self.next_btn.setText("Következő")
         elif self.step == 3:
+            # Step 3: Equipment
+            self.show_equipment()
+            self.back_btn.setEnabled(True)
+            self.next_btn.setText("Következő")
+        elif self.step == 4:
+            # Step 4: Summary
             self.show_summary()
             self.back_btn.setEnabled(True)
             self.next_btn.setText("Mentés")
@@ -133,6 +142,18 @@ class CharacterWizardQt(QtWidgets.QDialog):
     # Skills logic moved into SkillsStepWidget
 
     # Legacy inline skills/placeholder handlers removed; handled inside SkillsStepWidget
+
+    def show_skill_learning(self):
+        """Show skill learning step via modular widget (NEW)."""
+        from ui.character_creation.steps.skill_learning_step import SkillLearningStepWidget
+
+        def _get_data():
+            return self.data
+
+        if not hasattr(self, "skill_learning_step") or self.skill_learning_step is None:
+            self.skill_learning_step = SkillLearningStepWidget(BASE_DIR, _get_data)
+        self.skill_learning_step.refresh()
+        self.step_layout.addWidget(self.skill_learning_step)
 
     def show_equipment(self):
         """Show equipment step via modular widget (placeholder for now)."""
@@ -204,6 +225,11 @@ class CharacterWizardQt(QtWidgets.QDialog):
                 except (AttributeError, KeyError, ValueError, TypeError):
                     pass
         elif self.step == 1:
+            # Validate skills step before progressing
+            if hasattr(self, "skills_step") and self.skills_step is not None:
+                if not self.skills_step.validate():
+                    return  # Validation failed, stay on current step
+            
             # Persist skills placeholder choices from widget back to wizard state
             if hasattr(self, "skills_step") and self.skills_step is not None:
                 try:
@@ -232,7 +258,21 @@ class CharacterWizardQt(QtWidgets.QDialog):
                 self.data["Képzettségpontok"] = temp_char.get("Képzettségpontok", {})
                 self.data["Harci értékek"] = temp_char.get("Harci értékek", {})
         elif self.step == 2:
-            # Optionally validate and collect equipment data (placeholder)
+            # NEW: Skill learning step - collect learned skills and merge with mandatory
+            if hasattr(self, "skill_learning_step") and self.skill_learning_step is not None:
+                try:
+                    learned_skills = self.skill_learning_step.get_learned_skills()
+                    # Merge learned skills with existing mandatory skills
+                    current_skills = self.data.get("Képzettségek", [])
+                    for learned in learned_skills:
+                        # Check if not already in list (avoid duplicates)
+                        if not any(s.get("id") == learned.get("id") for s in current_skills):
+                            current_skills.append(learned)
+                    self.data["Képzettségek"] = current_skills
+                except (AttributeError, KeyError, TypeError) as e:
+                    logger.error(f"Error collecting learned skills: {e}", exc_info=True)
+        elif self.step == 3:
+            # Equipment step
             if (
                 hasattr(self, "equipment_step")
                 and self.equipment_step is not None
@@ -253,7 +293,7 @@ class CharacterWizardQt(QtWidgets.QDialog):
                             self.data[k] = v
 
         self.step += 1
-        if self.step > 3:
+        if self.step > 4:
             self.finish()
         else:
             self.show_step()

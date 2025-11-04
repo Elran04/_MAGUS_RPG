@@ -9,6 +9,7 @@ from PySide6 import QtCore, QtWidgets
 # Ensure engine path is available
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 from engine.attribute_manager import AttributeManager
+from utils.ui.themes import CharacterCreationTheme, success_button_style, highlight_button_style
 
 
 class AttributesDisplayWidget(QtWidgets.QWidget):
@@ -93,15 +94,9 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
         self.choose_pointbuy_btn = QtWidgets.QPushButton("Pontelosztás")
         # Square-ish styling and color
         self.choose_roll_btn.setMinimumSize(100, 100)
-        self.choose_roll_btn.setStyleSheet(
-            "QPushButton { font-size: 14px; font-weight: bold; padding: 8px; border-radius: 6px; background-color: #4caf50; color: white; }"
-            "QPushButton:hover { background-color: #388e3c; }"
-        )
+        self.choose_roll_btn.setStyleSheet(success_button_style())
         self.choose_pointbuy_btn.setMinimumSize(100, 100)
-        self.choose_pointbuy_btn.setStyleSheet(
-            "QPushButton { font-size: 14px; font-weight: bold; padding: 8px; border-radius: 6px; background-color: #ffe082; color: #333; }"
-            "QPushButton:hover { background-color: #ffd54f; }"
-        )
+        self.choose_pointbuy_btn.setStyleSheet(highlight_button_style())
         btn_row.addWidget(self.choose_roll_btn)
         btn_row.addSpacing(20)
         btn_row.addWidget(self.choose_pointbuy_btn)
@@ -530,7 +525,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
         self.points_label.setText(text)
 
         # Style based on remaining points
-        color = "#f44336" if remaining < 0 else ("#4caf50" if remaining == 0 else "")
+        color = CharacterCreationTheme.ERROR_RED_LIGHT if remaining < 0 else (CharacterCreationTheme.SUCCESS_GREEN if remaining == 0 else "")
         self.points_label.setStyleSheet(
             f"font-weight: bold; font-size: 12px; padding: 4px;{f' color: {color};' if color else ''}"
         )
@@ -577,9 +572,9 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
             # Optional subtle style: highlight if modifiers changed it
             class_val = self.attribute_manager.class_values.get(attr, 0)
             if final_val > class_val:
-                label.setStyleSheet("font-size: 12px; padding-left: 6px; color: #2e7d32;")
+                label.setStyleSheet(f"font-size: 12px; padding-left: 6px; color: {CharacterCreationTheme.SUCCESS_GREEN_DARK};")
             elif final_val < class_val:
-                label.setStyleSheet("font-size: 12px; padding-left: 6px; color: #c62828;")
+                label.setStyleSheet(f"font-size: 12px; padding-left: 6px; color: {CharacterCreationTheme.ERROR_RED};")
             else:
                 label.setStyleSheet("font-size: 12px; padding-left: 6px;")
 

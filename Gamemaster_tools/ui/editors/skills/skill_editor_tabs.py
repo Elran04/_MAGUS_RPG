@@ -324,10 +324,11 @@ class SkillEditorTabs:
             subcategories = CATEGORIES[main_category]
             self.sub_cat_combo.addItems(subcategories)
 
-            # Disable fields for placeholder category
+            # Disable fields for placeholder category (but keep subcategory enabled for organization)
             is_placeholder = main_category == "Helyfoglaló képzettségek"
-            if self.sub_cat_combo is not None:
-                self.sub_cat_combo.setEnabled(not is_placeholder)
+            # Keep subcategory enabled for placeholder organization
+            # if self.sub_cat_combo is not None:
+            #     self.sub_cat_combo.setEnabled(not is_placeholder)
             if self.acq_method_combo is not None:
                 self.acq_method_combo.setEnabled(not is_placeholder)
             if self.acq_diff_combo is not None:

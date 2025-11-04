@@ -21,60 +21,68 @@ This roadmap outlines the current status and future development steps for the **
 
 2. 💾 Data Management
 
-✅ Each dataset (skills, classes, equipment, etc.) has its own DataManager.
+✅ Each dataset (skills, classes, equipment, races) has its own DataManager.
 
 ✅ Consistent CRUD functionality across JSON and SQLite data sources.
 
-🟨 Evaluate a unified storage system for runtime saves (e.g., SQLite instead of JSON). (Hybrid currently in use)
+✅ Hybrid storage: SQLite for classes/skills/combat_stats, JSON for races/equipment/characters.
 
-🟩 Introduce optional lightweight persistence for temporary state (e.g., TinyDB or orjson-based caches).
+✅ RaceManager: Loads all races from JSON → Pydantic models (race_model.py with Race, RaceAttributes, RacialSkill, AgeCategory).
 
-🟨 Design an intermediate layer for “runtime data” (temporary character states, adventure states, etc.).
+✅ ClassDBManager: Query wrapper for class_data.db (classes, combat_stats, class_skills, specialisations, starting_equipment tables).
+
+✅ SkillManager: Loads skills from skills_data.db with prerequisites, KP costs, level descriptions.
+
+🟨 Evaluate a unified storage system for runtime saves (e.g., full SQLite migration). (Current hybrid works, no migration planned)
+
+🟩 Introduce optional lightweight persistence for temporary state (e.g., TinyDB or orjson-based caches). (Not started)
+
+� Design an intermediate layer for "runtime data" (temporary character states, adventure states, etc.). (Not started)
 
 
 3. 🧙 GM Toolkit (PySide6)
 
 Current Features:
 
-✅ Skill Editor
+✅ Skill Editor (fully implemented with CRUD, prerequisites, KP costs, descriptions)
 
-✅ Class Editor
+✅ Class Editor (full class/spec management, combat stats, level requirements, skills)
 
-✅ Equipment Editor
+✅ Equipment Editor (weapons, armor, general equipment with materials/quality)
 
-✅ Character Creator
+✅ Character Creator (wizard with class/spec selection, skills, placeholder resolution)
+
+✅ Race Editor (11 races in JSON, full editor with attributes, skills, age categories, special abilities)
 
 Planned / Ongoing Enhancements:
 
-🟨 Enhance UI/UX with better layout scaling, icons, and polished dark mode. (Dark mode and some scaling done)
+🟨 Enhance UI/UX with better layout scaling, icons, and polished dark mode. (Dark mode ✅, scaling partial)
 
-🟨 Add validation and tooltips for input fields. (Validation present, tooltips partial)
+🟨 Add validation and tooltips for input fields. (Validation ✅, tooltips partial)
 
 🟥 Item Templates (not started)
 
-🟨 Race Editor → Now a priority
+✅ Race Editor and JSON Storage (11 races: elf, ember, felelf, goblin, khal, torpe, udvari_ork, wier, amund, dzsenn + special_abilities.json)
 
-🟨 Race Descriptions and Special Ability Handling
+✅ Race Descriptions and Special Ability Handling (RaceManager loads JSON → Pydantic models, integrated in character creation)
 
-Save race data to JSON (currently .py modules).
-
-Add racial bonuses and automatic racial skills.
+✅ Racial bonuses and automatic racial skills (RaceAttributes with modifiers, limits, hard_limits; RacialSkill model with skill_id + level)
 
 🟨 Expand Skill Point System in Character Generation:
 
-Integrate Ügyesség (Dexterity) and Intelligencia (Intelligence) bonuses.
+✅ Integrate Ügyesség (Dexterity) and Intelligencia (Intelligence) bonuses (AttributesDisplayWidget shows derived FP/ÉP/KP).
 
-Handle skill categories (Gyakorlás, Tanulás) for bonus allocation per level.
+🟥 Handle skill categories (Gyakorlás, Tanulás) for bonus allocation per level (not implemented).
 
 🟥 Continue implementing inventory generation logic:
 
-Random gold allocation and starting equipment purchasing.
+🟥 Random gold allocation and starting equipment purchasing (starting_equipment DB table exists, UI placeholder only).
 
-Class-based starting gear setup.
+🟥 Class-based starting gear setup (schema ready, not wired to character creation).
 
-🟥 Add Place of Birth and Character Origin systems tied to class specialization and race.
+🟥 Add Place of Birth and Character Origin systems tied to class specialization and race (Origin model in race_model.py, not in UI).
 
-🟨 Implement Racial and Class Descriptions panels for richer character info.
+🟨 Implement Racial and Class Descriptions panels for richer character info (class descriptions partial, race descriptions loaded via race.get_description()).
 
 
 4. ⚔️ Game Demo (Pygame)
@@ -130,25 +138,31 @@ Current:
 
 ✅ Character Creator wizard with class/spec selection from SQLite.
 
+✅ Race system integrated: RaceManager loads 11 races from JSON → Pydantic models.
+
+✅ Racial bonuses, attribute modifiers, age categories, racial skills, forbidden skills.
+
+✅ Skills step with placeholder resolution, KP tracking, prerequisite checking.
+
 Planned:
 
-🟥 Integrate SQLite-based class/skill data dynamically. (Partial)
+� Integrate SQLite-based class/skill data dynamically. (ClassDBManager + SkillDatabaseHelper in use, not full ORM)
 
-🟥 Implement XP system, leveling, and stat growth.
+🟥 Implement XP system, leveling, and stat growth (CombatStats dataclass exists, XP calculations present in character_model.py, not wired to UI).
 
-🟥 Add race system with racial skills and stat bonuses.
+✅ Add race system with racial skills and stat bonuses (RaceAttributes, RacialSkill, AgeCategory models complete).
 
-🟥 Implement origin and birthplace logic, tied to specialization choices.
+🟥 Implement origin and birthplace logic, tied to specialization choices (Origin model exists in race_model.py, not in character creation UI).
 
-🟥 Add save/load for characters and multiple active party slots.
+🟥 Add save/load for characters and multiple active party slots (save_character exists, no party/load UI).
 
-🟥 Improve inventory:
+� Improve inventory:
 
-T rack gold, gear weight, and capacity.
+🟥 Track gold, gear weight, and capacity (starting_equipment table schema ready, not wired).
 
-Equipable vs non-equipable item handling.
+🟥 Equipable vs non-equipable item handling (item_model.py exists, not integrated).
 
-🟨 Begin unifying JSON → runtime model → persistent database logic.
+🟨 Begin unifying JSON → runtime model → persistent database logic (race_model.py + RaceManager ✅, class/skill/item models not integrated).
 
 
 6. ⚔️ Combat System
@@ -228,13 +242,15 @@ Inventory use, fatigue, and travel modifiers.
 11. 🧭 Major Milestones
 1️⃣ Character System Completion
 
-🟨 Race editor and JSON data
+✅ Race editor and JSON data (11 races + special abilities)
 
-🟨 Skill/class integration from SQLite
+✅ Race integration in character creation (RaceManager + Pydantic models)
 
-🟨 Inventory, gold, and origin logic
+🟨 Skill/class integration from SQLite (ClassDBManager + SkillDatabaseHelper in use, not full model integration)
 
-🟨 Save/load support
+� Inventory, gold, and origin logic (DB schema ready, UI placeholder only)
+
+� Save/load support (save_character exists, no load/party UI)
 
 2️⃣ Expanded Combat Framework
 
@@ -242,15 +258,17 @@ Inventory use, fatigue, and travel modifiers.
 
 🟥 Ranged and thrown weapon support
 
-🟥 Damage localization and layered armor
+🟥 Damage localization and layered armor (armor schema with layer field exists)
 
 3️⃣ GM Toolkit Extensions
 
-🟥 Race and item templates
+✅ Race editor complete
 
-🟥 Improved validation and layout polish
+🟥 Item templates (not started)
 
-🟥 Integrated skill point logic
+� Improved validation and layout polish (validation ✅, tooltips/polish partial)
+
+✅ Integrated skill point logic (AttributesDisplayWidget calculates derived KP)
 
 4️⃣ Playable Demo Scenario
 
@@ -260,12 +278,18 @@ Inventory use, fatigue, and travel modifiers.
 
 Current Status
 
-✅ GM Toolkit: Functional, modular, and actively expanding
+✅ GM Toolkit: Functional, modular, and actively expanding (Skill/Class/Equipment/Race editors complete)
+
+✅ Character Creator: Wizard with class/spec/race/skills selection, placeholder resolution, attributes display
 
 ✅ Game Demo: Playable with melee combat
 
-✅ Data Layer: JSON + SQLite hybrid in good shape
+✅ Data Layer: JSON + SQLite hybrid in good shape (RaceManager, ClassDBManager, SkillManager all functional)
 
-🟨 Next focus: Complete character generation system
+✅ Race System: Complete with Pydantic models, RaceManager, 11 races in JSON
+
+🟨 Next focus: Implement skill selection during character creation.
+
+🟨 Next focus: Equipment step implementation (starting_equipment DB schema ready, UI is placeholder)
 
 🟨 Next focus: Extend combat with stamina, conditions, armor, and ranged logic
