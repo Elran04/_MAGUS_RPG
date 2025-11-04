@@ -6,15 +6,15 @@ from typing import Any
 from PySide6 import QtCore, QtWidgets
 
 # Ensure Gamemaster_tools root on path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 from engine.race_manager import RaceManager
-from engine.restrictions import GENDER_RESTRICTIONS, is_class_allowed
-from utils.class_db_manager import ClassDBManager
+from engine.restrictions_manager import GENDER_RESTRICTIONS, is_class_allowed
+from utils.data.class_db_manager import ClassDBManager
+from config.paths import DATA_DIR, CLASSES_DESCRIPTIONS_DIR
 
-# Initialize race manager
-_data_dir = Path(__file__).resolve().parent.parent.parent.parent / "data"
-_race_manager = RaceManager(_data_dir)
+# Initialize race manager using centralized data directory
+_race_manager = RaceManager(DATA_DIR)
 _race_manager.load_all()
 
 
@@ -301,8 +301,8 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         if not desc_file:
             self.spec_desc.setPlainText("Nincs leírás fájl megadva ehhez a specializációhoz.")
             return
-        desc_path = os.path.join(self.BASE_DIR, "data", "Class", "descriptions", desc_file)
-        if os.path.exists(desc_path):
+        desc_path = (Path(CLASSES_DESCRIPTIONS_DIR) / desc_file)
+        if desc_path.exists():
             try:
                 with open(desc_path, encoding="utf-8") as f:
                     self.spec_desc.setMarkdown(f.read())
@@ -321,8 +321,8 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
             desc_file = class_details.get("class_description_file", "")
             if not desc_file:
                 desc_file = f"{self.selected_class_id}.md"
-            desc_path = os.path.join(self.BASE_DIR, "data", "Class", "descriptions", desc_file)
-            if os.path.exists(desc_path):
+            desc_path = (Path(CLASSES_DESCRIPTIONS_DIR) / desc_file)
+            if desc_path.exists():
                 try:
                     with open(desc_path, encoding="utf-8") as f:
                         self.spec_desc.setMarkdown(f.read())

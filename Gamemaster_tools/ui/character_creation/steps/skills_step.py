@@ -42,7 +42,7 @@ class SkillsStepWidget(QtWidgets.QWidget):
 
         # Left panel: Attributes display
         from ui.character_creation.widgets.attributes_display import AttributesDisplayWidget
-        from utils.class_db_manager import ClassDBManager
+        from utils.data.class_db_manager import ClassDBManager
 
         self.attributes_widget = AttributesDisplayWidget(
             self.get_character_data,

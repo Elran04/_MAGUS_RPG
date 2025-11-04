@@ -6,7 +6,7 @@ Handles dice rolling, point-buy allocation, and modifier tracking.
 import random
 from pathlib import Path
 
-from utils.class_db_manager import ClassDBManager
+from utils.data.class_db_manager import ClassDBManager
 
 from engine.race_manager import RaceManager
 

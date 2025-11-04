@@ -8,13 +8,12 @@ and the actual skills they can resolve to (e.g., specific weapon skills).
 import os
 import sqlite3
 
-from utils.logger import get_logger
+from utils.log.logger import get_logger
+from config.paths import SKILLS_DB
 
 logger = get_logger(__name__)
 
-DB_SKILLS_PATH = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "data", "skills", "skills_data.db")
-)
+DB_SKILLS_PATH = str(SKILLS_DB)
 
 
 class PlaceholderManager:

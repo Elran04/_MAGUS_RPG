@@ -2,12 +2,12 @@
 Race Manager - Faj adatok betöltése, kezelése, mentése.
 """
 
-import json
 from pathlib import Path
 
-from utils.logger import get_logger
+from utils.log.logger import get_logger
+from utils.data.json_io import load_json, save_json
 
-from engine.race import Race, SpecialAbility
+from core.race_model import Race, SpecialAbility
 
 logger = get_logger(__name__)
 
@@ -39,16 +39,15 @@ class RaceManager:
         # Speciális képességek betöltése
         try:
             if self.special_abilities_file.exists():
-                with open(self.special_abilities_file, encoding="utf-8") as f:
-                    abilities_data = json.load(f)
-                    for ability_id, ability_dict in abilities_data.items():
-                        self._special_abilities[ability_id] = SpecialAbility(**ability_dict)
+                abilities_data = load_json(str(self.special_abilities_file), default={})
+                for ability_id, ability_dict in abilities_data.items():
+                    self._special_abilities[ability_id] = SpecialAbility(**ability_dict)
                 logger.info(f"✓ {len(self._special_abilities)} speciális képesség betöltve")
             else:
                 logger.warning(
                     f"Speciális képességek fájl nem található: {self.special_abilities_file}"
                 )
-        except Exception as e:
+        except (IOError, OSError) as e:
             logger.error(f"Hiba speciális képességek betöltése során: {e}", exc_info=True)
 
         # Fajok betöltése
@@ -64,17 +63,16 @@ class RaceManager:
                     continue
 
                 try:
-                    with open(json_file, encoding="utf-8") as f:
-                        race_data = json.load(f)
-                        race = Race(**race_data)
-                        self._races[race.id] = race
-                        loaded_count += 1
-                except Exception as e:
+                    race_data = load_json(str(json_file), default={})
+                    race = Race(**race_data)
+                    self._races[race.id] = race
+                    loaded_count += 1
+                except (IOError, OSError) as e:
                     logger.error(f"Hiba {json_file.name} betöltése során: {e}")
 
             logger.info(f"✓ {loaded_count} faj betöltve")
 
-        except Exception as e:
+        except (IOError, OSError) as e:
             logger.error(f"Hiba fajok betöltése során: {e}", exc_info=True)
 
     def get_race(self, race_id: str) -> Race | None:
@@ -182,16 +180,14 @@ class RaceManager:
 
             # Fájl mentése
             race_file = self.races_dir / f"{race.id}.json"
-            with open(race_file, "w", encoding="utf-8") as f:
-                # Pydantic v2 model_dump
-                json.dump(race.model_dump(mode="json"), f, ensure_ascii=False, indent=2)
+            save_json(str(race_file), race.model_dump(mode="json"), create_dirs=True)
 
             # Cache frissítése
             self._races[race.id] = race
 
             logger.info(f"✓ Faj mentve: {race.name} ({race_file.name})")
 
-        except Exception as e:
+        except (IOError, OSError, TypeError) as e:
             logger.error(f"Hiba faj mentése során ({race.name}): {e}", exc_info=True)
             raise
 
@@ -207,7 +203,7 @@ class RaceManager:
         Returns:
             Új Race objektum
         """
-        from engine.race import AgeData, ClassRestrictions, RaceAttributes, RaceMetadata
+        from core.race_model import AgeData, ClassRestrictions, RaceAttributes, RaceMetadata
 
         # Alapértelmezett értékek
         defaults = {
@@ -254,7 +250,7 @@ class RaceManager:
             logger.info(f"✓ Faj törölve: {race.name}")
             return True
 
-        except Exception as e:
+        except (IOError, OSError) as e:
             logger.error(f"Hiba faj törlése során ({race_id}): {e}", exc_info=True)
             return False
 
@@ -267,25 +263,20 @@ class RaceManager:
         """
         try:
             # Betöltjük az összes képességet
-            if self.special_abilities_file.exists():
-                with open(self.special_abilities_file, encoding="utf-8") as f:
-                    all_abilities = json.load(f)
-            else:
-                all_abilities = {}
+            all_abilities = load_json(str(self.special_abilities_file), default={})
 
             # Frissítjük az aktuális képességet
             all_abilities[ability.id] = ability.model_dump(mode="json")
 
             # Visszamentjük
-            with open(self.special_abilities_file, "w", encoding="utf-8") as f:
-                json.dump(all_abilities, f, ensure_ascii=False, indent=2)
+            save_json(str(self.special_abilities_file), all_abilities, create_dirs=True)
 
             # Cache frissítése
             self._special_abilities[ability.id] = ability
 
             logger.info(f"✓ Speciális képesség mentve: {ability.name}")
 
-        except Exception as e:
+        except (IOError, OSError, TypeError) as e:
             logger.error(f"Hiba képesség mentése során ({ability.name}): {e}", exc_info=True)
             raise
 
@@ -293,11 +284,7 @@ class RaceManager:
         """Speciális képesség törlése az adatbázisból és a cache-ből."""
         try:
             # Betöltjük az összes képességet
-            if self.special_abilities_file.exists():
-                with open(self.special_abilities_file, encoding="utf-8") as f:
-                    all_abilities = json.load(f)
-            else:
-                all_abilities = {}
+            all_abilities = load_json(str(self.special_abilities_file), default={})
 
             if ability_id not in all_abilities:
                 return False
@@ -306,8 +293,7 @@ class RaceManager:
             all_abilities.pop(ability_id, None)
 
             # Visszamentjük
-            with open(self.special_abilities_file, "w", encoding="utf-8") as f:
-                json.dump(all_abilities, f, ensure_ascii=False, indent=2)
+            save_json(str(self.special_abilities_file), all_abilities, create_dirs=True)
 
             # Cache frissítése
             self._special_abilities.pop(ability_id, None)
@@ -315,7 +301,7 @@ class RaceManager:
             logger.info(f"✓ Speciális képesség törölve: {ability_id}")
             return True
 
-        except Exception as e:
+        except (IOError, OSError, TypeError) as e:
             logger.error(
                 f"Hiba képesség törlése során ({ability_id}): {e}", exc_info=True
             )

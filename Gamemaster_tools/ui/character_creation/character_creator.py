@@ -5,10 +5,10 @@ from typing import Any
 from PySide6 import QtWidgets
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-from engine.character import calculate_combat_stats, calculate_skill_points
+from core.character_model import calculate_combat_stats, calculate_skill_points
 from ui.character_creation.steps.skills_step import SkillsStepWidget
-from utils.character_storage import save_character
-from utils.class_db_manager import ClassDBManager
+from utils.data.character_storage import save_character
+from utils.data.class_db_manager import ClassDBManager
 from utils.placeholder_manager import PlaceholderManager
 
 # Base directory for data paths
@@ -310,7 +310,7 @@ class CharacterWizardQt(QtWidgets.QDialog):
 if __name__ == "__main__":
     import sys
 
-    from utils.dark_mode import apply_dark_mode
+    from utils.ui.dark_mode import apply_dark_mode
 
     app = QtWidgets.QApplication(sys.argv)
     apply_dark_mode(app)

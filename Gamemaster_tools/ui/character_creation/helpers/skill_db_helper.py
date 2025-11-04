@@ -6,19 +6,21 @@ Handles all database access for skills during character creation.
 import os
 import sqlite3
 from typing import Any
+from config.paths import CLASSES_DB, SKILLS_DB
 
 
 class SkillDatabaseHelper:
     """Helper class for skill database operations."""
 
     def __init__(self, base_dir: str):
+        # base_dir kept for backward compatibility; paths now centralized
         self.base_dir = base_dir
 
     def get_db_path(self, db_type: str) -> str:
         """Get database path for given type ('class' or 'skill')."""
         if db_type == "class":
-            return os.path.join(self.base_dir, "data", "Class", "class_data.db")
-        return os.path.join(self.base_dir, "data", "skills", "skills_data.db")
+            return str(CLASSES_DB)
+        return str(SKILLS_DB)
 
     def fetch_class_skills(
         self, class_id: str, spec_id: str | None

@@ -6,8 +6,8 @@ from typing import Any
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton, QVBoxLayout, QWidget
-from utils.dark_mode import apply_dark_mode
-from utils.logger import get_logger
+from utils.ui.dark_mode import apply_dark_mode
+from utils.log.logger import get_logger
 
 # Logger inicializálása
 logger = get_logger(__name__)
@@ -22,7 +22,7 @@ _windows: list[Any] = []
 def open_skill_editor():
     try:
         logger.info("Képzettség szerkesztő megnyitása")
-        from ui.skills.skill_editor import SkillEditorQt
+        from ui.editors.skills.skill_editor import SkillEditorQt
 
         win = SkillEditorQt()
         win.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
@@ -38,7 +38,7 @@ def open_skill_editor():
 def open_equipment_editor():
     try:
         logger.info("Felszerelés szerkesztő megnyitása")
-        from ui.equipment.equipment_editor import EquipmentEditorQt
+        from ui.editors.equipment.equipment_editor import EquipmentEditorQt
 
         win = EquipmentEditorQt()
         win.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
@@ -70,7 +70,7 @@ def open_character_creator():
 def open_class_editor():
     try:
         logger.info("Kaszt szerkesztő megnyitása")
-        from ui.classes.class_editor import ClassEditorQt
+        from ui.editors.classes.class_editor import ClassEditorQt
 
         dlg = ClassEditorQt()
         _windows.append(dlg)
@@ -85,7 +85,7 @@ def open_class_editor():
 def open_race_editor():
     try:
         logger.info("Faj szerkesztő megnyitása")
-        from ui.races.race_editor import RaceEditorQt
+        from ui.editors.races.race_editor import RaceEditorQt
 
         win = RaceEditorQt()
         win.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
