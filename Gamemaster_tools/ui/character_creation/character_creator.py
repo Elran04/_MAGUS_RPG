@@ -9,6 +9,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 from core.character_model import calculate_combat_stats, calculate_skill_points
 from ui.character_creation.steps.skills_step import SkillsStepWidget
 from utils.data.character_storage import save_character
+from utils.log.logger import get_logger
+
+logger = get_logger(__name__)
 from utils.data.class_db_manager import ClassDBManager
 from utils.placeholder_manager import PlaceholderManager
 
@@ -182,7 +185,7 @@ class CharacterWizardQt(QtWidgets.QDialog):
             try:
                 self.data["Képzettségpontok"] = calculate_skill_points(self.data["Kaszt"])
             except Exception as e:
-                print(f"Error calculating KP: {e}")
+                logger.error(f"Error calculating KP: {e}", exc_info=True)
                 self.data["Képzettségpontok"] = {"Alap": 0, "Szintenként": 0}
             # If skills step already exists (user is returning to it), refresh attributes explicitly now
             if hasattr(self, "skills_step") and self.skills_step is not None:

@@ -6,6 +6,10 @@ Handles prerequisite validation for skills.
 import sqlite3
 from typing import Any
 
+from utils.log.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class SkillPrerequisiteChecker:
     """Helper class for checking skill prerequisites."""
@@ -57,7 +61,7 @@ class SkillPrerequisiteChecker:
                 )
 
         except Exception as e:
-            print(f"Prereq check error: {e}")
+            logger.error(f"Prereq check error: {e}", exc_info=True)
 
         return (len(reasons) == 0, reasons)
 

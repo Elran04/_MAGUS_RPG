@@ -32,7 +32,6 @@ def open_skill_editor():
         logger.debug("Képzettség szerkesztő sikeresen megnyitva")
     except Exception as e:
         logger.error(f"Hiba a képzettség szerkesztő megnyitásakor: {e}", exc_info=True)
-        print(f"Failed to open Skill Editor: {e}")
 
 
 # --- FELSZERELÉS SZERKESZTŐ ABLAK MEGNYITÁSA ---
@@ -48,7 +47,6 @@ def open_equipment_editor():
         logger.debug("Felszerelés szerkesztő sikeresen megnyitva")
     except Exception as e:
         logger.error(f"Hiba a felszerelés szerkesztő megnyitásakor: {e}", exc_info=True)
-        print(f"Failed to open Equipment Editor: {e}")
 
 
 # --- KARAKTERALKOTÁS MEGNYITÁSA ---
@@ -64,7 +62,6 @@ def open_character_creator():
         logger.debug("Karakteralkotó sikeresen megnyitva")
     except Exception as e:
         logger.error(f"Hiba a karakteralkotó megnyitásakor: {e}", exc_info=True)
-        print(f"Failed to open Character Creator: {e}")
 
 
 # --- KASZT SZERKESZTŐ MEGNYITÁSA ---
@@ -79,7 +76,6 @@ def open_class_editor():
         logger.debug("Kaszt szerkesztő sikeresen megnyitva")
     except Exception as e:
         logger.error(f"Hiba a kaszt szerkesztő megnyitásakor: {e}", exc_info=True)
-        print(f"Failed to open Class Editor: {e}")
 
 
 # --- FAJ SZERKESZTŐ MEGNYITÁSA ---
@@ -95,7 +91,6 @@ def open_race_editor():
         logger.debug("Faj szerkesztő sikeresen megnyitva")
     except Exception as e:
         logger.error(f"Hiba a faj szerkesztő megnyitásakor: {e}", exc_info=True)
-        print(f"Failed to open Race Editor: {e}")
 
 
 class MagusGMTools(QMainWindow):

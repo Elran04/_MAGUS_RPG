@@ -7,6 +7,9 @@ import sqlite3
 from typing import Any
 
 from config.paths import CLASSES_DB, SKILLS_DB
+from utils.log.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class SkillDatabaseHelper:
@@ -70,7 +73,7 @@ class SkillDatabaseHelper:
                     if is_placeholder != 1:
                         fixed.add(skill_id)
                 except (sqlite3.Error, TypeError, ValueError) as e:
-                    print(f"Error probing skill {skill_id}: {e}")
+                    logger.error(f"Error probing skill {skill_id}: {e}", exc_info=True)
 
         return entries, fixed
 

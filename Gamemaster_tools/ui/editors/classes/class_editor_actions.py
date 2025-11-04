@@ -15,8 +15,11 @@ from config.paths import (
     WEAPONS_SHIELDS_JSON,
 )
 from PySide6 import QtCore, QtWidgets
+from utils.log.logger import get_logger
 
 from .class_editor_constants import EQUIPMENT_TYPES
+
+logger = get_logger(__name__)
 
 
 class ClassEditorActions:
@@ -77,7 +80,7 @@ class ClassEditorActions:
                 self.equipment_cache[equipment_type] = items
                 return items
         except (json.JSONDecodeError, OSError, KeyError) as e:
-            print(f"Error loading equipment data from {json_path}: {e}")
+            logger.error(f"Error loading equipment data from {json_path}: {e}", exc_info=True)
             return []
 
     def load_details(self):

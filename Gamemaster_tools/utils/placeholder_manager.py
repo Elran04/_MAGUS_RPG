@@ -214,20 +214,20 @@ if __name__ == "__main__":
     # Test/initialize the placeholder resolution system
     manager = PlaceholderManager()
 
-    print("=== Placeholder Resolution Manager ===\n")
+    logger.info("=== Placeholder Resolution Manager ===")
 
     # Populate default resolutions
     manager.populate_default_resolutions()
 
     # Show summary
-    print("\n=== Placeholder Resolution Summary ===")
+    logger.info("=== Placeholder Resolution Summary ===")
     summary = manager.get_resolution_summary()
 
     for item in summary:
         ph = item["placeholder"]
-        print(f"\n{ph['name']} ({ph['parameter']})")
-        print(f"  ID: {ph['id']}")
-        print(f"  Resolutions: {item['resolution_count']}")
+        logger.info(f"{ph['name']} ({ph['parameter']})")
+        logger.info(f"  ID: {ph['id']}")
+        logger.info(f"  Resolutions: {item['resolution_count']}")
 
         if item["resolutions"]:
             for res in item["resolutions"][:5]:  # Show first 5
@@ -237,7 +237,7 @@ if __name__ == "__main__":
                     else res["skill_name"]
                 )
                 category = f" [{res['resolution_category']}]" if res["resolution_category"] else ""
-                print(f"    - {display}{category}")
+                logger.info(f"    - {display}{category}")
 
             if len(item["resolutions"]) > 5:
-                print(f"    ... and {len(item['resolutions']) - 5} more")
+                logger.info(f"    ... and {len(item['resolutions']) - 5} more")
