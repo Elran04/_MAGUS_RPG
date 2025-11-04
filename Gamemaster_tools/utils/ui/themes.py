@@ -28,6 +28,12 @@ class CharacterCreationTheme:
     TEXT_DARK = "#333"
     BACKGROUND_GRAY = "rgba(100,100,120,50)"
 
+    # Action icon button states (light vs dark gray)
+    ACTION_BUTTON_ENABLED_BG = "#d0d0d0"  # light gray
+    ACTION_BUTTON_ENABLED_HOVER_BG = "#c6c6c6"  # slightly darker on hover
+    ACTION_BUTTON_DISABLED_BG = "#8a8a8a"  # dark gray
+    ACTION_BUTTON_TEXT = "#111"
+
 
 class EditorTheme:
     """Color palette for data editors (skills, classes, equipment, races)."""
@@ -101,4 +107,21 @@ def header_label_style() -> str:
         f"font-size: 12pt; padding: 8px; "
         f"background-color: {CharacterCreationTheme.BACKGROUND_GRAY}; "
         f"border-radius: 4px;"
+    )
+
+
+def action_icon_button_style() -> str:
+    """Small square +/- buttons with clear enabled/disabled colors.
+
+    - Enabled: light gray
+    - Disabled: dark gray
+    """
+    return (
+        f"QPushButton {{"
+        f"  border: 1px solid #666; border-radius: 4px; padding: 2px 6px;"
+        f"  color: {CharacterCreationTheme.ACTION_BUTTON_TEXT};"
+        f"}}"
+        f"QPushButton:enabled {{ background-color: {CharacterCreationTheme.ACTION_BUTTON_ENABLED_BG}; }}"
+        f"QPushButton:disabled {{ background-color: {CharacterCreationTheme.ACTION_BUTTON_DISABLED_BG}; color: #222; }}"
+        f"QPushButton:hover:enabled {{ background-color: {CharacterCreationTheme.ACTION_BUTTON_ENABLED_HOVER_BG}; }}"
     )

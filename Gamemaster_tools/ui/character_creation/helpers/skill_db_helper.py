@@ -138,3 +138,19 @@ class SkillDatabaseHelper:
         except sqlite3.Error:
             pass
         return None
+
+    def get_skill_info(self, skill_id: str) -> tuple[str, str, int] | None:
+        """
+        Get skill name, parameter, and type from skill ID.
+        Returns (name, parameter, type) or None if not found.
+        """
+        try:
+            with sqlite3.connect(self.get_db_path("skill")) as sconn:
+                row = sconn.execute(
+                    "SELECT name, parameter, type FROM skills WHERE id=?", (skill_id,)
+                ).fetchone()
+                if row:
+                    return row[0], row[1] or "", row[2]
+        except sqlite3.Error:
+            pass
+        return None
