@@ -7,11 +7,12 @@ import json
 import sqlite3
 from pathlib import Path
 
-from PySide6 import QtCore, QtWidgets
+from config.paths import SKILLS_DB
+from core.race_model import Race
+from engine.race_manager import RaceManager
+from PySide6 import QtWidgets
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QCheckBox,
-    QComboBox,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
@@ -30,9 +31,6 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-
-from core.race_model import Race
-from engine.race_manager import RaceManager
 from ui.editors.races.race_editor_constants import ATTRIBUTE_NAMES
 from ui.editors.races.special_ability_editor import SpecialAbilityEditor
 
@@ -207,9 +205,7 @@ class RaceEditorTabs:
         top_layout.addWidget(QLabel("<b>Faji képzettségek</b>"))
 
         self.racial_skills_table.setColumnCount(3)
-        self.racial_skills_table.setHorizontalHeaderLabels(
-            ["Azonosító", "Név", "Szint"]
-        )
+        self.racial_skills_table.setHorizontalHeaderLabels(["Azonosító", "Név", "Szint"])
         self.racial_skills_table.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeMode.ResizeToContents
         )
@@ -322,9 +318,11 @@ class RaceEditorTabs:
 
     def create_tab_ability_editor(self) -> QWidget:
         """Képesség szerkesztő tab (CRUD for Special Abilities)."""
+
         # Pass a callback to refresh available abilities in the main tab when changed
         def refresh_abilities():
             self.load_special_abilities()
+
         editor = SpecialAbilityEditor(self.race_manager, on_change=refresh_abilities)
         return editor
 
@@ -338,7 +336,7 @@ class RaceEditorTabs:
         return spin
 
     def _skills_db_path(self) -> Path:
-        return self.race_manager.data_dir / "skills" / "skills_data.db"
+        return SKILLS_DB
 
     def populate_skills_tree(self):
         """Elérhető képzettségek fa feltöltése az adatbázisból"""
@@ -356,7 +354,7 @@ class RaceEditorTabs:
 
         cat_items: dict[str, QTreeWidgetItem] = {}
         subcat_items: dict[tuple[str, str], QTreeWidgetItem] = {}
-        for skill_id, name, cat, subcat, parameter, skill_type, placeholder in rows:
+        for skill_id, name, cat, subcat, parameter, _skill_type, _placeholder in rows:
             if cat not in cat_items:
                 item = QTreeWidgetItem([cat or "", "", ""])
                 item.setFirstColumnSpanned(True)

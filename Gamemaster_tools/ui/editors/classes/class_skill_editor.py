@@ -4,11 +4,12 @@ Reusable widget for managing class/specialization skill assignments
 Can be used standalone or embedded in other editors
 """
 
+import contextlib
 import os
 import sqlite3
 
-from PySide6 import QtCore, QtWidgets
 from config.paths import CLASSES_DB, SKILLS_DB
+from PySide6 import QtCore, QtWidgets
 
 # Database paths
 DB_CLASS = str(CLASSES_DB)
@@ -43,10 +44,8 @@ class SkillAssignDialog(QtWidgets.QDialog):
         self.inp_class_level = QtWidgets.QSpinBox()
         self.inp_class_level.setRange(1, 99)
         if class_level is not None:
-            try:
+            with contextlib.suppress(ValueError, TypeError):
                 self.inp_class_level.setValue(int(class_level))
-            except (ValueError, TypeError):
-                pass
         form.addRow("Szint (class_level):", self.inp_class_level)
 
         self.inp_skill_level = QtWidgets.QSpinBox()
@@ -91,14 +90,12 @@ class SkillAssignDialog(QtWidgets.QDialog):
 
         # Auto-validation based on skill type
         if self.skill_type == 1:  # Level-based
-            skill_percent_val: int | None = None
             if skill_level == 0:
                 QtWidgets.QMessageBox.critical(
                     self, "Hiba", "A szint alapú képzettségnél add meg a szintet!"
                 )
                 return
         elif self.skill_type == 2:  # Percentage-based
-            skill_level_val: int | None = None
             if skill_percent == 0:
                 QtWidgets.QMessageBox.critical(
                     self, "Hiba", "A % alapú képzettségnél add meg a százalékot!"
@@ -111,8 +108,6 @@ class SkillAssignDialog(QtWidgets.QDialog):
                     self, "Hiba", "Csak az egyik mezőt töltsd ki: szint vagy százalék!"
                 )
                 return
-            skill_level_val = skill_level if skill_level != 0 else None
-            skill_percent_val = skill_percent if skill_percent != 0 else None
 
         # Use the validated values
         if self.skill_type == 1:
@@ -264,7 +259,7 @@ class ClassSkillEditorWidget(QtWidgets.QWidget):
         cat_items = {}
         subcat_items = {}
 
-        for skill_id, skill_name, cat, subcat, parameter, skill_type, placeholder in skills:
+        for skill_id, skill_name, cat, subcat, parameter, _skill_type, _placeholder in skills:
             # Create category items
             if cat not in cat_items:
                 item = QtWidgets.QTreeWidgetItem([cat, "", ""])

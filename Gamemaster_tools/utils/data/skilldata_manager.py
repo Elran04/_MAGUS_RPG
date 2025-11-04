@@ -2,8 +2,9 @@ import os
 import re
 import sqlite3
 
-from utils.log.logger import get_logger
 from config.paths import SKILLS_DB, SKILLS_DESCRIPTIONS_DIR
+
+from utils.log.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -44,7 +45,7 @@ class SkillManager:
                     try:
                         with open(desc_path, encoding="utf-8") as f:
                             skill["description"] = f.read()
-                    except (OSError, IOError, UnicodeDecodeError) as e:
+                    except (OSError, UnicodeDecodeError) as e:
                         logger.error(f"Failed to load description for {skill['id']}: {e}")
                         skill["description"] = ""
                 else:
@@ -75,11 +76,15 @@ class SkillManager:
                 c.execute("DELETE FROM skill_percent_costs WHERE skill_id=?", (skill_id,))
                 # Előfeltételek törlése
                 c.execute("DELETE FROM skill_prerequisites_skills WHERE skill_id=?", (skill_id,))
-                c.execute("DELETE FROM skill_prerequisites_attributes WHERE skill_id=?", (skill_id,))
+                c.execute(
+                    "DELETE FROM skill_prerequisites_attributes WHERE skill_id=?", (skill_id,)
+                )
                 # Más skillek előfeltételeiben hivatkozás törlése
-                c.execute("DELETE FROM skill_prerequisites_skills WHERE required_skill_id=?", (skill_id,))
+                c.execute(
+                    "DELETE FROM skill_prerequisites_skills WHERE required_skill_id=?", (skill_id,)
+                )
                 conn.commit()
-            
+
             # Leírás törlése a descriptions mappából
             desc_file = os.path.join(self.desc_dir, f"{skill_id}.md")
             if os.path.exists(desc_file):
@@ -123,7 +128,7 @@ class SkillManager:
                         try:
                             with open(desc_path, encoding="utf-8") as f:
                                 skill["description"] = f.read()
-                        except (OSError, IOError) as e:
+                        except OSError as e:
                             logger.error(f"Failed to load description for {skill['id']}: {e}")
                             skill["description"] = ""
                     else:
@@ -300,7 +305,9 @@ class SkillManager:
                             param = m.group(2) or ""
                             min_lvl = int(m.group(3))
                             # Skill id keresése név+param alapján
-                            c.execute("SELECT id FROM skills WHERE name=? AND parameter=?", (name, param))
+                            c.execute(
+                                "SELECT id FROM skills WHERE name=? AND parameter=?", (name, param)
+                            )
                             res = c.fetchone()
                             req_id = res[0] if res else name
                             skill_prereqs.append((req_id, min_lvl))
@@ -324,7 +331,7 @@ class SkillManager:
                                 (skill.get("id"), int(lvl), attr, min_val),
                             )
                 conn.commit()
-            
+
             # Leírás mentése .md-be (outside transaction)
             desc_file = skill.get("description_file", f"{skill.get('id')}.md")
             desc_path = os.path.join(self.desc_dir, desc_file)
@@ -335,7 +342,7 @@ class SkillManager:
                     f.write(skill.get("description", ""))
                     for lvl, txt in skill.get("level_descriptions", {}).items():
                         f.write(f"\n\n## Szint {lvl}\n{txt}")
-            except (OSError, IOError) as e:
+            except OSError as e:
                 logger.error(f"Failed to save description file for {skill.get('id')}: {e}")
         except sqlite3.Error as e:
             logger.error(f"Failed to save skill {skill.get('id')}: {e}")
@@ -347,10 +354,7 @@ class SkillManager:
             required = ["id", "name", "main_category", "sub_category"]
         else:
             required = ["id", "name", "main_category", "sub_category", "description", "skill_type"]
-        for key in required:
-            if not skill.get(key):
-                return False
-        return True
+        return all(skill.get(key) for key in required)
 
     def serialize_skill(self, ui_data):
         # ...existing code...

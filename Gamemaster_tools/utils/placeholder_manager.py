@@ -5,11 +5,11 @@ Handles the mapping between placeholder skills (e.g., "Fegyverhasználat (Válas
 and the actual skills they can resolve to (e.g., specific weapon skills).
 """
 
-import os
 import sqlite3
 
-from utils.log.logger import get_logger
 from config.paths import SKILLS_DB
+
+from utils.log.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -43,7 +43,7 @@ class PlaceholderManager:
             )
             conn.execute(
                 """
-                CREATE INDEX IF NOT EXISTS idx_placeholder_lookup 
+                CREATE INDEX IF NOT EXISTS idx_placeholder_lookup
                 ON placeholder_resolutions(placeholder_id)
             """
             )
@@ -60,7 +60,7 @@ class PlaceholderManager:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
                 """
-                INSERT OR REPLACE INTO placeholder_resolutions 
+                INSERT OR REPLACE INTO placeholder_resolutions
                 (placeholder_id, target_skill_id, resolution_category, notes)
                 VALUES (?, ?, ?, ?)
                 """,
@@ -92,7 +92,7 @@ class PlaceholderManager:
             conn.row_factory = sqlite3.Row
             if category:
                 query = """
-                    SELECT 
+                    SELECT
                         pr.target_skill_id,
                         s.name as skill_name,
                         s.parameter,
@@ -106,7 +106,7 @@ class PlaceholderManager:
                 rows = conn.execute(query, (placeholder_id, category)).fetchall()
             else:
                 query = """
-                    SELECT 
+                    SELECT
                         pr.target_skill_id,
                         s.name as skill_name,
                         s.parameter,

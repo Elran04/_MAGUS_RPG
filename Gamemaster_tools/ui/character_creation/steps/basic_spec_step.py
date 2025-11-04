@@ -1,4 +1,5 @@
 import os
+import sqlite3
 import sys
 from pathlib import Path
 from typing import Any
@@ -8,10 +9,10 @@ from PySide6 import QtCore, QtWidgets
 # Ensure Gamemaster_tools root on path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
+from config.paths import CLASSES_DESCRIPTIONS_DIR, DATA_DIR
 from engine.race_manager import RaceManager
 from engine.restrictions_manager import GENDER_RESTRICTIONS, is_class_allowed
 from utils.data.class_db_manager import ClassDBManager
-from config.paths import DATA_DIR, CLASSES_DESCRIPTIONS_DIR
 
 # Initialize race manager using centralized data directory
 _race_manager = RaceManager(DATA_DIR)
@@ -124,10 +125,7 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         race_id = race_id.replace("ő", "o").replace("ü", "u").replace("ű", "u").replace("í", "i")
 
         race = _race_manager.get_race(race_id)
-        if race:
-            limits = (race.age.min, race.age.max)
-        else:
-            limits = (13, 100)  # Fallback
+        limits = (race.age.min, race.age.max) if race else (13, 100)
         self.age_limits_label.setText(f"Engedélyezett kor: {limits[0]} - {limits[1]}")
 
     def update_class_options(self):
@@ -141,7 +139,7 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
 
         classes = list(self.class_db.list_classes())  # (id, name)
         name_set = {name for (_cid, name) in classes}
-        id_to_name = {cid: name for (cid, name) in classes}
+        id_to_name = dict(classes)
         # Normalize allowed list from JSON (it may contain class IDs or names)
         allowed_by_race = set()
         if race_obj:
@@ -265,7 +263,6 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
             return
 
         selected_item = selected_items[0]
-        sel_name = selected_item.text(0)
         self.selected_class_id = selected_item.data(0, QtCore.Qt.ItemDataRole.UserRole)
 
         # If selected item is a category (no UserRole data), do nothing
@@ -281,7 +278,7 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
                     spec_name = spec["specialisation_name"]
                     self.specializations.append(spec_name)
                     self.spec_data[spec_name] = spec
-            except Exception:
+            except (sqlite3.Error, KeyError, TypeError):
                 pass
         self.spec_combo.blockSignals(True)
         self.spec_combo.clear()
@@ -301,7 +298,7 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         if not desc_file:
             self.spec_desc.setPlainText("Nincs leírás fájl megadva ehhez a specializációhoz.")
             return
-        desc_path = (Path(CLASSES_DESCRIPTIONS_DIR) / desc_file)
+        desc_path = Path(CLASSES_DESCRIPTIONS_DIR) / desc_file
         if desc_path.exists():
             try:
                 with open(desc_path, encoding="utf-8") as f:
@@ -321,7 +318,7 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
             desc_file = class_details.get("class_description_file", "")
             if not desc_file:
                 desc_file = f"{self.selected_class_id}.md"
-            desc_path = (Path(CLASSES_DESCRIPTIONS_DIR) / desc_file)
+            desc_path = Path(CLASSES_DESCRIPTIONS_DIR) / desc_file
             if desc_path.exists():
                 try:
                     with open(desc_path, encoding="utf-8") as f:
@@ -362,7 +359,7 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         if race_obj:
             classes = list(self.class_db.list_classes())
             name_set = {name for (_cid, name) in classes}
-            id_to_name = {cid: name for (cid, name) in classes}
+            id_to_name = dict(classes)
             allowed_names = []
             for token in race_obj.class_restrictions.allowed_classes:
                 if token in name_set:
@@ -387,10 +384,7 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         race_id = race_id.replace("ő", "o").replace("ü", "u").replace("ű", "u").replace("í", "i")
 
         race_obj = _race_manager.get_race(race_id)
-        if race_obj:
-            limits = (race_obj.age.min, race_obj.age.max)
-        else:
-            limits = (13, 100)
+        limits = (race_obj.age.min, race_obj.age.max) if race_obj else (13, 100)
 
         if age_int < limits[0] or age_int > limits[1]:
             self.result_label.setText(

@@ -3,10 +3,9 @@ Race Editor List Panel
 Handles the race list panel on the left side
 """
 
+from engine.race_manager import RaceManager
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtGui import QFont
-
-from engine.race_manager import RaceManager
 
 
 class RaceListPanel:

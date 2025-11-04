@@ -172,6 +172,7 @@ class SkillPrerequisiteEditorWidget(QWidget):
         """Add a skill prerequisite. Autofill stores id(param) for saving, manual adds use name(param) as before."""
         from PySide6.QtCore import Qt
         from PySide6.QtWidgets import QListWidgetItem
+
         if skill_id is not None and skill_name is not None and level is not None:
             # Autofill: store id (with param) in UserRole, display name (with param) as text
             id_with_param = f"{skill_id} ({param})" if param else skill_id
@@ -213,6 +214,7 @@ class SkillPrerequisiteEditorWidget(QWidget):
                 # If it's a tuple (display, id), use display as text, id as UserRole
                 from PySide6.QtCore import Qt
                 from PySide6.QtWidgets import QListWidgetItem
+
                 if isinstance(skill_req, tuple) and len(skill_req) == 2:
                     item = QListWidgetItem(skill_req[0])
                     item.setData(Qt.ItemDataRole.UserRole, skill_req[1])

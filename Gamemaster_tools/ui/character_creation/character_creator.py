@@ -1,3 +1,4 @@
+import contextlib
 import os
 import sys
 from typing import Any
@@ -91,10 +92,8 @@ class CharacterWizardQt(QtWidgets.QDialog):
             self.basic_spec_step = BasicSpecStepWidget(BASE_DIR, self.class_db)
             # Prefill if we already have data
             if getattr(self, "data", None):
-                try:
+                with contextlib.suppress(AttributeError, KeyError, TypeError):
                     self.basic_spec_step.set_data(self.data)
-                except Exception:
-                    pass
         self.step_layout.addWidget(self.basic_spec_step)
 
     # Basic+Spec step moved to BasicSpecStepWidget
@@ -199,7 +198,7 @@ class CharacterWizardQt(QtWidgets.QDialog):
                         self.skills_step.attributes_widget.refresh_from_basic_selection(
                             class_name, race, age
                         )
-                except Exception:
+                except (AttributeError, KeyError, ValueError, TypeError):
                     pass
         elif self.step == 1:
             # Persist skills placeholder choices from widget back to wizard state
@@ -209,11 +208,9 @@ class CharacterWizardQt(QtWidgets.QDialog):
                         self.skills_step.placeholder_manager.placeholder_choices
                     )
                     # Also persist concrete selected skills into wizard data
-                    try:
+                    with contextlib.suppress(AttributeError, KeyError):
                         self.data["Képzettségek"] = self.skills_step.get_selected_skills()
-                    except Exception:
-                        pass
-                except Exception:
+                except (AttributeError, TypeError):
                     pass
             # Calculate KP and combat values from user's selected attributes
             # Attributes are in self.data["Tulajdonságok"] from the attributes widget
@@ -269,7 +266,7 @@ class CharacterWizardQt(QtWidgets.QDialog):
         if hasattr(self, "summary_step") and self.summary_step is not None:
             try:
                 final_data = self.summary_step.get_result()
-            except Exception:
+            except (AttributeError, KeyError, TypeError):
                 final_data = None
         if not final_data:
             # Fallback: filter self.data directly

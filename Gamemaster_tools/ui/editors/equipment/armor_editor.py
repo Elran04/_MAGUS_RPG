@@ -1,5 +1,4 @@
-import os
-
+from config.paths import ARMOR_JSON
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QApplication,
@@ -20,12 +19,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from config.paths import ARMOR_JSON
-from utils.ui.validation import ValidationError, validate_armor
 from utils.data.json_io import load_json_safe, save_json
-
-
-ARMOR_JSON = str(ARMOR_JSON)
+from utils.ui.validation import ValidationError, validate_armor
 
 
 class ArmorEditorQt(QMainWindow):
@@ -35,7 +30,7 @@ class ArmorEditorQt(QMainWindow):
         self.resize(1200, 760)
 
         # JSON storage
-        self._armor_json_path = ARMOR_JSON
+        self._armor_json_path = str(ARMOR_JSON)
         self.armors = self._load_armors()
         self.selected_idx = None
         self.abc_sort_asc = True
@@ -471,7 +466,9 @@ if __name__ == "__main__":
     import os as _os
     import sys
 
-    sys.path.insert(0, _os.path.abspath(_os.path.join(_os.path.dirname(__file__), "..", "..", "..")))
+    sys.path.insert(
+        0, _os.path.abspath(_os.path.join(_os.path.dirname(__file__), "..", "..", ".."))
+    )
     from utils.ui.dark_mode import apply_dark_mode
 
     app = QApplication(sys.argv)

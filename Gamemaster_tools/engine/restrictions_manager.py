@@ -25,6 +25,4 @@ def is_class_allowed(gender: str, klass: str, allowed_for_race: Iterable[str] | 
     """
     if klass in GENDER_RESTRICTIONS.get(gender, set()):
         return False
-    if allowed_for_race is not None and klass not in set(allowed_for_race):
-        return False
-    return True
+    return allowed_for_race is None or klass in set(allowed_for_race)

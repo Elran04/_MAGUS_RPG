@@ -1,5 +1,5 @@
-import os
 import sqlite3
+
 from config.paths import CLASSES_DB
 
 # Resolve DB path relative to this file (.. / data / Class / class_data.db)

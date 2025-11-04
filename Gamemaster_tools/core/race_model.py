@@ -4,7 +4,7 @@ Race data models using Pydantic for validation and type safety.
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -232,7 +232,6 @@ class GameEffect(BaseModel):
     """Játékmechanikai hatás (flexible schema)."""
 
     model_config = {"extra": "allow"}  # Engedélyezi az extra mezőket
-
 
 
 class SpecialAbility(BaseModel):

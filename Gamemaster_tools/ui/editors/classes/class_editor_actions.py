@@ -8,8 +8,13 @@ import os
 import subprocess
 import sys
 
+from config.paths import (
+    ARMOR_JSON,
+    CLASSES_DESCRIPTIONS_DIR,
+    GENERAL_EQUIPMENT_JSON,
+    WEAPONS_SHIELDS_JSON,
+)
 from PySide6 import QtCore, QtWidgets
-from config.paths import CLASSES_DESCRIPTIONS_DIR
 
 from .class_editor_constants import EQUIPMENT_TYPES
 
@@ -40,20 +45,18 @@ class ClassEditorActions:
         if equipment_type in self.equipment_cache:
             return self.equipment_cache[equipment_type]
 
-        # Map equipment types to JSON files
+        # Map equipment types to JSON files (centralized paths)
         type_to_file = {
-            "armor": "armor.json",
-            "weaponandshield": "weapons_and_shields.json",
-            "general": "general_equipment.json",
+            "armor": ARMOR_JSON,
+            "weaponandshield": WEAPONS_SHIELDS_JSON,
+            "general": GENERAL_EQUIPMENT_JSON,
         }
 
-        filename = type_to_file.get(equipment_type)
-        if not filename:
+        path_obj = type_to_file.get(equipment_type)
+        if not path_obj:
             return []
 
-        # Build path to JSON file
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-        json_path = os.path.join(base_dir, "data", "equipment", filename)
+        json_path = str(path_obj)
 
         try:
             with open(json_path, encoding="utf-8") as f:
@@ -73,7 +76,7 @@ class ClassEditorActions:
                         )
                 self.equipment_cache[equipment_type] = items
                 return items
-        except (json.JSONDecodeError, IOError, OSError, KeyError) as e:
+        except (json.JSONDecodeError, OSError, KeyError) as e:
             print(f"Error loading equipment data from {json_path}: {e}")
             return []
 
@@ -160,7 +163,7 @@ class ClassEditorActions:
         # Build rows excluding class_id
         if row and columns:
             # Map column name to value
-            col_vals = list(zip(columns, row))
+            col_vals = list(zip(columns, row, strict=True))
             pairs = [(col, val) for col, val in col_vals if col != "class_id"]
             tabs.combat_table.setRowCount(len(pairs))
             for i, (col, val) in enumerate(pairs):
@@ -479,10 +482,7 @@ class ClassEditorActions:
         if dlg.exec() == QtWidgets.QDialog.DialogCode.Accepted:
             # Extract just the ID from the input (before the " - " separator if present)
             item_text = inp_item.text().strip()
-            if " - " in item_text:
-                item_id = item_text.split(" - ")[0].strip()
-            else:
-                item_id = item_text
+            item_id = item_text.split(" - ")[0].strip() if " - " in item_text else item_text
 
             if item_id:
                 self.parent.class_db.add_starting_equipment_item(
@@ -540,7 +540,7 @@ class ClassEditorActions:
             try:
                 with open(path, encoding="utf-8") as f:
                     tabs.desc_text_editor.setPlainText(f.read())
-            except (IOError, OSError, UnicodeDecodeError) as e:
+            except (OSError, UnicodeDecodeError) as e:
                 tabs.desc_text_editor.clear()
                 QtWidgets.QMessageBox.critical(
                     self.parent, "Hiba", f"Nem sikerült beolvasni a leírást:\n{e}"
@@ -570,7 +570,7 @@ class ClassEditorActions:
             QtWidgets.QMessageBox.information(
                 self.parent, "Siker", f"Leírás elmentve: {self.get_description_filename()}"
             )
-        except (IOError, OSError) as e:
+        except OSError as e:
             QtWidgets.QMessageBox.critical(
                 self.parent, "Hiba", f"Nem sikerült menteni a leírást:\n{e}"
             )

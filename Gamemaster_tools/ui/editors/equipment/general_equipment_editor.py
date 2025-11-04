@@ -1,6 +1,6 @@
-import os
 from typing import Any
 
+from config.paths import GENERAL_EQUIPMENT_JSON
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QApplication,
@@ -20,10 +20,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from config.paths import GENERAL_EQUIPMENT_JSON
-from utils.ui.validation import ValidationError, validate_general_equipment
 from utils.data.json_io import load_json_safe, save_json
-
+from utils.ui.validation import ValidationError, validate_general_equipment
 
 GENERAL_JSON = str(GENERAL_EQUIPMENT_JSON)
 
@@ -332,7 +330,9 @@ if __name__ == "__main__":
     import os as _os
     import sys
 
-    sys.path.insert(0, _os.path.abspath(_os.path.join(_os.path.dirname(__file__), "..", "..", "..")))
+    sys.path.insert(
+        0, _os.path.abspath(_os.path.join(_os.path.dirname(__file__), "..", "..", ".."))
+    )
     from utils.ui.dark_mode import apply_dark_mode
 
     app = QApplication(sys.argv)

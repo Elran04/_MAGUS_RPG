@@ -3,11 +3,12 @@ import os
 import sys
 from typing import Any
 
+from config.paths import ICONS_DIR
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton, QVBoxLayout, QWidget
-from utils.ui.dark_mode import apply_dark_mode
 from utils.log.logger import get_logger
+from utils.ui.dark_mode import apply_dark_mode
 
 # Logger inicializálása
 logger = get_logger(__name__)
@@ -108,7 +109,7 @@ class MagusGMTools(QMainWindow):
         self.resize(600, 500)
 
         # Egyedi ikon beállítása
-        icon_path = os.path.join(os.path.dirname(__file__), "assets_icons", "MAGUS.ico")
+        icon_path = str(ICONS_DIR / "MAGUS.ico")
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
 

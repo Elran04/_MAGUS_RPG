@@ -110,7 +110,7 @@ class SkillEditorQt(QMainWindow):
         editor_layout = QVBoxLayout()
         editor_widget.setLayout(editor_layout)
 
-    # (Button now placed inside levels tab, not here)
+        # (Button now placed inside levels tab, not here)
 
         # Create tab widget
         tab_widget = QTabWidget()
@@ -140,15 +140,29 @@ class SkillEditorQt(QMainWindow):
         """Autofill level 2-5 (and 6 if KP>0) prereqs with previous level of this skill, showing name (param) but saving id (param)."""
         if not self.tabs or not self.current_skill:
             return
-        skill_id = self.tabs.id_edit.text().strip() if self.tabs.id_edit else self.current_skill.get("id", "")
-        skill_name = self.tabs.name_edit.text().strip() if self.tabs.name_edit else self.current_skill.get("name", "")
-        param = self.tabs.param_edit.text().strip() if self.tabs.param_edit else self.current_skill.get("parameter", "")
+        skill_id = (
+            self.tabs.id_edit.text().strip()
+            if self.tabs.id_edit
+            else self.current_skill.get("id", "")
+        )
+        skill_name = (
+            self.tabs.name_edit.text().strip()
+            if self.tabs.name_edit
+            else self.current_skill.get("name", "")
+        )
+        param = (
+            self.tabs.param_edit.text().strip()
+            if self.tabs.param_edit
+            else self.current_skill.get("parameter", "")
+        )
         for i in range(1, 6):  # 1-based: 2-6
             kp_spin = self.tabs.kp_cost_spins[i] if i < len(self.tabs.kp_cost_spins) else None
             kp_val = kp_spin.value() if kp_spin else 0
             if i == 5 and kp_val == 0:
                 continue  # skip 6th level if KP is 0
-            prereq_widget = self.tabs.prereq_widgets[i] if i < len(self.tabs.prereq_widgets) else None
+            prereq_widget = (
+                self.tabs.prereq_widgets[i] if i < len(self.tabs.prereq_widgets) else None
+            )
             if prereq_widget:
                 # Clear all skill prereqs
                 prereq_widget.skill_list.clear()

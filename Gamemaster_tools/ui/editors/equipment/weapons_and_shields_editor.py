@@ -1,3 +1,4 @@
+import contextlib
 import os
 import sys
 from typing import cast
@@ -126,12 +127,10 @@ class WeaponsAndShieldsEditor(QMainWindow):
         - edit_layout-ból eltávolítja a mezőket
         - type_fields dict törlése
         """
-        for key, widget in self.type_fields.items():
+        for _key, widget in self.type_fields.items():
             if isinstance(widget, QComboBox):
-                try:
+                with contextlib.suppress(TypeError, RuntimeError):
                     widget.currentTextChanged.disconnect()
-                except (TypeError, RuntimeError):
-                    pass
             for i in range(self.edit_layout.rowCount()):
                 row_widget = self.edit_layout.itemAt(i, QFormLayout.ItemRole.FieldRole)
                 if row_widget is not None and row_widget.widget() is widget:
@@ -203,6 +202,7 @@ class WeaponsAndShieldsEditor(QMainWindow):
                 self.set_widget_value(self.fields[key], price_parts.get(curr, 0))
         except (ValueError, TypeError, AttributeError, KeyError) as e:
             from utils.log.logger import get_logger
+
             logger = get_logger(__name__)
             logger.warning(f"Error converting price: {e}")
             for key in self.manager.PRICE_FIELDS:

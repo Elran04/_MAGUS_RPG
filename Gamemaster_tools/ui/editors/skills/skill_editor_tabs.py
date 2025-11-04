@@ -197,7 +197,9 @@ class SkillEditorTabs:
         bottom_widget.setLayout(bottom_layout)
 
         btn_autofill = QPushButton("Szint előfeltételek kitöltése")
-        btn_autofill.setToolTip("Kitölti a 2-5. (és 6. ha KP>0) szint előfeltételeit az előző szinttel.")
+        btn_autofill.setToolTip(
+            "Kitölti a 2-5. (és 6. ha KP>0) szint előfeltételeit az előző szinttel."
+        )
         btn_autofill.setMinimumHeight(32)
         # Call parent's autofill method
         btn_autofill.clicked.connect(self.parent.autofill_level_prereqs)

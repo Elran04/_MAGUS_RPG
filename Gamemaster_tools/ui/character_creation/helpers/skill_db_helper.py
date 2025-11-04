@@ -3,9 +3,9 @@ Skill Database Helper
 Handles all database access for skills during character creation.
 """
 
-import os
 import sqlite3
 from typing import Any
+
 from config.paths import CLASSES_DB, SKILLS_DB
 
 
@@ -28,7 +28,7 @@ class SkillDatabaseHelper:
         """Fetch class skills from database, optionally including specialization skills."""
         query = """
             SELECT skill_id, class_level, skill_level, skill_percent, specialisation_id
-            FROM class_skills 
+            FROM class_skills
             WHERE class_id=? AND {}
             ORDER BY class_level, skill_id
         """
@@ -69,7 +69,7 @@ class SkillDatabaseHelper:
                     )
                     if is_placeholder != 1:
                         fixed.add(skill_id)
-                except Exception as e:
+                except (sqlite3.Error, TypeError, ValueError) as e:
                     print(f"Error probing skill {skill_id}: {e}")
 
         return entries, fixed
@@ -109,7 +109,7 @@ class SkillDatabaseHelper:
                     (name, param),
                 ).fetchone()
                 return res[0] if res else None
-        except Exception:
+        except sqlite3.Error:
             return None
 
     @staticmethod
@@ -119,7 +119,7 @@ class SkillDatabaseHelper:
             try:
                 base, p = display.rsplit("(", 1)
                 return base.strip(), p[:-1].strip()
-            except Exception:
+            except (ValueError, AttributeError):
                 pass
         return display, ""
 
@@ -132,6 +132,6 @@ class SkillDatabaseHelper:
                 ).fetchone()
                 if row:
                     return row[0], row[1] or ""
-        except Exception:
+        except sqlite3.Error:
             pass
         return None

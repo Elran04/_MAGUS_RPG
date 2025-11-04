@@ -3,7 +3,10 @@ Race Editor Actions
 Handles all user actions (save, create, delete, skill management, etc.)
 """
 
-from PySide6 import QtCore, QtWidgets
+import contextlib
+
+from core.race_model import AgeData, AttributeModifiers, RacialSkill
+from PySide6 import QtCore
 from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
@@ -11,13 +14,9 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QInputDialog,
     QLabel,
-    QListWidgetItem,
     QMessageBox,
-    QTableWidgetItem,
     QVBoxLayout,
 )
-
-from core.race_model import AgeData, AttributeModifiers, RacialSkill
 from utils.log.logger import get_logger
 
 logger = get_logger(__name__)
@@ -129,9 +128,7 @@ class RaceEditorActions:
         ]
         self.editor.tabs.load_skills()
 
-    def ask_racial_skill_params(
-        self, skill_id: str, skill_name: str, level_val=None
-    ) -> int | None:
+    def ask_racial_skill_params(self, skill_id: str, skill_name: str, level_val=None) -> int | None:
         """Egyszerű párbeszédablak a faji skill paramétereihez (szint 1-6)."""
         dlg = QDialog(self.editor)
         dlg.setWindowTitle(f"Képzettség hozzárendelése: {skill_name}")
@@ -159,7 +156,8 @@ class RaceEditorActions:
         btns.rejected.connect(dlg.reject)
 
         if dlg.exec() == QDialog.DialogCode.Accepted:
-            return level_cb.currentData()
+            data = level_cb.currentData()
+            return int(data) if data is not None else None
         return None
 
     # === Forbidden Skills Actions ===
@@ -191,11 +189,8 @@ class RaceEditorActions:
         text = self.editor.tabs.list_forbidden_skills.item(row).text()
         sid = text.split(" - ")[0]
 
-        try:
+        with contextlib.suppress(ValueError):
             self.editor.tabs.current_race.forbidden_skills.remove(sid)
-        except ValueError:
-            pass
-
         self.editor.tabs.load_skills()
 
     # === Special Abilities Actions ===
@@ -254,8 +249,8 @@ class RaceEditorActions:
                 attr_name: self.editor.tabs.spin_attrs[attr_name].value()
                 for attr_name in self.editor.tabs.spin_attrs
             }
-            self.editor.tabs.current_race.attributes.modifiers = (
-                AttributeModifiers.model_validate(attr_dict)
+            self.editor.tabs.current_race.attributes.modifiers = AttributeModifiers.model_validate(
+                attr_dict
             )
 
             # Életkor
@@ -265,8 +260,7 @@ class RaceEditorActions:
             # Leírás mentése
             # Leírás mentése
             desc_file = (
-                self.editor.race_manager.data_dir
-                / self.editor.tabs.current_race.description_file
+                self.editor.race_manager.data_dir / self.editor.tabs.current_race.description_file
             )
             desc_file.parent.mkdir(parents=True, exist_ok=True)
             desc_file.write_text(self.editor.tabs.txt_description.toPlainText(), encoding="utf-8")
@@ -282,7 +276,7 @@ class RaceEditorActions:
             # Lista frissítése
             self.editor.race_list_panel.refresh()
 
-        except (IOError, OSError, TypeError) as e:
+        except (OSError, TypeError) as e:
             logger.error(f"Hiba a mentés során: {e}", exc_info=True)
             QMessageBox.critical(self.editor, "Hiba", f"Mentési hiba:\n{e}")
 

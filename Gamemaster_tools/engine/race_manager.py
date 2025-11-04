@@ -4,10 +4,9 @@ Race Manager - Faj adatok betöltése, kezelése, mentése.
 
 from pathlib import Path
 
-from utils.log.logger import get_logger
-from utils.data.json_io import load_json, save_json
-
 from core.race_model import Race, SpecialAbility
+from utils.data.json_io import load_json, save_json
+from utils.log.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -47,7 +46,7 @@ class RaceManager:
                 logger.warning(
                     f"Speciális képességek fájl nem található: {self.special_abilities_file}"
                 )
-        except (IOError, OSError) as e:
+        except OSError as e:
             logger.error(f"Hiba speciális képességek betöltése során: {e}", exc_info=True)
 
         # Fajok betöltése
@@ -67,12 +66,12 @@ class RaceManager:
                     race = Race(**race_data)
                     self._races[race.id] = race
                     loaded_count += 1
-                except (IOError, OSError) as e:
+                except OSError as e:
                     logger.error(f"Hiba {json_file.name} betöltése során: {e}")
 
             logger.info(f"✓ {loaded_count} faj betöltve")
 
-        except (IOError, OSError) as e:
+        except OSError as e:
             logger.error(f"Hiba fajok betöltése során: {e}", exc_info=True)
 
     def get_race(self, race_id: str) -> Race | None:
@@ -187,7 +186,7 @@ class RaceManager:
 
             logger.info(f"✓ Faj mentve: {race.name} ({race_file.name})")
 
-        except (IOError, OSError, TypeError) as e:
+        except (OSError, TypeError) as e:
             logger.error(f"Hiba faj mentése során ({race.name}): {e}", exc_info=True)
             raise
 
@@ -250,7 +249,7 @@ class RaceManager:
             logger.info(f"✓ Faj törölve: {race.name}")
             return True
 
-        except (IOError, OSError) as e:
+        except OSError as e:
             logger.error(f"Hiba faj törlése során ({race_id}): {e}", exc_info=True)
             return False
 
@@ -276,7 +275,7 @@ class RaceManager:
 
             logger.info(f"✓ Speciális képesség mentve: {ability.name}")
 
-        except (IOError, OSError, TypeError) as e:
+        except (OSError, TypeError) as e:
             logger.error(f"Hiba képesség mentése során ({ability.name}): {e}", exc_info=True)
             raise
 
@@ -301,8 +300,6 @@ class RaceManager:
             logger.info(f"✓ Speciális képesség törölve: {ability_id}")
             return True
 
-        except (IOError, OSError, TypeError) as e:
-            logger.error(
-                f"Hiba képesség törlése során ({ability_id}): {e}", exc_info=True
-            )
+        except (OSError, TypeError) as e:
+            logger.error(f"Hiba képesség törlése során ({ability_id}): {e}", exc_info=True)
             return False

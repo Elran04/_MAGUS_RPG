@@ -6,29 +6,25 @@ CRUD UI for managing SpecialAbilities stored by RaceManager in special_abilities
 from __future__ import annotations
 
 import json
-from typing import Optional
-
-from PySide6 import QtCore, QtWidgets
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QListWidget,
-    QListWidgetItem,
-    QFormLayout,
-    QLineEdit,
-    QTextEdit,
-    QComboBox,
-    QPushButton,
-    QFileDialog,
-    QMessageBox,
-    QLabel,
-)
+from typing import Callable
 
 from core.race_model import SpecialAbility
 from engine.race_manager import RaceManager
-
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QFileDialog,
+    QFormLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QPushButton,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 ABILITY_CATEGORIES = [
     "vision",
@@ -45,10 +41,15 @@ ABILITY_CATEGORIES = [
 class SpecialAbilityEditor(QWidget):
     """Widget for editing SpecialAbility definitions."""
 
-    def __init__(self, race_manager: RaceManager, parent: Optional[QWidget] = None, on_change: Optional[callable] = None):
+    def __init__(
+        self,
+        race_manager: RaceManager,
+        parent: QWidget | None = None,
+        on_change: Callable[[], None] | None = None,
+    ):
         super().__init__(parent)
         self.race_manager = race_manager
-        self.current_id: Optional[str] = None
+        self.current_id: str | None = None
         self._on_change = on_change
 
         self._build_ui()
@@ -91,7 +92,7 @@ class SpecialAbilityEditor(QWidget):
         self.txt_description.setPlaceholderText("Rövid leírás…")
 
         self.txt_game_effect = QTextEdit()
-        self.txt_game_effect.setPlaceholderText("{""example"": 1}")
+        self.txt_game_effect.setPlaceholderText("{" "example" ": 1}")
         self.txt_game_effect.setAcceptRichText(False)
         self.txt_game_effect.setTabChangesFocus(True)
 
@@ -129,7 +130,7 @@ class SpecialAbilityEditor(QWidget):
     def refresh_list(self):
         self.list_abilities.clear()
         for ability in self.race_manager.get_all_special_abilities():
-            item = QListWidgetItem(f"{ability.name} [{ability.category}]")
+            item = QListWidgetItem(ability.name)
             item.setData(Qt.ItemDataRole.UserRole, ability.id)
             self.list_abilities.addItem(item)
 
@@ -148,7 +149,6 @@ class SpecialAbilityEditor(QWidget):
         self.txt_id.setText("")
         self.txt_id.setReadOnly(False)
         self.txt_name.setText("")
-        self.cmb_category.setCurrentIndex(0)
         self.txt_icon.setText("")
         self.txt_description.setPlainText("")
         self.txt_game_effect.setPlainText("{}")
@@ -158,17 +158,16 @@ class SpecialAbilityEditor(QWidget):
         self.txt_id.setText(ability.id)
         self.txt_id.setReadOnly(True)  # prevent ID changes for existing entries
         self.txt_name.setText(ability.name)
-        try:
-            idx = ABILITY_CATEGORIES.index(ability.category)
-        except ValueError:
-            idx = 0
-        self.cmb_category.setCurrentIndex(idx)
         self.txt_icon.setText(ability.icon or "")
         self.txt_description.setPlainText(ability.description)
-        self.txt_game_effect.setPlainText(json.dumps(ability.game_effect, ensure_ascii=False, indent=2))
+        self.txt_game_effect.setPlainText(
+            json.dumps(ability.game_effect, ensure_ascii=False, indent=2)
+        )
 
     def browse_icon(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Ikon kiválasztása", "", "Képfájlok (*.png *.jpg *.svg)")
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Ikon kiválasztása", "", "Képfájlok (*.png *.jpg *.svg)"
+        )
         if path:
             self.txt_icon.setText(path)
 
@@ -200,7 +199,6 @@ class SpecialAbilityEditor(QWidget):
         ability = SpecialAbility(
             id=ability_id,
             name=name,
-            category=self.cmb_category.currentText(),
             description=self.txt_description.toPlainText(),
             game_effect=game_effect,
             icon=self.txt_icon.text().strip() or None,
@@ -225,9 +223,9 @@ class SpecialAbilityEditor(QWidget):
             self.refresh_list()
             # Reselect saved item
             self._select_item_by_id(ability.id)
-            if self._on_change:
+            if self._on_change is not None:
                 self._on_change()
-        except (IOError, OSError, TypeError) as e:
+        except (OSError, TypeError) as e:
             QMessageBox.critical(self, "Hiba", f"Mentési hiba:\n{e}")
 
     def delete_current(self):
@@ -247,7 +245,7 @@ class SpecialAbilityEditor(QWidget):
             QMessageBox.information(self, "Siker", "Képesség törölve.")
             self.clear_form()
             self.refresh_list()
-            if self._on_change:
+            if self._on_change is not None:
                 self._on_change()
         else:
             QMessageBox.critical(self, "Hiba", "Törlés sikertelen.")

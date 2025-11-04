@@ -6,15 +6,14 @@ Refactored into modular components for better maintainability
 
 import os
 import sys
-from pathlib import Path
 
 from PySide6 import QtCore, QtWidgets
 
 # Add Gamemaster_tools to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
-from engine.race_manager import RaceManager
 from config.paths import DATA_DIR
+from engine.race_manager import RaceManager
 from ui.editors.races.race_editor_actions import RaceEditorActions
 from ui.editors.races.race_editor_list import RaceListPanel
 from ui.editors.races.race_editor_tabs import RaceEditorTabs
@@ -48,7 +47,7 @@ class RaceEditorQt(QtWidgets.QMainWindow):
         # Initialize component handlers
         self.race_list_panel: RaceListPanel | None = None
         self.tabs: RaceEditorTabs | None = None
-        self.editor_actions: RaceEditorActions | None = None
+        self.editor_actions: RaceEditorActions
 
         # Initialize UI
         self.init_ui()
@@ -139,9 +138,13 @@ class RaceEditorQt(QtWidgets.QMainWindow):
                 left_widget = child.widget(0)
                 right_widget = child.widget(1)
                 if left_widget:
-                    left_widget.layout().addWidget(btn_add_ability)
+                    left_layout = left_widget.layout()
+                    if left_layout:
+                        left_layout.addWidget(btn_add_ability)
                 if right_widget:
-                    right_widget.layout().addWidget(btn_remove_ability)
+                    right_layout = right_widget.layout()
+                    if right_layout:
+                        right_layout.addWidget(btn_remove_ability)
                 break
 
     def on_race_selected(self, race_id: str):

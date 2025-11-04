@@ -4,6 +4,7 @@ Modern tabbed interface for M.A.G.U.S. class management
 Refactored into modular components for better maintainability
 """
 
+import contextlib
 import os
 import sys
 
@@ -41,18 +42,12 @@ class ClassEditorQt(QtWidgets.QDialog):
         self.editor_actions = ClassEditorActions(self)
 
         # Ensure required tables exist (safe no-ops if already exist)
-        try:
+        with contextlib.suppress(ValueError, RuntimeError, OSError):
             self.class_db.ensure_specialisations_table()
-        except (ValueError, RuntimeError, OSError):
-            pass
-        try:
+        with contextlib.suppress(ValueError, RuntimeError, OSError):
             self.class_db.ensure_starting_equipment_table()
-        except (ValueError, RuntimeError, OSError):
-            pass
-        try:
+        with contextlib.suppress(ValueError, RuntimeError, OSError):
             self.class_db.ensure_classes_description_column()
-        except (ValueError, RuntimeError, OSError):
-            pass
 
         # Current selection state
         self.current_class_id = None

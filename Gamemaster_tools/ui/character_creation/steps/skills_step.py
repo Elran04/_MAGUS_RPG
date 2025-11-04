@@ -6,6 +6,9 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from ui.character_creation.helpers.skill_db_helper import SkillDatabaseHelper
 from ui.character_creation.helpers.skill_prerequisites import SkillPrerequisiteChecker
 from ui.character_creation.widgets.placeholder_skill_manager import PlaceholderSkillManager
+from utils.log.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class SkillsStepWidget(QtWidgets.QWidget):
@@ -132,7 +135,7 @@ class SkillsStepWidget(QtWidgets.QWidget):
                         }
                     )
         except Exception as e:
-            print("Error exporting selected skills:", e)
+            logger.error(f"Error exporting selected skills: {e}", exc_info=True)
         return skills
 
     def _get_spec_id(self, data: dict) -> str | None:
@@ -158,7 +161,7 @@ class SkillsStepWidget(QtWidgets.QWidget):
                 try:
                     self.attributes_widget.initialize(class_name, race, age)
                 except Exception as e:
-                    print(f"Error initializing attributes: {e}")
+                    logger.error(f"Error initializing attributes: {e}", exc_info=True)
             self.attributes_widget.refresh()
 
         # Update KP header
@@ -312,7 +315,7 @@ class SkillsStepWidget(QtWidgets.QWidget):
                         row, skill_id, req_level, req_percent, display_name, current_map, attributes
                     )
             except Exception as e:
-                print(f"Error rendering skill row {skill_id}: {e}")
+                logger.error(f"Error rendering skill row {skill_id}: {e}", exc_info=True)
 
     def _render_placeholder_row(
         self,
@@ -428,7 +431,7 @@ class SkillsStepWidget(QtWidgets.QWidget):
                     if item:
                         item.setText(cost)
                 except Exception as e:
-                    print("Error updating KP cost:", e)
+                    logger.error(f"Error updating KP cost: {e}", exc_info=True)
             else:
                 item = self.skills_table.item(row, 3)
                 if item:
@@ -475,24 +478,23 @@ class SkillsStepWidget(QtWidgets.QWidget):
         current_map = {}
 
         try:
-            with sqlite3.connect(self.db_helper.get_db_path("skill")) as sconn:
-                for row in range(self.skills_table.rowCount()):
-                    name_widget = self.skills_table.cellWidget(row, 0)
-                    if name_widget is None:
-                        name_item = self.skills_table.item(row, 0)
-                        if not name_item:
-                            continue
-                        display = name_item.text()
-                        sid = self.db_helper.get_skill_by_display(display)
-                        if not sid:
-                            continue
-                        lvl_item = self.skills_table.item(row, 1)
-                        pct_item = self.skills_table.item(row, 2)
-                        lvl = int(lvl_item.text()) if lvl_item and lvl_item.text().isdigit() else 0
-                        pct = int(pct_item.text()) if pct_item and pct_item.text().isdigit() else 0
-                        current_map[sid] = {"level": lvl, "%": pct}
+            for row in range(self.skills_table.rowCount()):
+                name_widget = self.skills_table.cellWidget(row, 0)
+                if name_widget is None:
+                    name_item = self.skills_table.item(row, 0)
+                    if not name_item:
+                        continue
+                    display = name_item.text()
+                    sid = self.db_helper.get_skill_by_display(display)
+                    if not sid:
+                        continue
+                    lvl_item = self.skills_table.item(row, 1)
+                    pct_item = self.skills_table.item(row, 2)
+                    lvl = int(lvl_item.text()) if lvl_item and lvl_item.text().isdigit() else 0
+                    pct = int(pct_item.text()) if pct_item and pct_item.text().isdigit() else 0
+                    current_map[sid] = {"level": lvl, "%": pct}
         except Exception as e:
-            print("Error building current skills map:", e)
+            logger.error(f"Error building current skills map: {e}", exc_info=True)
 
         # Add placeholder choices using the manager
         for ikey, chosen in self.placeholder_manager.placeholder_choices.items():

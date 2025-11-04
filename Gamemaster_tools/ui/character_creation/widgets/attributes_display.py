@@ -1,3 +1,4 @@
+import contextlib
 import os
 import sys
 from collections.abc import Callable
@@ -236,7 +237,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
         # Record initial context (no timer watching; updates happen on wizard navigation)
         try:
             self._last_ctx = (class_name, race, int(age))
-        except Exception:
+        except (ValueError, TypeError):
             self._last_ctx = None
 
         # Set initial spinbox ranges
@@ -280,12 +281,11 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
             self._configure_spinboxes(race, age)
         else:
             # Only race/age changed: re-apply modifiers
-            try:
+            with contextlib.suppress(TypeError, RuntimeError):
                 self.attribute_manager.set_class_values(
                     self.attribute_manager.class_values.copy(), race, age
                 )
-            except Exception:
-                pass
+
         self._last_ctx = (class_name, race, int(age))
         self._update_final_labels()
         self._update_points_display()
@@ -375,10 +375,8 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
                 spinbox.setValue(cur)
 
                 # Reconnect to appropriate handler
-                try:
+                with contextlib.suppress(TypeError, RuntimeError):
                     spinbox.valueChanged.disconnect()
-                except Exception:
-                    pass
                 spinbox.valueChanged.connect(handler)
             finally:
                 spinbox.blockSignals(False)
@@ -616,6 +614,6 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
             if isinstance(val, dict):
                 try:
                     return cast(dict[str, int], val)
-                except Exception:
+                except (TypeError, ValueError):
                     return {}
         return {}

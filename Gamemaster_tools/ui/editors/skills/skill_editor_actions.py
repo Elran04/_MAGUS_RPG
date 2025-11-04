@@ -5,9 +5,11 @@ Handles all action operations (new, duplicate, delete, save, load, etc.)
 
 import copy
 import os
+import re
 import subprocess
 import sys
 
+from config.paths import SKILLS_DESCRIPTIONS_DIR
 from PySide6.QtWidgets import QMessageBox
 from utils.ui.validation import ValidationError, validate_skill
 
@@ -183,7 +185,7 @@ class SkillEditorActions:
             self.parent.skill_manager.save(self.parent.all_skills)
             self.parent.skill_list_panel.populate(self.parent.all_skills)
             QMessageBox.information(self.parent, "Siker", "Képzettség mentve!")
-        except (IOError, OSError, TypeError) as e:
+        except (OSError, TypeError) as e:
             QMessageBox.critical(self.parent, "Hiba", f"Mentési hiba:\n{str(e)}")
 
     def load_skill_to_ui(self):
@@ -287,8 +289,7 @@ class SkillEditorActions:
                     for skill_req in skill_list:
                         # skill_req is like "id (param) N. szint" or "name (param) N. szint"
                         # Extract the id/name part (everything before the last "N. szint" pattern)
-                        import re
-                        match = re.match(r'^(.+?)\s+(\d+)\.\s+szint$', skill_req)
+                        match = re.match(r"^(.+?)\s+(\d+)\.\s+szint$", skill_req)
                         if match:
                             id_or_name_part = match.group(1).strip()
                             level_num = match.group(2)
@@ -336,11 +337,8 @@ class SkillEditorActions:
             )
             return
 
-        # Build full path - descriptions are in Gamemaster_tools/data/skills/descriptions
-        # __file__ is at Gamemaster_tools/ui/skills/skill_editor_actions.py
-        # Go up 2 levels: ui/skills -> ui -> Gamemaster_tools
-        base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-        full_path = os.path.join(base_path, "data", "skills", "descriptions", desc_file)
+        # Build full path using centralized path configuration
+        full_path = os.path.join(str(SKILLS_DESCRIPTIONS_DIR), desc_file)
 
         if os.path.exists(full_path):
             # Open with default editor
@@ -369,10 +367,8 @@ class SkillEditorActions:
                 desc_file = f"{skill_id}.md"
             else:
                 return None
-        # __file__ is at Gamemaster_tools/ui/skills/skill_editor_actions.py
-        # Go up 2 levels: ui/skills -> ui -> Gamemaster_tools
-        base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-        return os.path.join(base_path, "data", "skills", "descriptions", desc_file)
+        # Use centralized skills descriptions directory
+        return os.path.join(str(SKILLS_DESCRIPTIONS_DIR), desc_file)
 
     def load_description_file(self, silent=False):
         """Load description .md content into the editor area"""
@@ -391,7 +387,7 @@ class SkillEditorActions:
             try:
                 with open(path, encoding="utf-8") as f:
                     tabs.desc_text_editor.setPlainText(f.read())
-            except (IOError, OSError, UnicodeDecodeError) as e:
+            except (OSError, UnicodeDecodeError) as e:
                 tabs.desc_text_editor.clear()
                 if not silent:
                     QMessageBox.critical(
@@ -434,5 +430,5 @@ class SkillEditorActions:
             with open(path, "w", encoding="utf-8") as f:
                 f.write(tabs.desc_text_editor.toPlainText())
             QMessageBox.information(self.parent, "Siker", "Leírás elmentve a .md fájlba.")
-        except (IOError, OSError) as e:
+        except OSError as e:
             QMessageBox.critical(self.parent, "Hiba", f"Nem sikerült menteni a leírást:\n{e}")
