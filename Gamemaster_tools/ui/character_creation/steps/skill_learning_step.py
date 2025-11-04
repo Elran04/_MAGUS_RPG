@@ -9,12 +9,14 @@ from collections.abc import Callable
 from typing import Any
 
 from PySide6 import QtCore, QtWidgets
-from ui.character_creation.helpers.skill_db_helper import SkillDatabaseHelper
-from ui.character_creation.helpers.skill_prerequisites import SkillPrerequisiteChecker
-from ui.character_creation.helpers.skill_selection_manager import SkillSelectionManager
-from ui.character_creation.helpers.prerequisite_info import PrerequisiteInfoHelper
-from ui.character_creation.widgets.learning_row import LearningRow
-from ui.character_creation.widgets.learning_skills_table import LearningSkillsTableRenderer
+from ui.character_creation.services import (
+    SkillDatabaseHelper,
+    SkillPrerequisiteChecker,
+    PrerequisiteInfoHelper,
+    SkillSelectionManager,
+)
+from ui.character_creation.widgets.learning.learning_row import LearningRow
+from ui.character_creation.widgets.learning.learning_skills_table import LearningSkillsTableRenderer
 from utils.log.logger import get_logger
 from utils.ui.themes import header_label_style, info_label_style
 from ui.character_creation.dialogs.add_skill_dialog import AddSkillDialog
