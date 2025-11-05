@@ -3,10 +3,12 @@ from collections.abc import Callable
 from typing import Any
 
 from PySide6 import QtCore, QtGui, QtWidgets
-from ui.character_creation.helpers.skill_db_helper import SkillDatabaseHelper
-from ui.character_creation.helpers.skill_prerequisites import SkillPrerequisiteChecker
-from ui.character_creation.widgets.placeholder_skill_manager import PlaceholderSkillManager
-from ui.character_creation.widgets.skills_table import SkillsTableRenderer
+from ui.character_creation.services import (
+    SkillDatabaseHelper,
+    SkillPrerequisiteChecker,
+    PlaceholderSkillManager,
+)
+from ui.character_creation.widgets.skills import SkillsTableRenderer
 from engine.race_manager import RaceManager
 from config.paths import DATA_DIR
 from utils.log.logger import get_logger
@@ -52,7 +54,7 @@ class SkillsStepWidget(QtWidgets.QWidget):
         splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
 
         # Left panel: Attributes display
-        from ui.character_creation.widgets.attributes_display import AttributesDisplayWidget
+        from ui.character_creation.widgets.common import AttributesDisplayWidget
         from utils.data.class_db_manager import ClassDBManager
 
         self.attributes_widget = AttributesDisplayWidget(

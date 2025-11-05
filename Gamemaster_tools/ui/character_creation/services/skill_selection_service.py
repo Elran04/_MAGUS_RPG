@@ -6,8 +6,8 @@ Centralizes skill state and KP spending logic during character creation.
 import sqlite3
 from typing import Any
 
-from ui.character_creation.helpers.skill_db_helper import SkillDatabaseHelper
-from ui.character_creation.helpers.skill_prerequisites import SkillPrerequisiteChecker
+from .skill_repository import SkillDatabaseHelper
+from .skill_prerequisites_service import SkillPrerequisiteChecker
 from utils.log.logger import get_logger
 
 logger = get_logger(__name__)

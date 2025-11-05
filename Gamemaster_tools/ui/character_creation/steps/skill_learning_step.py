@@ -15,8 +15,7 @@ from ui.character_creation.services import (
     PrerequisiteInfoHelper,
     SkillSelectionManager,
 )
-from ui.character_creation.widgets.learning.learning_row import LearningRow
-from ui.character_creation.widgets.learning.learning_skills_table import LearningSkillsTableRenderer
+from ui.character_creation.widgets.learning import LearningRow, LearningSkillsTableRenderer
 from utils.log.logger import get_logger
 from utils.ui.themes import header_label_style, info_label_style
 from ui.character_creation.dialogs.add_skill_dialog import AddSkillDialog
@@ -61,7 +60,7 @@ class SkillLearningStepWidget(QtWidgets.QWidget):
         splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
 
         # Left panel: Read-only attributes display
-        from ui.character_creation.widgets.attributes_readonly_display import AttributesReadOnlyWidget
+        from ui.character_creation.widgets.common import AttributesReadOnlyWidget
         
         self.attributes_widget = AttributesReadOnlyWidget(self.get_character_data)
         splitter.addWidget(self.attributes_widget)
@@ -320,21 +319,19 @@ class SkillLearningStepWidget(QtWidgets.QWidget):
             # Level doesn't exist or no cost
             return False, "Elérted a maximális szintet", 0
         
-        # Build temporary map with next level for prerequisite checking
-        temp_map = self._get_current_map()
-        temp_map[skill_id] = {
-            "level": next_level,
-            "%": next_percent,
-        }
+        # Get current skills map - DON'T modify it with next level
+        # The prereq checker needs to see current state to verify if we can reach next level
+        current_map = self._get_current_map()
         
-        # Check prerequisites for next level
+        # Check prerequisites for next level using CURRENT skills state
         ok, reasons = self.prereq_checker.check_prerequisites(
-            skill_id, next_level, next_percent, temp_map, self._get_attributes()
+            skill_id, next_level, next_percent, current_map, self._get_attributes()
         )
         
         if not ok:
-            # Build tooltip from helper for the exact next level
-            return False, self.prereq_info.get_missing_prereq_tooltip_for_level(skill_id, next_level), 0
+            # Use the reasons returned by the prerequisite checker
+            tooltip = "Hiányzó előfeltételek:\n" + "\n".join(reasons) if reasons else "Előfeltételek nem teljesülnek"
+            return False, tooltip, 0
         
         # Check if we have enough KP
         if not self.selection_manager:

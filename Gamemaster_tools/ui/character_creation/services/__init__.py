@@ -3,9 +3,25 @@ Service layer for character creation.
 Provides stable import points for DB access, prerequisite checks, and selection logic.
 
 Usage:
-    from ui.character_creation.services import SkillDatabaseHelper, SkillPrerequisiteChecker, PrerequisiteInfoHelper, SkillSelectionManager
+    from ui.character_creation.services import (
+        SkillDatabaseHelper, 
+        SkillPrerequisiteChecker, 
+        PrerequisiteInfoHelper, 
+        SkillSelectionManager,
+        PlaceholderSkillManager
+    )
 """
 
-from .db import SkillDatabaseHelper
-from .prerequisites import SkillPrerequisiteChecker, PrerequisiteInfoHelper
-from .selection import SkillSelectionManager
+from .skill_repository import SkillDatabaseHelper
+from .skill_prerequisites_service import SkillPrerequisiteChecker
+from .prerequisite_formatter import PrerequisiteInfoHelper
+from .skill_selection_service import SkillSelectionManager
+from .placeholder_skill_service import PlaceholderSkillManager
+
+__all__ = [
+    'SkillDatabaseHelper',
+    'SkillPrerequisiteChecker',
+    'PrerequisiteInfoHelper',
+    'SkillSelectionManager',
+    'PlaceholderSkillManager',
+]
