@@ -159,22 +159,16 @@ class CharacterWizardQt(QtWidgets.QDialog):
         """Show equipment step via modular widget (placeholder for now)."""
         from ui.character_creation.steps.equipment_step import EquipmentStepWidget
 
+        def _get_data():
+            return self.data
+        
         def _get_class_id():
             return self.selected_class_id
 
-        def _get_spec_data():
-            return self.spec_data
-
-        def _get_data():
-            return self.data
-
         if not hasattr(self, "equipment_step") or self.equipment_step is None:
-            self.equipment_step = EquipmentStepWidget(self)
-            self.equipment_step.set_context(
-                get_class_id=_get_class_id,
-                get_spec_data=_get_spec_data,
-                get_data=_get_data,
-            )
+            self.equipment_step = EquipmentStepWidget(_get_data, _get_class_id)
+        
+        self.equipment_step.refresh()
         self.step_layout.addWidget(self.equipment_step)
 
     def show_summary(self):
@@ -269,6 +263,13 @@ class CharacterWizardQt(QtWidgets.QDialog):
                         if not any(s.get("id") == learned.get("id") for s in current_skills):
                             current_skills.append(learned)
                     self.data["Képzettségek"] = current_skills
+
+                    # Store only remaining KP (final value)
+                    try:
+                        remaining_kp = self.skill_learning_step.get_remaining_kp()
+                    except Exception:
+                        remaining_kp = 0
+                    self.data["Képzettségpontok"] = int(remaining_kp)
                 except (AttributeError, KeyError, TypeError) as e:
                     logger.error(f"Error collecting learned skills: {e}", exc_info=True)
         elif self.step == 3:
@@ -329,7 +330,38 @@ class CharacterWizardQt(QtWidgets.QDialog):
             }
             final_data = {k: v for k, v in src.items() if k in allowed and not k.startswith("_")}
             final_data.setdefault("Képzettségek", [])
-            final_data.setdefault("Felszerelés", [])
+            final_data.setdefault("Felszerelés", {"currency": 0, "items": []})
+
+            # Transform skills to minimal schema
+            minimal_skills: list[dict] = []
+            for s in final_data.get("Képzettségek", []) or []:
+                sid = s.get("id")
+                if not sid:
+                    continue
+                if int(s.get("Szint", 0) or 0) > 0:
+                    minimal_skills.append({"id": sid, "Szint": int(s.get("Szint", 0) or 0)})
+                elif int(s.get("%", 0) or 0) > 0:
+                    minimal_skills.append({"id": sid, "%": int(s.get("%", 0) or 0)})
+                else:
+                    minimal_skills.append({"id": sid})
+            final_data["Képzettségek"] = minimal_skills
+
+            # Coerce KP to int (remaining)
+            kp_val = final_data.get("Képzettségpontok", 0)
+            if isinstance(kp_val, dict):
+                kp_val = int(kp_val.get("Remaining", 0) or 0)
+            try:
+                kp_val = int(kp_val)
+            except Exception:
+                kp_val = 0
+            final_data["Képzettségpontok"] = kp_val
+
+            # Remove HM/szint from Harci értékek
+            combat = final_data.get("Harci értékek")
+            if isinstance(combat, dict) and "HM/szint" in combat:
+                combat = dict(combat)
+                combat.pop("HM/szint", None)
+                final_data["Harci értékek"] = combat
 
         char = final_data
 

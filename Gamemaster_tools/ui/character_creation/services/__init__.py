@@ -8,7 +8,9 @@ Usage:
         SkillPrerequisiteChecker, 
         PrerequisiteInfoHelper, 
         SkillSelectionManager,
-        PlaceholderSkillManager
+        PlaceholderSkillManager,
+        EquipmentLoader,
+        EquipmentService
     )
 """
 
@@ -17,6 +19,8 @@ from .skill_prerequisites_service import SkillPrerequisiteChecker
 from .prerequisite_formatter import PrerequisiteInfoHelper
 from .skill_selection_service import SkillSelectionManager
 from .placeholder_skill_service import PlaceholderSkillManager
+from .equipment_loader import EquipmentLoader
+from .equipment_service import EquipmentService
 
 __all__ = [
     'SkillDatabaseHelper',
@@ -24,4 +28,6 @@ __all__ = [
     'PrerequisiteInfoHelper',
     'SkillSelectionManager',
     'PlaceholderSkillManager',
+    'EquipmentLoader',
+    'EquipmentService',
 ]

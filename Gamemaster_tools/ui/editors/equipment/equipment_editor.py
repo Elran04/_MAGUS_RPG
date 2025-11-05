@@ -9,8 +9,11 @@ import sys
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMainWindow, QTabWidget, QVBoxLayout, QWidget
 
-# Add parent directories to path for imports
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+# Ensure project package root (Gamemaster_tools) is on sys.path so 'ui' and 'utils' imports work
+_HERE = os.path.dirname(__file__)
+_PROJECT_ROOT = os.path.abspath(os.path.join(_HERE, "..", "..", ".."))
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
 
 from ui.editors.equipment.armor_editor import ArmorEditorQt
 from ui.editors.equipment.general_equipment_editor import GeneralEquipmentEditorQt

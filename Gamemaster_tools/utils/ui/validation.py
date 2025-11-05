@@ -127,7 +127,7 @@ def validate_general_equipment(item: dict[str, Any]) -> None:
         item, ["id", "name", "description", "weight", "price", "category"], ctx="equipment"
     )
     cat = item.get("category")
-    if cat in ("eszköz", "élelem", "speciális") and "space" not in item:
+    if cat in ("eszköz", "élelem", "speciális", "lőszer") and "space" not in item:
         raise ValidationError("space is required for selected category")
     if cat == "tároló" and "capacity" not in item:
         raise ValidationError("capacity is required for 'tároló'")

@@ -1,3 +1,4 @@
+from PySide6.QtWidgets import QCompleter
 import contextlib
 import os
 import sys
@@ -30,6 +31,12 @@ WEAPONS_JSON = str(WEAPONS_SHIELDS_JSON)
 
 
 class WeaponsAndShieldsEditor(QMainWindow):
+    def get_ammo_names(self):
+        # Load all 'lőszer' items from general equipment JSON
+        from config.paths import GENERAL_EQUIPMENT_JSON
+        from utils.data.json_io import load_json_safe
+        items = load_json_safe(str(GENERAL_EQUIPMENT_JSON), default=[])
+        return [item.get("name", "") for item in items if item.get("category") == "lőszer"]
     # --- Fő Qt ablak: fegyverek és pajzsok szerkesztője ---
     # A szerkesztő két fő panelből áll: bal oldalon TreeView (lista), jobb oldalon szerkesztő mezők
     # Főbb egységek: setup_treeview, populate_treeview, on_tree_select, build_edit_fields, build_type_fields, mezőkezelés, mentés/törlés logika
@@ -211,15 +218,25 @@ class WeaponsAndShieldsEditor(QMainWindow):
             cb.setChecked(typ in it.get("damage_types", []))
         for attr, cb in self.damage_bonus_checks.items():
             cb.setChecked(attr in it.get("damage_bonus_attributes", []))
+        # Always rebuild type fields after static fields so dynamic fields (like ammo) appear
+        type_combo = self.fields.get("type")
+        if type_combo is not None and isinstance(type_combo, QComboBox):
+            self.build_type_fields(type_combo.currentText(), item=it)
 
     def build_type_fields(self, type_value, item=None):
-        """
-        Típusfüggő mezők dinamikus generálása a szerkesztő panelen.
-        - manager.TYPE_FIELD_DEFS alapján
-        - Közelharci típusnál: wield_mode QComboBox, 'Változó' esetén extra mezők
-        - item paraméterrel kitölti az értékeket
-        """
         self.remove_type_fields_from_layout()
+        # Add ammo type field for ranged weapons (match type string exactly)
+        if type_value.strip().lower() == "távolsági":
+            ammo_names = self.get_ammo_names()
+            ammo_edit = QLineEdit()
+            ammo_edit.setPlaceholderText("Lőszer típusa")
+            completer = QCompleter(ammo_names)
+            completer.setCaseSensitivity(Qt.CaseInsensitive)
+            ammo_edit.setCompleter(completer)
+            self.type_fields["ammo_type"] = ammo_edit
+            self.edit_layout.addRow(QLabel("Lőszer típusa:"), ammo_edit)
+            if item is not None:
+                self.set_widget_value(ammo_edit, item.get("ammo_type", ""))
         # Típusfüggő QLineEdit mezők
         for label, key in self.manager.TYPE_FIELD_DEFS.get(type_value, []):
             le = QLineEdit()

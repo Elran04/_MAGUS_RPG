@@ -490,3 +490,13 @@ class SkillLearningStepWidget(QtWidgets.QWidget):
         """Validate that the step is ready to proceed."""
         # Always valid - player can choose not to spend all KP
         return True
+
+    def get_remaining_kp(self) -> int:
+        """Return remaining KP after all learning in this step."""
+        if not self.selection_manager:
+            return 0
+        breakdown = self.selection_manager.get_kp_breakdown()
+        try:
+            return int(breakdown.get("remaining", 0) or 0)
+        except (TypeError, ValueError):
+            return 0

@@ -429,7 +429,7 @@
     "id": "longbow",
     "type": "távolsági",
     "category": "Íjak",
-    "attack_time": 3,
+    "attack_time": 5,
     "damage_min": 3,
     "damage_max": 13,
     "weight": 1.0,

@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QHBoxLayout,
     QLabel,
+    QCheckBox,
     QLineEdit,
     QMainWindow,
     QMessageBox,
@@ -27,7 +28,7 @@ GENERAL_JSON = str(GENERAL_EQUIPMENT_JSON)
 
 
 class GeneralEquipmentEditorQt(QMainWindow):
-    CATEGORIES = ["eszköz", "élelem", "tároló", "speciális"]
+    CATEGORIES = ["eszköz", "élelem", "tároló", "lőszer", "speciális"]
     SPECIAL_SUBCATEGORIES = ["Alkímia"]
 
     def __init__(self):
@@ -93,6 +94,10 @@ class GeneralEquipmentEditorQt(QMainWindow):
             price_row.addWidget(spn)
             self.price_spins[curr] = spn
         right_layout.addLayout(price_row)
+
+        # Stackable checkbox
+        self.chk_stackable = QCheckBox("Halmozható")
+        form.addRow("Halmozható:", self.chk_stackable)
 
         # Category and dependent fields
         cat_row = QHBoxLayout()
@@ -185,7 +190,7 @@ class GeneralEquipmentEditorQt(QMainWindow):
             self.cmb_subcategory = QComboBox()
             self.cmb_subcategory.addItems(self.SPECIAL_SUBCATEGORIES)
             self.dynamic_layout.addRow("Alkategória:", self.cmb_subcategory)
-        if cat in ["eszköz", "élelem", "speciális"]:
+        if cat in ["eszköz", "élelem", "speciális", "lőszer"]:
             self.inp_space = QSpinBox()
             self.inp_space.setRange(0, 999999)
             self.dynamic_layout.addRow("Helyigény:", self.inp_space)
@@ -226,12 +231,14 @@ class GeneralEquipmentEditorQt(QMainWindow):
         # Category and dependent
         cat = item.get("category", "")
         self.cmb_category.setCurrentText(cat)
+        # Stackable flag
+        self.chk_stackable.setChecked(bool(item.get("stackable", False)))
         # After update_category_fields, set dependent values
         if cat == "speciális" and "subcategory" in item and self.cmb_subcategory is not None:
             self.cmb_subcategory.setCurrentText(
                 item.get("subcategory", self.SPECIAL_SUBCATEGORIES[0])
             )
-        if cat in ["eszköz", "élelem", "speciális"] and self.inp_space is not None:
+        if cat in ["eszköz", "élelem", "speciális", "lőszer"] and self.inp_space is not None:
             try:
                 self.inp_space.setValue(int(item.get("space", 0)))
             except (ValueError, TypeError):
@@ -261,13 +268,14 @@ class GeneralEquipmentEditorQt(QMainWindow):
             "weight": float(self.spn_weight.value()),
             "price": int(self._parts_to_price()),
             "category": self.cmb_category.currentText(),
+            "stackable": bool(self.chk_stackable.isChecked()),
         }
         cat = item["category"]
         if cat == "speciális" and self.cmb_subcategory is not None:
             item["subcategory"] = (
                 self.cmb_subcategory.currentText() or self.SPECIAL_SUBCATEGORIES[0]
             )
-        if cat in ["eszköz", "élelem", "speciális"] and self.inp_space is not None:
+        if cat in ["eszköz", "élelem", "speciális", "lőszer"] and self.inp_space is not None:
             item["space"] = int(self.inp_space.value())
         if cat == "tároló" and self.inp_capacity is not None:
             item["capacity"] = int(self.inp_capacity.value())

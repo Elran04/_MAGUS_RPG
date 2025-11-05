@@ -15,6 +15,8 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QSpinBox,
+    QTreeWidget,
+    QTreeWidgetItem,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -43,14 +45,18 @@ class ArmorEditorQt(QMainWindow):
         root = QHBoxLayout()
         central.setLayout(root)
 
-        # Left: list and actions
+        # Left: tree and actions
         left = QVBoxLayout()
         root.addLayout(left, stretch=1)
-        title = QLabel("Páncélok listája")
+        title = QLabel("Páncélok (kategóriák szerint)")
         title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         left.addWidget(title)
-        self.listbox = QListWidget()
-        left.addWidget(self.listbox, stretch=1)
+        self.tree = QTreeWidget()
+        self.tree.setHeaderHidden(True)
+        self.tree.setUniformRowHeights(True)
+        self.tree.setAnimated(True)
+        self.tree.setSelectionMode(self.tree.SelectionMode.SingleSelection)
+        left.addWidget(self.tree, stretch=1)
 
         btns_row = QHBoxLayout()
         self.btn_new = QPushButton("Új páncél")
@@ -207,7 +213,7 @@ class ArmorEditorQt(QMainWindow):
         self._load_zone_menus()
         self.refresh_list()
         # Now UI is ready; connect selection signal
-        self.listbox.currentRowChanged.connect(self.on_select)
+        self.tree.currentItemChanged.connect(self.on_tree_select)
         self._ui_ready = True
 
     # JSON helpers (replace JsonManager usage)
@@ -245,9 +251,72 @@ class ArmorEditorQt(QMainWindow):
         return total
 
     def refresh_list(self):
-        self.listbox.clear()
-        for armor in self.armors:
-            self.listbox.addItem(f"{armor.get('name','')} (ID: {armor.get('id','-')})")
+        """Backward-compatible alias to rebuild the tree view."""
+        self._build_tree()
+
+    def _armor_type_label(self, type_key: str) -> str:
+        mapping = {
+            "plate": "Lemezpáncél",
+            "flexible_metal": "Rugalmas fém",
+            "leather": "Bőr / Textil",
+        }
+        return mapping.get(type_key or "leather", "Bőr / Textil")
+
+    def _build_tree(self):
+        # Preserve current selection (armor id) if any
+        current_id = None
+        cur_item = self.tree.currentItem() if hasattr(self, "tree") else None
+        if cur_item and cur_item.parent():
+            current_id = cur_item.data(0, Qt.ItemDataRole.UserRole)
+
+        self.tree.blockSignals(True)
+        self.tree.clear()
+
+        # Prepare category nodes
+        categories = {
+            "plate": QTreeWidgetItem([self._armor_type_label("plate")]),
+            "flexible_metal": QTreeWidgetItem([self._armor_type_label("flexible_metal")]),
+            "leather": QTreeWidgetItem([self._armor_type_label("leather")]),
+        }
+        for key in ["plate", "flexible_metal", "leather"]:
+            self.tree.addTopLevelItem(categories[key])
+
+        # Add armors to categories
+        for idx, armor in enumerate(self.armors):
+            a_type = armor.get("armor_type", "leather")
+            node = QTreeWidgetItem([f"{armor.get('name','')} (ID: {armor.get('id','-')})"])
+            node.setData(0, Qt.ItemDataRole.UserRole, armor.get("id"))
+            categories.get(a_type, categories["leather"]).addChild(node)
+
+        # Expand categories that have content
+        for key, cat in categories.items():
+            cat.setExpanded(True)
+
+        # Reselect previously selected armor if possible
+        if current_id:
+            self._select_tree_item_by_id(current_id)
+        self.tree.blockSignals(False)
+
+    def _select_tree_item_by_id(self, armor_id: str):
+        if not armor_id:
+            return
+        root_count = self.tree.topLevelItemCount()
+        for i in range(root_count):
+            cat = self.tree.topLevelItem(i)
+            for j in range(cat.childCount()):
+                child = cat.child(j)
+                if child.data(0, Qt.ItemDataRole.UserRole) == armor_id:
+                    self.tree.setCurrentItem(child)
+                    cat.setExpanded(True)
+                    return
+
+    def _find_armor_index_by_id(self, armor_id: str):
+        if not armor_id:
+            return None
+        for i, a in enumerate(self.armors):
+            if a.get("id") == armor_id:
+                return i
+        return None
 
     # Sorting
     def sort_abc(self):
@@ -372,6 +441,24 @@ class ArmorEditorQt(QMainWindow):
         except (ValueError, TypeError):
             self.spn_layer.setValue(3)
 
+    def on_tree_select(self, current, previous):
+        if not getattr(self, "_ui_ready", False):
+            return
+        if current is None:
+            self.selected_idx = None
+            return
+        # Ignore category headers (no parent means top-level)
+        if current.parent() is None:
+            self.selected_idx = None
+            return
+        armor_id = current.data(0, Qt.ItemDataRole.UserRole)
+        idx = self._find_armor_index_by_id(armor_id)
+        if idx is None:
+            self.selected_idx = None
+            return
+        # Populate form from selected armor
+        self.on_select(idx)
+
     def _collect_parts(self):
         result = {}
         for part, chk in self.parts_checks.items():
@@ -416,15 +503,16 @@ class ArmorEditorQt(QMainWindow):
             self.armors.append(armor)
             target_idx = len(self.armors) - 1
 
-        # Persist and refresh list while blocking selection-change signals
+        # Persist and refresh tree while blocking selection-change signals
         self._save_armors()
-        self.listbox.blockSignals(True)
+        saved_id = armor.get("id")
+        self.tree.blockSignals(True)
         self.refresh_list()
-        # Clamp target index just in case
-        if 0 <= target_idx < len(self.armors):
-            self.listbox.setCurrentRow(target_idx)
-        self.listbox.blockSignals(False)
-        # Update internal selection state and UI fields
+        # Reselect saved armor by id
+        if saved_id:
+            self._select_tree_item_by_id(saved_id)
+        self.tree.blockSignals(False)
+        # Update internal selection state and UI fields based on new index
         self.selected_idx = target_idx
         self.on_select(target_idx)
         QMessageBox.information(self, "Mentés", "Páncél mentve!")
@@ -442,13 +530,21 @@ class ArmorEditorQt(QMainWindow):
         for curr in ["réz", "ezüst", "arany", "mithrill"]:
             self.price_spins[curr].setValue(0)
         self.txt_desc.clear()
+        # Clear tree selection as well
+        if hasattr(self, "tree"):
+            self.tree.clearSelection()
 
     def delete_armor(self):
-        row = self.listbox.currentRow()
-        if row < 0:
+        cur = self.tree.currentItem() if hasattr(self, "tree") else None
+        if cur is None or cur.parent() is None:
             QMessageBox.warning(self, "Törlés", "Nincs kiválasztva páncél.")
             return
-        name = self.armors[row].get("name", "-")
+        armor_id = cur.data(0, Qt.ItemDataRole.UserRole)
+        idx = self._find_armor_index_by_id(armor_id)
+        if idx is None:
+            QMessageBox.warning(self, "Törlés", "A kiválasztott páncél nem található.")
+            return
+        name = self.armors[idx].get("name", "-")
         answer = QMessageBox.question(
             self,
             "Törlés",
@@ -456,7 +552,7 @@ class ArmorEditorQt(QMainWindow):
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
         if answer == QMessageBox.StandardButton.Yes:
-            self.armors.pop(row)
+            self.armors.pop(idx)
             self._save_armors()
             self.refresh_list()
             self.selected_idx = None
