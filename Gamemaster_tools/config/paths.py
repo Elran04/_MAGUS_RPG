@@ -53,6 +53,9 @@ CHARACTERS_DIR = PROJECT_ROOT / "characters"
 # Assets directory
 ASSETS_DIR = BASE_DIR / "assets"
 ICONS_DIR = ASSETS_DIR / "icons"
+# UI assets
+UI_DIR = ASSETS_DIR / "ui"
+MAGUS_IMAGE = UI_DIR / "magus.png"
 
 # ============================================================================
 # CONFIG

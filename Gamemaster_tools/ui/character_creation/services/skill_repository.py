@@ -139,6 +139,22 @@ class SkillDatabaseHelper:
             pass
         return None
 
+    def get_skill_categories(self, skill_id: str) -> tuple[str, str] | None:
+        """Get (category, subcategory) for a given skill id, or None if not found."""
+        try:
+            with sqlite3.connect(self.get_db_path("skill")) as sconn:
+                row = sconn.execute(
+                    "SELECT category, subcategory FROM skills WHERE id=?",
+                    (skill_id,),
+                ).fetchone()
+                if row:
+                    cat = row[0] or ""
+                    sub = row[1] or ""
+                    return cat, sub
+        except sqlite3.Error:
+            pass
+        return None
+
     def get_skill_info(self, skill_id: str) -> tuple[str, str, int] | None:
         """
         Get skill name, parameter, and type from skill ID.

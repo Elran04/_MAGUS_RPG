@@ -6,7 +6,7 @@ from typing import Any
 from config.paths import ICONS_DIR
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton, QVBoxLayout, QWidget, QGroupBox, QHBoxLayout
 from utils.log.logger import get_logger
 from utils.ui.dark_mode import apply_dark_mode
 
@@ -115,53 +115,96 @@ class MagusGMTools(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
-        layout = QVBoxLayout()
-        layout.setSpacing(15)
-        layout.setContentsMargins(40, 40, 40, 40)
 
-        # Címke
+        # Set background image using config.paths
+        from config.paths import MAGUS_IMAGE
+        bg_path = str(MAGUS_IMAGE.resolve()).replace('\\', '/')
+        # Set background image only for the main window, not child widgets
+        self.setStyleSheet(f"QMainWindow {{ background-image: url('{bg_path}'); background-repeat: no-repeat; background-position: center; background-attachment: fixed; }}")
+        central_widget.setStyleSheet("background: transparent;")
+
+        # Main layout: horizontal split for editors vs character creation
+        main_layout = QVBoxLayout(central_widget)
+        main_layout.setSpacing(0)
+        main_layout.setContentsMargins(40, 40, 40, 40)
+
+        # Title with glow effect using QGraphicsDropShadowEffect
         title_label = QLabel("M.A.G.U.S. Kalandmesteri eszköztár")
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_label.setStyleSheet("font-size: 18px; font-weight: bold; margin-bottom: 10px;")
-        layout.addWidget(title_label)
+        title_label.setStyleSheet("""
+            font-size: 30px; 
+            font-weight: bold; 
+            color: #0f130f; 
+            margin-bottom: 10px; 
+            background: rgba(255,255,255,0.0);
+        """)  
+        main_layout.addWidget(title_label)
 
-        layout.addStretch()
+        # Split editors and character creation into two panels
+        split_layout = QVBoxLayout()
+        split_layout.setSpacing(30)
 
-        # Gombok
+        # Character creation panel
+        char_box = QGroupBox()
+        char_layout = QVBoxLayout()
+        char_box.setLayout(char_layout)
+        char_box.setStyleSheet("""
+            QGroupBox { 
+                background: transparent; 
+                border: none;
+                margin: 0px;
+                padding: 0px;
+            }
+        """)
+
         btn_create_char = QPushButton("Karaktergenerálás")
         btn_create_char.setMinimumHeight(40)
         btn_create_char.clicked.connect(open_character_creator)
-        layout.addWidget(btn_create_char)
+        char_layout.addWidget(btn_create_char)
 
+        # Editors panel
+        editors_box = QGroupBox()
+        editors_layout = QVBoxLayout()
+        editors_box.setLayout(editors_layout)
+        editors_box.setStyleSheet("""
+            QGroupBox { 
+                background: transparent; 
+                border: none;
+                margin: 0px;
+                padding: 0px;
+            }
+        """)
         btn_race_editor = QPushButton("🧝 Faj szerkesztő")
         btn_race_editor.setMinimumHeight(40)
         btn_race_editor.clicked.connect(open_race_editor)
-        layout.addWidget(btn_race_editor)
+        editors_layout.addWidget(btn_race_editor)
 
         btn_class_editor = QPushButton("Kaszt szerkesztő")
         btn_class_editor.setMinimumHeight(40)
         btn_class_editor.clicked.connect(open_class_editor)
-        layout.addWidget(btn_class_editor)
+        editors_layout.addWidget(btn_class_editor)
 
         btn_skill_editor = QPushButton("Képzettség szerkesztő")
         btn_skill_editor.setMinimumHeight(40)
         btn_skill_editor.clicked.connect(open_skill_editor)
-        layout.addWidget(btn_skill_editor)
+        editors_layout.addWidget(btn_skill_editor)
 
         btn_equipment_editor = QPushButton("Felszerelés szerkesztő")
         btn_equipment_editor.setMinimumHeight(40)
         btn_equipment_editor.clicked.connect(open_equipment_editor)
-        layout.addWidget(btn_equipment_editor)
+        editors_layout.addWidget(btn_equipment_editor)
 
-        layout.addStretch()
+        # Split editors and character creation into two panels
+        split_layout.addWidget(char_box, 1)
+        split_layout.addWidget(editors_box, 1)
+        main_layout.addLayout(split_layout)
+        main_layout.addStretch()
 
         # Kilépés gomb
         btn_exit = QPushButton("Kilépés")
         btn_exit.setMinimumHeight(35)
         btn_exit.clicked.connect(self.close)
-        layout.addWidget(btn_exit)
-
-        central_widget.setLayout(layout)
+        main_layout.addWidget(btn_exit)
 
 
 if __name__ == "__main__":

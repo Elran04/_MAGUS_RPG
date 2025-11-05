@@ -187,14 +187,15 @@ class SkillManager:
             skill_list = []
             for req_id, min_lvl in c.fetchall():
                 # Skill név/id visszakeresése
-                c.execute("SELECT name, parameter FROM skills WHERE id=?", (req_id,))
+                c.execute("SELECT name, parameter, type FROM skills WHERE id= ?", (req_id,))
                 res = c.fetchone()
                 if res:
-                    name, param = res
+                    name, param, rtype = res
+                    suffix = f"{int(min_lvl)}%" if int(rtype or 1) == 2 else f"{int(min_lvl)}. szint"
                     if param:
-                        display = f"{name} ({param}) {min_lvl}. szint"
+                        display = f"{name} ({param}) {suffix}"
                     else:
-                        display = f"{name} {min_lvl}. szint"
+                        display = f"{name} {suffix}"
                     skill_list.append(display)
             if stat_list or skill_list:
                 result[str(lvl)] = {"képesség": stat_list, "képzettség": skill_list}
@@ -299,18 +300,47 @@ class SkillManager:
                     )
                     skill_prereqs = []
                     for skill_str in prereq.get("képzettség", []):
-                        m = re.match(r"(.+?)(?: \((.+?)\))? (\d+)\. szint", skill_str)
-                        if m:
-                            name = m.group(1)
-                            param = m.group(2) or ""
-                            min_lvl = int(m.group(3))
-                            # Skill id keresése név+param alapján
+                        # Support two formats:
+                        #  - "Name (Param) 3. szint" for level-based
+                        #  - "Name (Param) 30%" for percent-based
+                        # Also allow strings where the left part is an ID instead of name
+                        req_id = None
+                        name = None
+                        param = ""
+                        min_req_val = None
+
+                        # Try percent format first
+                        mp = re.match(r"^(.+?)(?: \((.+?)\))? (\d+)%$", skill_str)
+                        if mp:
+                            name = mp.group(1).strip()
+                            param = (mp.group(2) or "").strip()
+                            min_req_val = int(mp.group(3))
+                        else:
+                            # Try level format
+                            ml = re.match(r"^(.+?)(?: \((.+?)\))? (\d+)\. szint$", skill_str)
+                            if ml:
+                                name = ml.group(1).strip()
+                                param = (ml.group(2) or "").strip()
+                                min_req_val = int(ml.group(3))
+                            else:
+                                # Unrecognized format, skip
+                                continue
+
+                        # Resolve to ID: if 'name' is actually an ID, prefer that
+                        c.execute("SELECT id FROM skills WHERE id=?", (name,))
+                        res = c.fetchone()
+                        if res:
+                            req_id = res[0]
+                        else:
+                            # Fallback: lookup by display name + parameter
                             c.execute(
-                                "SELECT id FROM skills WHERE name=? AND parameter=?", (name, param)
+                                "SELECT id FROM skills WHERE name=? AND IFNULL(parameter, '')=?",
+                                (name, param),
                             )
                             res = c.fetchone()
                             req_id = res[0] if res else name
-                            skill_prereqs.append((req_id, min_lvl))
+
+                        skill_prereqs.append((req_id, min_req_val))
                     for req_id, min_lvl in skill_prereqs:
                         c.execute(
                             "INSERT INTO skill_prerequisites_skills (skill_id, level, required_skill_id, min_level) VALUES (?, ?, ?, ?)",

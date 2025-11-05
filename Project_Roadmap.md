@@ -44,19 +44,25 @@ This roadmap outlines the current status and future development steps for the **
 
 Current Features:
 
-✅ Skill Editor (fully implemented with CRUD, prerequisites, KP costs, descriptions)
+✅ Skill Editor (fully implemented with CRUD, prerequisites, KP costs, descriptions, placeholder management)
 
-✅ Class Editor (full class/spec management, combat stats, level requirements, skills)
+✅ Class Editor (full class/spec management, combat stats, level requirements, skills, starting equipment)
 
-✅ Equipment Editor (weapons, armor, general equipment with materials/quality)
+✅ Equipment Editor (weapons, armor, general equipment with materials/quality, categorized treeviews)
 
-✅ Character Creator (wizard with class/spec selection, skills, placeholder resolution)
+✅ Equipment Categories: Weapons & shields, armor (by type), general equipment (eszköz, élelem, tároló, lőszer, speciális)
+
+✅ Ammunition system: Ranged weapons with autocomplete "Lőszer típusa" field sourcing from general equipment
+
+✅ Character Creator (wizard with class/spec selection, skills, placeholder resolution, skill learning, equipment)
 
 ✅ Race Editor (11 races in JSON, full editor with attributes, skills, age categories, special abilities)
 
+✅ Main Window UI with background image, glow effects, and dark mode integration
+
 Planned / Ongoing Enhancements:
 
-🟨 Enhance UI/UX with better layout scaling, icons, and polished dark mode. (Dark mode ✅, scaling partial)
+✅ Enhance UI/UX with better layout scaling, icons, and polished dark mode. (Dark mode ✅, main window background ✅, glow effects ✅)
 
 🟨 Add validation and tooltips for input fields. (Validation ✅, tooltips partial)
 
@@ -68,21 +74,29 @@ Planned / Ongoing Enhancements:
 
 ✅ Racial bonuses and automatic racial skills (RaceAttributes with modifiers, limits, hard_limits; RacialSkill model with skill_id + level)
 
-🟨 Expand Skill Point System in Character Generation:
+✅ Expand Skill Point System in Character Generation:
 
 ✅ Integrate Ügyesség (Dexterity) and Intelligencia (Intelligence) bonuses (AttributesDisplayWidget shows derived FP/ÉP/KP).
 
-🟥 Handle skill categories (Gyakorlás, Tanulás) for bonus allocation per level (not implemented).
+✅ Skill learning step with KP spending and prerequisite checking
 
-🟥 Continue implementing inventory generation logic:
+🟥 Handle skill categories (Gyakorlás, Tanulás) for bonus allocation per level (not fully implemented).
 
-🟥 Random gold allocation and starting equipment purchasing (starting_equipment DB table exists, UI placeholder only).
+✅ Inventory generation logic:
 
-🟥 Class-based starting gear setup (schema ready, not wired to character creation).
+✅ Starting equipment loading from database (EquipmentLoader, starting_equipment table)
+
+✅ Equipment shop with categorized tabs (ShopPanel with armor, weapons/shields, general items)
+
+✅ Currency management with colored denominations (CurrencyWidget, CurrencyManager)
+
+✅ Inventory panel with buy/sell functionality (InventoryPanel)
+
+✅ Class-based starting gear setup (EquipmentStepWidget wired to character creation).
 
 🟥 Add Place of Birth and Character Origin systems tied to class specialization and race (Origin model in race_model.py, not in UI).
 
-🟨 Implement Racial and Class Descriptions panels for richer character info (class descriptions partial, race descriptions loaded via race.get_description()).
+✅ Implement Racial and Class Descriptions panels for richer character info (class descriptions ✅, race descriptions ✅).
 
 
 4. ⚔️ Game Demo (Pygame)
@@ -136,17 +150,23 @@ Current:
 
 ✅ Characters load from JSON with stats and equipment.
 
-✅ Character Creator wizard with class/spec selection from SQLite.
+✅ Character Creator wizard with 5 steps: Basic+Spec, Skills, Skill Learning, Equipment, Summary
 
 ✅ Race system integrated: RaceManager loads 11 races from JSON → Pydantic models.
 
 ✅ Racial bonuses, attribute modifiers, age categories, racial skills, forbidden skills.
 
-✅ Skills step with placeholder resolution, KP tracking, prerequisite checking.
+✅ Skills step with placeholder resolution, KP tracking, prerequisite checking, racial skills integration.
+
+✅ Skill learning step with KP spending, category-based learning (SkillLearningStepWidget).
+
+✅ Equipment step with shop, inventory, and currency management (EquipmentStepWidget, ShopPanel, InventoryPanel).
+
+✅ Attributes display with real-time calculation and validation (AttributesDisplayWidget).
 
 Planned:
 
-� Integrate SQLite-based class/skill data dynamically. (ClassDBManager + SkillDatabaseHelper in use, not full ORM)
+✅ Integrate SQLite-based class/skill data dynamically. (ClassDBManager ✅, SkillDatabaseHelper ✅, full integration complete)
 
 🟥 Implement XP system, leveling, and stat growth (CombatStats dataclass exists, XP calculations present in character_model.py, not wired to UI).
 
@@ -156,13 +176,13 @@ Planned:
 
 🟥 Add save/load for characters and multiple active party slots (save_character exists, no party/load UI).
 
-� Improve inventory:
+✅ Improve inventory:
 
-🟥 Track gold, gear weight, and capacity (starting_equipment table schema ready, not wired).
+✅ Track gold, gear weight, and capacity (CurrencyManager ✅, EquipmentService ✅, weight tracking in progress).
 
-🟥 Equipable vs non-equipable item handling (item_model.py exists, not integrated).
+✅ Equipable vs non-equipable item handling (shop categorization ✅, inventory management ✅).
 
-🟨 Begin unifying JSON → runtime model → persistent database logic (race_model.py + RaceManager ✅, class/skill/item models not integrated).
+✅ Unifying JSON → runtime model → persistent database logic (race_model.py + RaceManager ✅, equipment integration ✅, character save ✅).
 
 
 6. ⚔️ Combat System
@@ -246,11 +266,11 @@ Inventory use, fatigue, and travel modifiers.
 
 ✅ Race integration in character creation (RaceManager + Pydantic models)
 
-🟨 Skill/class integration from SQLite (ClassDBManager + SkillDatabaseHelper in use, not full model integration)
+✅ Skill/class integration from SQLite (ClassDBManager ✅, SkillDatabaseHelper ✅, full integration complete)
 
-� Inventory, gold, and origin logic (DB schema ready, UI placeholder only)
+✅ Inventory, gold, and origin logic (EquipmentStepWidget ✅, ShopPanel ✅, CurrencyManager ✅, InventoryPanel ✅)
 
-� Save/load support (save_character exists, no load/party UI)
+🟨 Save/load support (save_character ✅, minimal JSON export ✅, load/edit UI not started)
 
 2️⃣ Expanded Combat Framework
 
@@ -264,11 +284,15 @@ Inventory use, fatigue, and travel modifiers.
 
 ✅ Race editor complete
 
+✅ Equipment editors with categorized treeviews (armor, weapons/shields, general equipment)
+
+✅ Ammunition system integration (lőszer category, autocomplete for ranged weapons)
+
 🟥 Item templates (not started)
 
-� Improved validation and layout polish (validation ✅, tooltips/polish partial)
+✅ Improved validation and layout polish (validation ✅, dark mode ✅, main window UI ✅, glow effects ✅)
 
-✅ Integrated skill point logic (AttributesDisplayWidget calculates derived KP)
+✅ Integrated skill point logic (AttributesDisplayWidget calculates derived KP, skill learning step ✅)
 
 4️⃣ Playable Demo Scenario
 
@@ -278,18 +302,24 @@ Inventory use, fatigue, and travel modifiers.
 
 Current Status
 
-✅ GM Toolkit: Functional, modular, and actively expanding (Skill/Class/Equipment/Race editors complete)
+✅ GM Toolkit: Functional, modular, and actively expanding (Skill/Class/Equipment/Race editors complete with categorized treeviews)
 
-✅ Character Creator: Wizard with class/spec/race/skills selection, placeholder resolution, attributes display
+✅ Character Creator: Full 5-step wizard (Basic+Spec, Skills, Skill Learning, Equipment, Summary) with placeholder resolution, KP tracking, shop/inventory
+
+✅ Equipment System: Shop with categorized tabs, inventory management, currency tracking, starting equipment loading
 
 ✅ Game Demo: Playable with melee combat
 
-✅ Data Layer: JSON + SQLite hybrid in good shape (RaceManager, ClassDBManager, SkillManager all functional)
+✅ Data Layer: JSON + SQLite hybrid in good shape (RaceManager, ClassDBManager, SkillManager, EquipmentLoader all functional)
 
 ✅ Race System: Complete with Pydantic models, RaceManager, 11 races in JSON
 
-🟨 Next focus: Implement skill selection during character creation.
+✅ UI/UX: Dark mode throughout, main window with background image and glow effects, responsive layouts
 
-🟨 Next focus: Equipment step implementation (starting_equipment DB schema ready, UI is placeholder)
+✅ Completed: Skill selection, skill learning, and equipment management in character creation
+
+🟨 Next focus: Finalize character summary step and minimal JSON export
+
+🟨 Next focus: Implement character load/edit functionality
 
 🟨 Next focus: Extend combat with stamina, conditions, armor, and ranged logic

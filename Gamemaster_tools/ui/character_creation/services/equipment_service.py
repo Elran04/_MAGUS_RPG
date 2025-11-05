@@ -103,6 +103,77 @@ class EquipmentService:
         logger.info(f"Purchased: {item_data.get('name')} for {self.currency_manager.format(price)}")
         return True
 
+    def buy_item_bulk(self, item_data: dict[str, Any], category: str, quantity: int) -> bool:
+        """Purchase multiple units at once with proper currency deduction and stacking.
+
+        Args:
+            item_data: Item dict with price and id
+            category: Category key
+            quantity: Number of units to purchase (>0)
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            qty = int(quantity)
+        except Exception:
+            qty = 0
+        if qty <= 0:
+            return False
+
+        unit_price = int(item_data.get("price", 0) or 0)
+        total = unit_price * qty
+        if self.currency_base < total:
+            logger.warning(
+                f"Not enough currency to bulk buy {qty} x {item_data.get('name')} "
+                f"needs {self.currency_manager.format(total)} has {self.currency_manager.format(self.currency_base)}"
+            )
+            return False
+
+        # Deduct currency first
+        self.currency_base -= total
+
+        stackable = bool(item_data.get("stackable", False))
+        if stackable:
+            # Find existing stack to increase, else create new with given quantity
+            for inv in self.inventory.values():
+                if inv.get("category") == category and (inv.get("data", {}).get("id") == item_data.get("id")):
+                    inv["quantity"] = int(inv.get("quantity", 1)) + qty
+                    logger.info(
+                        f"Purchased stackable bulk: {item_data.get('name')} (+{qty} -> {inv['quantity']})"
+                    )
+                    return True
+            # No existing stack, add new entry with quantity
+            item_id = f"item_{self._next_item_id}"
+            self._next_item_id += 1
+            self.inventory[item_id] = {
+                "name": item_data.get("name", "Unknown"),
+                "category": category,
+                "price": unit_price,
+                "data": item_data,
+                "quantity": qty,
+            }
+            logger.info(
+                f"Purchased new stack: {item_data.get('name')} x{qty} for {self.currency_manager.format(total)}"
+            )
+            return True
+        else:
+            # Non-stackable: add separate entries qty times
+            for _ in range(qty):
+                item_id = f"item_{self._next_item_id}"
+                self._next_item_id += 1
+                self.inventory[item_id] = {
+                    "name": item_data.get("name", "Unknown"),
+                    "category": category,
+                    "price": unit_price,
+                    "data": item_data,
+                    "quantity": 1,
+                }
+            logger.info(
+                f"Purchased non-stackable bulk: {item_data.get('name')} x{qty} for {self.currency_manager.format(total)}"
+            )
+            return True
+
     def sell_item(self, item_id: str) -> bool:
         """
         Sell an item from inventory.
@@ -120,8 +191,8 @@ class EquipmentService:
         item = self.inventory[item_id]
         price = item["price"]
 
-        # Add currency (half price when selling) per unit
-        sell_price = price // 2
+        # Add currency at full price during character creation
+        sell_price = price
         self.currency_base += sell_price
 
         # If stackable and qty > 1, decrement, else remove

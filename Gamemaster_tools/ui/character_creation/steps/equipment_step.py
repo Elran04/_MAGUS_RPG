@@ -36,6 +36,10 @@ class EquipmentStepWidget(QtWidgets.QWidget):
         self.get_character_data = get_character_data
         self.get_class_id = get_class_id
         
+        # Initialize-once guard: compute and populate only on first entry
+        # Subsequent visits to this step will preserve state until editor restart
+        self._initialized: bool = False
+        
         # Services
         self.equipment_loader = EquipmentLoader()
         self.equipment_service = EquipmentService()
@@ -71,6 +75,9 @@ class EquipmentStepWidget(QtWidgets.QWidget):
         # Left panel: Shop
         self.shop_panel = ShopPanel()
         self.shop_panel.buy_requested.connect(self._on_buy_item)
+        self.shop_panel.bulk_buy_requested.connect(self._on_bulk_buy_item)
+        # Provide currency so the shop can validate affordability in dialogs
+        self.shop_panel.set_currency_provider(lambda: self.equipment_service.currency_base)
         splitter.addWidget(self.shop_panel)
         
         # Right panel: Inventory and Currency (vertical layout)
@@ -103,31 +110,37 @@ class EquipmentStepWidget(QtWidgets.QWidget):
         return panel
 
     def refresh(self):
-        """Refresh the UI with current character data and load starting equipment."""
+        """Populate shop and starting inventory only once; preserve thereafter."""
         logger.info("Equipment step refresh() called")
         
-        # Load equipment data from JSON
-        equipment_data = self.equipment_loader.load_all_equipment()
-        self.shop_panel.load_equipment(equipment_data)
-        
-        # Clear existing inventory to prevent duplicates on re-entering step
-        self.equipment_service.inventory.clear()
-        self.equipment_service.currency_base = 0
-        
-        data = self.get_character_data() or {}
-        
-        # Get class ID directly from the wizard
-        class_id = self.get_class_id()
-        spec_id = data.get("Specializáció")
-        
-        logger.info(f"refresh() called - class_id={class_id}, spec_id={spec_id}, data.keys={list(data.keys())}")
-        
-        if class_id:
-            self._load_starting_equipment(class_id, spec_id)
-        else:
-            logger.warning("class_id is None, cannot load starting equipment")
-        
-        # Update displays
+        if not self._initialized:
+            # Load equipment catalog once
+            equipment_data = self.equipment_loader.load_all_equipment()
+            self.shop_panel.load_equipment(equipment_data)
+
+            # Ensure clean initial state
+            self.equipment_service.inventory.clear()
+            self.equipment_service.currency_base = 0
+
+            data = self.get_character_data() or {}
+
+            # Get class/spec from the wizard (locked earlier in flow)
+            class_id = self.get_class_id()
+            spec_id = data.get("Specializáció")
+
+            logger.info(
+                f"initializing equipment step - class_id={class_id}, spec_id={spec_id}, data.keys={list(data.keys())}"
+            )
+
+            if class_id:
+                self._load_starting_equipment(class_id, spec_id)
+            else:
+                logger.warning("class_id is None, cannot load starting equipment")
+
+            # Mark as initialized to preserve state on subsequent visits
+            self._initialized = True
+
+        # Always refresh displays to reflect current state
         self._update_displays()
 
     def _load_starting_equipment(self, class_id: str, spec_id: str | None):
@@ -160,7 +173,7 @@ class EquipmentStepWidget(QtWidgets.QWidget):
                 logger.warning(f"Starting item not found: {item_type}/{item_id}")
 
     def _on_buy_item(self, item_data: dict[str, Any], category: str):
-        """Handle buy item request from shop."""
+        """Handle buy item request from shop (single unit)."""
         success = self.equipment_service.buy_item(item_data, category)
         if success:
             self._update_displays()
@@ -170,6 +183,20 @@ class EquipmentStepWidget(QtWidgets.QWidget):
                 self,
                 "Nincs elég pénz",
                 f"Nem elég a pénzed a {item_data.get('name', '???')} megvásárlásához."
+            )
+
+    def _on_bulk_buy_item(self, item_data: dict[str, Any], category: str, quantity: int):
+        """Handle bulk buy request from shop (multiple units)."""
+        success = self.equipment_service.buy_item_bulk(item_data, category, quantity)
+        if success:
+            self._update_displays()
+        else:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Nincs elég pénz",
+                (
+                    f"Nem elég a pénzed a {quantity}× {item_data.get('name', '???')} megvásárlásához."
+                ),
             )
 
     def _on_sell_item(self, item_id: str):

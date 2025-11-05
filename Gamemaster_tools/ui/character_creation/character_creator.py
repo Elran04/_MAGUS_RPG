@@ -69,30 +69,32 @@ class CharacterWizardQt(QtWidgets.QDialog):
             widget = self.step_layout.itemAt(i).widget()
             if widget:
                 widget.setParent(None)
+        # Back button visibility per step (hybrid navigation rules)
+        # Step 0 (Basic+Spec): hide Back; Step 1 (Skills): hide Back; others: show Back
+        if self.step in (0, 1):
+            self.back_btn.setVisible(False)
+        else:
+            self.back_btn.setVisible(True)
+
         if self.step == 0:
             # Step 0: Basic data + specialization
             self.show_basic_spec_modular()
-            self.back_btn.setEnabled(False)
             self.next_btn.setText("Következő")
         elif self.step == 1:
             # Step 1: Class skills + placeholder resolution
             self.show_skills_modular()
-            self.back_btn.setEnabled(True)
             self.next_btn.setText("Következő")
         elif self.step == 2:
             # Step 2: NEW - Skill learning with KP spending
             self.show_skill_learning()
-            self.back_btn.setEnabled(True)
             self.next_btn.setText("Következő")
         elif self.step == 3:
             # Step 3: Equipment
             self.show_equipment()
-            self.back_btn.setEnabled(True)
             self.next_btn.setText("Következő")
         elif self.step == 4:
             # Step 4: Summary
             self.show_summary()
-            self.back_btn.setEnabled(True)
             self.next_btn.setText("Mentés")
 
     def show_basic_spec_modular(self):
@@ -202,6 +204,19 @@ class CharacterWizardQt(QtWidgets.QDialog):
             except Exception as e:
                 logger.error(f"Error calculating KP: {e}", exc_info=True)
                 self.data["Képzettségpontok"] = {"Alap": 0, "Szintenként": 0}
+            # One-way warning before moving to Skills: class/spec cannot be changed later
+            ans = QtWidgets.QMessageBox.question(
+                self,
+                "Figyelmeztetés",
+                (
+                    "A kaszt és specializáció kiválasztása után már nem tudsz visszalépni ide "
+                    "a varázsló újraindítása nélkül. Folytatod?"
+                ),
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                QtWidgets.QMessageBox.StandardButton.No,
+            )
+            if ans != QtWidgets.QMessageBox.StandardButton.Yes:
+                return
             # If skills step already exists (user is returning to it), refresh attributes explicitly now
             if hasattr(self, "skills_step") and self.skills_step is not None:
                 try:
@@ -300,9 +315,30 @@ class CharacterWizardQt(QtWidgets.QDialog):
             self.show_step()
 
     def prev_step(self):
-        if self.step > 0:
-            self.step -= 1
-            self.show_step()
+        if self.step <= 0:
+            return
+        # Special case: going back from Skill Learning (step 2) to Skills (step 1)
+        if self.step == 2:
+            ans = QtWidgets.QMessageBox.question(
+                self,
+                "Visszalépés megerősítése",
+                (
+                    "A Képzettségek tanulása oldal vissza fog állni az alap (kötelező) "
+                    "képzettségekre. Biztosan visszalépsz?"
+                ),
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                QtWidgets.QMessageBox.StandardButton.No,
+            )
+            if ans != QtWidgets.QMessageBox.StandardButton.Yes:
+                return
+            # Reset learning step state so it rebuilds from mandatory skills next time
+            if hasattr(self, "skill_learning_step") and self.skill_learning_step is not None:
+                try:
+                    self.skill_learning_step.selection_manager = None
+                except Exception:
+                    pass
+        self.step -= 1
+        self.show_step()
 
     def finish(self):
         # Build final character payload: only base info, attributes, skills, equipment

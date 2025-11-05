@@ -47,15 +47,18 @@ class PrerequisiteInfoHelper:
                     if for_level and int(for_level) > int(current_level or 0):
                         continue
                     req_row = conn.execute(
-                        "SELECT name, parameter FROM skills WHERE id=?",
+                        "SELECT name, parameter, type FROM skills WHERE id=?",
                         (req_skill_id,),
                     ).fetchone()
                     if req_row:
-                        req_name, req_param = req_row
+                        req_name, req_param, req_type = req_row
                         disp = f"{req_name} ({req_param})" if req_param else req_name
                         txt = disp
-                        if min_level:
-                            txt += f" - Szint/%: {min_level}"
+                        if min_level is not None:
+                            if int(req_type or 1) == 2:
+                                txt += f" - {int(min_level)}%"
+                            else:
+                                txt += f" - {int(min_level)}. szint"
                         parts.append(txt)
 
                 ok, _ = self.prereq_checker.check_prerequisites(

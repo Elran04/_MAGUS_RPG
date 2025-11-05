@@ -7,6 +7,8 @@ Refactored to provide reusable prerequisite editor components:
 """
 
 from PySide6.QtCore import Qt
+import sqlite3
+from config.paths import SKILLS_DB
 from PySide6.QtWidgets import (
     QComboBox,
     QCompleter,
@@ -113,13 +115,35 @@ class SkillPrerequisiteEditorWidget(QWidget):
         self.skill_combo.setCompleter(completer)
         skill_controls.addWidget(self.skill_combo)
 
+        # Level input (for type=1)
         self.skill_level_spin = QSpinBox()
         self.skill_level_spin.setMinimum(1)
         self.skill_level_spin.setMaximum(6)
         self.skill_level_spin.setValue(1)
-        self.skill_level_spin.setMaximumWidth(50)
-        skill_controls.addWidget(QLabel("szint"))
+        self.skill_level_spin.setMaximumWidth(60)
+
+        # Percent input (for type=2)
+        self.skill_percent_spin = QSpinBox()
+        self.skill_percent_spin.setRange(0, 100)
+        self.skill_percent_spin.setSingleStep(5)
+        self.skill_percent_spin.setSuffix("%")
+        self.skill_percent_spin.setValue(30)
+        self.skill_percent_spin.setMaximumWidth(80)
+
+        # Placeholder label that we toggle with the inputs
+        self._level_label = QLabel("szint")
+        self._percent_label = QLabel("%")
+        self._percent_label.setVisible(False)
+
+        # Start with level spin visible by default; switch on selection
+        skill_controls.addWidget(self._level_label)
         skill_controls.addWidget(self.skill_level_spin)
+        self.skill_percent_spin.setVisible(False)
+        skill_controls.addWidget(self._percent_label)
+        skill_controls.addWidget(self.skill_percent_spin)
+
+        # React to selection changes to switch input type
+        self.skill_combo.currentTextChanged.connect(self._on_skill_combo_changed)
 
         btn_add_skill = QPushButton("+")
         btn_add_skill.setMaximumWidth(30)
@@ -177,20 +201,79 @@ class SkillPrerequisiteEditorWidget(QWidget):
             # Autofill: store id (with param) in UserRole, display name (with param) as text
             id_with_param = f"{skill_id} ({param})" if param else skill_id
             name_with_param = f"{skill_name} ({param})" if param else skill_name
-            text = f"{name_with_param} {level}. szint"
+            # Determine required skill type for proper suffix
+            req_type = self._get_skill_type_by_id(skill_id)
+            if req_type == 2:
+                text = f"{name_with_param} {int(level)}%"
+                user_val = f"{id_with_param} {int(level)}%"
+            else:
+                text = f"{name_with_param} {int(level)}. szint"
+                user_val = f"{id_with_param} {int(level)}. szint"
             item = QListWidgetItem(text)
-            item.setData(Qt.ItemDataRole.UserRole, f"{id_with_param} {level}. szint")
+            item.setData(Qt.ItemDataRole.UserRole, user_val)
             self.skill_list.addItem(item)
             return
         # Manual add: use display name for both text and storage (original behavior)
         skill = self.skill_combo.currentText().strip()
-        level = self.skill_level_spin.value()
         if not skill:
             return
-        text = f"{skill} {level}. szint"
+        req_type = self._get_skill_type_from_text(skill)
+        if req_type == 2:
+            value = int(self.skill_percent_spin.value())
+            text = f"{skill} {value}%"
+        else:
+            value = int(self.skill_level_spin.value())
+            text = f"{skill} {value}. szint"
         item = QListWidgetItem(text)
         item.setData(Qt.ItemDataRole.UserRole, text)
         self.skill_list.addItem(item)
+
+    def _on_skill_combo_changed(self, text: str):
+        """Switch input controls depending on the selected skill's type."""
+        req_type = self._get_skill_type_from_text(text or "")
+        is_percent = (req_type == 2)
+        self.skill_level_spin.setVisible(not is_percent)
+        self._level_label.setVisible(not is_percent)
+        self.skill_percent_spin.setVisible(is_percent)
+        self._percent_label.setVisible(is_percent)
+
+    def _get_skill_type_from_text(self, text: str) -> int:
+        """Resolve skill type (1 level-based, 2 percent-based) from display text 'Name' or 'Name (Param)'."""
+        name = (text or "").strip()
+        if not name:
+            return 1
+        # Parse optional parameter in parentheses
+        param = None
+        if name.endswith(")") and " (" in name:
+            try:
+                base, paren = name.rsplit(" (", 1)
+                param = paren[:-1]
+                name = base
+            except Exception:
+                pass
+        try:
+            with sqlite3.connect(str(SKILLS_DB)) as conn:
+                if param is None:
+                    row = conn.execute(
+                        "SELECT type FROM skills WHERE name=? AND IFNULL(parameter,'')='' LIMIT 1",
+                        (name,),
+                    ).fetchone()
+                else:
+                    row = conn.execute(
+                        "SELECT type FROM skills WHERE name=? AND parameter=? LIMIT 1",
+                        (name, param),
+                    ).fetchone()
+                return int(row[0]) if row else 1
+        except Exception:
+            return 1
+
+    def _get_skill_type_by_id(self, skill_id: str) -> int:
+        try:
+            with sqlite3.connect(str(SKILLS_DB)) as conn:
+                row = conn.execute("SELECT type FROM skills WHERE id=? LIMIT 1", (skill_id,)).fetchone()
+                return int(row[0]) if row else 1
+        except Exception:
+            return 1
 
     def remove_skill_prereq(self):
         """Remove selected skill prerequisite"""

@@ -46,7 +46,7 @@ class InventoryPanel(QtWidgets.QWidget):
         layout.addWidget(self.inventory_list, stretch=1)
 
         # Sell button at bottom
-        self.sell_button = QtWidgets.QPushButton("Eladás (1 db, fél áron)")
+        self.sell_button = QtWidgets.QPushButton("Eladás (1 db, vételáron)")
         self.sell_button.setEnabled(False)
         self.sell_button.clicked.connect(self._on_sell_clicked)
         layout.addWidget(self.sell_button)
@@ -90,7 +90,7 @@ class InventoryPanel(QtWidgets.QWidget):
                 for item_id, item in items:
                     name = item.get("name", "???")
                     price = item.get("price", 0)
-                    sell_price = price // 2
+                    sell_price = price  # Full price during character creation
                     price_str = currency_manager.format(price)
                     sell_price_str = currency_manager.format(sell_price)
                     qty = int(item.get("quantity", 1))
@@ -142,8 +142,8 @@ class InventoryPanel(QtWidgets.QWidget):
             return
             
         menu = QtWidgets.QMenu(self)
-        sell_action = menu.addAction("Eladás (1 db, fél áron)")
-        
+        sell_action = menu.addAction("Eladás (1 db, vételáron)")
+
         action = menu.exec(self.inventory_list.mapToGlobal(pos))
         if action == sell_action:
             self.sell_requested.emit(item_id)
