@@ -2,7 +2,7 @@ import os
 import sqlite3
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from PySide6 import QtCore, QtWidgets
 
@@ -38,7 +38,7 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         self._initial_fill()
 
     # --- UI construction ---
-    def _build_ui(self):
+    def _build_ui(self) -> None:
         hlayout = QtWidgets.QHBoxLayout(self)
         hlayout.setContentsMargins(0, 0, 0, 0)
         hlayout.setSpacing(16)
@@ -104,7 +104,7 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         hlayout.addWidget(left, stretch=1)
         hlayout.addWidget(right, stretch=2)
 
-    def _wire(self):
+    def _wire(self) -> None:
         self.race_combo.currentTextChanged.connect(self.update_age_limits)
         self.race_combo.currentTextChanged.connect(self.update_class_options)
         self.gender_combo.currentTextChanged.connect(self.update_class_options)
@@ -112,12 +112,12 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
             self.populate_specializations_for_selected_class
         )
 
-    def _initial_fill(self):
+    def _initial_fill(self) -> None:
         self.update_age_limits()
         self.update_class_options()
 
     # --- Behavior ---
-    def update_age_limits(self):
+    def update_age_limits(self) -> None:
         race_name = self.race_combo.currentText()
         # Convert race name to ID
         race_id = race_name.lower().replace(" ", "_")
@@ -128,7 +128,7 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         limits = (race.age.min, race.age.max) if race else (13, 100)
         self.age_limits_label.setText(f"Engedélyezett kor: {limits[0]} - {limits[1]}")
 
-    def update_class_options(self):
+    def update_class_options(self) -> None:
         race_name = self.race_combo.currentText()
         gender = self.gender_combo.currentText()
         # resolve race id and object
@@ -137,20 +137,20 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         race_id = race_id.replace("ő", "o").replace("ü", "u").replace("ű", "u").replace("í", "i")
         race_obj = _race_manager.get_race(race_id)
 
-        classes = list(self.class_db.list_classes())  # (id, name)
-        name_set = {name for (_cid, name) in classes}
-        id_to_name = dict(classes)
-        # Normalize allowed list from JSON (it may contain class IDs or names)
-        allowed_by_race = set()
+        classes = cast(list[tuple[int, str]], list(self.class_db.list_classes()))  # (id, name)
+        name_set: set[str] = {name for (_cid, name) in classes}
+        id_to_name: dict[int, str] = dict(classes)
+        # Normalize allowed list from JSON (it may contain class IDs (int) or names (str))
+        allowed_by_race: set[str] = set()
         if race_obj:
             for token in race_obj.class_restrictions.allowed_classes:
-                if token in name_set:
+                if isinstance(token, str) and token in name_set:
                     allowed_by_race.add(token)
-                elif token in id_to_name:
+                elif isinstance(token, int) and token in id_to_name:
                     allowed_by_race.add(id_to_name[token])
         if not allowed_by_race:
             allowed_by_race = set(name_set)
-        restricted_by_gender = set(GENDER_RESTRICTIONS.get(gender, set()))
+        restricted_by_gender: set[str] = set(GENDER_RESTRICTIONS.get(gender, set()))
 
         allowed = [
             (cid, name)
@@ -169,7 +169,7 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         self.class_tree.clear()
 
         # Group classes by category (you can customize this categorization)
-        categories: dict[str, list[tuple[str, str]]] = {
+        categories: dict[str, list[tuple[int, str]]] = {
             "Harcos": [],
             "Szerencsevadász": [],
             "Harcművész": [],
@@ -250,7 +250,7 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         self.class_tree.blockSignals(False)
         self.populate_specializations_for_selected_class()
 
-    def populate_specializations_for_selected_class(self):
+    def populate_specializations_for_selected_class(self) -> None:
         selected_items = self.class_tree.selectedItems()
         if not selected_items:
             self.selected_class_id = None
@@ -286,7 +286,7 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         self.spec_combo.blockSignals(False)
         self.load_specialization_description(self.spec_combo.currentText())
 
-    def load_specialization_description(self, spec_name):
+    def load_specialization_description(self, spec_name: str) -> None:
         if spec_name == "Nincs" or not spec_name:
             self.load_base_class_description()
             return
@@ -308,7 +308,7 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         else:
             self.spec_desc.setPlainText(f"A leírás fájl nem található:\n{desc_file}")
 
-    def load_base_class_description(self):
+    def load_base_class_description(self) -> None:
         if not self.selected_class_id:
             self.spec_desc.clear()
             self.spec_desc.setPlaceholderText("Nincs kaszt kiválasztva.")
@@ -355,16 +355,16 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         race_id = race_id.replace("ő", "o").replace("ü", "u").replace("ű", "u").replace("í", "i")
         race_obj = _race_manager.get_race(race_id)
         # Normalize allowed list to names for validation
-        allowed_for_race = None
+        allowed_for_race: list[str] | None = None
         if race_obj:
-            classes = list(self.class_db.list_classes())
-            name_set = {name for (_cid, name) in classes}
-            id_to_name = dict(classes)
-            allowed_names = []
+            classes = cast(list[tuple[int, str]], list(self.class_db.list_classes()))
+            name_set: set[str] = {name for (_cid, name) in classes}
+            id_to_name: dict[int, str] = dict(classes)
+            allowed_names: list[str] = []
             for token in race_obj.class_restrictions.allowed_classes:
-                if token in name_set:
+                if isinstance(token, str) and token in name_set:
                     allowed_names.append(token)
-                elif token in id_to_name:
+                elif isinstance(token, int) and token in id_to_name:
                     allowed_names.append(id_to_name[token])
             allowed_for_race = allowed_names if allowed_names else None
         if not is_class_allowed(gender, klass, allowed_for_race):
@@ -394,7 +394,7 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         self.result_label.setText("")
         return True
 
-    def get_data(self) -> dict:
+    def get_data(self) -> dict[str, Any]:
         selected_items = self.class_tree.selectedItems()
         selected_class = selected_items[0].text(0) if selected_items else ""
 
@@ -409,14 +409,14 @@ class BasicSpecStepWidget(QtWidgets.QWidget):
         }
         return data
 
-    def get_selected_class_id(self):
+    def get_selected_class_id(self) -> str | None:
         return self.selected_class_id
 
-    def get_spec_data(self):
+    def get_spec_data(self) -> dict[str, Any]:
         return self.spec_data
 
     # --- Prefill from existing data ---
-    def set_data(self, data: dict):
+    def set_data(self, data: dict[str, Any]) -> None:
         """Prefill the form from a provided data dict produced by get_data().
 
         Keys used: Név, Nem, Kor, Faj, Kaszt, Specializáció.

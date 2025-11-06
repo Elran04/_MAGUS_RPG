@@ -9,13 +9,13 @@ Subdirectories:
 
 # Re-export commonly used widgets for convenience
 from .common import AttributesDisplayWidget, AttributesReadOnlyWidget
-from .skills import SkillsTableRenderer
 from .learning import LearningRow, LearningSkillsTableRenderer
+from .skills import SkillsTableRenderer
 
 __all__ = [
-    'AttributesDisplayWidget',
-    'AttributesReadOnlyWidget',
-    'SkillsTableRenderer',
-    'LearningRow',
-    'LearningSkillsTableRenderer',
+    "AttributesDisplayWidget",
+    "AttributesReadOnlyWidget",
+    "SkillsTableRenderer",
+    "LearningRow",
+    "LearningSkillsTableRenderer",
 ]

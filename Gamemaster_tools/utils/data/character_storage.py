@@ -1,4 +1,5 @@
 import os
+from typing import Any, cast
 
 from config.paths import CHARACTERS_DIR
 
@@ -9,7 +10,7 @@ logger = get_logger(__name__)
 CHARACTER_DIR = str(CHARACTERS_DIR)
 
 
-def save_character(character, filename):
+def save_character(character: dict[str, Any], filename: str) -> bool:
     """Save character data to JSON file.
 
     Args:
@@ -29,7 +30,7 @@ def save_character(character, filename):
         return False
 
 
-def load_character(filename):
+def load_character(filename: str) -> dict[str, Any] | None:
     """Load character data from JSON file.
 
     Args:
@@ -44,7 +45,11 @@ def load_character(filename):
         return None
 
     try:
-        return load_json(path, default=None)
+        raw = load_json(path, default=None)
+        if isinstance(raw, dict):
+            # Best-effort typing; JSON loader returns Any, guard to dict
+            return cast(dict[str, Any], raw)
+        return None
     except Exception as e:
         logger.error(f"Failed to load character {filename}: {e}")
         return None

@@ -2,7 +2,6 @@
 Opportunity attack handling for Zone of Control mechanics.
 """
 
-
 from core.game_state import GameState
 from core.unit_manager import Unit
 from systems.reach import compute_reach_hexes

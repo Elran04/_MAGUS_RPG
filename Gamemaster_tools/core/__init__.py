@@ -13,9 +13,9 @@ from core.race_model import (
     AgeCategory,
     AgeData,
     AttributeModifiers,
-    RaceAttributes,
     ClassRestrictions,
     Race,
+    RaceAttributes,
     RacialSkill,
     SpecialAbility,
 )

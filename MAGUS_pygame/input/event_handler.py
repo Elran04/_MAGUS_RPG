@@ -2,7 +2,6 @@
 Event handling for user input and UI interactions.
 """
 
-
 from actions.action_attack import compute_attackable, handle_attack_click
 from actions.action_charge import compute_charge_targets, execute_charge_attack
 from actions.action_handling import process_action_ui_click

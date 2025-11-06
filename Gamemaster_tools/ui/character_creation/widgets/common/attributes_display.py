@@ -9,7 +9,7 @@ from PySide6 import QtCore, QtWidgets
 # Ensure engine path is available
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 from engine.attribute_manager import AttributeManager
-from utils.ui.themes import CharacterCreationTheme, success_button_style, highlight_button_style
+from utils.ui.themes import CharacterCreationTheme, highlight_button_style, success_button_style
 
 
 class AttributesDisplayWidget(QtWidgets.QWidget):
@@ -45,11 +45,11 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
 
     def __init__(
         self,
-        get_character_data: Callable[[], dict],
+        get_character_data: Callable[[], dict[str, Any]],
         set_character_data: Callable[[str, Any], None],
-        get_class_db: Callable,
-        parent=None,
-    ):
+        get_class_db: Callable[[], Any],
+        parent: QtWidgets.QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
         self._get_character_data = get_character_data
         self._set_character_data = set_character_data
@@ -63,11 +63,11 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
         self._build_ui()
 
     def _get_race_age(self) -> tuple[str, int]:
-        """Helper to get current race and age from character data."""
+        """Utility method to get current race and age from character data."""
         data = self._get_character_data() or {}
         return data.get("Faj", "Ember"), int(data.get("Kor", 20))
 
-    def _build_ui(self):
+    def _build_ui(self) -> None:
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(8)
@@ -224,7 +224,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
         # Initially, show selection until a mode is chosen
         self.body_widget.setVisible(False)
 
-    def initialize(self, class_name: str, race: str, age: int):
+    def initialize(self, class_name: str, race: str, age: int) -> None:
         """Initialize the attribute manager for given class/race/age."""
         class_db = self._get_class_db()
         self.attribute_manager = AttributeManager(class_db)
@@ -261,7 +261,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
             clamped[attr] = max(min_val, min(max_val, v))
         return clamped
 
-    def refresh_from_basic_selection(self, class_name: str, race: str, age: int):
+    def refresh_from_basic_selection(self, class_name: str, race: str, age: int) -> None:
         """Explicitly refresh attributes when the first page (basic/spec) changes and Next is pressed."""
         if not self.attribute_manager:
             self.initialize(class_name, race, age)
@@ -286,7 +286,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
         self._update_points_display()
         self._save_and_emit()
 
-    def _restore_saved_state(self, race: str, age: int, data: dict):
+    def _restore_saved_state(self, race: str, age: int, data: dict[str, Any]) -> None:
         """Restore previously saved attribute state."""
         if not self.attribute_manager:
             return
@@ -301,7 +301,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
             self.body_widget.setVisible(True)
             self._apply_mode_ui()
 
-    def _choose_mode(self, mode: str):
+    def _choose_mode(self, mode: str) -> None:
         """One-time mode selection: set mode, lock it, and prepare UI/state."""
         if mode not in ("roll", "pointbuy") or self._get_character_data().get(
             "_AttributeModeLocked"
@@ -330,7 +330,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
 
         self._apply_mode_ui()
 
-    def _apply_mode_ui(self):
+    def _apply_mode_ui(self) -> None:
         """Apply visibility, ranges, handlers, and info text for the current mode."""
         race, age = self._get_race_age()
 
@@ -346,7 +346,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
         self._update_points_display()
         self.refresh()
 
-    def _configure_spinboxes(self, race: str, age: int):
+    def _configure_spinboxes(self, race: str, age: int) -> None:
         """Configure spinbox ranges and handlers based on current mode."""
         if not self.attribute_manager:
             return
@@ -376,7 +376,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
             finally:
                 spinbox.blockSignals(False)
 
-    def _update_info_text(self):
+    def _update_info_text(self) -> None:
         """Update the info label text based on current mode."""
         if self.mode == "pointbuy":
             self.info_label.setText(
@@ -390,7 +390,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
                 "A pontköltség megegyezik a pontelosztás szabályaival.</i>"
             )
 
-    def _roll_attributes(self):
+    def _roll_attributes(self) -> None:
         """Roll new attribute values (only used for initial roll in hybrid mode)."""
         if not self.attribute_manager:
             QtWidgets.QMessageBox.warning(
@@ -413,7 +413,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
         self._update_points_display()
         self.refresh()
 
-    def _reset_to_minimums(self):
+    def _reset_to_minimums(self) -> None:
         """Reset all attributes to minimum values (point-buy mode only)."""
         if not self.attribute_manager:
             return
@@ -427,7 +427,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
         self._save_and_emit()
         self._update_points_display()
 
-    def _update_spinbox_values(self):
+    def _update_spinbox_values(self) -> None:
         """Update all spinbox values from attribute manager."""
         if not self.attribute_manager:
             return
@@ -440,7 +440,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
             spinbox.setValue(int(value))
             spinbox.blockSignals(False)
 
-    def _revert_spinbox(self, spinbox: QtWidgets.QSpinBox, attr: str):
+    def _revert_spinbox(self, spinbox: QtWidgets.QSpinBox, attr: str) -> None:
         """Revert spinbox to valid value when change is rejected."""
         if not self.attribute_manager:
             return
@@ -457,7 +457,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
         spinbox.setValue(value)
         spinbox.blockSignals(False)
 
-    def _on_spinbox_changed(self, value):
+    def _on_spinbox_changed(self, value: int) -> None:
         """Handle spinbox value change in point-buy mode."""
         if not self.attribute_manager or self.mode != "pointbuy":
             return
@@ -483,7 +483,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
             self._update_points_display()
             self._update_final_labels()
 
-    def _on_roll_spinbox_changed(self, value):
+    def _on_roll_spinbox_changed(self, value: int) -> None:
         """Handle spinbox value change in roll (hybrid) mode with ±2 bounds and point constraints."""
         if not self.attribute_manager or self.mode != "roll":
             return
@@ -507,7 +507,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
         self._update_points_display()
         self._update_final_labels()
 
-    def _update_points_display(self):
+    def _update_points_display(self) -> None:
         """Update the point pool display for current mode."""
         if not self.attribute_manager:
             return
@@ -525,12 +525,16 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
         self.points_label.setText(text)
 
         # Style based on remaining points
-        color = CharacterCreationTheme.ERROR_RED_LIGHT if remaining < 0 else (CharacterCreationTheme.SUCCESS_GREEN if remaining == 0 else "")
+        color = (
+            CharacterCreationTheme.ERROR_RED_LIGHT
+            if remaining < 0
+            else (CharacterCreationTheme.SUCCESS_GREEN if remaining == 0 else "")
+        )
         self.points_label.setStyleSheet(
             f"font-weight: bold; font-size: 12px; padding: 4px;{f' color: {color};' if color else ''}"
         )
 
-    def _save_and_emit(self):
+    def _save_and_emit(self) -> None:
         """Save current state to character data and emit change signal."""
         if not self.attribute_manager:
             return
@@ -547,7 +551,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
         # Emit signal
         self.attributes_changed.emit(final)
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Update the displayed attribute values and tooltips from current character data."""
         if not self.attribute_manager:
             return
@@ -562,7 +566,7 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
 
         self._update_points_display()
 
-    def _update_final_labels(self):
+    def _update_final_labels(self) -> None:
         """Refresh the right-side final value labels from the attribute manager."""
         if not self.attribute_manager:
             return
@@ -572,13 +576,17 @@ class AttributesDisplayWidget(QtWidgets.QWidget):
             # Optional subtle style: highlight if modifiers changed it
             class_val = self.attribute_manager.class_values.get(attr, 0)
             if final_val > class_val:
-                label.setStyleSheet(f"font-size: 12px; padding-left: 6px; color: {CharacterCreationTheme.SUCCESS_GREEN_DARK};")
+                label.setStyleSheet(
+                    f"font-size: 12px; padding-left: 6px; color: {CharacterCreationTheme.SUCCESS_GREEN_DARK};"
+                )
             elif final_val < class_val:
-                label.setStyleSheet(f"font-size: 12px; padding-left: 6px; color: {CharacterCreationTheme.ERROR_RED};")
+                label.setStyleSheet(
+                    f"font-size: 12px; padding-left: 6px; color: {CharacterCreationTheme.ERROR_RED};"
+                )
             else:
                 label.setStyleSheet("font-size: 12px; padding-left: 6px;")
 
-    def _build_tooltip(self, attr: str, breakdown: dict) -> str:
+    def _build_tooltip(self, attr: str, breakdown: dict[str, Any]) -> str:
         """Build a detailed tooltip showing attribute breakdown."""
         lines = [f"<b>{attr}</b>", "<hr>", f"Kaszt érték: <b>{breakdown['class_value']}</b>"]
 

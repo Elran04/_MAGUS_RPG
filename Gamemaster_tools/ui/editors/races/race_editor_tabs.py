@@ -31,6 +31,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
 from ui.editors.races.race_editor_constants import ATTRIBUTE_NAMES
 from ui.editors.races.special_ability_editor import SpecialAbilityEditor
 

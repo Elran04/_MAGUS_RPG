@@ -4,21 +4,21 @@ Allows players to spend KP on learning new skills during character creation.
 Refactored to use renderer pattern and centralized KP logic in manager.
 """
 
-import sqlite3
 from collections.abc import Callable
 from typing import Any
 
 from PySide6 import QtCore, QtWidgets
+from utils.log.logger import get_logger
+from utils.ui.themes import header_label_style, info_label_style
+
+from ui.character_creation.dialogs.add_skill_dialog import AddSkillDialog
 from ui.character_creation.services import (
-    SkillDatabaseHelper,
+    PrerequisiteFormatter,
+    SkillDatabaseService,
     SkillPrerequisiteChecker,
-    PrerequisiteInfoHelper,
     SkillSelectionManager,
 )
 from ui.character_creation.widgets.learning import LearningRow, LearningSkillsTableRenderer
-from utils.log.logger import get_logger
-from utils.ui.themes import header_label_style, info_label_style
-from ui.character_creation.dialogs.add_skill_dialog import AddSkillDialog
 
 logger = get_logger(__name__)
 
@@ -33,28 +33,28 @@ class SkillLearningStepWidget(QtWidgets.QWidget):
         self,
         base_dir: str,
         get_character_data: Callable[[], dict[str, Any]],
-        placeholder_mgr=None,
-    ):
+        placeholder_mgr: Any = None,
+    ) -> None:
         super().__init__()
         self.BASE_DIR = base_dir
         self.get_character_data = get_character_data
         self.placeholder_mgr = placeholder_mgr
 
-        # Initialize helpers
-        self.db_helper = SkillDatabaseHelper(base_dir)
-        self.prereq_checker = SkillPrerequisiteChecker(self.db_helper, placeholder_mgr)
-        self.prereq_info = PrerequisiteInfoHelper(self.db_helper, self.prereq_checker)
+        # Initialize services
+        self.skill_db_service = SkillDatabaseService(base_dir)
+        self.prereq_checker = SkillPrerequisiteChecker(self.skill_db_service, placeholder_mgr)
+        self.prereq_formatter = PrerequisiteFormatter(self.skill_db_service, self.prereq_checker)
         self.selection_manager: SkillSelectionManager | None = None
 
         # UI components
         self.kp_info_label: QtWidgets.QLabel | None = None
         self.skills_table: QtWidgets.QTableWidget | None = None
         self.table_renderer: LearningSkillsTableRenderer | None = None
-        self.attributes_widget = None
+        self.attributes_widget: Any = None
 
         self._build_ui()
 
-    def _build_ui(self):
+    def _build_ui(self) -> None:
         """Build the UI with left panel (attributes) and right panel (skills)."""
         main_layout = QtWidgets.QHBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -63,7 +63,7 @@ class SkillLearningStepWidget(QtWidgets.QWidget):
 
         # Left panel: Read-only attributes display
         from ui.character_creation.widgets.common import AttributesReadOnlyWidget
-        
+
         self.attributes_widget = AttributesReadOnlyWidget(self.get_character_data)
         splitter.addWidget(self.attributes_widget)
 
@@ -78,7 +78,7 @@ class SkillLearningStepWidget(QtWidgets.QWidget):
         title.setStyleSheet("font-weight: bold; font-size: 14px; padding: 4px;")
         header.addWidget(title)
         header.addStretch()
-        
+
         self.kp_info_label = QtWidgets.QLabel("")
         self.kp_info_label.setStyleSheet(header_label_style())
         header.addWidget(self.kp_info_label)
@@ -102,9 +102,9 @@ class SkillLearningStepWidget(QtWidgets.QWidget):
         layout.addWidget(QtWidgets.QLabel("Képzettségek:"))
         self.skills_table = QtWidgets.QTableWidget()
         self.skills_table.setColumnCount(4)
-        self.skills_table.setHorizontalHeaderLabels([
-            "Képzettség", "Érték", "KP költség", "Művelet"
-        ])
+        self.skills_table.setHorizontalHeaderLabels(
+            ["Képzettség", "Érték", "KP költség", "Művelet"]
+        )
         self.skills_table.horizontalHeader().setStretchLastSection(False)
         self.skills_table.horizontalHeader().setSectionResizeMode(
             0, QtWidgets.QHeaderView.ResizeMode.Stretch
@@ -112,9 +112,7 @@ class SkillLearningStepWidget(QtWidgets.QWidget):
         self.skills_table.setSelectionBehavior(
             QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows
         )
-        self.skills_table.setEditTriggers(
-            QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers
-        )
+        self.skills_table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         layout.addWidget(self.skills_table)
 
         splitter.addWidget(right_panel)
@@ -132,36 +130,36 @@ class SkillLearningStepWidget(QtWidgets.QWidget):
             on_decrease_cb=self._on_decrease_skill,
         )
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Refresh the UI with current character data and initialize selection manager."""
         data = self.get_character_data() or {}
-        
+
         # Refresh attributes display
         if self.attributes_widget:
             self.attributes_widget.refresh()
-        
+
         # Initialize selection manager if not already done
         if self.selection_manager is None:
             kp_data = data.get("Képzettségpontok", {})
             kp_base = kp_data.get("Alap", 0)
             kp_per_level = kp_data.get("Szintenként", 0)
             kp_total = kp_base + kp_per_level  # 1st level
-            
+
             # Get attribute bonuses
             attributes = data.get("Tulajdonságok", {})
             intelligence = attributes.get("Intelligencia", 10)
             dexterity = attributes.get("Ügyesség", 10)
             kp_int_bonus = max(0, intelligence - 10)
             kp_dex_bonus = max(0, dexterity - 10)
-            
+
             self.selection_manager = SkillSelectionManager(
-                self.db_helper,
+                self.skill_db_service,
                 self.prereq_checker,
                 kp_total,
                 kp_int_bonus,
                 kp_dex_bonus,
             )
-            
+
             # Set mandatory skills from previous step
             mandatory = {}
             for skill in data.get("Képzettségek", []):
@@ -173,32 +171,32 @@ class SkillLearningStepWidget(QtWidgets.QWidget):
                         "source": skill.get("Forrás", "Kaszt"),
                     }
             self.selection_manager.set_mandatory_skills(mandatory)
-        
+
         # Update KP display
         self._update_kp_display()
-        
+
         # Load all skills into single table
         self._load_skills_table()
 
-    def _update_kp_display(self):
+    def _update_kp_display(self) -> None:
         """Update the KP info label."""
         if not self.selection_manager or not self.kp_info_label:
             return
-        
+
         breakdown = self.selection_manager.get_kp_breakdown()
         text = (
             f"KP: <b>{breakdown['remaining']}</b> / {breakdown['total']} "
             f"(Alap: {breakdown['base']}"
         )
-        if breakdown['intelligence'] > 0:
+        if breakdown["intelligence"] > 0:
             text += f" + Int: {breakdown['intelligence']}"
-        if breakdown['dexterity'] > 0:
+        if breakdown["dexterity"] > 0:
             text += f" + Ügy: {breakdown['dexterity']}"
         text += f" | Elköltve: {breakdown['spent']})"
-        
+
         self.kp_info_label.setText(text)
 
-    def _load_skills_table(self):
+    def _load_skills_table(self) -> None:
         """Load all skills (mandatory + learned) using the renderer."""
         if not self.table_renderer or not self.selection_manager:
             return
@@ -214,25 +212,25 @@ class SkillLearningStepWidget(QtWidgets.QWidget):
 
         # Load mandatory skills
         for skill_id, data in self.selection_manager.mandatory_skills.items():
-            info = self.db_helper.get_skill_info(skill_id)
+            info = self.skill_db_service.get_skill_info(skill_id)
             if not info:
                 continue
             name, parameter, skill_type = info
             display_name = f"{name} ({parameter})" if parameter else name
-            
+
             level = int(data.get("level", 0) or 0)
             percent = int(data.get("%", 0) or 0)
             # Use baseline minima for mandatory skills to decide if minus can be enabled
             mandatory_level = int(data.get("base_level", level) or 0)
             mandatory_percent = int(data.get("base_percent", percent) or 0)
-            
+
             # KP spent only in this step (exclude mandatory base)
             kp_spent_here = int(data.get("kp_cost", 0) or 0)
-            
-            prereq_text, prereq_met = self.prereq_info.get_prerequisite_info(
+
+            prereq_text, prereq_met = self.prereq_formatter.get_prerequisite_info(
                 skill_id, level, percent, current_map, attributes
             )
-            
+
             row_data = LearningRow(
                 skill_id=skill_id,
                 display_name=display_name,
@@ -250,20 +248,20 @@ class SkillLearningStepWidget(QtWidgets.QWidget):
 
         # Load learned skills
         for skill_id, data in self.selection_manager.learned_skills.items():
-            info = self.db_helper.get_skill_info(skill_id)
+            info = self.skill_db_service.get_skill_info(skill_id)
             if not info:
                 continue
             name, parameter, skill_type = info
             display_name = f"{name} ({parameter})" if parameter else name
-            
+
             level = int(data.get("level", 0) or 0)
             percent = int(data.get("%", 0) or 0)
             kp_cost = int(data.get("kp_cost", 0) or 0)
-            
-            prereq_text, prereq_met = self.prereq_info.get_prerequisite_info(
+
+            prereq_text, prereq_met = self.prereq_formatter.get_prerequisite_info(
                 skill_id, level, percent, current_map, attributes
             )
-            
+
             row_data = LearningRow(
                 skill_id=skill_id,
                 display_name=display_name,
@@ -305,85 +303,91 @@ class SkillLearningStepWidget(QtWidgets.QWidget):
         try:
             if skill_type == 1:
                 # Per-level cost for the next level
-                step_cost_str = self.db_helper.calc_kp_cost(skill_id, next_level, None)
+                step_cost_str = self.skill_db_service.calc_kp_cost(skill_id, next_level, None)
                 step_cost = int(step_cost_str) if step_cost_str and step_cost_str != "?" else 0
             else:
                 # Cumulative difference for percent-based
-                old_cum_str = self.db_helper.calc_kp_cost(skill_id, None, current_percent) if current_percent > 0 else "0"
-                new_cum_str = self.db_helper.calc_kp_cost(skill_id, None, next_percent)
+                old_cum_str = (
+                    self.skill_db_service.calc_kp_cost(skill_id, None, current_percent)
+                    if current_percent > 0
+                    else "0"
+                )
+                new_cum_str = self.skill_db_service.calc_kp_cost(skill_id, None, next_percent)
                 old_cum = int(old_cum_str) if old_cum_str and old_cum_str != "?" else 0
                 new_cum = int(new_cum_str) if new_cum_str and new_cum_str != "?" else 0
                 step_cost = new_cum - old_cum
         except (ValueError, TypeError):
             return False, "Nem lehet kiszámítani a KP költséget", 0
-        
+
         if step_cost <= 0:
             # Level doesn't exist or no cost
             return False, "Elérted a maximális szintet", 0
-        
+
         # Get current skills map - DON'T modify it with next level
         # The prereq checker needs to see current state to verify if we can reach next level
         current_map = self._get_current_map()
-        
+
         # Check prerequisites for next level using CURRENT skills state
         ok, reasons = self.prereq_checker.check_prerequisites(
             skill_id, next_level, next_percent, current_map, self._get_attributes()
         )
-        
+
         if not ok:
             # Use the reasons returned by the prerequisite checker
-            tooltip = "Hiányzó előfeltételek:\n" + "\n".join(reasons) if reasons else "Előfeltételek nem teljesülnek"
+            tooltip = (
+                "Hiányzó előfeltételek:\n" + "\n".join(reasons)
+                if reasons
+                else "Előfeltételek nem teljesülnek"
+            )
             return False, tooltip, 0
-        
+
         # Check if we have enough KP
         if not self.selection_manager:
             return False, "Nincs inicializálva a KP kezelő", 0
-        
+
         breakdown = self.selection_manager.get_kp_breakdown()
-        
+
         # Calculate delta
-        old_cost = self.db_helper.calc_kp_cost(skill_id, current_level, current_percent)
-        try:
-            old_cost = int(old_cost) if old_cost else 0
-        except (ValueError, TypeError):
-            old_cost = 0
-        
         delta = step_cost
-        
-        if breakdown['remaining'] < delta:
-            return False, f"Nincs elég KP (szükséges: {delta}, elérhető: {breakdown['remaining']})", 0
-        
+
+        if breakdown["remaining"] < delta:
+            return (
+                False,
+                f"Nincs elég KP (szükséges: {delta}, elérhető: {breakdown['remaining']})",
+                0,
+            )
+
         return True, "", step_cost
 
-    def _on_increase_skill(self, skill_id: str):
+    def _on_increase_skill(self, skill_id: str) -> None:
         """Handle + button click to increase skill level/percent."""
         if not self.selection_manager:
             return
-        
+
         success, msg = self.selection_manager.increase_skill(skill_id)
         if not success:
             QtWidgets.QMessageBox.warning(self, "Hiba", msg)
             return
-        
+
         # Refresh display
         self._update_kp_display()
         self._load_skills_table()
 
-    def _on_decrease_skill(self, skill_id: str):
+    def _on_decrease_skill(self, skill_id: str) -> None:
         """Handle - button click to decrease skill level/percent."""
         if not self.selection_manager:
             return
-        
+
         success, msg = self.selection_manager.decrease_skill(skill_id)
         if not success:
             QtWidgets.QMessageBox.warning(self, "Hiba", msg)
             return
-        
+
         # Refresh display
         self._update_kp_display()
         self._load_skills_table()
 
-    # --- Helpers to reduce duplication ---
+    # --- Private utility methods ---
     def _get_current_map(self) -> dict[str, dict[str, int]]:
         """Build current skills map for prerequisite checks."""
         current_map: dict[str, dict[str, int]] = {}
@@ -400,59 +404,63 @@ class SkillLearningStepWidget(QtWidgets.QWidget):
             }
         return current_map
 
-    def _get_attributes(self) -> dict:
+    def _get_attributes(self) -> dict[str, Any]:
         data = self.get_character_data() or {}
-        return data.get("Tulajdonságok", {})
+        attrs = data.get("Tulajdonságok", {})
+        # Ensure we return a proper dict[str, Any]
+        return dict(attrs) if attrs else {}
 
-    def _show_add_skill_dialog(self):
+    def _show_add_skill_dialog(self) -> None:
         """Show dialog to select and add a new skill to learn (refactored component)."""
         if not self.selection_manager:
             return
 
         dialog = AddSkillDialog(
             parent=self,
-            db_path_getter=self.db_helper.get_db_path,
+            db_path_getter=self.skill_db_service.get_db_path,
             prereq_checker=self.prereq_checker,
             get_current_map=self._get_current_map,
             get_attributes=self._get_attributes,
-            get_current_skill_ids=lambda: self.selection_manager.get_all_skills(),
-            kp_cost_getter=self.db_helper.calc_kp_cost,
+            get_current_skill_ids=lambda: (
+                set(self.selection_manager.get_all_skills()) if self.selection_manager else set()
+            ),
+            kp_cost_getter=self.skill_db_service.calc_kp_cost,
             placeholder_mgr=self.placeholder_mgr,
-            skill_db_helper=self.db_helper,
+            skill_db_service=self.skill_db_service,
         )
         if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
             selected = dialog.get_selected()
             if selected:
                 skill_id, skill_type = selected
                 self._add_new_skill(skill_id, skill_type)
-    
-    def _add_new_skill(self, skill_id: str, skill_type: int):
+
+    def _add_new_skill(self, skill_id: str, skill_type: int) -> None:
         """Add a new skill at level 1 or 3%."""
         if not self.selection_manager:
             return
-        
+
         # Determine initial level/percent
         level = 1 if skill_type == 1 else 0
         percent = 3 if skill_type == 2 else 0
-        
+
         # Calculate KP cost
-        kp_cost = self.db_helper.calc_kp_cost(skill_id, level, percent)
+        kp_cost_raw = self.skill_db_service.calc_kp_cost(skill_id, level, percent)
         try:
-            kp_cost = int(kp_cost) if kp_cost else 0
+            kp_cost = int(kp_cost_raw) if kp_cost_raw else 0
         except (ValueError, TypeError):
             QtWidgets.QMessageBox.warning(self, "Hiba", "Nem lehet kiszámítani a KP költséget")
             return
-        
+
         # Check if can learn
         current_skills = self.selection_manager.get_all_skills()
         can_learn, reason, _ = self.selection_manager.can_learn_skill(
             skill_id, level, percent, current_skills, self._get_attributes()
         )
-        
+
         if not can_learn:
             QtWidgets.QMessageBox.warning(self, "Nem tanulható", reason)
             return
-        
+
         # Learn the skill
         if self.selection_manager.learn_skill(skill_id, level, percent, kp_cost):
             self._update_kp_display()
@@ -464,30 +472,32 @@ class SkillLearningStepWidget(QtWidgets.QWidget):
         """Get learned skills for character save (includes increased mandatory skills)."""
         if not self.selection_manager:
             return []
-        
+
         skills = []
         # Include learned skills
         for skill_data in self.selection_manager.get_learned_skills_for_save():
             skills.append(skill_data)
-        
+
         # Also include mandatory skills that were increased (have kp_cost > 0)
         for skill_id, data in self.selection_manager.mandatory_skills.items():
             kp_cost = data.get("kp_cost", 0)
             if kp_cost > 0:
                 # This mandatory skill was increased, include it in learned skills
-                info = self.db_helper.get_skill_info(skill_id)
+                info = self.skill_db_service.get_skill_info(skill_id)
                 if info:
                     name, parameter, _ = info
                     display = f"{name} ({parameter})" if parameter else name
-                    skills.append({
-                        "id": skill_id,
-                        "Képzettség": display,
-                        "Szint": data.get("level", 0),
-                        "%": data.get("%", 0),
-                        "KP": kp_cost,
-                        "Forrás": "Növelt (Kaszt)",
-                    })
-        
+                    skills.append(
+                        {
+                            "id": skill_id,
+                            "Képzettség": display,
+                            "Szint": data.get("level", 0),
+                            "%": data.get("%", 0),
+                            "KP": kp_cost,
+                            "Forrás": "Növelt (Kaszt)",
+                        }
+                    )
+
         return skills
 
     def validate(self) -> bool:

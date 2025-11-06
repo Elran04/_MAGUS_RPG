@@ -6,9 +6,10 @@ Refactored to provide reusable prerequisite editor components:
 - SkillPrerequisiteEditorWidget: Embeddable widget for inline editing
 """
 
-from PySide6.QtCore import Qt
 import sqlite3
+
 from config.paths import SKILLS_DB
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
     QCompleter,
@@ -231,7 +232,7 @@ class SkillPrerequisiteEditorWidget(QWidget):
     def _on_skill_combo_changed(self, text: str):
         """Switch input controls depending on the selected skill's type."""
         req_type = self._get_skill_type_from_text(text or "")
-        is_percent = (req_type == 2)
+        is_percent = req_type == 2
         self.skill_level_spin.setVisible(not is_percent)
         self._level_label.setVisible(not is_percent)
         self.skill_percent_spin.setVisible(is_percent)
@@ -270,7 +271,9 @@ class SkillPrerequisiteEditorWidget(QWidget):
     def _get_skill_type_by_id(self, skill_id: str) -> int:
         try:
             with sqlite3.connect(str(SKILLS_DB)) as conn:
-                row = conn.execute("SELECT type FROM skills WHERE id=? LIMIT 1", (skill_id,)).fetchone()
+                row = conn.execute(
+                    "SELECT type FROM skills WHERE id=? LIMIT 1", (skill_id,)
+                ).fetchone()
                 return int(row[0]) if row else 1
         except Exception:
             return 1

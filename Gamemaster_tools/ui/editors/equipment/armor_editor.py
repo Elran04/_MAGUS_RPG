@@ -15,9 +15,9 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QSpinBox,
+    QTextEdit,
     QTreeWidget,
     QTreeWidgetItem,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -282,14 +282,14 @@ class ArmorEditorQt(QMainWindow):
             self.tree.addTopLevelItem(categories[key])
 
         # Add armors to categories
-        for idx, armor in enumerate(self.armors):
+        for _idx, armor in enumerate(self.armors):
             a_type = armor.get("armor_type", "leather")
             node = QTreeWidgetItem([f"{armor.get('name','')} (ID: {armor.get('id','-')})"])
             node.setData(0, Qt.ItemDataRole.UserRole, armor.get("id"))
             categories.get(a_type, categories["leather"]).addChild(node)
 
         # Expand categories that have content
-        for key, cat in categories.items():
+        for _key, cat in categories.items():
             cat.setExpanded(True)
 
         # Reselect previously selected armor if possible

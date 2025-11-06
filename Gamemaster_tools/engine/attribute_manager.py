@@ -4,7 +4,9 @@ Handles dice rolling, point-buy allocation, and modifier tracking.
 """
 
 import random
+from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 from utils.data.class_db_manager import ClassDBManager
 
@@ -46,12 +48,15 @@ class AttributeManager:
         )  # Original rolled values for ±2 hybrid adjustments
         self.final_values: dict[str, int] = {}  # Final computed values after all modifiers
         self.stat_ranges: dict[str, tuple[int, int]] = {}  # Stat ranges from class
-        self.double_roll_stats: set = set()  # Stats with double-roll advantage
+        self.double_roll_stats: set[str] = set()  # Stats with double-roll advantage
         self.available_points: int = 0  # Available points for point-buy
         self.race_modifiers: dict[str, int] = {}  # Race modifiers for breakdown
         self.age_modifiers: dict[str, int] = {}  # Age modifiers for breakdown
+        self.base_values: dict[str, int] = (
+            {}
+        )  # Base values after race/age modifiers applied to minimums
 
-    def initialize_for_class(self, class_name: str, race: str, age: int):
+    def initialize_for_class(self, class_name: str, race: str, age: int) -> None:
         """Initialize attribute system for a given class, race, and age."""
         class_id = self._get_class_id(class_name)
         details = self.class_db.get_class_details(class_id)
@@ -83,15 +88,13 @@ class AttributeManager:
 
     def _get_class_id(self, class_name: str) -> int:
         """Get class ID from class name."""
-        from typing import cast
-
-        classes = cast(list[tuple[int, str]], self.class_db.list_classes())
+        classes: list[tuple[int, str]] = self.class_db.list_classes()
         class_id: int | None = next((cid for cid, name in classes if name == class_name), None)
         if class_id is None:
             raise ValueError(f"Class '{class_name}' not found in DB")
         return int(class_id)
 
-    def _parse_stat_ranges(self, stats_data):
+    def _parse_stat_ranges(self, stats_data: Sequence[Sequence[Any]]) -> None:
         """Parse stat ranges and double-roll flags from class data."""
         self.stat_ranges = {}
         self.double_roll_stats = set()
@@ -128,7 +131,7 @@ class AttributeManager:
     def roll_attributes(self, race: str, age: int) -> dict[str, int]:
         """Roll attributes using dice based on class ranges. Applies race and age modifiers."""
 
-        def normal_like_roll(min_val, max_val, rolls=5):
+        def normal_like_roll(min_val: int, max_val: int, rolls: int = 5) -> int:
             return round(sum(random.randint(min_val, max_val) for _ in range(rolls)) / rolls)
 
         # Roll class values
@@ -202,7 +205,7 @@ class AttributeManager:
         self._apply_modifiers(race, age)
         return True
 
-    def set_original_class_values(self, values: dict[str, int]):
+    def set_original_class_values(self, values: dict[str, int]) -> None:
         """Restore baseline rolled values for enforcing ±2 adjustments."""
         self.original_class_values = values.copy()
 
@@ -259,7 +262,7 @@ class AttributeManager:
                 generated += -delta
         return spent, generated
 
-    def _apply_modifiers(self, race: str, age: int):
+    def _apply_modifiers(self, race: str, age: int) -> None:
         """Apply race and age modifiers to class values."""
         # Get race data
         race_id = self._normalize_race_name(race)
@@ -291,7 +294,7 @@ class AttributeManager:
             for attr in self.ATTRIBUTES
         }
 
-    def get_attribute_breakdown(self, attr: str) -> dict[str, int]:
+    def get_attribute_breakdown(self, attr: str) -> dict[str, int | bool]:
         """
         Get detailed breakdown of an attribute's value.
         Returns dict with: class_roll, race_mod, age_mod, final
@@ -310,12 +313,12 @@ class AttributeManager:
         """Return all final attribute values."""
         return self.final_values.copy()
 
-    def set_class_values(self, values: dict[str, int], race: str, age: int):
+    def set_class_values(self, values: dict[str, int], race: str, age: int) -> None:
         """Directly set class values (for loading saved data)."""
         self.class_values = values.copy()
         self._apply_modifiers(race, age)
 
-    def reset_to_minimums(self, race: str, age: int):
+    def reset_to_minimums(self, race: str, age: int) -> None:
         """Reset all attributes to class minimums."""
         self.class_values = {attr: self.stat_ranges[attr][0] for attr in self.ATTRIBUTES}
         self._apply_modifiers(race, age)

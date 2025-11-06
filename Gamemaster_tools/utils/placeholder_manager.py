@@ -6,6 +6,7 @@ and the actual skills they can resolve to (e.g., specific weapon skills).
 """
 
 import sqlite3
+from typing import Any
 
 from config.paths import SKILLS_DB
 
@@ -19,11 +20,11 @@ DB_SKILLS_PATH = str(SKILLS_DB)
 class PlaceholderManager:
     """Manages placeholder skill resolution mappings."""
 
-    def __init__(self, db_path=DB_SKILLS_PATH):
+    def __init__(self, db_path: str = DB_SKILLS_PATH) -> None:
         self.db_path = db_path
         self._ensure_table()
 
-    def _ensure_table(self):
+    def _ensure_table(self) -> None:
         """Create placeholder_resolutions table if it doesn't exist."""
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
@@ -55,7 +56,7 @@ class PlaceholderManager:
         target_skill_id: str,
         category: str | None = None,
         notes: str | None = None,
-    ):
+    ) -> None:
         """Add a resolution mapping from placeholder to target skill."""
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
@@ -68,7 +69,7 @@ class PlaceholderManager:
             )
             conn.commit()
 
-    def remove_resolution(self, placeholder_id: str, target_skill_id: str):
+    def remove_resolution(self, placeholder_id: str, target_skill_id: str) -> None:
         """Remove a specific resolution mapping."""
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
@@ -77,7 +78,9 @@ class PlaceholderManager:
             )
             conn.commit()
 
-    def get_resolutions(self, placeholder_id: str, category: str | None = None):
+    def get_resolutions(
+        self, placeholder_id: str, category: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get all skills that can replace a placeholder.
 
@@ -129,7 +132,7 @@ class PlaceholderManager:
             ).fetchone()
             return result[0] == 1 if result else False
 
-    def get_all_placeholders(self):
+    def get_all_placeholders(self) -> list[dict[str, Any]]:
         """Get all placeholder skills."""
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
@@ -138,7 +141,7 @@ class PlaceholderManager:
             ).fetchall()
             return [dict(row) for row in rows]
 
-    def populate_default_resolutions(self):
+    def populate_default_resolutions(self) -> None:
         """
         Populate default placeholder resolutions based on MAGUS system.
         This should be called once to initialize the table with standard mappings.
@@ -192,7 +195,7 @@ class PlaceholderManager:
 
         logger.info("Default placeholder resolutions populated successfully")
 
-    def get_resolution_summary(self):
+    def get_resolution_summary(self) -> list[dict[str, Any]]:
         """Get a summary of all placeholder resolutions for debugging/display."""
         placeholders = self.get_all_placeholders()
         summary = []

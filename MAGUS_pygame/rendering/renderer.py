@@ -2,7 +2,6 @@
 Rendering utilities for game visuals and UI.
 """
 
-
 import pygame
 from actions.action_handling import draw_action_ui  # Direct import to avoid circular dependency
 from config import (

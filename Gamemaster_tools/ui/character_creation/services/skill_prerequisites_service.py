@@ -12,15 +12,15 @@ logger = get_logger(__name__)
 
 
 class SkillPrerequisiteChecker:
-    """Helper class for checking skill prerequisites."""
+    """Service class for checking skill prerequisites."""
 
-    def __init__(self, skill_db_helper, placeholder_mgr=None):
+    def __init__(self, skill_db_service: Any, placeholder_mgr: Any | None = None) -> None:
         """
         Args:
-            skill_db_helper: SkillDatabaseHelper instance for DB access
+            skill_db_service: SkillDatabaseService instance for DB access
             placeholder_mgr: Optional PlaceholderManager for resolving placeholder prerequisites
         """
-        self.db_helper = skill_db_helper
+        self.skill_db_service = skill_db_service
         self.placeholder_mgr = placeholder_mgr
 
     def check_prerequisites(
@@ -45,7 +45,7 @@ class SkillPrerequisiteChecker:
         """
         reasons = []
         try:
-            with sqlite3.connect(self.db_helper.get_db_path("skill")) as sconn:
+            with sqlite3.connect(self.skill_db_service.get_db_path("skill")) as sconn:
                 max_check_level = max(1, int(req_level or 0))
 
                 # Check attribute prerequisites
@@ -69,7 +69,7 @@ class SkillPrerequisiteChecker:
 
     def _check_attribute_prerequisites(
         self,
-        conn,
+        conn: sqlite3.Connection,
         skill_id: str,
         max_check_level: int,
         attributes: dict[str, int],
@@ -94,7 +94,7 @@ class SkillPrerequisiteChecker:
 
     def _check_skill_prerequisites(
         self,
-        conn,
+        conn: sqlite3.Connection,
         skill_id: str,
         max_check_level: int,
         current_skills: dict[str, dict[str, Any]],
@@ -115,18 +115,20 @@ class SkillPrerequisiteChecker:
             if self.placeholder_mgr and self.placeholder_mgr.is_placeholder(req_id):
                 # Get all valid alternatives
                 alternatives = self.placeholder_mgr.get_resolutions(req_id)
-                
+
                 # Check if user has ANY of the alternatives at required level
                 has_any = False
                 for alt in alternatives:
-                    alt_id = alt['target_skill_id']
+                    alt_id = alt["target_skill_id"]
                     have = current_skills.get(alt_id)
-                    
+
                     if have:
                         # Determine skill type
-                        trow = conn.execute("SELECT type FROM skills WHERE id=?", (alt_id,)).fetchone()
+                        trow = conn.execute(
+                            "SELECT type FROM skills WHERE id=?", (alt_id,)
+                        ).fetchone()
                         alt_type = trow[0] if trow else 1
-                        
+
                         if alt_type == 1:  # Level-based
                             if int(have.get("level", 0)) >= int(min_lvl or 0):
                                 has_any = True
@@ -135,7 +137,7 @@ class SkillPrerequisiteChecker:
                             if int(have.get("%", 0)) >= int(min_lvl or 0):
                                 has_any = True
                                 break
-                
+
                 # If user doesn't have ANY alternative, add to reasons
                 if not has_any:
                     reasons.append(self._format_skill_req(req_id, min_lvl, conn))
@@ -165,7 +167,11 @@ class SkillPrerequisiteChecker:
 
     @staticmethod
     def _format_skill_req(
-        skill_id: str, min_lvl: int, conn, have_val: Any = None, percent: bool = False
+        skill_id: str,
+        min_lvl: int,
+        conn: sqlite3.Connection,
+        have_val: Any = None,
+        percent: bool = False,
     ) -> str:
         """Format a skill requirement message."""
         name_row = conn.execute(

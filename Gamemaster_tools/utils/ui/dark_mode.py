@@ -8,7 +8,7 @@ from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
 
 
-def apply_dark_mode(app: QApplication):
+def apply_dark_mode(app: QApplication) -> None:
     """
     Apply dark mode styling to a PySide6 application.
 
@@ -82,7 +82,7 @@ def apply_dark_mode(app: QApplication):
     )
 
 
-def apply_light_mode(app: QApplication):
+def apply_light_mode(app: QApplication) -> None:
     """
     Apply light mode styling (system default).
 

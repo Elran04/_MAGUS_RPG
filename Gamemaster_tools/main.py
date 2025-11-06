@@ -6,7 +6,15 @@ from typing import Any
 from config.paths import ICONS_DIR
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton, QVBoxLayout, QWidget, QGroupBox, QHBoxLayout
+from PySide6.QtWidgets import (
+    QApplication,
+    QGroupBox,
+    QLabel,
+    QMainWindow,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 from utils.log.logger import get_logger
 from utils.ui.dark_mode import apply_dark_mode
 
@@ -115,12 +123,14 @@ class MagusGMTools(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
-
         # Set background image using config.paths
         from config.paths import MAGUS_IMAGE
-        bg_path = str(MAGUS_IMAGE.resolve()).replace('\\', '/')
+
+        bg_path = str(MAGUS_IMAGE.resolve()).replace("\\", "/")
         # Set background image only for the main window, not child widgets
-        self.setStyleSheet(f"QMainWindow {{ background-image: url('{bg_path}'); background-repeat: no-repeat; background-position: center; background-attachment: fixed; }}")
+        self.setStyleSheet(
+            f"QMainWindow {{ background-image: url('{bg_path}'); background-repeat: no-repeat; background-position: center; background-attachment: fixed; }}"
+        )
         central_widget.setStyleSheet("background: transparent;")
 
         # Main layout: horizontal split for editors vs character creation
@@ -131,13 +141,15 @@ class MagusGMTools(QMainWindow):
         # Title with glow effect using QGraphicsDropShadowEffect
         title_label = QLabel("M.A.G.U.S. Kalandmesteri eszköztár")
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_label.setStyleSheet("""
-            font-size: 30px; 
-            font-weight: bold; 
-            color: #0f130f; 
-            margin-bottom: 10px; 
+        title_label.setStyleSheet(
+            """
+            font-size: 30px;
+            font-weight: bold;
+            color: #0f130f;
+            margin-bottom: 10px;
             background: rgba(255,255,255,0.0);
-        """)  
+        """
+        )
         main_layout.addWidget(title_label)
 
         # Split editors and character creation into two panels
@@ -148,14 +160,16 @@ class MagusGMTools(QMainWindow):
         char_box = QGroupBox()
         char_layout = QVBoxLayout()
         char_box.setLayout(char_layout)
-        char_box.setStyleSheet("""
-            QGroupBox { 
-                background: transparent; 
+        char_box.setStyleSheet(
+            """
+            QGroupBox {
+                background: transparent;
                 border: none;
                 margin: 0px;
                 padding: 0px;
             }
-        """)
+        """
+        )
 
         btn_create_char = QPushButton("Karaktergenerálás")
         btn_create_char.setMinimumHeight(40)
@@ -166,14 +180,16 @@ class MagusGMTools(QMainWindow):
         editors_box = QGroupBox()
         editors_layout = QVBoxLayout()
         editors_box.setLayout(editors_layout)
-        editors_box.setStyleSheet("""
-            QGroupBox { 
-                background: transparent; 
+        editors_box.setStyleSheet(
+            """
+            QGroupBox {
+                background: transparent;
                 border: none;
                 margin: 0px;
                 padding: 0px;
             }
-        """)
+        """
+        )
         btn_race_editor = QPushButton("🧝 Faj szerkesztő")
         btn_race_editor.setMinimumHeight(40)
         btn_race_editor.clicked.connect(open_race_editor)

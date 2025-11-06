@@ -5,6 +5,7 @@ Used in skill learning step and other views where attributes should not be edita
 """
 
 from collections.abc import Callable
+from typing import Any
 
 from PySide6 import QtCore, QtWidgets
 
@@ -29,13 +30,17 @@ class AttributesReadOnlyWidget(QtWidgets.QWidget):
         ("Érzékelés", "Érzékelés"),
     ]
 
-    def __init__(self, get_character_data: Callable[[], dict], parent=None):
+    def __init__(
+        self,
+        get_character_data: Callable[[], dict[str, int] | dict[str, Any]],
+        parent: QtWidgets.QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
         self._get_character_data = get_character_data
         self.value_labels: dict[str, QtWidgets.QLabel] = {}
         self._build_ui()
 
-    def _build_ui(self):
+    def _build_ui(self) -> None:
         """Build the read-only attributes display UI."""
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)
@@ -47,9 +52,7 @@ class AttributesReadOnlyWidget(QtWidgets.QWidget):
         layout.addWidget(title)
 
         # Info message
-        info = QtWidgets.QLabel(
-            "<i>Végleges értékek (faj és kor módosítókkal)</i>"
-        )
+        info = QtWidgets.QLabel("<i>Végleges értékek (faj és kor módosítókkal)</i>")
         info.setWordWrap(True)
         info.setStyleSheet("color: #888; font-size: 9pt; padding: 4px;")
         layout.addWidget(info)
@@ -85,10 +88,19 @@ class AttributesReadOnlyWidget(QtWidgets.QWidget):
         layout.addLayout(grid)
         layout.addStretch(1)
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Update displayed attribute values from character data."""
         data = self._get_character_data() or {}
-        attributes = data.get("Tulajdonságok", {})
+        raw_val: object = data.get("Tulajdonságok", {})
+        raw_attrs: dict[Any, Any] = dict(raw_val) if isinstance(raw_val, dict) else {}
+        # Ensure we work with a typed dict[str, int]
+        attributes: dict[str, int] = {}
+        if isinstance(raw_attrs, dict):
+            for k, v in raw_attrs.items():
+                try:
+                    attributes[str(k)] = int(v)
+                except (TypeError, ValueError):
+                    continue
 
         for key, label in self.value_labels.items():
             value = attributes.get(key, 10)
@@ -116,4 +128,13 @@ class AttributesReadOnlyWidget(QtWidgets.QWidget):
     def get_attributes(self) -> dict[str, int]:
         """Return current attribute values from character data."""
         data = self._get_character_data() or {}
-        return data.get("Tulajdonságok", {})
+        raw_val: object = data.get("Tulajdonságok", {})
+        if isinstance(raw_val, dict):
+            result: dict[str, int] = {}
+            for k, v in raw_val.items():
+                try:
+                    result[str(k)] = int(v)
+                except (TypeError, ValueError):
+                    continue
+            return result
+        return {}

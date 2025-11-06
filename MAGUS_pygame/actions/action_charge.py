@@ -3,7 +3,6 @@ Charge attack action handling.
 A special compound action combining movement and attack with bonuses/penalties.
 """
 
-
 from config import ActionMode
 from core.game_state import GameState, check_defeat, next_turn
 from systems.hex_grid import hex_distance, hexes_in_range

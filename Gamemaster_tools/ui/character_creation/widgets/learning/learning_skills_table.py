@@ -4,8 +4,9 @@ Handles rendering and UI state for skill rows in the learning step.
 Extends/reuses patterns from skills_table.py but without placeholder logic.
 """
 
-from typing import Callable
-from PySide6 import QtGui, QtWidgets
+from collections.abc import Callable
+
+from PySide6 import QtWidgets
 from utils.ui.themes import action_icon_button_style
 
 from ui.character_creation.widgets.learning.learning_row import LearningRow
@@ -72,14 +73,15 @@ class LearningSkillsTableRenderer:
         minus_btn.setMaximumWidth(30)
         minus_btn.setProperty("skill_id", row_data.skill_id)
         minus_btn.setStyleSheet(action_icon_button_style())
-        minus_btn.clicked.connect(lambda checked=False, sid=row_data.skill_id: self._on_decrease(sid))
+        minus_btn.clicked.connect(
+            lambda checked=False, sid=row_data.skill_id: self._on_decrease(sid)
+        )
 
         # Disable if at mandatory minimum
         if row_data.is_mandatory:
             can_decrease = (
-                (row_data.skill_type == 1 and row_data.level > row_data.mandatory_level)
-                or (row_data.skill_type == 2 and row_data.percent > row_data.mandatory_percent)
-            )
+                row_data.skill_type == 1 and row_data.level > row_data.mandatory_level
+            ) or (row_data.skill_type == 2 and row_data.percent > row_data.mandatory_percent)
         else:
             # Learned skills can always be decreased (will remove at minimum)
             can_decrease = True
@@ -94,7 +96,9 @@ class LearningSkillsTableRenderer:
         plus_btn.setMaximumWidth(30)
         plus_btn.setProperty("skill_id", row_data.skill_id)
         plus_btn.setStyleSheet(action_icon_button_style())
-        plus_btn.clicked.connect(lambda checked=False, sid=row_data.skill_id: self._on_increase(sid))
+        plus_btn.clicked.connect(
+            lambda checked=False, sid=row_data.skill_id: self._on_increase(sid)
+        )
 
         # Check if can increase
         can, tooltip, next_cost = self._can_increase(

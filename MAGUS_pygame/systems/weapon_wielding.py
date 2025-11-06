@@ -116,9 +116,7 @@ def get_wielding_mode(unit: Unit, weapon: dict) -> str:
     return wield_mode
 
 
-def apply_two_handed_bonuses(
-    unit: Unit, weapon: dict, wielding_two_handed: bool
-) -> dict[str, int]:
+def apply_two_handed_bonuses(unit: Unit, weapon: dict, wielding_two_handed: bool) -> dict[str, int]:
     """
     Calculate combat stat bonuses when wielding a variable weapon 2-handed.
 

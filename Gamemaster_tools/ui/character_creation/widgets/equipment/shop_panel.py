@@ -3,10 +3,10 @@ Shop Panel Widget
 Displays equipment categories in tabs with tree view and buy functionality.
 """
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from PySide6 import QtCore, QtWidgets
-
 from utils.log.logger import get_logger
 
 logger = get_logger(__name__)
@@ -21,63 +21,65 @@ class ShopPanel(QtWidgets.QWidget):
     # Signal for bulk purchases: (item_data, category, quantity)
     bulk_buy_requested = QtCore.Signal(dict, str, int)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent)
-        self.equipment_data = {}
-        self.tab_widget = None
-        self.tree_widgets = {}
+        self.equipment_data: dict[str, list[dict[str, Any]]] = {}
+        self.tab_widget: QtWidgets.QTabWidget | None = None
+        self.tree_widgets: dict[str, QtWidgets.QTreeWidget] = {}
         # Callback to fetch current currency in base units (for affordability checks)
         self._currency_provider: Callable[[], int] | None = None
-        
+
         self._build_ui()
 
-    def set_currency_provider(self, provider: Callable[[], int]):
+    def set_currency_provider(self, provider: Callable[[], int]) -> None:
         """Provide a callback that returns current currency in base units."""
         self._currency_provider = provider
 
-    def _build_ui(self):
+    def _build_ui(self) -> None:
         """Build the shop UI with tabs."""
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
-        
+
         # Shop title
         title = QtWidgets.QLabel("Felszerelés bolt")
         title.setStyleSheet("font-weight: bold; font-size: 12px; padding: 4px;")
         layout.addWidget(title)
-        
+
         # Tab widget for categories
         self.tab_widget = QtWidgets.QTabWidget()
         layout.addWidget(self.tab_widget, stretch=1)
-        
+
         # Buy button at bottom
         self.buy_button = QtWidgets.QPushButton("Vásárlás")
         self.buy_button.setEnabled(False)
         self.buy_button.clicked.connect(self._on_buy_clicked)
         layout.addWidget(self.buy_button)
 
-    def load_equipment(self, equipment_data: dict[str, list[dict[str, Any]]]):
+    def load_equipment(self, equipment_data: dict[str, list[dict[str, Any]]]) -> None:
         """
         Load equipment data into shop tabs.
-        
+
         Args:
             equipment_data: Dict with 'armor', 'weapons_and_shields', 'general' keys
         """
         self.equipment_data = equipment_data
-        
+
         # Clear existing tabs
+        assert self.tab_widget is not None
         self.tab_widget.clear()
         self.tree_widgets.clear()
-        
+
         # Create tabs for each category
         categories = [
             ("armor", "Páncélok"),
             ("weapons_and_shields", "Fegyverek és pajzsok"),
-            ("general", "Általános felszerelés")
+            ("general", "Általános felszerelés"),
         ]
-        
+
         for cat_key, cat_name in categories:
             tree = self._create_category_tree(cat_key, cat_name)
+            assert self.tab_widget is not None
             self.tab_widget.addTab(tree, cat_name)
             self.tree_widgets[cat_key] = tree
 
@@ -100,6 +102,7 @@ class ShopPanel(QtWidgets.QWidget):
         items = self.equipment_data.get(category, [])
 
         from engine.currency_manager import CurrencyManager
+
         currency_manager = CurrencyManager()
 
         def price_str(price: int) -> str:
@@ -122,16 +125,16 @@ class ShopPanel(QtWidgets.QWidget):
             for item in items:
                 tkey = item.get("armor_type", "leather")
                 root = groups.get(tkey, groups["leather"])
-                node = QtWidgets.QTreeWidgetItem([
-                    item.get("name", "???"), price_str(item.get("price", 0))
-                ])
+                node = QtWidgets.QTreeWidgetItem(
+                    [item.get("name", "???"), price_str(item.get("price", 0))]
+                )
                 node.setData(0, QtCore.Qt.ItemDataRole.UserRole, item)
                 root.addChild(node)
         elif category == "weapons_and_shields":
             # Group by type -> category like editor
             # Build type order by appearance to keep a stable order
             type_order: list[str] = []
-            grouped: dict[str, dict[str, list[dict]]] = {}
+            grouped: dict[str, dict[str, list[dict[str, Any]]]] = {}
             for it in items:
                 t = (it.get("type") or "Egyéb").strip()
                 c = (it.get("category") or "Egyéb").strip()
@@ -147,24 +150,24 @@ class ShopPanel(QtWidgets.QWidget):
                     type_root.addChild(cat_root)
                     cat_root.setExpanded(True)
                     for it in grouped[t][c]:
-                        leaf = QtWidgets.QTreeWidgetItem([
-                            it.get("name", "???"), price_str(it.get("price", 0))
-                        ])
+                        leaf = QtWidgets.QTreeWidgetItem(
+                            [it.get("name", "???"), price_str(it.get("price", 0))]
+                        )
                         leaf.setData(0, QtCore.Qt.ItemDataRole.UserRole, it)
                         cat_root.addChild(leaf)
         elif category == "general":
             # Group by CATEGORIES, with a second level for 'speciális' by subcategory
-            CATEGORIES = ["eszköz", "élelem", "tároló", "lőszer", "speciális"]
-            cat_map: dict[str, list[dict]] = {cat: [] for cat in CATEGORIES}
+            categories = ["eszköz", "élelem", "tároló", "lőszer", "speciális"]
+            cat_map: dict[str, list[dict[str, Any]]] = {cat: [] for cat in categories}
             for it in items:
                 cat = it.get("category", "eszköz")
                 cat_map.setdefault(cat, []).append(it)
-            for cat in CATEGORIES:
+            for cat in categories:
                 root = QtWidgets.QTreeWidgetItem([cat.capitalize(), ""])  # header
                 tree.addTopLevelItem(root)
                 root.setExpanded(True)
                 if cat == "speciális":
-                    sub_map: dict[str, list[dict]] = {}
+                    sub_map: dict[str, list[dict[str, Any]]] = {}
                     for it in cat_map.get(cat, []):
                         sub = it.get("subcategory", "Egyéb")
                         sub_map.setdefault(sub, []).append(it)
@@ -173,16 +176,16 @@ class ShopPanel(QtWidgets.QWidget):
                         root.addChild(sub_root)
                         sub_root.setExpanded(True)
                         for it in sub_map[sub]:
-                            leaf = QtWidgets.QTreeWidgetItem([
-                                it.get("name", "???"), price_str(it.get("price", 0))
-                            ])
+                            leaf = QtWidgets.QTreeWidgetItem(
+                                [it.get("name", "???"), price_str(it.get("price", 0))]
+                            )
                             leaf.setData(0, QtCore.Qt.ItemDataRole.UserRole, it)
                             sub_root.addChild(leaf)
                 else:
                     for it in cat_map.get(cat, []):
-                        leaf = QtWidgets.QTreeWidgetItem([
-                            it.get("name", "???"), price_str(it.get("price", 0))
-                        ])
+                        leaf = QtWidgets.QTreeWidgetItem(
+                            [it.get("name", "???"), price_str(it.get("price", 0))]
+                        )
                         leaf.setData(0, QtCore.Qt.ItemDataRole.UserRole, it)
                         root.addChild(leaf)
         else:
@@ -196,20 +199,20 @@ class ShopPanel(QtWidgets.QWidget):
         tree.expandAll()
         return tree
 
-    def _add_item_to_tree(self, tree: QtWidgets.QTreeWidget, item: dict[str, Any]):
+    def _add_item_to_tree(self, tree: QtWidgets.QTreeWidget, item: dict[str, Any]) -> None:
         """Add an item to the tree."""
         from engine.currency_manager import CurrencyManager
-        
+
         currency_manager = CurrencyManager()
         name = item.get("name", "???")
         price = item.get("price", 0)
         price_str = currency_manager.format(price) + "/db"
-        
+
         tree_item = QtWidgets.QTreeWidgetItem([name, price_str])
         tree_item.setData(0, QtCore.Qt.ItemDataRole.UserRole, item)
         tree.addTopLevelItem(tree_item)
 
-    def _on_selection_changed(self):
+    def _on_selection_changed(self) -> None:
         """Handle selection change in any tree."""
         # Enable buy button only if a real item (leaf with data) is selected
         enabled = False
@@ -222,9 +225,10 @@ class ShopPanel(QtWidgets.QWidget):
                     break
         self.buy_button.setEnabled(enabled)
 
-    def _on_buy_clicked(self):
+    def _on_buy_clicked(self) -> None:
         """Handle buy button click."""
         # Only check the currently active tab for selection
+        assert self.tab_widget is not None
         tab_idx = self.tab_widget.currentIndex()
         if tab_idx < 0:
             return
@@ -243,13 +247,13 @@ class ShopPanel(QtWidgets.QWidget):
             if isinstance(item_data, dict):
                 self.buy_requested.emit(item_data, cat_key)
 
-    def _on_item_double_clicked(self, item: QtWidgets.QTreeWidgetItem, category: str):
+    def _on_item_double_clicked(self, item: QtWidgets.QTreeWidgetItem, category: str) -> None:
         """Handle double-click on item to buy."""
         item_data = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
         if item_data:
             self.buy_requested.emit(item_data, category)
 
-    def _show_shop_context_menu(self, pos: QtCore.QPoint, category: str):
+    def _show_shop_context_menu(self, pos: QtCore.QPoint, category: str) -> None:
         """Show context menu for shop items."""
         tree = self.tree_widgets.get(category)
         if not tree:
@@ -277,7 +281,7 @@ class ShopPanel(QtWidgets.QWidget):
         elif bulk_action is not None and action == bulk_action:
             self._open_bulk_buy_dialog(item_data, category)
 
-    def _open_bulk_buy_dialog(self, item_data: dict[str, Any], category: str):
+    def _open_bulk_buy_dialog(self, item_data: dict[str, Any], category: str) -> None:
         """Open a modal dialog to pick quantity and confirm bulk buy with live affordability."""
         from engine.currency_manager import CurrencyManager
 
@@ -310,13 +314,14 @@ class ShopPanel(QtWidgets.QWidget):
         layout.addWidget(hint)
 
         btns = QtWidgets.QDialogButtonBox(
-            QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
+            QtWidgets.QDialogButtonBox.StandardButton.Ok
+            | QtWidgets.QDialogButtonBox.StandardButton.Cancel
         )
         layout.addWidget(btns)
 
-        ok_btn = btns.button(QtWidgets.QDialogButtonBox.Ok)
+        ok_btn = btns.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
 
-        def update_totals():
+        def update_totals() -> None:
             q = int(qty.value())
             total = price_each * q
             total_lbl.setText(f"Összesen: {cm.format(total)}")

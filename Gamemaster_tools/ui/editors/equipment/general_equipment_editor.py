@@ -4,12 +4,12 @@ from config.paths import GENERAL_EQUIPMENT_JSON
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QComboBox,
     QDoubleSpinBox,
     QFormLayout,
     QHBoxLayout,
     QLabel,
-    QCheckBox,
     QLineEdit,
     QMainWindow,
     QMessageBox,

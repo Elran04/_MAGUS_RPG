@@ -2,7 +2,6 @@
 Movement action helpers: range computation and movement resolution.
 """
 
-
 from config import AP_COST_MOVEMENT, MOVEMENT_RANGE, ActionMode
 from core.game_state import GameState, check_defeat, next_turn
 from systems.hex_grid import hex_distance, hexes_in_range

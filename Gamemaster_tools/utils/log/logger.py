@@ -16,19 +16,19 @@ class MagusLogger:
     _instance: Optional["MagusLogger"] = None
     _initialized: bool = False
 
-    def __new__(cls):
+    def __new__(cls) -> "MagusLogger":
         """Singleton pattern - csak egy logger instance létezik."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Logger inicializálása."""
         if not self._initialized:
             self._setup_logging()
             MagusLogger._initialized = True
 
-    def _setup_logging(self):
+    def _setup_logging(self) -> None:
         """Logging rendszer beállítása."""
         # Logs mappa létrehozása
         log_dir = Path(__file__).parent.parent.parent / "logs"

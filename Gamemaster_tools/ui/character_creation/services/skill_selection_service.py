@@ -6,9 +6,10 @@ Centralizes skill state and KP spending logic during character creation.
 import sqlite3
 from typing import Any
 
-from .skill_repository import SkillDatabaseHelper
-from .skill_prerequisites_service import SkillPrerequisiteChecker
 from utils.log.logger import get_logger
+
+from .skill_prerequisites_service import SkillPrerequisiteChecker
+from .skill_repository import SkillDatabaseService
 
 logger = get_logger(__name__)
 
@@ -18,7 +19,7 @@ class SkillSelectionManager:
 
     def __init__(
         self,
-        db_helper: SkillDatabaseHelper,
+        skill_db_service: SkillDatabaseService,
         prereq_checker: SkillPrerequisiteChecker,
         kp_total: int,
         kp_from_intelligence: int = 0,
@@ -28,13 +29,13 @@ class SkillSelectionManager:
         Initialize skill selection manager.
 
         Args:
-            db_helper: Database helper for skill queries
+            skill_db_service: Database service for skill queries
             prereq_checker: Prerequisite checker
             kp_total: Total KP available from class (base + per level)
             kp_from_intelligence: Bonus KP from Intelligence
             kp_from_dexterity: Bonus KP from Dexterity
         """
-        self.db_helper = db_helper
+        self.skill_db_service = skill_db_service
         self.prereq_checker = prereq_checker
         self.kp_base = kp_total
         self.kp_intelligence = kp_from_intelligence
@@ -50,7 +51,7 @@ class SkillSelectionManager:
         # User-upgraded skills (increase level/% of mandatory skills)
         self.upgrades: dict[str, dict[str, Any]] = {}  # skill_id -> {from_level, to_level, kp_cost}
 
-    def set_mandatory_skills(self, skills: dict[str, dict[str, Any]]):
+    def set_mandatory_skills(self, skills: dict[str, dict[str, Any]]) -> None:
         """
         Set mandatory skills from class/spec.
 
@@ -99,8 +100,8 @@ class SkillSelectionManager:
         skill_id: str,
         level: int,
         percent: int,
-        current_skills: dict[str, dict],
-        attributes: dict | None = None,
+        current_skills: dict[str, dict[str, Any]],
+        attributes: dict[str, Any] | None = None,
     ) -> tuple[bool, str, int]:
         """
         Check if a skill can be learned.
@@ -123,7 +124,11 @@ class SkillSelectionManager:
 
         # Calculate KP cost
         try:
-            kp_cost = int(self.db_helper.calc_kp_cost(skill_id, level if level else None, percent if percent else None))
+            kp_cost = int(
+                self.skill_db_service.calc_kp_cost(
+                    skill_id, level if level else None, percent if percent else None
+                )
+            )
         except Exception as e:
             logger.error(f"Error calculating KP cost for {skill_id}: {e}", exc_info=True)
             return False, "Hiba a KP költség számításakor", 0
@@ -133,7 +138,11 @@ class SkillSelectionManager:
 
         # Check if affordable
         if kp_cost > self.get_kp_remaining():
-            return False, f"Nincs elég KP (szükséges: {kp_cost}, elérhető: {self.get_kp_remaining()})", kp_cost
+            return (
+                False,
+                f"Nincs elég KP (szükséges: {kp_cost}, elérhető: {self.get_kp_remaining()})",
+                kp_cost,
+            )
 
         # Check prerequisites (without this skill in the map yet)
         try:
@@ -201,7 +210,7 @@ class SkillSelectionManager:
             Dict of skill_id -> {level, %, source/kp_cost}
         """
         combined = {}
-        
+
         # Add mandatory skills
         for skill_id, data in self.mandatory_skills.items():
             combined[skill_id] = {
@@ -210,7 +219,7 @@ class SkillSelectionManager:
                 "source": data.get("source", "Kaszt"),
                 "is_mandatory": True,
             }
-        
+
         # Add learned skills
         for skill_id, data in self.learned_skills.items():
             combined[skill_id] = {
@@ -219,7 +228,7 @@ class SkillSelectionManager:
                 "kp_cost": data.get("kp_cost", 0),
                 "is_mandatory": False,
             }
-        
+
         return combined
 
     def get_learned_skills_for_save(self) -> list[dict[str, Any]]:
@@ -231,7 +240,7 @@ class SkillSelectionManager:
         """
         skills = []
         try:
-            with sqlite3.connect(self.db_helper.get_db_path("skill")) as sconn:
+            with sqlite3.connect(self.skill_db_service.get_db_path("skill")) as sconn:
                 for skill_id, data in self.learned_skills.items():
                     row = sconn.execute(
                         "SELECT name, parameter FROM skills WHERE id=?", (skill_id,)
@@ -240,17 +249,19 @@ class SkillSelectionManager:
                         continue
                     name, parameter = row
                     display = f"{name} ({parameter})" if parameter else name
-                    skills.append({
-                        "id": skill_id,
-                        "Képzettség": display,
-                        "Szint": data.get("level", 0),
-                        "%": data.get("%", 0),
-                        "KP": data.get("kp_cost", 0),
-                        "Forrás": "Tanult",
-                    })
+                    skills.append(
+                        {
+                            "id": skill_id,
+                            "Képzettség": display,
+                            "Szint": data.get("level", 0),
+                            "%": data.get("%", 0),
+                            "KP": data.get("kp_cost", 0),
+                            "Forrás": "Tanult",
+                        }
+                    )
         except Exception as e:
             logger.error(f"Error getting learned skills for save: {e}", exc_info=True)
-        
+
         return skills
 
     def increase_skill(self, skill_id: str) -> tuple[bool, str]:
@@ -278,7 +289,7 @@ class SkillSelectionManager:
         current_percent = int(data.get("%", 0) or 0)
 
         # Get skill type
-        info = self.db_helper.get_skill_info(skill_id)
+        info = self.skill_db_service.get_skill_info(skill_id)
         if not info:
             return False, "Képzettség típus nem található"
         _, _, skill_type = info
@@ -294,13 +305,17 @@ class SkillSelectionManager:
         try:
             if skill_type == 1:
                 # Level-based: DB returns the per-level cost for that level.
-                step_cost_str = self.db_helper.calc_kp_cost(skill_id, next_level, None)
+                step_cost_str = self.skill_db_service.calc_kp_cost(skill_id, next_level, None)
                 step_cost = int(step_cost_str) if step_cost_str and step_cost_str != "?" else 0
                 delta = step_cost
             else:
                 # Percent-based: DB returns cumulative cost up to that percent.
-                old_cum_str = self.db_helper.calc_kp_cost(skill_id, None, current_percent) if current_percent > 0 else "0"
-                new_cum_str = self.db_helper.calc_kp_cost(skill_id, None, next_percent)
+                old_cum_str = (
+                    self.skill_db_service.calc_kp_cost(skill_id, None, current_percent)
+                    if current_percent > 0
+                    else "0"
+                )
+                new_cum_str = self.skill_db_service.calc_kp_cost(skill_id, None, next_percent)
                 old_cum = int(old_cum_str) if old_cum_str and old_cum_str != "?" else 0
                 new_cum = int(new_cum_str) if new_cum_str and new_cum_str != "?" else 0
                 delta = new_cum - old_cum
@@ -357,7 +372,7 @@ class SkillSelectionManager:
         current_percent = int(data.get("%", 0) or 0)
 
         # Get skill type
-        info = self.db_helper.get_skill_info(skill_id)
+        info = self.skill_db_service.get_skill_info(skill_id)
         if not info:
             return False, "Képzettség típus nem található"
         _, _, skill_type = info
@@ -370,31 +385,42 @@ class SkillSelectionManager:
             new_percent = current_percent - 3
 
         # For learned skills, remove if at minimum
-        if not is_mandatory:
-            if (skill_type == 1 and new_level < 1) or (skill_type == 2 and new_percent < 3):
-                old_kp = int(data.get("kp_cost", 0) or 0)
-                self.kp_spent -= old_kp
-                del self.learned_skills[skill_id]
-                logger.info(f"Removed learned skill {skill_id}, refunded {old_kp} KP")
-                return True, ""
+        if not is_mandatory and (
+            (skill_type == 1 and new_level < 1) or (skill_type == 2 and new_percent < 3)
+        ):
+            old_kp = int(data.get("kp_cost", 0) or 0)
+            self.kp_spent -= old_kp
+            del self.learned_skills[skill_id]
+            logger.info(f"Removed learned skill {skill_id}, refunded {old_kp} KP")
+            return True, ""
 
         # For mandatory skills, cannot go below mandatory level
         if is_mandatory:
             base_level = int(data.get("base_level", mandatory_level) or 0)
             base_percent = int(data.get("base_percent", mandatory_percent) or 0)
-            if (skill_type == 1 and new_level < base_level) or (skill_type == 2 and new_percent < base_percent):
+            if (skill_type == 1 and new_level < base_level) or (
+                skill_type == 2 and new_percent < base_percent
+            ):
                 return False, "Nem lehet a kötelező szint alá csökkenteni"
 
         # Calculate KP refund for the step being undone
         try:
             if skill_type == 1:
                 # Level-based: refund the cost of the current level
-                step_cost_str = self.db_helper.calc_kp_cost(skill_id, current_level, None)
+                step_cost_str = self.skill_db_service.calc_kp_cost(skill_id, current_level, None)
                 refund = int(step_cost_str) if step_cost_str and step_cost_str != "?" else 0
             else:
                 # Percent-based: refund the difference in cumulative cost
-                old_cum_str = self.db_helper.calc_kp_cost(skill_id, None, current_percent) if current_percent > 0 else "0"
-                new_cum_str = self.db_helper.calc_kp_cost(skill_id, None, new_percent) if new_percent > 0 else "0"
+                old_cum_str = (
+                    self.skill_db_service.calc_kp_cost(skill_id, None, current_percent)
+                    if current_percent > 0
+                    else "0"
+                )
+                new_cum_str = (
+                    self.skill_db_service.calc_kp_cost(skill_id, None, new_percent)
+                    if new_percent > 0
+                    else "0"
+                )
                 old_cum = int(old_cum_str) if old_cum_str and old_cum_str != "?" else 0
                 new_cum = int(new_cum_str) if new_cum_str and new_cum_str != "?" else 0
                 refund = old_cum - new_cum
@@ -414,10 +440,12 @@ class SkillSelectionManager:
             self.learned_skills[skill_id]["kp_cost"] = max(0, current_kp - refund)
 
         self.kp_spent -= refund
-        logger.info(f"Decreased skill {skill_id} to L{new_level}/{new_percent}%, refunded {refund} KP")
+        logger.info(
+            f"Decreased skill {skill_id} to L{new_level}/{new_percent}%, refunded {refund} KP"
+        )
         return True, ""
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset all learned skills and refund KP."""
         self.learned_skills.clear()
         self.upgrades.clear()

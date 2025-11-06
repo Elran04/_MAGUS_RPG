@@ -191,11 +191,10 @@ class SkillManager:
                 res = c.fetchone()
                 if res:
                     name, param, rtype = res
-                    suffix = f"{int(min_lvl)}%" if int(rtype or 1) == 2 else f"{int(min_lvl)}. szint"
-                    if param:
-                        display = f"{name} ({param}) {suffix}"
-                    else:
-                        display = f"{name} {suffix}"
+                    suffix = (
+                        f"{int(min_lvl)}%" if int(rtype or 1) == 2 else f"{int(min_lvl)}. szint"
+                    )
+                    display = f"{name} ({param}) {suffix}" if param else f"{name} {suffix}"
                     skill_list.append(display)
             if stat_list or skill_list:
                 result[str(lvl)] = {"képesség": stat_list, "képzettség": skill_list}

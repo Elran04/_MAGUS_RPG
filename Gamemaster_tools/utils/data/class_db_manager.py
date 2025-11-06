@@ -1,4 +1,6 @@
 import sqlite3
+from collections.abc import Iterable
+from typing import Any
 
 from config.paths import CLASSES_DB
 
@@ -7,14 +9,14 @@ DB_PATH = str(CLASSES_DB)
 
 
 class ClassDBManager:
-    def __init__(self, db_path=DB_PATH):
+    def __init__(self, db_path: str = DB_PATH) -> None:
         self.db_path = db_path
 
-    def get_connection(self):
+    def get_connection(self) -> sqlite3.Connection:
         return sqlite3.connect(self.db_path)
 
     # --- Classes table extensions ---
-    def ensure_classes_description_column(self):
+    def ensure_classes_description_column(self) -> None:
         """Ensure classes table has a description_file column for base class descriptions."""
         with self.get_connection() as conn:
             c = conn.cursor()
@@ -25,7 +27,7 @@ class ClassDBManager:
                 conn.commit()
 
     # --- Starting equipment support ---
-    def ensure_starting_equipment_table(self):
+    def ensure_starting_equipment_table(self) -> None:
         """Create starting_equipment table if it does not exist.
 
         Schema:
@@ -77,7 +79,7 @@ class ClassDBManager:
 
     def add_starting_equipment_currency(
         self, class_id: str, specialisation_id: str | None, min_currency: int, max_currency: int
-    ):
+    ) -> None:
         """Insert a currency row for a class/spec."""
         with self.get_connection() as conn:
             c = conn.cursor()
@@ -92,7 +94,7 @@ class ClassDBManager:
 
     def add_starting_equipment_item(
         self, class_id: str, specialisation_id: str | None, item_type: str, item_id: str
-    ):
+    ) -> None:
         """Insert a non-currency starting item for a class/spec."""
         with self.get_connection() as conn:
             c = conn.cursor()
@@ -107,7 +109,7 @@ class ClassDBManager:
 
     def update_starting_equipment_currency(
         self, entry_id: int, min_currency: int, max_currency: int
-    ):
+    ) -> None:
         """Update a currency row identified by entry_id."""
         with self.get_connection() as conn:
             c = conn.cursor()
@@ -121,7 +123,7 @@ class ClassDBManager:
             )
             conn.commit()
 
-    def update_starting_equipment_item(self, entry_id: int, item_type: str, item_id: str):
+    def update_starting_equipment_item(self, entry_id: int, item_type: str, item_id: str) -> None:
         """Update a non-currency item row identified by entry_id."""
         with self.get_connection() as conn:
             c = conn.cursor()
@@ -135,13 +137,15 @@ class ClassDBManager:
             )
             conn.commit()
 
-    def delete_starting_equipment(self, entry_id: int):
+    def delete_starting_equipment(self, entry_id: int) -> None:
         with self.get_connection() as conn:
             c = conn.cursor()
             c.execute("DELETE FROM starting_equipment WHERE entry_id = ?", (int(entry_id),))
             conn.commit()
 
-    def list_starting_equipment(self, class_id: str, specialisation_id: str | None = None):
+    def list_starting_equipment(
+        self, class_id: str, specialisation_id: str | None = None
+    ) -> list[dict[str, Any]]:
         """Return list of starting equipment rows for a class/spec.
 
         Returns list of dicts with keys: entry_id, item_type, item_id, min_currency, max_currency.
@@ -173,7 +177,7 @@ class ClassDBManager:
             return rows
 
     # --- Specialisations support ---
-    def ensure_specialisations_table(self):
+    def ensure_specialisations_table(self) -> None:
         """Ensure the specialisations table exists (compatible with current project schema)."""
         with self.get_connection() as conn:
             c = conn.cursor()
@@ -190,7 +194,7 @@ class ClassDBManager:
             )
             conn.commit()
 
-    def list_specialisations(self, class_id: str):
+    def list_specialisations(self, class_id: str) -> list[dict[str, Any]]:
         """List specialisations for a class."""
         with self.get_connection() as conn:
             conn.row_factory = sqlite3.Row
@@ -208,7 +212,7 @@ class ClassDBManager:
 
     def upsert_specialisation(
         self, class_id: str, specialisation_id: str, name: str, description_file: str | None
-    ):
+    ) -> None:
         """Insert or update a specialisation row."""
         with self.get_connection() as conn:
             c = conn.cursor()
@@ -224,7 +228,7 @@ class ClassDBManager:
             )
             conn.commit()
 
-    def delete_specialisation(self, class_id: str, specialisation_id: str):
+    def delete_specialisation(self, class_id: str, specialisation_id: str) -> None:
         with self.get_connection() as conn:
             c = conn.cursor()
             c.execute(
@@ -234,7 +238,9 @@ class ClassDBManager:
             conn.commit()
 
     # --- Currency resolver ---
-    def get_effective_starting_currency(self, class_id: str, specialisation_id: str | None = None):
+    def get_effective_starting_currency(
+        self, class_id: str, specialisation_id: str | None = None
+    ) -> tuple[int | None, int | None]:
         """Resolve starting currency for a class/spec by priority:
         1) starting_equipment currency row for given specialisation
         2) starting_equipment currency row for base class (NULL spec)
@@ -279,13 +285,14 @@ class ClassDBManager:
                 return row[0], row[1]
             return None, None
 
-    def list_classes(self):
+    def list_classes(self) -> list[tuple[int, str]]:
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT id, name FROM classes ORDER BY name")
-            return cursor.fetchall()
+            rows: Iterable[tuple[int, str]] = cursor.fetchall()
+            return list(rows)
 
-    def get_class_details(self, class_id):
+    def get_class_details(self, class_id: int) -> dict[str, Any]:
         with self.get_connection() as conn:
             cursor = conn.cursor()
             # Get class name
@@ -341,7 +348,7 @@ class ClassDBManager:
                 "class_description_file": class_description_file,
             }
 
-    def update_class_name(self, class_id, new_name):
+    def update_class_name(self, class_id: str, new_name: str) -> None:
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("UPDATE classes SET name = ? WHERE id = ?", (new_name, class_id))
@@ -349,7 +356,7 @@ class ClassDBManager:
 
     # Add more update/insert/delete methods as needed for stats, combat stats, etc.
 
-    def update_class_description_file(self, class_id: str, description_file: str | None):
+    def update_class_description_file(self, class_id: str, description_file: str | None) -> None:
         with self.get_connection() as conn:
             c = conn.cursor()
             c.execute(

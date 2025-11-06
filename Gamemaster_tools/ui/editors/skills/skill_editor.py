@@ -21,11 +21,12 @@ from PySide6.QtWidgets import (
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
+from utils.data.skilldata_manager import SkillManager
+
 from ui.editors.skills.skill_editor_actions import SkillEditorActions
 from ui.editors.skills.skill_editor_constants import TYPE_MAP_REV
 from ui.editors.skills.skill_editor_list import SkillListPanel
 from ui.editors.skills.skill_editor_tabs import SkillEditorTabs
-from utils.data.skilldata_manager import SkillManager
 
 
 class SkillEditorQt(QMainWindow):

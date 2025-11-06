@@ -1,4 +1,3 @@
-from PySide6.QtWidgets import QCompleter
 import contextlib
 import os
 import sys
@@ -10,6 +9,7 @@ from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
     QComboBox,
+    QCompleter,
     QFormLayout,
     QHBoxLayout,
     QLabel,
@@ -35,8 +35,10 @@ class WeaponsAndShieldsEditor(QMainWindow):
         # Load all 'lőszer' items from general equipment JSON
         from config.paths import GENERAL_EQUIPMENT_JSON
         from utils.data.json_io import load_json_safe
+
         items = load_json_safe(str(GENERAL_EQUIPMENT_JSON), default=[])
         return [item.get("name", "") for item in items if item.get("category") == "lőszer"]
+
     # --- Fő Qt ablak: fegyverek és pajzsok szerkesztője ---
     # A szerkesztő két fő panelből áll: bal oldalon TreeView (lista), jobb oldalon szerkesztő mezők
     # Főbb egységek: setup_treeview, populate_treeview, on_tree_select, build_edit_fields, build_type_fields, mezőkezelés, mentés/törlés logika

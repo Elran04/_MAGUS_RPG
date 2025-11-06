@@ -18,7 +18,6 @@ This can later be extended to a filled wedge/zone-of-control by also including t
 between left/right rays for each depth.
 """
 
-
 # Axial directions for pointy-top hexes (q, r)
 # Ordered clockwise starting from "north" approximated as (0, -1)
 # 0=N, 1=NE, 2=SE, 3=S, 4=SW, 5=NW

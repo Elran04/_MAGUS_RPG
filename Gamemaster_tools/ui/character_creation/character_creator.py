@@ -7,13 +7,14 @@ from PySide6 import QtWidgets
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from core.character_model import calculate_combat_stats, calculate_skill_points
-from ui.character_creation.steps.skills_step import SkillsStepWidget
 from utils.data.character_storage import save_character
+from utils.data.class_db_manager import ClassDBManager
 from utils.log.logger import get_logger
+from utils.placeholder_manager import PlaceholderManager
+
+from ui.character_creation.steps.skills_step import SkillsStepWidget
 
 logger = get_logger(__name__)
-from utils.data.class_db_manager import ClassDBManager
-from utils.placeholder_manager import PlaceholderManager
 
 # Base directory for data paths
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -26,7 +27,7 @@ into dedicated widgets under ui/character_creation/steps.
 
 
 class CharacterWizardQt(QtWidgets.QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Karakteralkotás varázsló")
         # Larger window to show class and specialization side-by-side
@@ -50,7 +51,7 @@ class CharacterWizardQt(QtWidgets.QDialog):
         self.init_ui()
         self.show_step()
 
-    def init_ui(self):
+    def init_ui(self) -> None:
         main_layout = QtWidgets.QVBoxLayout(self)
         self.step_widget = QtWidgets.QWidget(self)
         self.step_layout = QtWidgets.QVBoxLayout(self.step_widget)
@@ -64,7 +65,7 @@ class CharacterWizardQt(QtWidgets.QDialog):
         self.btn_frame.addWidget(self.back_btn)
         self.btn_frame.addWidget(self.next_btn)
 
-    def show_step(self):
+    def show_step(self) -> None:
         for i in reversed(range(self.step_layout.count())):
             widget = self.step_layout.itemAt(i).widget()
             if widget:
@@ -97,7 +98,7 @@ class CharacterWizardQt(QtWidgets.QDialog):
             self.show_summary()
             self.next_btn.setText("Mentés")
 
-    def show_basic_spec_modular(self):
+    def show_basic_spec_modular(self) -> None:
         """Show the Basic+Spec step via modular widget."""
         from ui.character_creation.steps.basic_spec_step import BasicSpecStepWidget
 
@@ -112,16 +113,16 @@ class CharacterWizardQt(QtWidgets.QDialog):
 
     # Basic+Spec step moved to BasicSpecStepWidget
 
-    def show_skills_modular(self):
+    def show_skills_modular(self) -> None:
         """Show skills step via modular widget."""
 
-        def _get_class_id():
+        def _get_class_id() -> str | None:
             return self.selected_class_id
 
-        def _get_spec_data():
+        def _get_spec_data() -> dict[str, Any]:
             return self.spec_data
 
-        def _get_data():
+        def _get_data() -> dict[str, Any]:
             return self.data
 
         # Reuse existing instance to preserve inline selections
@@ -145,39 +146,41 @@ class CharacterWizardQt(QtWidgets.QDialog):
 
     # Legacy inline skills/placeholder handlers removed; handled inside SkillsStepWidget
 
-    def show_skill_learning(self):
+    def show_skill_learning(self) -> None:
         """Show skill learning step via modular widget (NEW)."""
         from ui.character_creation.steps.skill_learning_step import SkillLearningStepWidget
 
-        def _get_data():
+        def _get_data() -> dict[str, Any]:
             return self.data
 
         if not hasattr(self, "skill_learning_step") or self.skill_learning_step is None:
-            self.skill_learning_step = SkillLearningStepWidget(BASE_DIR, _get_data, self.placeholder_mgr)
+            self.skill_learning_step = SkillLearningStepWidget(
+                BASE_DIR, _get_data, self.placeholder_mgr
+            )
         self.skill_learning_step.refresh()
         self.step_layout.addWidget(self.skill_learning_step)
 
-    def show_equipment(self):
+    def show_equipment(self) -> None:
         """Show equipment step via modular widget (placeholder for now)."""
         from ui.character_creation.steps.equipment_step import EquipmentStepWidget
 
-        def _get_data():
+        def _get_data() -> dict[str, Any]:
             return self.data
-        
-        def _get_class_id():
+
+        def _get_class_id() -> str | None:
             return self.selected_class_id
 
         if not hasattr(self, "equipment_step") or self.equipment_step is None:
             self.equipment_step = EquipmentStepWidget(_get_data, _get_class_id)
-        
+
         self.equipment_step.refresh()
         self.step_layout.addWidget(self.equipment_step)
 
-    def show_summary(self):
+    def show_summary(self) -> None:
         """Show summary step via modular widget."""
         from ui.character_creation.steps.summary_step import SummaryStepWidget
 
-        def _get_data():
+        def _get_data() -> dict[str, Any]:
             return self.data
 
         if not hasattr(self, "summary_step") or self.summary_step is None:
@@ -185,7 +188,7 @@ class CharacterWizardQt(QtWidgets.QDialog):
         self.summary_step.refresh()
         self.step_layout.addWidget(self.summary_step)
 
-    def next_step(self):
+    def next_step(self) -> None:
         if self.step == 0:
             # Validate via modular widget and capture data
             if (
@@ -235,10 +238,13 @@ class CharacterWizardQt(QtWidgets.QDialog):
                     pass
         elif self.step == 1:
             # Validate skills step before progressing
-            if hasattr(self, "skills_step") and self.skills_step is not None:
-                if not self.skills_step.validate():
-                    return  # Validation failed, stay on current step
-            
+            if (
+                hasattr(self, "skills_step")
+                and self.skills_step is not None
+                and not self.skills_step.validate()
+            ):
+                return  # Validation failed, stay on current step
+
             # Persist skills placeholder choices from widget back to wizard state
             if hasattr(self, "skills_step") and self.skills_step is not None:
                 try:
@@ -314,7 +320,7 @@ class CharacterWizardQt(QtWidgets.QDialog):
         else:
             self.show_step()
 
-    def prev_step(self):
+    def prev_step(self) -> None:
         if self.step <= 0:
             return
         # Special case: going back from Skill Learning (step 2) to Skills (step 1)
@@ -333,14 +339,12 @@ class CharacterWizardQt(QtWidgets.QDialog):
                 return
             # Reset learning step state so it rebuilds from mandatory skills next time
             if hasattr(self, "skill_learning_step") and self.skill_learning_step is not None:
-                try:
+                with contextlib.suppress(Exception):
                     self.skill_learning_step.selection_manager = None
-                except Exception:
-                    pass
         self.step -= 1
         self.show_step()
 
-    def finish(self):
+    def finish(self) -> None:
         # Build final character payload: only base info, attributes, skills, equipment
         final_data = None
         if hasattr(self, "summary_step") and self.summary_step is not None:
@@ -369,7 +373,7 @@ class CharacterWizardQt(QtWidgets.QDialog):
             final_data.setdefault("Felszerelés", {"currency": 0, "items": []})
 
             # Transform skills to minimal schema
-            minimal_skills: list[dict] = []
+            minimal_skills: list[dict[str, Any]] = []
             for s in final_data.get("Képzettségek", []) or []:
                 sid = s.get("id")
                 if not sid:

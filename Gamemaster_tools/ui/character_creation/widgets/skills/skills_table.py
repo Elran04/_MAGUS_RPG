@@ -1,7 +1,9 @@
-from PySide6 import QtWidgets, QtGui
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
+from PySide6 import QtGui, QtWidgets
 from utils.ui.themes import CharacterCreationTheme
+
 
 class SkillsTableRenderer:
     """
@@ -12,21 +14,24 @@ class SkillsTableRenderer:
     def __init__(
         self,
         table: QtWidgets.QTableWidget,
-        db_helper,
-        placeholder_manager,
-        prereq_checker,
-        build_current_map_cb: Callable[[tuple | None], dict[str, dict[str, int]]],
+        skill_db_service: Any,
+        placeholder_manager: Any,
+        prereq_checker: Any,
+        build_current_map_cb: Callable[
+            [tuple[str, int, int, int, bool, int] | None], dict[str, dict[str, int]]
+        ],
         attributes_getter: Callable[[], dict[str, Any]],
     ) -> None:
         self.table = table
-        self.db_helper = db_helper
+        self.skill_db_service = skill_db_service
         self.placeholder_manager = placeholder_manager
         self.prereq_checker = prereq_checker
         self.build_current_map_cb = build_current_map_cb
         self.attributes_getter = attributes_getter
-
-        self._placeholder_row_counters: dict[tuple, int] = {}
-        self._placeholder_combos: dict[tuple, QtWidgets.QComboBox] = {}
+        self._placeholder_row_counters: dict[tuple[str, int, int, int, bool], int] = {}
+        self._placeholder_combos: dict[
+            tuple[str, int, int, int, bool, int], QtWidgets.QComboBox
+        ] = {}
 
     # ---- Public API ----
 
@@ -36,10 +41,10 @@ class SkillsTableRenderer:
 
     def render_rows(
         self,
-        entries: list[tuple],
+        entries: list[tuple[str, int | None, int | None, int | None, Any, int, str]],
         current_map: dict[str, dict[str, int]],
     ) -> None:
-        attributes = self.attributes_getter() or {}
+        attributes: dict[str, Any] = self.attributes_getter() or {}
 
         for (
             skill_id,
@@ -59,7 +64,7 @@ class SkillsTableRenderer:
                 row, 2, QtWidgets.QTableWidgetItem(str(req_percent) if req_percent else "-")
             )
             kp_cost = (
-                self.db_helper.calc_kp_cost(skill_id, req_level, req_percent)
+                self.skill_db_service.calc_kp_cost(skill_id, req_level, req_percent)
                 if is_placeholder != 1
                 else "?"
             )
@@ -92,7 +97,7 @@ class SkillsTableRenderer:
 
     def refresh_placeholder_combos(self) -> None:
         """Refresh all placeholder combo boxes to enforce uniqueness and prerequisites."""
-        attributes = self.attributes_getter() or {}
+        attributes: dict[str, Any] = self.attributes_getter() or {}
         for instance_key, combo in self._placeholder_combos.items():
             ph_id = instance_key[0]
             current_selected = combo.currentData()
@@ -104,7 +109,7 @@ class SkillsTableRenderer:
             combo.addItem("-- válassz --", None)
 
             # Get valid resolutions using the placeholder manager
-            current_map = self.build_current_map_cb(req_override_instance=instance_key)
+            current_map = self.build_current_map_cb(instance_key)
             valid_resolutions = self.placeholder_manager.get_valid_resolutions(
                 ph_id,
                 instance_key,
@@ -133,7 +138,7 @@ class SkillsTableRenderer:
                             item.setText("?")
             combo.blockSignals(False)
 
-    # ---- Internal helpers ----
+    # ---- Internal utility methods ----
 
     def _render_placeholder_row(
         self,
@@ -144,7 +149,7 @@ class SkillsTableRenderer:
         req_percent: int | None,
         from_spec: Any,
         display_name: str,
-        attributes: dict,
+        attributes: dict[str, Any],
     ) -> None:
         base_key = (
             skill_id,
@@ -165,7 +170,7 @@ class SkillsTableRenderer:
         combo.addItem("-- válassz --", None)
 
         # Get initial valid resolutions
-        current_map = self.build_current_map_cb(req_override_instance=instance_key)
+        current_map = self.build_current_map_cb(instance_key)
         valid_resolutions = self.placeholder_manager.get_valid_resolutions(
             skill_id,
             instance_key,
@@ -194,7 +199,7 @@ class SkillsTableRenderer:
                 combo.setCurrentIndex(idx)
                 item = self.table.item(row, 3)
                 if item:
-                    item.setText(self.db_helper.calc_kp_cost(chosen, req_level, req_percent))
+                    item.setText(self.skill_db_service.calc_kp_cost(chosen, req_level, req_percent))
             else:
                 combo.setCurrentIndex(0)
 
@@ -209,7 +214,7 @@ class SkillsTableRenderer:
         req_percent: int | None,
         display_name: str,
         current_map: dict[str, dict[str, int]],
-        attributes: dict,
+        attributes: dict[str, Any],
     ) -> None:
         name_item = QtWidgets.QTableWidgetItem(display_name)
         self.table.setItem(row, 0, name_item)
@@ -219,7 +224,9 @@ class SkillsTableRenderer:
         )
         prereq_item = QtWidgets.QTableWidgetItem("OK" if ok else "Hiányzik")
         if ok:
-            prereq_item.setForeground(QtGui.QBrush(QtGui.QColor(CharacterCreationTheme.SUCCESS_GREEN_DARK)))
+            prereq_item.setForeground(
+                QtGui.QBrush(QtGui.QColor(CharacterCreationTheme.SUCCESS_GREEN_DARK))
+            )
         else:
             prereq_item.setForeground(QtGui.QBrush(QtGui.QColor(CharacterCreationTheme.ERROR_RED)))
             prereq_item.setToolTip("\n".join(reasons))
@@ -242,7 +249,7 @@ class SkillsTableRenderer:
                 req_level = int(combo.property("skill_level") or 0)
                 req_percent = int(combo.property("skill_percent") or 0)
                 try:
-                    cost = self.db_helper.calc_kp_cost(chosen, req_level, req_percent)
+                    cost = self.skill_db_service.calc_kp_cost(chosen, req_level, req_percent)
                     item = self.table.item(row, 3)
                     if item:
                         item.setText(cost)

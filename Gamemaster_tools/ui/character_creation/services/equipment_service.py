@@ -14,41 +14,47 @@ logger = get_logger(__name__)
 class EquipmentService:
     """Service for managing character equipment and transactions."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.currency_manager = CurrencyManager()
         # Inventory keyed by internal item_id -> { name, category, price, data, quantity }
         self.inventory: dict[str, dict[str, Any]] = {}
         self.currency_base: int = 0  # Currency in copper/réz base units
         self._next_item_id = 1
 
-    def set_currency(self, amount_in_gold: int):
+    def set_currency(self, amount_in_gold: int) -> None:
         """Set character's currency from gold amount."""
         self.currency_base = self.currency_manager.to_base(amount_in_gold, "arany")
-        logger.info(f"Currency set to {amount_in_gold} gold = {self.currency_manager.format(self.currency_base)}")
+        logger.info(
+            f"Currency set to {amount_in_gold} gold = {self.currency_manager.format(self.currency_base)}"
+        )
 
-    def add_starting_item(self, item_data: dict[str, Any], category: str):
+    def add_starting_item(self, item_data: dict[str, Any], category: str) -> None:
         """
         Add a starting equipment item to inventory.
-        
+
         Args:
             item_data: Item data dict with 'name', 'price', etc.
             category: Category key ('armor', 'weapons_and_shields', 'general')
         """
         if not item_data:
             return
-            
+
         # If stackable and already have same item (by category+id), increase quantity
         stackable = bool(item_data.get("stackable", False))
         if stackable:
             for inv in self.inventory.values():
-                if inv.get("category") == category and (inv.get("data", {}).get("id") == item_data.get("id")):
+                if inv.get("category") == category and (
+                    inv.get("data", {}).get("id") == item_data.get("id")
+                ):
                     inv["quantity"] = int(inv.get("quantity", 1)) + 1
-                    logger.info(f"Increased stack for {item_data.get('name')} -> qty {inv['quantity']}")
+                    logger.info(
+                        f"Increased stack for {item_data.get('name')} -> qty {inv['quantity']}"
+                    )
                     return
 
         item_id = f"item_{self._next_item_id}"
         self._next_item_id += 1
-        
+
         self.inventory[item_id] = {
             "name": item_data.get("name", "Unknown"),
             "category": category,
@@ -56,26 +62,26 @@ class EquipmentService:
             "data": item_data,
             "quantity": 1,
         }
-        
+
         logger.info(f"Added starting item: {item_data.get('name')} ({category})")
 
     def buy_item(self, item_data: dict[str, Any], category: str) -> bool:
         """
         Purchase an item if character has enough currency.
-        
+
         Args:
             item_data: Item data dict
             category: Category key
-            
+
         Returns:
             True if purchase successful, False otherwise
         """
         price = item_data.get("price", 0)
-        
+
         if self.currency_base < price:
             logger.warning(f"Not enough currency to buy {item_data.get('name')}")
             return False
-            
+
         # Deduct currency
         self.currency_base -= price
 
@@ -83,15 +89,19 @@ class EquipmentService:
         stackable = bool(item_data.get("stackable", False))
         if stackable:
             for inv in self.inventory.values():
-                if inv.get("category") == category and (inv.get("data", {}).get("id") == item_data.get("id")):
+                if inv.get("category") == category and (
+                    inv.get("data", {}).get("id") == item_data.get("id")
+                ):
                     inv["quantity"] = int(inv.get("quantity", 1)) + 1
-                    logger.info(f"Purchased stackable: {item_data.get('name')} (+1 -> {inv['quantity']})")
+                    logger.info(
+                        f"Purchased stackable: {item_data.get('name')} (+1 -> {inv['quantity']})"
+                    )
                     return True
 
         # Otherwise add as new entry
         item_id = f"item_{self._next_item_id}"
         self._next_item_id += 1
-        
+
         self.inventory[item_id] = {
             "name": item_data.get("name", "Unknown"),
             "category": category,
@@ -99,7 +109,7 @@ class EquipmentService:
             "data": item_data,
             "quantity": 1,
         }
-        
+
         logger.info(f"Purchased: {item_data.get('name')} for {self.currency_manager.format(price)}")
         return True
 
@@ -137,7 +147,9 @@ class EquipmentService:
         if stackable:
             # Find existing stack to increase, else create new with given quantity
             for inv in self.inventory.values():
-                if inv.get("category") == category and (inv.get("data", {}).get("id") == item_data.get("id")):
+                if inv.get("category") == category and (
+                    inv.get("data", {}).get("id") == item_data.get("id")
+                ):
                     inv["quantity"] = int(inv.get("quantity", 1)) + qty
                     logger.info(
                         f"Purchased stackable bulk: {item_data.get('name')} (+{qty} -> {inv['quantity']})"
@@ -177,17 +189,17 @@ class EquipmentService:
     def sell_item(self, item_id: str) -> bool:
         """
         Sell an item from inventory.
-        
+
         Args:
             item_id: ID of item in inventory
-            
+
         Returns:
             True if sale successful, False otherwise
         """
         if item_id not in self.inventory:
             logger.warning(f"Item {item_id} not found in inventory")
             return False
-            
+
         item = self.inventory[item_id]
         price = item["price"]
 
@@ -202,7 +214,7 @@ class EquipmentService:
             logger.info(f"Decreased stack: {item['name']} -> qty {item['quantity']}")
         else:
             del self.inventory[item_id]
-        
+
         logger.info(f"Sold: {item['name']} for {self.currency_manager.format(sell_price)}")
         return True
 
@@ -213,27 +225,27 @@ class EquipmentService:
     def get_inventory_by_category(self) -> dict[str, list[tuple[str, dict[str, Any]]]]:
         """
         Get inventory organized by category.
-        
+
         Returns:
             Dict mapping category to list of (item_id, item_data) tuples
         """
-        categorized = {
+        categorized: dict[str, list[tuple[str, dict[str, Any]]]] = {
             "armor": [],
             "weapons_and_shields": [],
-            "general": []
+            "general": [],
         }
-        
+
         for item_id, item in self.inventory.items():
             category = item.get("category", "general")
             if category in categorized:
                 categorized[category].append((item_id, item))
-                
+
         return categorized
 
     def get_export_data(self) -> dict[str, Any]:
         """
         Export inventory and currency for character save.
-        
+
         Returns:
             Dict with 'currency' (base copper) and minimal 'items'
             items = [{ 'category': <str>, 'id': <str> }]

@@ -6,23 +6,23 @@ Provides consistent color palette across all editors and character creation.
 
 class CharacterCreationTheme:
     """Color palette for character creation wizard."""
-    
+
     # Success colors (green)
     SUCCESS_GREEN = "#4caf50"
     SUCCESS_GREEN_HOVER = "#388e3c"
     SUCCESS_GREEN_DARK = "#2e7d32"
     SUCCESS_GREEN_LIGHT = "#45a049"
-    
+
     # Error colors (red)
     ERROR_RED = "#c62828"
     ERROR_RED_LIGHT = "#f44336"
-    
+
     # Warning colors (orange/yellow)
     WARNING_ORANGE = "#cc8800"
     WARNING_ORANGE_BG = "rgba(200,150,50,30)"
     HIGHLIGHT_YELLOW = "#ffe082"
     HIGHLIGHT_YELLOW_HOVER = "#ffd54f"
-    
+
     # Neutral colors
     TEXT_GRAY = "#888"
     TEXT_DARK = "#333"
@@ -37,23 +37,23 @@ class CharacterCreationTheme:
 
 class EditorTheme:
     """Color palette for data editors (skills, classes, equipment, races)."""
-    
+
     # Primary action colors
     PRIMARY_BLUE = "#2196f3"
     PRIMARY_BLUE_HOVER = "#1976d2"
-    
+
     # Success/validation
     SUCCESS_GREEN = "#4caf50"
     SUCCESS_GREEN_HOVER = "#388e3c"
-    
+
     # Danger/delete
     DANGER_RED = "#f44336"
     DANGER_RED_HOVER = "#d32f2f"
-    
+
     # Warning
     WARNING_AMBER = "#ff9800"
     WARNING_AMBER_HOVER = "#f57c00"
-    
+
     # Neutral
     NEUTRAL_GRAY = "#757575"
     NEUTRAL_GRAY_HOVER = "#616161"
@@ -95,10 +95,7 @@ def warning_label_style() -> str:
 
 def info_label_style() -> str:
     """Returns stylesheet for info/help text."""
-    return (
-        f"color: {CharacterCreationTheme.TEXT_GRAY}; "
-        f"font-size: 9pt; padding: 8px;"
-    )
+    return f"color: {CharacterCreationTheme.TEXT_GRAY}; " f"font-size: 9pt; padding: 8px;"
 
 
 def header_label_style() -> str:

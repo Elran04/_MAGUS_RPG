@@ -3,6 +3,7 @@ Race Manager - Faj adatok betöltése, kezelése, mentése.
 """
 
 from pathlib import Path
+from typing import Any
 
 from core.race_model import Race, SpecialAbility
 from utils.data.json_io import load_json, save_json
@@ -190,7 +191,7 @@ class RaceManager:
             logger.error(f"Hiba faj mentése során ({race.name}): {e}", exc_info=True)
             raise
 
-    def create_race(self, race_id: str, name: str, **kwargs) -> Race:
+    def create_race(self, race_id: str, name: str, **kwargs: Any) -> Race:
         """
         Új faj létrehozása.
 

@@ -1,6 +1,7 @@
-from typing import Callable, Any
-from PySide6 import QtCore, QtGui, QtWidgets
+from collections.abc import Callable
+from typing import Any
 
+from PySide6 import QtCore, QtGui, QtWidgets
 from utils.log.logger import get_logger
 from utils.placeholder_manager import PlaceholderManager
 
@@ -19,13 +20,13 @@ class AddSkillDialog(QtWidgets.QDialog):
         self,
         parent: QtWidgets.QWidget,
         db_path_getter: Callable[[str], str],
-        prereq_checker,
+        prereq_checker: Any,
         get_current_map: Callable[[], dict[str, dict[str, int]]],
         get_attributes: Callable[[], dict[str, Any]],
         get_current_skill_ids: Callable[[], set[str]],
         kp_cost_getter: Callable[[str, int, int], Any],
         placeholder_mgr: PlaceholderManager | None = None,
-        skill_db_helper=None,
+        skill_db_service: Any = None,
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Új képzettség tanulása")
@@ -38,7 +39,7 @@ class AddSkillDialog(QtWidgets.QDialog):
         self._get_current_skill_ids = get_current_skill_ids
         self._kp_cost_getter = kp_cost_getter
         self._placeholder_mgr = placeholder_mgr
-        self._skill_db = skill_db_helper
+        self._skill_db = skill_db_service
 
         self._selected: tuple[str, int] | None = None
 
@@ -73,9 +74,15 @@ class AddSkillDialog(QtWidgets.QDialog):
         # Table
         self.table = QtWidgets.QTableWidget()
         self.table.setColumnCount(5)
-        self.table.setHorizontalHeaderLabels([
-            "Képzettség", "Kategória", "Típus", "Min. KP", "Előfeltételek",
-        ])
+        self.table.setHorizontalHeaderLabels(
+            [
+                "Képzettség",
+                "Kategória",
+                "Típus",
+                "Min. KP",
+                "Előfeltételek",
+            ]
+        )
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.horizontalHeader().setSectionResizeMode(
             0, QtWidgets.QHeaderView.ResizeMode.Stretch
@@ -83,20 +90,15 @@ class AddSkillDialog(QtWidgets.QDialog):
         self.table.verticalHeader().setSectionResizeMode(
             QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
-        self.table.setSelectionBehavior(
-            QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows
-        )
-        self.table.setEditTriggers(
-            QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers
-        )
-        self.table.setSelectionMode(
-            QtWidgets.QAbstractItemView.SelectionMode.SingleSelection
-        )
+        self.table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         layout.addWidget(self.table)
 
         # Buttons
         self.button_box = QtWidgets.QDialogButtonBox(
-            QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel
+            QtWidgets.QDialogButtonBox.StandardButton.Ok
+            | QtWidgets.QDialogButtonBox.StandardButton.Cancel
         )
         ok_button = self.button_box.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
         ok_button.setText("Hozzáadás")
@@ -122,7 +124,7 @@ class AddSkillDialog(QtWidgets.QDialog):
     def _load_table(self) -> None:
         if not self._skill_db:
             return
-            
+
         self.table.setRowCount(0)
         category_filter = self.category_combo.currentData()
         search_filter = (self.search_box.text() or "").lower()
@@ -132,7 +134,7 @@ class AddSkillDialog(QtWidgets.QDialog):
 
         try:
             skills = self._skill_db.get_learnable_skills(category_filter)
-            
+
             for skill_id, name, parameter, category, skill_type in skills:
                 if skill_id in current_skill_ids:
                     continue
@@ -151,43 +153,43 @@ class AddSkillDialog(QtWidgets.QDialog):
                 prereq_text = "-"
                 # Always show prerequisites (both met and unmet)
                 parts = []
-                
+
                 # Get attribute prerequisites
                 attr_rows = self._skill_db.get_skill_attribute_prerequisites(skill_id)
-                
+
                 for attr, min_val, lvl in attr_rows:
                     if lvl and int(lvl) > check_level:
                         continue
                     current_val = attributes.get(attr)
                     user_has_attr = current_val is not None and int(current_val) >= int(min_val)
-                    
+
                     attr_str = f"{attr} {min_val}+"
                     if user_has_attr:
                         attr_str = f'<span style="color: #51cf66;">{attr_str}</span>'
                     else:
                         attr_str = f'<span style="color: #ff6b6b;">{attr_str}</span>'
                     parts.append(attr_str)
-                
+
                 # Get skill prerequisites
                 prereq_rows = self._skill_db.get_skill_skill_prerequisites(skill_id)
-                
+
                 for req_skill_id, min_level, for_level in prereq_rows:
                     if for_level and int(for_level) > check_level:
                         continue
-                    
+
                     # Check if this is a placeholder (OR logic)
                     if self._placeholder_mgr and self._placeholder_mgr.is_placeholder(req_skill_id):
                         # Get all valid alternatives for this placeholder
                         alternatives = self._placeholder_mgr.get_resolutions(req_skill_id)
-                        
+
                         for idx, alt in enumerate(alternatives):
-                            alt_id = alt['target_skill_id']
-                            alt_name = alt['skill_name']
-                            alt_param = alt['parameter']
-                            
+                            alt_id = alt["target_skill_id"]
+                            alt_name = alt["skill_name"]
+                            alt_param = alt["parameter"]
+
                             # Get skill type for proper formatting
                             alt_type = self._skill_db.get_skill_type(alt_id) or 1
-                            
+
                             # Check if user has this alternative at required level
                             user_has = False
                             if alt_id in current_map:
@@ -195,26 +197,26 @@ class AddSkillDialog(QtWidgets.QDialog):
                                     user_has = current_map[alt_id].get("%", 0) >= int(min_level)
                                 else:  # Level-based
                                     user_has = current_map[alt_id].get("level", 0) >= int(min_level)
-                            
+
                             # Format display
                             disp = f"{alt_name} ({alt_param})" if alt_param else alt_name
-                            
+
                             # Add "VAGY" only if not the last element
-                            is_last = (idx == len(alternatives) - 1)
+                            is_last = idx == len(alternatives) - 1
                             if alt_type == 2:
                                 req_str = f"{disp} - {int(min_level)}%"
                             else:
                                 req_str = f"{disp} - {int(min_level)}. szint"
-                            
+
                             if not is_last:
                                 req_str += " VAGY"
-                            
+
                             # Color code: green if met, red if not
                             if user_has:
                                 req_str = f'<span style="color: #51cf66;">{req_str}</span>'
                             else:
                                 req_str = f'<span style="color: #ff6b6b;">{req_str}</span>'
-                            
+
                             parts.append(req_str)
                     else:
                         # Regular (non-placeholder) prerequisite
@@ -223,36 +225,42 @@ class AddSkillDialog(QtWidgets.QDialog):
                             req_name, req_param, req_type = skill_info
                             req_type_int = int(req_type or 1)
                             disp = f"{req_name} ({req_param})" if req_param else req_name
-                            
+
                             # Check if user has this skill at required level
                             user_has_skill = False
                             if req_skill_id in current_map:
                                 if req_type_int == 2:  # Percent-based
-                                    user_has_skill = current_map[req_skill_id].get("%", 0) >= int(min_level)
+                                    user_has_skill = current_map[req_skill_id].get("%", 0) >= int(
+                                        min_level
+                                    )
                                 else:  # Level-based
-                                    user_has_skill = current_map[req_skill_id].get("level", 0) >= int(min_level)
-                            
+                                    user_has_skill = current_map[req_skill_id].get(
+                                        "level", 0
+                                    ) >= int(min_level)
+
                             # Show proper suffix based on skill type
                             if req_type_int == 2:
                                 req_str = f"{disp} - {int(min_level)}%"
                             else:
                                 req_str = f"{disp} - {int(min_level)}. szint"
-                            
+
                             # Color code: green if met, red if not
                             if user_has_skill:
                                 req_str = f'<span style="color: #51cf66;">{req_str}</span>'
                             else:
                                 req_str = f'<span style="color: #ff6b6b;">{req_str}</span>'
-                            
+
                             parts.append(req_str)
-                
+
                 prereq_text = "<br>".join(parts) if parts else "-"
 
                 row = self.table.rowCount()
                 self.table.insertRow(row)
 
                 name_item = QtWidgets.QTableWidgetItem(display_name)
-                name_item.setData(QtCore.Qt.ItemDataRole.UserRole, (skill_id, skill_type, prereq_ok))
+                name_item.setData(
+                    QtCore.Qt.ItemDataRole.UserRole, (skill_id, skill_type, prereq_ok)
+                )
                 if not prereq_ok:
                     name_item.setForeground(QtGui.QBrush(QtGui.QColor("#ff6b6b")))
                 self.table.setItem(row, 0, name_item)
@@ -262,7 +270,9 @@ class AddSkillDialog(QtWidgets.QDialog):
                     cat_item.setForeground(QtGui.QBrush(QtGui.QColor("#ff6b6b")))
                 self.table.setItem(row, 1, cat_item)
 
-                type_text = "Szint" if skill_type == 1 else ("%" if skill_type == 2 else "Mindkettő")
+                type_text = (
+                    "Szint" if skill_type == 1 else ("%" if skill_type == 2 else "Mindkettő")
+                )
                 type_item = QtWidgets.QTableWidgetItem(type_text)
                 if not prereq_ok:
                     type_item.setForeground(QtGui.QBrush(QtGui.QColor("#ff6b6b")))
@@ -289,32 +299,52 @@ class AddSkillDialog(QtWidgets.QDialog):
 
     def _update_ok_button(self) -> None:
         ok_button = self.button_box.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
-        selected_rows = self.table.selectionModel().selectedRows() if self.table.selectionModel() else []
+        selected_rows = (
+            self.table.selectionModel().selectedRows() if self.table.selectionModel() else []
+        )
         if not selected_rows:
             ok_button.setEnabled(False)
             ok_button.setToolTip("Válassz ki egy képzettséget!")
             return
         row = selected_rows[0].row()
         name_item = self.table.item(row, 0)
-        _, _, prereq_ok = name_item.data(QtCore.Qt.ItemDataRole.UserRole)
+        if name_item is None:
+            ok_button.setEnabled(False)
+            ok_button.setToolTip("Válassz ki egy képzettséget!")
+            return
+        data = name_item.data(QtCore.Qt.ItemDataRole.UserRole)
+        if not isinstance(data, tuple) or len(data) < 3:
+            ok_button.setEnabled(False)
+            ok_button.setToolTip("Válassz ki egy képzettséget!")
+            return
+        _, _, prereq_ok = data
         ok_button.setEnabled(bool(prereq_ok))
         ok_button.setToolTip("" if prereq_ok else "Előfeltételek nem teljesülnek")
 
     def _on_accept(self) -> None:
-        selected_rows = self.table.selectionModel().selectedRows() if self.table.selectionModel() else []
+        selected_rows = (
+            self.table.selectionModel().selectedRows() if self.table.selectionModel() else []
+        )
         if not selected_rows:
             self.reject()
             return
         row = selected_rows[0].row()
         name_item = self.table.item(row, 0)
-        skill_id, skill_type, prereq_ok = name_item.data(QtCore.Qt.ItemDataRole.UserRole)
+        if name_item is None:
+            self.reject()
+            return
+        data = name_item.data(QtCore.Qt.ItemDataRole.UserRole)
+        if not isinstance(data, tuple) or len(data) < 3:
+            self.reject()
+            return
+        skill_id, skill_type, prereq_ok = data
         if not prereq_ok:
             self.reject()
             return
         self._selected = (skill_id, skill_type)
         self.accept()
 
-    # ---- Helpers ----
+    # ---- Private utility methods ----
 
     def _calc_int_cost(self, skill_id: str, level: int, percent: int) -> int | None:
         try:

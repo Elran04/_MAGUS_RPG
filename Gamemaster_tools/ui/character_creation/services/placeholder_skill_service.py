@@ -9,7 +9,7 @@ from typing import Any
 class PlaceholderSkillManager:
     """Manages placeholder skill choices and validation."""
 
-    def __init__(self, placeholder_mgr, prereq_checker):
+    def __init__(self, placeholder_mgr: Any, prereq_checker: Any) -> None:
         """
         Args:
             placeholder_mgr: PlaceholderManager instance
@@ -20,11 +20,13 @@ class PlaceholderSkillManager:
         self.placeholder_choices: dict[Any, str] = {}
         self._fixed_skill_ids: set[str] = set()
 
-    def set_fixed_skills(self, skill_ids: set[str]):
+    def set_fixed_skills(self, skill_ids: set[str]) -> None:
         """Set the collection of fixed (non-placeholder) skill IDs."""
         self._fixed_skill_ids = skill_ids
 
-    def compute_taken_skills(self, exclude_instance=None) -> set[str]:
+    def compute_taken_skills(
+        self, exclude_instance: tuple[str, int, int, int, bool, int] | None = None
+    ) -> set[str]:
         """Compute set of all skill IDs currently assigned (fixed + placeholder choices).
 
         Args:
@@ -44,10 +46,10 @@ class PlaceholderSkillManager:
     def get_valid_resolutions(
         self,
         placeholder_id: str,
-        instance_key: tuple,
+        instance_key: tuple[str, int, int, int, bool, int],
         req_level: int,
         req_percent: int,
-        current_skills_map: dict[str, dict[str, Any]],
+        current_skills_map: dict[str, dict[str, int]],
         attributes: dict[str, int],
     ) -> list[dict[str, Any]]:
         """Get list of valid resolution options for a placeholder skill.
@@ -83,7 +85,9 @@ class PlaceholderSkillManager:
 
         return valid
 
-    def set_choice(self, instance_key: tuple, chosen_skill_id: str | None):
+    def set_choice(
+        self, instance_key: tuple[str, int, int, int, bool, int], chosen_skill_id: str | None
+    ) -> None:
         """Set or clear a placeholder choice.
 
         Args:
@@ -95,13 +99,15 @@ class PlaceholderSkillManager:
         elif instance_key in self.placeholder_choices:
             del self.placeholder_choices[instance_key]
 
-    def get_choice(self, instance_key: tuple) -> str | None:
+    def get_choice(self, instance_key: tuple[str, int, int, int, bool, int]) -> str | None:
         """Get the chosen skill ID for a placeholder instance."""
         return self.placeholder_choices.get(instance_key)
 
     def build_skills_map_from_choices(
-        self, fixed_skills: dict[str, dict[str, Any]], all_instances: list[tuple]
-    ) -> dict[str, dict[str, Any]]:
+        self,
+        fixed_skills: dict[str, dict[str, int]],
+        all_instances: list[tuple[str, int, int, int, bool, int]],
+    ) -> dict[str, dict[str, int]]:
         """Build a complete skills map including fixed skills and placeholder choices.
 
         Args:
@@ -111,7 +117,7 @@ class PlaceholderSkillManager:
         Returns:
             Complete skills map
         """
-        skills_map = dict(fixed_skills)
+        skills_map: dict[str, dict[str, int]] = dict(fixed_skills)
 
         # Add placeholder choices
         for instance_key in all_instances:

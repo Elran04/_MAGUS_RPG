@@ -6,7 +6,7 @@ CRUD UI for managing SpecialAbilities stored by RaceManager in special_abilities
 from __future__ import annotations
 
 import json
-from typing import Callable
+from collections.abc import Callable
 
 from core.race_model import SpecialAbility
 from engine.race_manager import RaceManager
