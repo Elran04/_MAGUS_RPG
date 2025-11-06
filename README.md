@@ -17,6 +17,8 @@ Pygame alapú hexagonális rácsú körökre osztott harcrendszer:
 - Kezdeményezés rendszer
 - Támadás, mozgás, roham akciók
 - Unit info popup-ok
+- Szenárió rendszer (JSON alapú pályák és induló pozíciók)
+- Egyszerű pályaszerkesztő (scenario editor)
 
 ## 🚀 Telepítés és Használat
 
@@ -49,6 +51,14 @@ poetry run python Gamemaster_tools/main.py
 ```powershell
 poetry run python MAGUS_pygame/main.py
 ```
+
+**Szenárió szerkesztő indítása:**
+```powershell
+poetry run python MAGUS_pygame/tools/map_editor.py
+```
+
+Alapértelmezett szenárió: `MAGUS_pygame/data/scenarios/default.json`.
+Egyedi mentés: `custom.json` a szerkesztőből.
 
 ## 🛠️ Fejlesztői Eszközök
 
@@ -86,6 +96,7 @@ Minden tool konfigurációja a `pyproject.toml` fájlban található.
 
 - **SQLite**: Referencia adatok tárolása (képzettségek, felszerelések, osztályok)
 - **JSON**: Karakterek és runtime adatok mentése
+- **Scenarios (JSON)**: Harci pályák (`MAGUS_pygame/data/scenarios/`)
 
 ## 📝 Log Fájlok
 

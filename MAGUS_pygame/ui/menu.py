@@ -6,6 +6,7 @@ Provides main menu, pause menu, and settings.
 from typing import Optional, Callable, Tuple
 import pygame
 from enum import Enum, auto
+from config import MENU_BACKGROUND
 
 
 class MenuState(Enum):
@@ -52,6 +53,12 @@ class Menu:
         self.screen_height = screen_height
         self.state = MenuState.MAIN_MENU
         
+        # Track last selected action
+        self.last_action: Optional[str] = None
+        
+        # Load background image
+        self.background_image = self._load_background()
+        
         # Fonts
         self.font_title = pygame.font.Font(None, 64)
         self.font_menu = pygame.font.Font(None, 40)
@@ -69,6 +76,45 @@ class Menu:
         self.settings_items = self._create_settings_menu()
         
         self.selected_index = 0
+
+    def _load_background(self) -> Optional[pygame.Surface]:
+        """Load and scale the background image.
+        
+        Returns:
+            Scaled background surface or None if loading fails
+        """
+        try:
+            # Load image using centralized path
+            background = pygame.image.load(str(MENU_BACKGROUND)).convert()
+            
+            # Scale to screen size while maintaining aspect ratio
+            bg_width, bg_height = background.get_size()
+            screen_ratio = self.screen_width / self.screen_height
+            bg_ratio = bg_width / bg_height
+            
+            if bg_ratio > screen_ratio:
+                # Background is wider - scale to screen height
+                new_height = self.screen_height
+                new_width = int(bg_width * (new_height / bg_height))
+            else:
+                # Background is taller - scale to screen width
+                new_width = self.screen_width
+                new_height = int(bg_height * (new_width / bg_width))
+            
+            background = pygame.transform.scale(background, (new_width, new_height))
+            
+            # Center the background if it's larger than screen
+            if new_width > self.screen_width or new_height > self.screen_height:
+                x_offset = (new_width - self.screen_width) // 2
+                y_offset = (new_height - self.screen_height) // 2
+                background = background.subsurface(
+                    pygame.Rect(x_offset, y_offset, self.screen_width, self.screen_height)
+                )
+            
+            return background
+        except Exception as e:
+            print(f"[MENU] Could not load background image: {e}")
+            return None
 
     def _create_main_menu(self) -> list[MenuItem]:
         """Create main menu items.
@@ -210,11 +256,25 @@ class Menu:
         """
         if self.state == MenuState.CLOSED:
             return
-            
-        # Draw semi-transparent background
-        overlay = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
-        overlay.fill(self.color_bg)
-        surface.blit(overlay, (0, 0))
+        
+        # Draw background image if available
+        if self.background_image:
+            surface.blit(self.background_image, (0, 0))
+        else:
+            # Fallback to black background
+            surface.fill((0, 0, 0))
+        
+        # Draw semi-transparent overlay for better text readability
+        if self.state == MenuState.PAUSE_MENU:
+            # Darker overlay for pause menu
+            overlay = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
+            overlay.fill(self.color_bg)
+            surface.blit(overlay, (0, 0))
+        else:
+            # Light overlay for main menu to keep background visible
+            overlay = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 100))  # Light semi-transparent black
+            surface.blit(overlay, (0, 0))
         
         # Draw title
         title_text = "MAGUS RPG"
@@ -281,6 +341,10 @@ class Menu:
     def close(self) -> None:
         """Close the menu."""
         self.state = MenuState.CLOSED
+    
+    def reset_action(self) -> None:
+        """Reset the last action."""
+        self.last_action = None
 
     def is_open(self) -> bool:
         """Check if menu is open.
@@ -289,15 +353,24 @@ class Menu:
             True if menu is not closed
         """
         return self.state != MenuState.CLOSED
+    
+    def get_last_action(self) -> Optional[str]:
+        """Get the last selected action.
+        
+        Returns:
+            Last action string or None
+        """
+        return self.last_action
 
     # Menu action handlers
     def _start_new_game(self) -> None:
         """Start a new game."""
+        self.last_action = "new_game"
         self.close()
-        # TODO: Implement new game logic
 
     def _load_game(self) -> None:
         """Load a saved game."""
+        self.last_action = "load_game"
         # TODO: Implement load game logic
         pass
 

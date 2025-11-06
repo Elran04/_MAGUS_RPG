@@ -4,15 +4,8 @@ Loads weapon and equipment data from the Gamemaster_tools data folder.
 """
 
 import json
-import os
 from typing import Any
-
-
-def repo_root() -> str:
-    """Get the repository root directory."""
-    # __file__ is in systems/ folder -> parent is MAGUS_pygame -> parent is repo root
-    magus_pygame_dir = os.path.dirname(os.path.dirname(__file__))
-    return os.path.dirname(magus_pygame_dir)
+from config import get_equipment_json_path
 
 
 _WEAPONS_CACHE: list[dict[str, Any]] | None = None
@@ -31,9 +24,7 @@ def load_weapons_data() -> list[dict[str, Any]]:
     if _WEAPONS_CACHE is not None:
         return _WEAPONS_CACHE
 
-    path = os.path.join(
-        repo_root(), "Gamemaster_tools", "data", "equipment", "weapons_and_shields.json"
-    )
+    path = get_equipment_json_path("weapons_and_shields.json")
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
         _WEAPONS_CACHE = data

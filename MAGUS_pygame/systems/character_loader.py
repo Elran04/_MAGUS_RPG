@@ -5,14 +5,8 @@ and returns parsed dictionaries.
 """
 
 import json
-import os
 from typing import Any
-
-
-def repo_root() -> str:
-    # __file__ is in systems/ folder -> parent is MAGUS_pygame -> parent is repo root
-    magus_pygame_dir = os.path.dirname(os.path.dirname(__file__))
-    return os.path.dirname(magus_pygame_dir)
+from config import get_character_json_path
 
 
 def load_character_json(filename: str) -> dict[str, Any]:
@@ -26,6 +20,6 @@ def load_character_json(filename: str) -> dict[str, Any]:
         FileNotFoundError if the file doesn't exist.
         json.JSONDecodeError if invalid JSON.
     """
-    path = os.path.join(repo_root(), "characters", filename)
+    path = get_character_json_path(filename)
     with open(path, encoding="utf-8") as f:
         return json.load(f)

@@ -1,0 +1,27 @@
+{
+  "name": "custom",
+  "background": "D:\\_Projekt\\_MAGUS_RPG\\MAGUS_pygame\\assets\\sprites\\characters\\grass_bg.jpg",
+  "units": [
+    {
+      "character_file": "Teszt.json",
+      "sprite": "warrior.png",
+      "start_q": 2,
+      "start_r": 9,
+      "facing": 0
+    },
+    {
+      "character_file": "Teszt_Goblin.json",
+      "sprite": "goblin.png",
+      "start_q": 5,
+      "start_r": 3,
+      "facing": 3
+    }
+  ],
+  "obstacles": [
+    []
+  ],
+  "metadata": {
+    "created_with": "scenario_editor",
+    "version": 1
+  }
+}

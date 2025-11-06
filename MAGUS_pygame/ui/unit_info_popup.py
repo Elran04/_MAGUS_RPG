@@ -3,10 +3,8 @@ Unit information popup display.
 Shows detailed unit stats when right-clicking on a unit.
 """
 
-import os
-
 import pygame
-from config import HEIGHT, UI_ACTIVE, UI_BORDER, UI_INACTIVE, UI_TEXT, WIDTH
+from config import HEIGHT, UI_ACTIVE, UI_BORDER, UI_INACTIVE, UI_TEXT, WIDTH, HUMANOID_SILHOUETTE
 from systems.combat_stats import compute_effective_combat_stats
 from systems.weapon_wielding import get_wielding_info
 
@@ -83,10 +81,7 @@ class UnitInfoPopup:
         # Load humanoid silhouette image for armor display
         self.silhouette_image = None
         try:
-            magus_pygame_dir = os.path.dirname(os.path.dirname(__file__))
-            sprites_dir = os.path.join(magus_pygame_dir, "assets", "sprites", "characters")
-            silhouette_path = os.path.join(sprites_dir, "humanoid_silhouette.png")
-            self.silhouette_image = pygame.image.load(silhouette_path).convert_alpha()
+            self.silhouette_image = pygame.image.load(str(HUMANOID_SILHOUETTE)).convert_alpha()
         except Exception as e:
             print(f"[POPUP] Could not load humanoid_silhouette.png: {e}")
 
