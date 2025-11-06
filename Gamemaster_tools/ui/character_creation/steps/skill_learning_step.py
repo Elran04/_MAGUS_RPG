@@ -33,14 +33,16 @@ class SkillLearningStepWidget(QtWidgets.QWidget):
         self,
         base_dir: str,
         get_character_data: Callable[[], dict[str, Any]],
+        placeholder_mgr=None,
     ):
         super().__init__()
         self.BASE_DIR = base_dir
         self.get_character_data = get_character_data
+        self.placeholder_mgr = placeholder_mgr
 
         # Initialize helpers
         self.db_helper = SkillDatabaseHelper(base_dir)
-        self.prereq_checker = SkillPrerequisiteChecker(self.db_helper)
+        self.prereq_checker = SkillPrerequisiteChecker(self.db_helper, placeholder_mgr)
         self.prereq_info = PrerequisiteInfoHelper(self.db_helper, self.prereq_checker)
         self.selection_manager: SkillSelectionManager | None = None
 
@@ -415,6 +417,8 @@ class SkillLearningStepWidget(QtWidgets.QWidget):
             get_attributes=self._get_attributes,
             get_current_skill_ids=lambda: self.selection_manager.get_all_skills(),
             kp_cost_getter=self.db_helper.calc_kp_cost,
+            placeholder_mgr=self.placeholder_mgr,
+            skill_db_helper=self.db_helper,
         )
         if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
             selected = dialog.get_selected()

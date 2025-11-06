@@ -14,12 +14,14 @@ logger = get_logger(__name__)
 class SkillPrerequisiteChecker:
     """Helper class for checking skill prerequisites."""
 
-    def __init__(self, skill_db_helper):
+    def __init__(self, skill_db_helper, placeholder_mgr=None):
         """
         Args:
             skill_db_helper: SkillDatabaseHelper instance for DB access
+            placeholder_mgr: Optional PlaceholderManager for resolving placeholder prerequisites
         """
         self.db_helper = skill_db_helper
+        self.placeholder_mgr = placeholder_mgr
 
     def check_prerequisites(
         self,
@@ -109,26 +111,56 @@ class SkillPrerequisiteChecker:
             if lvl and int(lvl) > max_check_level:
                 continue
 
-            # Determine required skill type
-            trow = conn.execute("SELECT type FROM skills WHERE id=?", (req_id,)).fetchone()
-            req_type = trow[0] if trow else 1
-
-            have = current_skills.get(req_id)
-            if not have:
-                reasons.append(self._format_skill_req(req_id, min_lvl, conn))
+            # Check if this is a placeholder (OR logic)
+            if self.placeholder_mgr and self.placeholder_mgr.is_placeholder(req_id):
+                # Get all valid alternatives
+                alternatives = self.placeholder_mgr.get_resolutions(req_id)
+                
+                # Check if user has ANY of the alternatives at required level
+                has_any = False
+                for alt in alternatives:
+                    alt_id = alt['target_skill_id']
+                    have = current_skills.get(alt_id)
+                    
+                    if have:
+                        # Determine skill type
+                        trow = conn.execute("SELECT type FROM skills WHERE id=?", (alt_id,)).fetchone()
+                        alt_type = trow[0] if trow else 1
+                        
+                        if alt_type == 1:  # Level-based
+                            if int(have.get("level", 0)) >= int(min_lvl or 0):
+                                has_any = True
+                                break
+                        else:  # Percent-based
+                            if int(have.get("%", 0)) >= int(min_lvl or 0):
+                                has_any = True
+                                break
+                
+                # If user doesn't have ANY alternative, add to reasons
+                if not has_any:
+                    reasons.append(self._format_skill_req(req_id, min_lvl, conn))
             else:
-                if req_type == 1:  # Level-based
-                    if int(have.get("level", 0)) < int(min_lvl or 0):
-                        reasons.append(
-                            self._format_skill_req(req_id, min_lvl, conn, have.get("level"))
-                        )
-                else:  # Percent-based
-                    if int(have.get("%", 0)) < int(min_lvl or 0):
-                        reasons.append(
-                            self._format_skill_req(
-                                req_id, min_lvl, conn, have.get("%"), percent=True
+                # Regular (non-placeholder) prerequisite
+                # Determine required skill type
+                trow = conn.execute("SELECT type FROM skills WHERE id=?", (req_id,)).fetchone()
+                req_type = trow[0] if trow else 1
+
+                have = current_skills.get(req_id)
+                if not have:
+                    reasons.append(self._format_skill_req(req_id, min_lvl, conn))
+                else:
+                    if req_type == 1:  # Level-based
+                        if int(have.get("level", 0)) < int(min_lvl or 0):
+                            reasons.append(
+                                self._format_skill_req(req_id, min_lvl, conn, have.get("level"))
                             )
-                        )
+                    else:  # Percent-based
+                        if int(have.get("%", 0)) < int(min_lvl or 0):
+                            reasons.append(
+                                self._format_skill_req(
+                                    req_id, min_lvl, conn, have.get("%"), percent=True
+                                )
+                            )
         return reasons
 
     @staticmethod

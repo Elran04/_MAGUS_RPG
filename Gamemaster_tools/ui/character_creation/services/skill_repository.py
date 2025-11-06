@@ -170,3 +170,87 @@ class SkillDatabaseHelper:
         except sqlite3.Error:
             pass
         return None
+
+    def get_all_skill_categories(self) -> list[str]:
+        """Get all distinct skill categories (excluding placeholders)."""
+        try:
+            with sqlite3.connect(self.get_db_path("skill")) as conn:
+                cursor = conn.execute(
+                    "SELECT DISTINCT category FROM skills WHERE placeholder = 0 AND category IS NOT NULL ORDER BY category"
+                )
+                return [row[0] for row in cursor.fetchall() if row[0]]
+        except sqlite3.Error as e:
+            logger.error(f"Error fetching categories: {e}", exc_info=True)
+            return []
+
+    def get_learnable_skills(
+        self, category_filter: str | None = None
+    ) -> list[tuple[str, str, str, str, int]]:
+        """
+        Get all learnable skills (non-placeholder).
+        Returns list of (id, name, parameter, category, type) tuples.
+        
+        Args:
+            category_filter: Optional category to filter by
+        """
+        try:
+            with sqlite3.connect(self.get_db_path("skill")) as conn:
+                query = "SELECT id, name, parameter, category, type FROM skills WHERE placeholder = 0"
+                params: list[Any] = []
+                if category_filter:
+                    query += " AND category = ?"
+                    params.append(category_filter)
+                query += " ORDER BY category, name"
+                
+                return conn.execute(query, params).fetchall()
+        except sqlite3.Error as e:
+            logger.error(f"Error fetching learnable skills: {e}", exc_info=True)
+            return []
+
+    def get_skill_attribute_prerequisites(
+        self, skill_id: str
+    ) -> list[tuple[str, int, int | None]]:
+        """
+        Get attribute prerequisites for a skill.
+        Returns list of (attribute, min_value, level) tuples.
+        """
+        try:
+            with sqlite3.connect(self.get_db_path("skill")) as conn:
+                return conn.execute(
+                    "SELECT attribute, min_value, level FROM skill_prerequisites_attributes "
+                    "WHERE skill_id=? ORDER BY level",
+                    (skill_id,),
+                ).fetchall()
+        except sqlite3.Error as e:
+            logger.error(f"Error fetching attribute prerequisites: {e}", exc_info=True)
+            return []
+
+    def get_skill_skill_prerequisites(
+        self, skill_id: str
+    ) -> list[tuple[str, int, int | None]]:
+        """
+        Get skill prerequisites for a skill.
+        Returns list of (required_skill_id, min_level, level) tuples.
+        """
+        try:
+            with sqlite3.connect(self.get_db_path("skill")) as conn:
+                return conn.execute(
+                    "SELECT required_skill_id, min_level, level FROM skill_prerequisites_skills "
+                    "WHERE skill_id=? ORDER BY level",
+                    (skill_id,),
+                ).fetchall()
+        except sqlite3.Error as e:
+            logger.error(f"Error fetching skill prerequisites: {e}", exc_info=True)
+            return []
+
+    def get_skill_type(self, skill_id: str) -> int | None:
+        """Get skill type (1=level, 2=percent) for a skill."""
+        try:
+            with sqlite3.connect(self.get_db_path("skill")) as conn:
+                row = conn.execute(
+                    "SELECT type FROM skills WHERE id=?", (skill_id,)
+                ).fetchone()
+                return int(row[0]) if row else None
+        except sqlite3.Error as e:
+            logger.error(f"Error fetching skill type: {e}", exc_info=True)
+            return None

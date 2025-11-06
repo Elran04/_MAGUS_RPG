@@ -40,7 +40,7 @@ class SkillsStepWidget(QtWidgets.QWidget):
 
         # Initialize helper classes
         self.db_helper = SkillDatabaseHelper(base_dir)
-        self.prereq_checker = SkillPrerequisiteChecker(self.db_helper)
+        self.prereq_checker = SkillPrerequisiteChecker(self.db_helper, placeholder_mgr)
         self.placeholder_manager = PlaceholderSkillManager(placeholder_mgr, self.prereq_checker)
 
         self._placeholder_row_counters: dict[tuple, int] = {}

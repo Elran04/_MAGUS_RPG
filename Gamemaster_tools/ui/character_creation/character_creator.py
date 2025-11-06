@@ -153,7 +153,7 @@ class CharacterWizardQt(QtWidgets.QDialog):
             return self.data
 
         if not hasattr(self, "skill_learning_step") or self.skill_learning_step is None:
-            self.skill_learning_step = SkillLearningStepWidget(BASE_DIR, _get_data)
+            self.skill_learning_step = SkillLearningStepWidget(BASE_DIR, _get_data, self.placeholder_mgr)
         self.skill_learning_step.refresh()
         self.step_layout.addWidget(self.skill_learning_step)
 

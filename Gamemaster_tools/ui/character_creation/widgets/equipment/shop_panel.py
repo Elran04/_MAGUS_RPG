@@ -224,15 +224,24 @@ class ShopPanel(QtWidgets.QWidget):
 
     def _on_buy_clicked(self):
         """Handle buy button click."""
-        # Find which tree has selection
-        for cat_key, tree in self.tree_widgets.items():
-            selected = tree.selectedItems()
-            if selected:
-                item = selected[0]
-                item_data = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
-                if isinstance(item_data, dict):
-                    self.buy_requested.emit(item_data, cat_key)
-                break
+        # Only check the currently active tab for selection
+        tab_idx = self.tab_widget.currentIndex()
+        if tab_idx < 0:
+            return
+        # Get the category key for the active tab
+        categories = list(self.tree_widgets.keys())
+        if tab_idx >= len(categories):
+            return
+        cat_key = categories[tab_idx]
+        tree = self.tree_widgets.get(cat_key)
+        if not tree:
+            return
+        selected = tree.selectedItems()
+        if selected:
+            item = selected[0]
+            item_data = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+            if isinstance(item_data, dict):
+                self.buy_requested.emit(item_data, cat_key)
 
     def _on_item_double_clicked(self, item: QtWidgets.QTreeWidgetItem, category: str):
         """Handle double-click on item to buy."""
