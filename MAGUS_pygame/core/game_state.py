@@ -77,7 +77,7 @@ def next_turn(state: GameState) -> None:
     If both units have acted, start a new round with fresh initiative.
     Resets action points when switching to a new unit.
     """
-    from actions.action_handling import roll_initiative
+    from actions.handler import roll_initiative
 
     # Mark current unit as having acted
     state.units_acted_this_round.add(state.active_unit.name)

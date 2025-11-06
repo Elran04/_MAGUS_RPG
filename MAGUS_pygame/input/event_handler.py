@@ -2,11 +2,11 @@
 Event handling for user input and UI interactions.
 """
 
-from actions.action_attack import compute_attackable, handle_attack_click
-from actions.action_charge import compute_charge_targets, execute_charge_attack
-from actions.action_handling import process_action_ui_click
-from actions.action_movement import apply_move_if_valid, compute_reachable
-from actions.action_wield import toggle_wield_mode
+from actions.attack import compute_attackable, handle_attack_click
+from actions.charge import compute_charge_targets, execute_charge_attack
+from actions.handler import process_action_ui_click
+from actions.movement import apply_move_if_valid, compute_reachable
+from actions.wield import toggle_wield_mode
 from config import AP_COST_FACING, ActionMode
 from core.game_state import GameState, next_turn
 from systems.hex_grid import pixel_to_hex

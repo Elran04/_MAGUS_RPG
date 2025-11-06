@@ -84,7 +84,7 @@ class UnitInfoPopup:
         self.silhouette_image = None
         try:
             magus_pygame_dir = os.path.dirname(os.path.dirname(__file__))
-            sprites_dir = os.path.join(magus_pygame_dir, "sprites")
+            sprites_dir = os.path.join(magus_pygame_dir, "assets", "sprites", "characters")
             silhouette_path = os.path.join(sprites_dir, "humanoid_silhouette.png")
             self.silhouette_image = pygame.image.load(silhouette_path).convert_alpha()
         except Exception as e:

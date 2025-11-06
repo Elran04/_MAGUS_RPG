@@ -22,9 +22,9 @@ def setup_game() -> tuple[Unit, Unit, pygame.Surface | None]:
     """
 
     # Build a robust relative path to the sprites folder
-    # __file__ is in core/, so go up one level to MAGUS_pygame/, then into sprites/
+    # __file__ is in core/, so go up one level to MAGUS_pygame/, then into assets/sprites/characters/
     magus_pygame_dir = os.path.dirname(os.path.dirname(__file__))
-    sprites_dir = os.path.join(magus_pygame_dir, "sprites")
+    sprites_dir = os.path.join(magus_pygame_dir, "assets", "sprites", "characters")
 
     # Load sprites
     warrior_sprite = load_and_mask_sprite(os.path.join(sprites_dir, "warrior.png"))

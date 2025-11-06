@@ -3,12 +3,12 @@ MAGUS RPG - Main game loop for the hex-grid turn-based game.
 """
 
 import pygame
-from actions.action_handling import roll_initiative, setup_action_ui
-from actions.action_movement import compute_reachable, find_path
+from actions.handler import roll_initiative, setup_action_ui
+from actions.movement import compute_reachable, find_path
 from config import HEIGHT, WIDTH, ActionMode
 from core.game_setup import setup_game
 from core.game_state import GameState
-from core.logger import get_logger
+from logger.logger import get_logger
 from input.event_handler import process_mouse_click
 from rendering.renderer import draw_game_screen, draw_hud, draw_victory_screen
 from systems.hex_grid import get_grid_bounds, pixel_to_hex
@@ -83,7 +83,7 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     # Space bar skips turn
-                    from actions.action_movement import skip_turn
+                    from actions.movement import skip_turn
 
                     skip_turn(state)
 
