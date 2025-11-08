@@ -7,6 +7,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+from config import LOGS_DIR
 
 
 class PygameLogger:
@@ -30,7 +31,7 @@ class PygameLogger:
     def _setup_logging(self):
         """Logging rendszer beállítása."""
         # Logs mappa létrehozása
-        log_dir = Path(__file__).parent.parent / "logs"
+        log_dir = LOGS_DIR
         log_dir.mkdir(exist_ok=True)
 
         # Log fájl neve dátummal

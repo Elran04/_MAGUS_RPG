@@ -1,0 +1,145 @@
+{
+  "Név": "Warrior_heavy_armor",
+  "Nem": "Férfi",
+  "Kor": "28",
+  "Faj": "Ember",
+  "Kaszt": "Harcos",
+  "Specializáció": "Nincs",
+  "Képzettségpontok": 0,
+  "Tulajdonságok": {
+    "Erő": 15,
+    "Gyorsaság": 11,
+    "Ügyesség": 13,
+    "Állóképesség": 16,
+    "Egészség": 15,
+    "Karizma": 13,
+    "Intelligencia": 13,
+    "Akaraterő": 14,
+    "Asztrál": 12,
+    "Érzékelés": 13
+  },
+  "Képzettségek": [
+    {
+      "id": "animal_lore_horses",
+      "Szint": 2
+    },
+    {
+      "id": "balancing",
+      "%": 30
+    },
+    {
+      "id": "climbing",
+      "%": 15
+    },
+    {
+      "id": "falling",
+      "%": 15
+    },
+    {
+      "id": "horse_riding",
+      "Szint": 2
+    },
+    {
+      "id": "running",
+      "Szint": 2
+    },
+    {
+      "id": "shieldskill",
+      "Szint": 2
+    },
+    {
+      "id": "skill_endure_pain",
+      "Szint": 2
+    },
+    {
+      "id": "weapon_lore",
+      "Szint": 2
+    },
+    {
+      "id": "weaponskill_bows",
+      "Szint": 2
+    },
+    {
+      "id": "weaponskill_shortswords",
+      "Szint": 2
+    },
+    {
+      "id": "weaponskill_daggers",
+      "Szint": 2
+    },
+    {
+      "id": "weaponskill_maces",
+      "Szint": 3
+    },
+    {
+      "id": "language_pyar_common_south",
+      "Szint": 4
+    },
+    {
+      "id": "carrying_heavy_weights",
+      "Szint": 3
+    },
+    {
+      "id": "skill_heavy_armor",
+      "Szint": 2
+    }
+  ],
+  "Harci értékek": {
+    "FP": 22,
+    "ÉP": 12,
+    "KÉ": 13,
+    "TÉ": 29,
+    "VÉ": 79,
+    "CÉ": 3
+  },
+  "Felszerelés": {
+    "currency": 360,
+    "items": [
+      {
+        "category": "weapons_and_shields",
+        "id": "knife"
+      },
+      {
+        "category": "general",
+        "id": "torch"
+      },
+      {
+        "category": "armor",
+        "id": "hardened_leather_boots"
+      },
+      {
+        "category": "armor",
+        "id": "hardened_leather_armor"
+      },
+      {
+        "category": "armor",
+        "id": "ring_armor"
+      },
+      {
+        "category": "armor",
+        "id": "leather_gloves"
+      },
+      {
+        "category": "armor",
+        "id": "leather_vambrace"
+      },
+      {
+        "category": "weapons_and_shields",
+        "id": "longbow"
+      },
+      {
+        "category": "weapons_and_shields",
+        "id": "short_sword"
+      },
+      {
+        "category": "weapons_and_shields",
+        "id": "medium_shield"
+      },
+      {
+        "category": "general",
+        "id": "arrow",
+        "qty": 36
+      }
+    ]
+  }
+}

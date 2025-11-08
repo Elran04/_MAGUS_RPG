@@ -1,0 +1,207 @@
+# MAGUS RPG - New Clean Architecture
+
+## Overview
+
+This project has been restructured with a clean, layered architecture for better maintainability and scalability.
+
+## Architecture Layers
+
+### 1. **Domain Layer** (`domain/`)
+Core business logic, independent of external concerns.
+
+- **entities/**: Domain entities with identity (Unit, Weapon, etc.)
+- **value_objects/**: Immutable value types (Position, CombatStats, Attributes, etc.)
+- **mechanics/**: Game rules and calculations (combat, movement, magic) [TODO]
+- **services.py**: Domain services (UnitFactory, etc.)
+
+### 2. **Infrastructure Layer** (`infrastructure/`)
+External concerns: I/O, data access, rendering.
+
+- **repositories/**: Data access abstractions
+  - `CharacterRepository`: Load and cache character JSON
+  - `EquipmentRepository`: Load and cache equipment data
+  - `SpriteRepository`: Load and cache sprite images
+- **rendering/**: Hex grid utilities and rendering helpers
+  - `hex_grid.py`: Coordinate conversion, distance calculation
+
+### 3. **Application Layer** (`application/`)
+Use cases, orchestration, dependency management.
+
+- `game_context.py`: Dependency injection container
+- Service orchestrators [TODO]
+- Game state management [TODO]
+
+### 4. **Presentation Layer** (`presentation/`)
+UI screens and components.
+
+- **screens/**: Full-screen UI states [TODO]
+- **components/**: Reusable UI widgets [TODO]
+- `test_screen.py`: Minimal test screen for architecture validation
+
+### 5. **Cross-Cutting**
+- **config/**: Centralized configuration and paths
+- **logger/**: Logging infrastructure
+
+## Key Design Principles
+
+### Dependency Inversion
+- Domain layer has no dependencies on infrastructure
+- Dependencies point inward toward domain
+- Infrastructure depends on domain interfaces
+
+### Single Responsibility
+- Each module has one clear purpose
+- Repositories handle data access only
+- Services orchestrate business logic
+- Entities contain domain behavior
+
+### Immutability Where Possible
+- Value objects are frozen dataclasses
+- Domain entities use immutable value objects for state
+- Reduces side effects and bugs
+
+### Repository Pattern
+- Abstracts data access from domain
+- Provides caching transparently
+- Easy to test with mock repositories
+
+### Factory Pattern
+- `UnitFactory` creates properly initialized entities
+- Handles complexity of character + equipment + sprite loading
+- Centralizes validation and error handling
+
+## Directory Structure
+
+```
+MAGUS_pygame/
+├── domain/
+│   ├── entities/
+│   │   └── __init__.py          # Unit, Weapon entities
+│   ├── value_objects/
+│   │   └── __init__.py          # Position, CombatStats, Attributes, etc.
+│   ├── mechanics/               # [TODO] Combat, movement, magic systems
+│   └── services.py              # UnitFactory, etc.
+│
+├── infrastructure/
+│   ├── repositories/
+│   │   ├── character_repository.py
+│   │   ├── equipment_repository.py
+│   │   └── sprite_repository.py
+│   └── rendering/
+│       └── hex_grid.py
+│
+├── application/
+│   └── game_context.py          # Dependency container
+│
+├── presentation/
+│   └── test_screen.py           # Minimal test UI
+│
+├── config/                      # Configuration (unchanged)
+├── logger/                      # Logging (unchanged)
+├── old_system/                  # Previous implementation (reference)
+│
+├── data/
+│   └── scenarios/
+├── assets/
+│   └── sprites/
+│       ├── characters/
+│       └── backgrounds/
+│
+└── main.py                      # Entry point (new minimal version)
+```
+
+## Current Status
+
+### ✅ Completed
+- Domain entities and value objects
+- Repository pattern for data access
+- Hex grid coordinate system
+- Dependency injection container
+- Basic test screen
+- New main.py entry point
+
+### 🚧 In Progress
+- Testing basic architecture
+
+### 📋 TODO (Next Steps)
+1. **Combat Mechanics**
+   - Port damage calculation to `domain/mechanics/damage.py`
+   - Port reach/range to `domain/mechanics/reach.py`
+   - Port weapon wielding to `domain/mechanics/weapon.py`
+
+2. **Battle System**
+   - Create `BattleState` in application layer
+   - Implement turn order and initiative
+   - Port action system (attack, movement, etc.)
+
+3. **Rendering**
+   - Port sprite masking and hex rendering
+   - Create camera/viewport system
+   - Port visual effects and animations
+
+4. **UI Screens**
+   - Main menu
+   - Scenario selector
+   - Deployment screen
+   - Battle screen
+
+5. **Scenario System**
+   - Scenario repository
+   - Scenario loader service
+   - Deployment validation
+
+## Running the Test
+
+```bash
+cd d:\_Projekt\_MAGUS_RPG\MAGUS_pygame
+python main.py
+```
+
+**Requirements:**
+- Character JSON: `Warri.json` in `characters/` folder (repo level)
+- Sprite: `warrior.png` in `assets/sprites/characters/`
+- Equipment data: `weapons_and_shields.json` in `Gamemaster_tools/data/equipment/`
+
+**Controls:**
+- Arrow keys: Move unit
+- R: Rotate unit
+- ESC: Exit
+
+## Migration Strategy
+
+The old system is preserved in `old_system/` for reference. Features will be incrementally reimplemented:
+
+1. **Phase 1**: Core entities and data loading ✅
+2. **Phase 2**: Combat mechanics
+3. **Phase 3**: Battle flow and turn system
+4. **Phase 4**: UI screens
+5. **Phase 5**: Advanced features (magic, skills, etc.)
+
+## Benefits of New Architecture
+
+### Testability
+- Domain logic can be tested without pygame
+- Repositories can be mocked
+- Clear interfaces for dependency injection
+
+### Maintainability
+- Clear separation of concerns
+- Easy to find and modify code
+- Reduced coupling between modules
+
+### Extensibility
+- Easy to add new features
+- Can swap implementations (e.g., different renderers)
+- Plugin architecture possible
+
+### Performance
+- Built-in caching in repositories
+- Lazy loading where appropriate
+- Efficient value objects
+
+## Notes
+
+- Hungarian keys from JSON (e.g., "Név", "Erő") are mapped to English internally
+- All hex coordinates use cube coordinate system (q, r, s where q+r+s=0)
+- Facing is 0-5 (0=North, clockwise)
+- Resources (FP/EP) are immutable ResourcePool value objects

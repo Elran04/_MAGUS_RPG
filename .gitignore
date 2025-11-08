@@ -9,8 +9,8 @@ env/
 project_folderstructure_scanner.py
 *.zip
 *.rar
-characters/
 documents/
+old_system/
 # Poetry
 poetry.lock
 

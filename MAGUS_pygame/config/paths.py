@@ -25,14 +25,14 @@ EQUIPMENT_DATA_DIR = GAMEMASTER_DATA_DIR / "equipment"
 SCENARIOS_DIR = DATA_DIR / "scenarios"
 
 # Logs directory
-LOGS_DIR = BASE_DIR / "logs"
+LOGS_DIR = BASE_DIR / "logger" / "logs"
 
 # Specific asset paths
 MENU_BACKGROUND = ASSETS_DIR / "ui" / "MAGUS.png"
 HUMANOID_SILHOUETTE = CHARACTER_SPRITES_DIR / "humanoid_silhouette.png"
 WARRIOR_SPRITE = CHARACTER_SPRITES_DIR / "warrior.png"
 GOBLIN_SPRITE = CHARACTER_SPRITES_DIR / "goblin.png"
-GRASS_BACKGROUND = CHARACTER_SPRITES_DIR / "grass_bg.jpg"  # TODO: Move to backgrounds
+GRASS_BACKGROUND = BACKGROUND_SPRITES_DIR / "grass_bg.jpg"  # TODO: Move to backgrounds
 
 
 def get_character_json_path(filename: str) -> Path:

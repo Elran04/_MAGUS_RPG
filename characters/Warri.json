@@ -1,0 +1,145 @@
+{
+  "Név": "Warri",
+  "Nem": "Férfi",
+  "Kor": "25",
+  "Faj": "Ember",
+  "Kaszt": "Harcos",
+  "Specializáció": "Nincs",
+  "Képzettségpontok": 0,
+  "Tulajdonságok": {
+    "Erő": 17,
+    "Gyorsaság": 15,
+    "Ügyesség": 13,
+    "Állóképesség": 15,
+    "Egészség": 16,
+    "Karizma": 11,
+    "Intelligencia": 12,
+    "Akaraterő": 13,
+    "Asztrál": 12,
+    "Érzékelés": 13
+  },
+  "Képzettségek": [
+    {
+      "id": "animal_lore_horses",
+      "Szint": 2
+    },
+    {
+      "id": "balancing",
+      "%": 15
+    },
+    {
+      "id": "climbing",
+      "%": 15
+    },
+    {
+      "id": "falling",
+      "%": 15
+    },
+    {
+      "id": "horse_riding",
+      "Szint": 2
+    },
+    {
+      "id": "running",
+      "Szint": 2
+    },
+    {
+      "id": "shieldskill",
+      "Szint": 2
+    },
+    {
+      "id": "skill_endure_pain",
+      "Szint": 2
+    },
+    {
+      "id": "weapon_lore",
+      "Szint": 2
+    },
+    {
+      "id": "language_pyar_common_south",
+      "Szint": 4
+    },
+    {
+      "id": "weaponskill_longswords",
+      "Szint": 3
+    },
+    {
+      "id": "weaponskill_shortswords",
+      "Szint": 2
+    },
+    {
+      "id": "weaponskill_bows",
+      "Szint": 2
+    },
+    {
+      "id": "weaponskill_longhandled",
+      "Szint": 2
+    },
+    {
+      "id": "carrying_heavy_weights",
+      "Szint": 3
+    },
+    {
+      "id": "skill_heavy_armor",
+      "Szint": 1
+    },
+    {
+      "id": "feintgambit_longswords",
+      "Szint": 2
+    }
+  ],
+  "Harci értékek": {
+    "FP": 21,
+    "ÉP": 13,
+    "KÉ": 17,
+    "TÉ": 35,
+    "VÉ": 83,
+    "CÉ": 3
+  },
+  "Felszerelés": {
+    "currency": 370,
+    "items": [
+      {
+        "category": "armor",
+        "id": "cloth_armor"
+      },
+      {
+        "category": "weapons_and_shields",
+        "id": "knife"
+      },
+      {
+        "category": "general",
+        "id": "torch"
+      },
+      {
+        "category": "weapons_and_shields",
+        "id": "longsword"
+      },
+      {
+        "category": "weapons_and_shields",
+        "id": "longbow"
+      },
+      {
+        "category": "general",
+        "id": "arrow",
+        "qty": 30
+      },
+      {
+        "category": "general",
+        "id": "small_bag"
+      },
+      {
+        "category": "armor",
+        "id": "leather_armor"
+      },
+      {
+        "category": "armor",
+        "id": "hardened_leather_boots"
+      },
+      {
+        "category": "armor",
+        "id": "leather_gloves"
+      }
+    ]
+  }
+}

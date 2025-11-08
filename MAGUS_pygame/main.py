@@ -1,77 +1,81 @@
 """
-MAGUS RPG - Main entry point with menu system.
+MAGUS RPG - Main entry point (New Clean Architecture).
+
+This is a minimal test entry point to verify the new architecture works.
+Full game features will be incrementally reimplemented.
+
+For architecture details, see ARCHITECTURE.md
+For porting guide, see MIGRATION.md
+For quick start, see QUICKSTART.md
 """
 
 import pygame
 
-from config import HEIGHT, WIDTH
-from core.game_loop import run_game_loop
+from config import WIDTH, HEIGHT
 from logger.logger import get_logger
-from ui.menu import Menu
+from application.game_context import GameContext
+from domain.value_objects import Position, Facing
+from presentation.test_screen import TestScreen
 
-# Logger initialization
 logger = get_logger(__name__)
-
-# Initialize pygame
-logger.info("Pygame initialization")
-pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("MAGUS RPG - Hex-Grid Turn-Based Combat")
-clock = pygame.time.Clock()
 
 
 def main() -> None:
-    """Main application loop with menu system."""
+    """Main application entry point."""
     logger.info("=" * 60)
-    logger.info("MAGUS RPG starting")
+    logger.info("MAGUS RPG - New Architecture Test")
     logger.info("=" * 60)
     
-    # Initialize menu
-    menu = Menu(WIDTH, HEIGHT)
-    menu.open_main_menu()
+    # Initialize pygame
+    pygame.init()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("MAGUS RPG - Architecture Test")
+    clock = pygame.time.Clock()
     
+    # Initialize application context
+    context = GameContext()
+    
+    # Create test screen
+    test_screen = TestScreen(WIDTH, HEIGHT)
+    
+    # Create a test unit
+    logger.info("Creating test unit...")
+    test_unit = context.unit_factory.create_unit(
+        character_filename="Warri.json",
+        position=Position(q=0, r=0),
+        facing=Facing(0)
+    )
+    
+    if test_unit:
+        # Load sprite for the unit
+        sprite = context.sprite_repo.load_character_sprite("warrior.png")
+        if sprite:
+            test_unit.sprite = sprite
+        
+        test_screen.set_test_unit(test_unit)
+        logger.info("Test unit created successfully")
+    else:
+        logger.error("Failed to create test unit")
+    
+    # Main loop
     running = True
-    while running:
+    while running and test_screen.is_running():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            
-            # Let menu handle events
-            if menu.is_open():
-                menu.handle_event(event)
+            else:
+                test_screen.handle_event(event)
         
-        # Check if an action was selected from the menu
-        if not menu.is_open():
-            action = menu.get_last_action()
-            
-            if action == "new_game":
-                logger.info("Starting new game from menu")
-                menu.reset_action()
-                run_game_loop(screen, clock)
-                # After game ends, reopen menu
-                menu.open_main_menu()
-            
-            elif action == "load_game":
-                logger.info("Load game not yet implemented")
-                menu.reset_action()
-                menu.open_main_menu()
-            
-            elif action is None:
-                # Menu was closed without action (shouldn't happen normally)
-                menu.open_main_menu()
-        
-        # Clear screen
-        screen.fill((0, 0, 0))
-        
-        # Draw menu if open
-        if menu.is_open():
-            menu.draw(screen)
-        
+        # Draw
+        test_screen.draw(screen)
         pygame.display.flip()
         clock.tick(60)
     
-    logger.info("Application closing, shutting down pygame")
+    # Cleanup
+    logger.info("Shutting down...")
+    context.shutdown()
     pygame.quit()
+    logger.info("Application closed")
 
 
 if __name__ == "__main__":

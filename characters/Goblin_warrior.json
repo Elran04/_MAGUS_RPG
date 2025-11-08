@@ -1,0 +1,116 @@
+{
+  "Név": "Goblin_warrior",
+  "Nem": "Férfi",
+  "Kor": "20",
+  "Faj": "Goblin",
+  "Kaszt": "Harcos",
+  "Specializáció": "Nincs",
+  "Képzettségpontok": 0,
+  "Tulajdonságok": {
+    "Erő": 14,
+    "Gyorsaság": 14,
+    "Ügyesség": 14,
+    "Állóképesség": 14,
+    "Egészség": 14,
+    "Karizma": 13,
+    "Intelligencia": 12,
+    "Akaraterő": 13,
+    "Asztrál": 9,
+    "Érzékelés": 16
+  },
+  "Képzettségek": [
+    {
+      "id": "animal_lore_horses",
+      "Szint": 2
+    },
+    {
+      "id": "balancing",
+      "%": 30
+    },
+    {
+      "id": "climbing",
+      "%": 15
+    },
+    {
+      "id": "falling",
+      "%": 15
+    },
+    {
+      "id": "horse_riding",
+      "Szint": 2
+    },
+    {
+      "id": "running",
+      "Szint": 2
+    },
+    {
+      "id": "shieldskill",
+      "Szint": 2
+    },
+    {
+      "id": "skill_endure_pain",
+      "Szint": 2
+    },
+    {
+      "id": "weapon_lore",
+      "Szint": 2
+    },
+    {
+      "id": "weaponskill_daggers",
+      "Szint": 3
+    },
+    {
+      "id": "weaponskill_shortswords",
+      "Szint": 2
+    },
+    {
+      "id": "weaponskill_longswords",
+      "Szint": 2
+    },
+    {
+      "id": "weaponskill_warhammers",
+      "Szint": 2
+    }
+  ],
+  "Harci értékek": {
+    "FP": 20,
+    "ÉP": 11,
+    "KÉ": 17,
+    "TÉ": 32,
+    "VÉ": 83,
+    "CÉ": 4
+  },
+  "Felszerelés": {
+    "currency": 4312,
+    "items": [
+      {
+        "category": "armor",
+        "id": "cloth_armor"
+      },
+      {
+        "category": "armor",
+        "id": "leather_gloves"
+      },
+      {
+        "category": "armor",
+        "id": "leather_vambrace"
+      },
+      {
+        "category": "armor",
+        "id": "boots"
+      },
+      {
+        "category": "weapons_and_shields",
+        "id": "dagger"
+      },
+      {
+        "category": "weapons_and_shields",
+        "id": "dagger"
+      },
+      {
+        "category": "weapons_and_shields",
+        "id": "small_shield"
+      }
+    ]
+  }
+}
