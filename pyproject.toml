@@ -22,7 +22,8 @@ build-backend = "poetry.core.masonry.api"
 dev = [
     "black (>=25.9.0,<26.0.0)",
     "ruff (>=0.14.3,<0.15.0)",
-    "mypy (>=1.18.2,<2.0.0)"
+    "mypy (>=1.18.2,<2.0.0)",
+    "pytest (>=9.0.0,<10.0.0)"
 ]
 
 # Black code formatter konfiguráció

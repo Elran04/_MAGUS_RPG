@@ -149,6 +149,8 @@ class TestScreen:
             f"Strength: {unit.attributes.strength}",
             f"Dexterity: {unit.attributes.dexterity}",
         ]
+        if getattr(unit, 'weapon', None):
+            info_lines.insert(1, f"Weapon: {unit.weapon.name}")
         
         for i, line in enumerate(info_lines):
             text = self.font_small.render(line, True, (200, 200, 200))

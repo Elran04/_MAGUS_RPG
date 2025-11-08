@@ -5,7 +5,7 @@ Unit Factory - Creates Unit entities from character data.
 from typing import Optional
 import uuid
 
-from domain.entities import Unit
+from domain.entities import Unit, Weapon
 from domain.value_objects import Position, CombatStats, ResourcePool, Attributes, Facing
 from infrastructure.repositories import CharacterRepository, EquipmentRepository
 from logger.logger import get_logger
@@ -123,24 +123,31 @@ class UnitFactory:
                     # Load weapon data
                     weapon_data = self.equipment_repo.find_weapon_by_id(item_id)
                     if weapon_data:
-                        unit.weapon_stats = self._extract_weapon_stats(weapon_data)
+                        unit.weapon = self._build_weapon_entity(weapon_data)
                         logger.debug(f"Equipped {item_id} to {unit.name}")
                         return
         
         logger.debug(f"No weapon found in equipment for {unit.name}")
     
-    def _extract_weapon_stats(self, weapon_data: dict) -> dict:
-        """Extract relevant weapon stats for combat."""
-        return {
-            "id": weapon_data.get("id", ""),
-            "name": weapon_data.get("name", "Unknown"),
-            "KE": weapon_data.get("KE", 0),
-            "TE": weapon_data.get("TE", 0),
-            "VE": weapon_data.get("VE", 0),
-            "attack_time": weapon_data.get("attack_time", 5),
-            "damage": weapon_data.get("damage", "1d6"),
-            "damage_min": weapon_data.get("damage_min", 1),
-            "damage_max": weapon_data.get("damage_max", 6),
-            "armor_penetration": weapon_data.get("armor_penetration", 0),
-            "size_category": weapon_data.get("size_category", 1),
-        }
+    def _build_weapon_entity(self, weapon_data: dict) -> Weapon:
+        """Construct a Weapon domain entity from raw data."""
+        return Weapon(
+            id=weapon_data.get("id", ""),
+            name=weapon_data.get("name", "Unknown"),
+            ke_modifier=weapon_data.get("KE", 0),
+            te_modifier=weapon_data.get("TE", 0),
+            ve_modifier=weapon_data.get("VE", 0),
+            damage_dice=weapon_data.get("damage", "1d6"),
+            damage_min=weapon_data.get("damage_min", 1),
+            damage_max=weapon_data.get("damage_max", 6),
+            armor_penetration=weapon_data.get("armor_penetration", 0),
+            attack_time=weapon_data.get("attack_time", 5),
+            size_category=weapon_data.get("size_category", 1),
+            wield_mode=weapon_data.get("wield_mode", "one_handed"),
+            strength_required=weapon_data.get("strength_required", 0),
+            dexterity_required=weapon_data.get("dexterity_required", 0),
+            damage_types=weapon_data.get("damage_types", []) or [],
+            damage_bonus_attributes=weapon_data.get("damage_bonus_attributes", []) or [],
+            can_disarm=weapon_data.get("can_disarm", False),
+            can_break_weapon=weapon_data.get("can_break_weapon", False),
+        )

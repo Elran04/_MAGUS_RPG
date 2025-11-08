@@ -10,6 +10,7 @@ from infrastructure.repositories import (
     SpriteRepository,
 )
 from domain.services import UnitFactory
+from domain.mechanics.damage import DamageService
 from logger.logger import get_logger
 
 logger = get_logger(__name__)
@@ -38,6 +39,7 @@ class GameContext:
             character_repo=self.character_repo,
             equipment_repo=self.equipment_repo
         )
+        self.damage_service = DamageService()
         
         logger.info("GameContext initialized")
     

@@ -43,7 +43,7 @@ class Unit:
     character_data: Optional[dict] = None
     
     # Weapon (if wielded)
-    weapon_stats: Optional[dict] = None
+    weapon: Optional["Weapon"] = None
     
     def is_alive(self) -> bool:
         """Check if unit is still alive."""
@@ -146,6 +146,8 @@ class Weapon:
     
     # Metadata
     damage_types: list[str] = field(default_factory=list)
+    # Attributes that can add damage bonuses (e.g., ["erő", "ügyesség"])
+    damage_bonus_attributes: list[str] = field(default_factory=list)
     can_disarm: bool = False
     can_break_weapon: bool = False
     
