@@ -70,6 +70,9 @@ class Menu:
 
         # Track last selected action (for application layer to handle)
         self.last_action: str | None = None
+        
+        # Track previous state for proper back navigation
+        self.previous_state: MenuState | None = None
 
         # Load background image
         self.background_image = self._load_background()
@@ -143,6 +146,7 @@ class Menu:
         return [
             MenuItem("New Game", action=lambda: self._start_new_game()),
             MenuItem("Load Game", action=lambda: self._load_game()),
+            MenuItem("Scenario Editor", action=lambda: self._open_scenario_editor()),
             MenuItem("Settings", action=lambda: self._open_settings()),
             MenuItem("Quit", action=lambda: self._quit_game()),
         ]
@@ -254,6 +258,9 @@ class Menu:
                 self.screen_width // 2 - 150 <= mouse_pos[0] <= self.screen_width // 2 + 150
                 and item_y <= mouse_pos[1] <= item_y + 50
             )
+            # Update selected index when hovering over enabled items
+            if item.is_hovered and item.enabled:
+                self.selected_index = i
 
     def _click_at_position(self, mouse_pos: tuple[int, int]) -> None:
         """Handle click at position.
@@ -397,6 +404,11 @@ class Menu:
         logger.info("Load game requested")
         # TODO: Implement load game logic in application layer
 
+    def _open_scenario_editor(self) -> None:
+        """Open the scenario editor screen."""
+        self.last_action = "scenario_editor"
+        logger.info("Scenario editor requested")
+
     def _save_game(self) -> None:
         """Save the current game."""
         self.last_action = "save_game"
@@ -405,13 +417,20 @@ class Menu:
 
     def _open_settings(self) -> None:
         """Open settings menu."""
+        self.previous_state = self.state
         self.state = MenuState.SETTINGS
         self.selected_index = 0
         logger.debug("Settings menu opened")
 
     def _close_settings(self) -> None:
         """Close settings and return to previous menu."""
-        self.state = MenuState.PAUSE_MENU
+        # Return to whichever menu opened settings
+        if self.previous_state:
+            self.state = self.previous_state
+            self.previous_state = None
+        else:
+            # Fallback to main menu if no previous state tracked
+            self.state = MenuState.MAIN_MENU
         self.selected_index = 0
         logger.debug("Settings menu closed")
 

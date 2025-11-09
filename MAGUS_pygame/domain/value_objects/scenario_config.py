@@ -6,6 +6,7 @@ including team composition, deployment zones, and map selection.
 """
 
 from dataclasses import dataclass, field
+from typing import Dict, Tuple
 
 
 @dataclass(frozen=True)
@@ -18,6 +19,8 @@ class UnitSetup:
         start_q: Deployment hex Q coordinate (optional until deployment phase)
         start_r: Deployment hex R coordinate (optional until deployment phase)
         facing: Initial facing direction (0-5 for hex directions)
+        equipment: Mapping of equipment slot -> item id (added during equipment phase)
+        inventory: Mapping of item id -> quantity (simple aggregation for general items)
     """
 
     character_file: str
@@ -25,6 +28,8 @@ class UnitSetup:
     start_q: int | None = None
     start_r: int | None = None
     facing: int = 0
+    equipment: Dict[str, str] = field(default_factory=dict)
+    inventory: Dict[str, int] = field(default_factory=dict)
 
     def __post_init__(self):
         """Validate unit setup configuration."""
@@ -50,6 +55,54 @@ class UnitSetup:
             start_q=q,
             start_r=r,
             facing=facing,
+            equipment=self.equipment.copy(),
+            inventory=self.inventory.copy(),
+        )
+
+    def with_equipment(self, slot: str, item_id: str) -> "UnitSetup":
+        """Return a new UnitSetup with one equipment slot changed.
+
+        Args:
+            slot: Equipment slot name (e.g., 'primary_weapon')
+            item_id: Equipment item identifier
+
+        Returns:
+            New UnitSetup reflecting the change
+        """
+        new_equipment = self.equipment.copy()
+        new_equipment[slot] = item_id
+        return UnitSetup(
+            character_file=self.character_file,
+            sprite_file=self.sprite_file,
+            start_q=self.start_q,
+            start_r=self.start_r,
+            facing=self.facing,
+            equipment=new_equipment,
+            inventory=self.inventory.copy(),
+        )
+
+    def with_inventory_item(self, item_id: str, delta: int = 1) -> "UnitSetup":
+        """Return a new UnitSetup with inventory quantity adjusted.
+
+        Args:
+            item_id: Item identifier
+            delta: Quantity change (can be negative)
+
+        Returns:
+            New UnitSetup reflecting inventory modification
+        """
+        new_inv = self.inventory.copy()
+        new_inv[item_id] = max(0, new_inv.get(item_id, 0) + delta)
+        if new_inv[item_id] == 0:
+            del new_inv[item_id]
+        return UnitSetup(
+            character_file=self.character_file,
+            sprite_file=self.sprite_file,
+            start_q=self.start_q,
+            start_r=self.start_r,
+            facing=self.facing,
+            equipment=self.equipment.copy(),
+            inventory=new_inv,
         )
 
     def is_deployed(self) -> bool:

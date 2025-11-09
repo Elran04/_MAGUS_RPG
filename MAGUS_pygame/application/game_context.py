@@ -6,10 +6,12 @@ Manages lifecycle of repositories, services, and provides centralized access.
 
 from domain.mechanics.damage import DamageService
 from domain.services import UnitFactory
+from application.scenario_service import ScenarioService
 from infrastructure.repositories import (
     CharacterRepository,
     EquipmentRepository,
     SpriteRepository,
+    ScenarioRepository,
 )
 from logger.logger import get_logger
 
@@ -33,6 +35,12 @@ class GameContext:
         self.character_repo = CharacterRepository()
         self.equipment_repo = EquipmentRepository()
         self.sprite_repo = SpriteRepository()
+        self.scenario_repo = ScenarioRepository()
+        self.scenario_service = ScenarioService(
+            scenario_repo=self.scenario_repo,
+            character_repo=self.character_repo,
+            sprite_repo=self.sprite_repo,
+        )
 
         # Domain services
         self.unit_factory = UnitFactory(
@@ -48,3 +56,4 @@ class GameContext:
         self.character_repo.clear_cache()
         self.equipment_repo.clear_cache()
         self.sprite_repo.clear_cache()
+        # Scenario repo currently stateless

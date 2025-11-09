@@ -1,0 +1,24 @@
+{
+  "name": "Default Arena",
+  "description": "A simple battle arena for quick combat scenarios",
+  "spawn_zones": {
+    "team_a": [
+      {"q": -4, "r": 0},
+      {"q": -4, "r": 1},
+      {"q": -3, "r": 0},
+      {"q": -3, "r": 1},
+      {"q": -4, "r": -1},
+      {"q": -3, "r": -1}
+    ],
+    "team_b": [
+      {"q": 4, "r": 0},
+      {"q": 4, "r": 1},
+      {"q": 3, "r": 0},
+      {"q": 3, "r": 1},
+      {"q": 4, "r": -1},
+      {"q": 3, "r": -1}
+    ]
+  },
+  "background": "grass_bg.jpg",
+  "obstacles": []
+}

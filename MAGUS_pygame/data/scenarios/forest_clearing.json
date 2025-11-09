@@ -1,0 +1,310 @@
+{
+  "name": "Forest Clearing",
+  "description": "A small clearing in a dense forest",
+  "spawn_zones": {
+    "team_a": [
+      {
+        "q": -5,
+        "r": 0
+      },
+      {
+        "q": -5,
+        "r": 1
+      },
+      {
+        "q": -4,
+        "r": 0
+      },
+      {
+        "q": -4,
+        "r": 1
+      },
+      {
+        "q": -5,
+        "r": -1
+      },
+      {
+        "q": -4,
+        "r": -1
+      },
+      {
+        "q": -3,
+        "r": -1
+      },
+      {
+        "q": -3,
+        "r": 0
+      },
+      {
+        "q": -5,
+        "r": 2
+      },
+      {
+        "q": -6,
+        "r": 2
+      },
+      {
+        "q": -6,
+        "r": 0
+      },
+      {
+        "q": -6,
+        "r": 1
+      },
+      {
+        "q": -4,
+        "r": -2
+      },
+      {
+        "q": -3,
+        "r": -2
+      }
+    ],
+    "team_b": [
+      {
+        "q": 5,
+        "r": 0
+      },
+      {
+        "q": 5,
+        "r": 1
+      },
+      {
+        "q": 4,
+        "r": 0
+      },
+      {
+        "q": 4,
+        "r": 1
+      },
+      {
+        "q": 5,
+        "r": -1
+      },
+      {
+        "q": 4,
+        "r": -1
+      },
+      {
+        "q": 2,
+        "r": 1
+      },
+      {
+        "q": 3,
+        "r": 1
+      },
+      {
+        "q": 3,
+        "r": 0
+      },
+      {
+        "q": 2,
+        "r": 2
+      },
+      {
+        "q": 3,
+        "r": 2
+      },
+      {
+        "q": 4,
+        "r": 2
+      },
+      {
+        "q": 3,
+        "r": 3
+      },
+      {
+        "q": 2,
+        "r": 3
+      }
+    ]
+  },
+  "background": "grass_bg.jpg",
+  "obstacles": [
+    {
+      "q": -7,
+      "r": 4,
+      "type": "blocked"
+    },
+    {
+      "q": -6,
+      "r": 4,
+      "type": "blocked"
+    },
+    {
+      "q": -6,
+      "r": 3,
+      "type": "blocked"
+    },
+    {
+      "q": -7,
+      "r": 3,
+      "type": "blocked"
+    },
+    {
+      "q": -8,
+      "r": 4,
+      "type": "blocked"
+    },
+    {
+      "q": -9,
+      "r": 4,
+      "type": "blocked"
+    },
+    {
+      "q": -9,
+      "r": 5,
+      "type": "blocked"
+    },
+    {
+      "q": -8,
+      "r": 5,
+      "type": "blocked"
+    },
+    {
+      "q": -7,
+      "r": 5,
+      "type": "blocked"
+    },
+    {
+      "q": -6,
+      "r": 5,
+      "type": "blocked"
+    },
+    {
+      "q": -7,
+      "r": 6,
+      "type": "blocked"
+    },
+    {
+      "q": -8,
+      "r": 6,
+      "type": "blocked"
+    },
+    {
+      "q": -9,
+      "r": 6,
+      "type": "blocked"
+    },
+    {
+      "q": -10,
+      "r": 6,
+      "type": "blocked"
+    },
+    {
+      "q": -10,
+      "r": 5,
+      "type": "blocked"
+    },
+    {
+      "q": -6,
+      "r": 6,
+      "type": "blocked"
+    },
+    {
+      "q": -8,
+      "r": 3,
+      "type": "blocked"
+    },
+    {
+      "q": -9,
+      "r": 3,
+      "type": "blocked"
+    },
+    {
+      "q": 0,
+      "r": -6,
+      "type": "blocked"
+    },
+    {
+      "q": 1,
+      "r": -6,
+      "type": "blocked"
+    },
+    {
+      "q": 0,
+      "r": -5,
+      "type": "blocked"
+    },
+    {
+      "q": 4,
+      "r": -6,
+      "type": "blocked"
+    },
+    {
+      "q": 5,
+      "r": -6,
+      "type": "blocked"
+    },
+    {
+      "q": 6,
+      "r": -6,
+      "type": "blocked"
+    },
+    {
+      "q": 7,
+      "r": -6,
+      "type": "blocked"
+    },
+    {
+      "q": 6,
+      "r": -5,
+      "type": "blocked"
+    },
+    {
+      "q": 5,
+      "r": -5,
+      "type": "blocked"
+    },
+    {
+      "q": 4,
+      "r": -5,
+      "type": "blocked"
+    },
+    {
+      "q": 3,
+      "r": -5,
+      "type": "blocked"
+    },
+    {
+      "q": 6,
+      "r": 0,
+      "type": "blocked"
+    },
+    {
+      "q": 7,
+      "r": -1,
+      "type": "blocked"
+    },
+    {
+      "q": 8,
+      "r": -1,
+      "type": "blocked"
+    },
+    {
+      "q": 7,
+      "r": 0,
+      "type": "blocked"
+    },
+    {
+      "q": 6,
+      "r": 1,
+      "type": "blocked"
+    },
+    {
+      "q": 7,
+      "r": 1,
+      "type": "blocked"
+    },
+    {
+      "q": 8,
+      "r": -2,
+      "type": "blocked"
+    },
+    {
+      "q": 9,
+      "r": -3,
+      "type": "blocked"
+    }
+  ]
+}

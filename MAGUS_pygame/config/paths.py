@@ -34,7 +34,7 @@ HUMANOID_SILHOUETTE = CHARACTER_SPRITES_DIR / "humanoid_silhouette.png"
 WARRIOR_SPRITE = CHARACTER_SPRITES_DIR / "warrior.png"
 GOBLIN_SPRITE = CHARACTER_SPRITES_DIR / "goblin.png"
 GRASS_BACKGROUND = BACKGROUND_SPRITES_DIR / "grass_bg.jpg"  # TODO: Move to backgrounds
-
+DEJAVU_FONT_PATH = Path("C:/Windows/Fonts/DejaVuSans.ttf")  # Adjust as needed
 
 def get_character_json_path(filename: str) -> Path:
     """Get path to a character JSON file.

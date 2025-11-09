@@ -16,6 +16,7 @@ class EquipmentRepository:
     def __init__(self):
         self._weapons_cache: list[dict] | None = None
         self._armor_cache: list[dict] | None = None
+        self._general_cache: list[dict] | None = None
 
     def load_weapons(self) -> list[dict]:
         """Load all weapon data."""
@@ -77,8 +78,34 @@ class EquipmentRepository:
         logger.warning(f"Armor not found: {armor_id}")
         return None
 
+    def load_general_equipment(self) -> list[dict]:
+        """Load all general equipment data."""
+        if self._general_cache is not None:
+            return self._general_cache
+
+        try:
+            path = get_equipment_json_path("general_equipment.json")
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
+                self._general_cache = data
+                logger.info(f"Loaded {len(data)} general equipment items")
+                return data
+        except Exception:
+            logger.exception("Failed to load general equipment data")
+            return []
+
+    def find_general_by_id(self, item_id: str) -> dict | None:
+        """Find a general equipment item by ID."""
+        items = self.load_general_equipment()
+        for it in items:
+            if it.get("id") == item_id:
+                return it
+        logger.warning(f"General equipment not found: {item_id}")
+        return None
+
     def clear_cache(self) -> None:
         """Clear equipment cache."""
         self._weapons_cache = None
         self._armor_cache = None
+        self._general_cache = None
         logger.debug("Equipment cache cleared")
