@@ -11,9 +11,7 @@ import pytest
 
 from domain.mechanics.armor import (
     ArmorPiece,
-    calculate_total_armor_absorption,
-    calculate_total_mgt,
-    apply_overpower_degradation,
+    ArmorSystem,
 )
 
 
@@ -21,49 +19,49 @@ from domain.mechanics.armor import (
 
 @pytest.fixture
 def leather_armor():
-    """Basic leather armor."""
+    """Basic leather armor covering chest (mellvért)."""
     return ArmorPiece(
         id="leather_vest",
         name="Leather Vest",
-        sfe=3,
+        parts={"mellvért": 3},
         mgt=1,
-        location="torso",
+        layer=3,
     )
 
 
 @pytest.fixture
 def chain_mail():
-    """Medium chainmail armor."""
+    """Medium chainmail covering chest (mellvért)."""
     return ArmorPiece(
         id="chainmail",
         name="Chainmail",
-        sfe=8,
+        parts={"mellvért": 8},
         mgt=3,
-        location="torso",
+        layer=2,
     )
 
 
 @pytest.fixture
 def steel_helmet():
-    """Steel helmet."""
+    """Steel helmet covering head (sisak)."""
     return ArmorPiece(
         id="steel_helmet",
         name="Steel Helmet",
-        sfe=5,
+        parts={"sisak": 5},
         mgt=1,
-        location="head",
+        layer=1,
     )
 
 
 @pytest.fixture
 def plate_armor():
-    """Heavy plate armor."""
+    """Heavy plate armor covering chest (mellvért)."""
     return ArmorPiece(
         id="plate",
         name="Plate Armor",
-        sfe=12,
+        parts={"mellvért": 12},
         mgt=5,
-        location="torso",
+        layer=1,
     )
 
 
@@ -77,32 +75,28 @@ class TestArmorPiece:
         armor = ArmorPiece(
             id="test",
             name="Test Armor",
-            sfe=5,
+            parts={"mellvért": 5},
             mgt=2,
-            location="torso",
+            layer=3,
         )
         
         assert armor.id == "test"
         assert armor.name == "Test Armor"
-        assert armor.sfe == 5
-        assert armor.current_sfe == 5  # Initialized to base
-        assert armor.mgt == 2
-        assert armor.location == "torso"
+        assert armor.get_sfé("mellvért") == 5
+        assert armor.get_mgt() == 2
+        # Not covering other zones
+        assert armor.get_sfé("sisak") == 0
     
     def test_armor_defaults(self):
         """Armor uses default values."""
-        armor = ArmorPiece(id="test", name="Test", sfe=3)
+        armor = ArmorPiece(id="test", name="Test", parts={"mellvért": 3})
         
         assert armor.mgt == 0
-        assert armor.location == "torso"
-    
-    def test_armor_not_broken_initially(self, leather_armor):
-        """New armor is not broken."""
-        assert not leather_armor.is_broken()
+        assert armor.get_sfé("mellvért") == 3
     
     def test_armor_fully_functional_initially(self, chain_mail):
         """Current SFÉ equals base SFÉ initially."""
-        assert chain_mail.current_sfe == chain_mail.sfe
+        assert chain_mail.get_sfé("mellvért") == 8
 
 
 # --- Test Armor Degradation ---
@@ -112,210 +106,117 @@ class TestArmorDegradation:
     
     def test_degrade_reduces_sfe(self, chain_mail):
         """Degrading armor reduces current SFÉ."""
-        original_sfe = chain_mail.current_sfe
-        chain_mail.degrade()
+        original_sfe = chain_mail.get_sfé("mellvért")
+        chain_mail.degrade_zone("mellvért", 1)
         
-        assert chain_mail.current_sfe == original_sfe - 1
+        assert chain_mail.get_sfé("mellvért") == original_sfe - 1
     
     def test_degrade_custom_amount(self, chain_mail):
         """Can degrade by custom amount."""
-        chain_mail.degrade(3)
+        chain_mail.degrade_zone("mellvért", 3)
         
-        assert chain_mail.current_sfe == chain_mail.sfe - 3
+        assert chain_mail.get_sfé("mellvért") == max(0, 8 - 3)
     
     def test_degrade_cannot_go_negative(self, leather_armor):
         """Degrading armor cannot make SFÉ negative."""
-        leather_armor.degrade(10)  # Degrade more than max
+        leather_armor.degrade_zone("mellvért", 10)  # Degrade more than max
         
-        assert leather_armor.current_sfe == 0
-        assert leather_armor.is_broken()
+        assert leather_armor.get_sfé("mellvért") == 0
     
     def test_multiple_degrades(self, chain_mail):
         """Multiple degradations accumulate."""
-        chain_mail.degrade(1)
-        chain_mail.degrade(1)
-        chain_mail.degrade(1)
+        chain_mail.degrade_zone("mellvért", 1)
+        chain_mail.degrade_zone("mellvért", 1)
+        chain_mail.degrade_zone("mellvért", 1)
         
-        assert chain_mail.current_sfe == chain_mail.sfe - 3
+        assert chain_mail.get_sfé("mellvért") == 5
     
-    def test_broken_armor_has_zero_sfe(self, leather_armor):
-        """Broken armor has 0 SFÉ."""
-        leather_armor.current_sfe = 0
-        
-        assert leather_armor.is_broken()
-        assert leather_armor.current_sfe == 0
+    def test_zero_sfe_zone_is_zero(self, leather_armor):
+        """Zero SFÉ zone returns 0."""
+        # Not covering head on leather armor
+        assert leather_armor.get_sfé("sisak") == 0
 
 
 # --- Test Armor Repair ---
 
-class TestArmorRepair:
-    """Test armor repair mechanics."""
-    
-    def test_partial_repair(self, chain_mail):
-        """Partial repair restores some SFÉ."""
-        chain_mail.degrade(5)
-        chain_mail.repair(2)
-        
-        assert chain_mail.current_sfe == chain_mail.sfe - 3
-    
-    def test_full_repair(self, chain_mail):
-        """Full repair restores to base SFÉ."""
-        chain_mail.degrade(5)
-        chain_mail.repair()  # No amount = full repair
-        
-        assert chain_mail.current_sfe == chain_mail.sfe
-        assert not chain_mail.is_broken()
-    
-    def test_repair_cannot_exceed_base(self, leather_armor):
-        """Repair cannot exceed base SFÉ."""
-        leather_armor.degrade(1)
-        leather_armor.repair(10)  # Try to over-repair
-        
-        assert leather_armor.current_sfe == leather_armor.sfe
-    
-    def test_repair_broken_armor(self, leather_armor):
-        """Can repair broken armor."""
-        leather_armor.current_sfe = 0
-        assert leather_armor.is_broken()
-        
-        leather_armor.repair()
-        
-        assert not leather_armor.is_broken()
-        assert leather_armor.current_sfe == leather_armor.sfe
+# (Repair mechanics are not part of the new model; omitted.)
 
 
 # --- Test Total Absorption ---
 
-class TestTotalAbsorption:
-    """Test total armor absorption calculation."""
-    
-    def test_single_armor_piece(self, chain_mail):
-        """Single armor piece absorption."""
-        total = calculate_total_armor_absorption([chain_mail])
-        
-        assert total == chain_mail.current_sfe
-    
-    def test_multiple_armor_pieces(self, leather_armor, steel_helmet):
-        """Multiple armor pieces sum together."""
-        total = calculate_total_armor_absorption([leather_armor, steel_helmet])
-        
-        assert total == leather_armor.current_sfe + steel_helmet.current_sfe
-    
-    def test_degraded_armor_absorbs_less(self, chain_mail, steel_helmet):
-        """Degraded armor provides less absorption."""
-        chain_mail.degrade(3)
-        
-        total = calculate_total_armor_absorption([chain_mail, steel_helmet])
-        
-        expected = (chain_mail.sfe - 3) + steel_helmet.current_sfe
-        assert total == expected
-    
-    def test_broken_armor_no_absorption(self, leather_armor, steel_helmet):
-        """Broken armor provides no absorption."""
-        leather_armor.current_sfe = 0
-        
-        total = calculate_total_armor_absorption([leather_armor, steel_helmet])
-        
-        assert total == steel_helmet.current_sfe  # Only helmet counts
-    
-    def test_empty_armor_list(self):
-        """Empty armor list returns 0."""
-        total = calculate_total_armor_absorption([])
-        
-        assert total == 0
-    
-    def test_all_broken_armor(self, leather_armor, steel_helmet):
-        """All broken armor returns 0."""
-        leather_armor.current_sfe = 0
-        steel_helmet.current_sfe = 0
-        
-        total = calculate_total_armor_absorption([leather_armor, steel_helmet])
-        
-        assert total == 0
+class TestZoneAggregation:
+    """Test zone-based SFÉ aggregation with ArmorSystem."""
+
+    def test_single_zone_sfe(self, chain_mail):
+        system = ArmorSystem([chain_mail])
+        assert system.get_sfe_for_hit("mellvért") == chain_mail.get_sfé("mellvért")
+
+    def test_multiple_layers_same_zone(self, chain_mail, leather_armor):
+        leather_armor.layer = 4  # inner layer
+        system = ArmorSystem([chain_mail, leather_armor])
+        expected = chain_mail.get_sfé("mellvért") + leather_armor.get_sfé("mellvért")
+        assert system.get_sfe_for_hit("mellvért") == expected
+
+    def test_zone_without_coverage(self, steel_helmet, leather_armor):
+        system = ArmorSystem([steel_helmet, leather_armor])
+        # No leg coverage in fixtures
+        assert system.get_sfe_for_hit("lábszárvédő") == 0
+
+    def test_degrade_outermost_only(self, chain_mail, leather_armor):
+        leather_armor.layer = 4
+        system = ArmorSystem([chain_mail, leather_armor])
+        before = system.get_sfe_for_hit("mellvért")
+        system.reduce_sfe("mellvért", 1)
+        after = system.get_sfe_for_hit("mellvért")
+        # Only chain_mail degraded (outermost by lower layer index)
+        assert after == before - 1
+
+    def test_degrade_no_effect_if_uncovered(self, chain_mail):
+        system = ArmorSystem([chain_mail])
+        before = system.get_sfe_for_hit("felkarvédő")  # not covered
+        system.reduce_sfe("felkarvédő", 2)
+        after = system.get_sfe_for_hit("felkarvédő")
+        assert before == after == 0
 
 
 # --- Test MGT Calculation ---
 
 class TestMGTCalculation:
-    """Test movement penalty (MGT) calculation."""
-    
-    def test_single_armor_mgt(self, chain_mail):
-        """Single armor piece MGT."""
-        total = calculate_total_mgt([chain_mail])
-        
-        assert total == chain_mail.mgt
-    
-    def test_multiple_armor_mgt(self, leather_armor, steel_helmet, plate_armor):
-        """Multiple armor pieces MGT sums."""
-        total = calculate_total_mgt([leather_armor, steel_helmet, plate_armor])
-        
+    """Test movement penalty (MGT) calculation via ArmorSystem."""
+
+    def test_total_mgt_single(self, chain_mail):
+        system = ArmorSystem([chain_mail])
+        assert system.get_total_mgt() == chain_mail.mgt
+
+    def test_total_mgt_multiple(self, leather_armor, steel_helmet, plate_armor):
+        system = ArmorSystem([leather_armor, steel_helmet, plate_armor])
         expected = leather_armor.mgt + steel_helmet.mgt + plate_armor.mgt
-        assert total == expected
-    
-    def test_no_armor_no_mgt(self):
-        """No armor means no MGT."""
-        total = calculate_total_mgt([])
-        
-        assert total == 0
-    
-    def test_light_armor_low_mgt(self, leather_armor):
-        """Light armor has low MGT."""
-        assert leather_armor.mgt <= 2
-    
-    def test_heavy_armor_high_mgt(self, plate_armor):
-        """Heavy armor has high MGT."""
-        assert plate_armor.mgt >= 5
+        assert system.get_total_mgt() == expected
+
+    def test_total_mgt_empty(self):
+        system = ArmorSystem([])
+        assert system.get_total_mgt() == 0
 
 
 # --- Test Overpower Degradation ---
 
-class TestOverpowerDegradation:
-    """Test armor degradation on overpower strikes."""
-    
-    def test_overpower_degrades_all_armor(self, leather_armor, steel_helmet):
-        """Overpower degrades all armor pieces by 1."""
-        armor_list = [leather_armor, steel_helmet]
-        
-        original_leather = leather_armor.current_sfe
-        original_helmet = steel_helmet.current_sfe
-        
-        apply_overpower_degradation(armor_list)
-        
-        assert leather_armor.current_sfe == original_leather - 1
-        assert steel_helmet.current_sfe == original_helmet - 1
-    
-    def test_overpower_skips_broken_armor(self, leather_armor, steel_helmet):
-        """Overpower doesn't degrade already broken armor."""
-        leather_armor.current_sfe = 0
-        armor_list = [leather_armor, steel_helmet]
-        
-        apply_overpower_degradation(armor_list)
-        
-        assert leather_armor.current_sfe == 0  # Still 0
-        assert steel_helmet.current_sfe == steel_helmet.sfe - 1
-    
-    def test_overpower_empty_list(self):
-        """Overpower on empty list doesn't crash."""
-        apply_overpower_degradation([])  # Should not raise
-    
-    def test_overpower_can_break_armor(self, leather_armor):
-        """Overpower can reduce armor to broken state."""
-        leather_armor.current_sfe = 1
-        armor_list = [leather_armor]
-        
-        apply_overpower_degradation(armor_list)
-        
-        assert leather_armor.is_broken()
-    
-    def test_multiple_overpowers(self, chain_mail):
-        """Multiple overpower strikes degrade further."""
-        armor_list = [chain_mail]
-        
-        apply_overpower_degradation(armor_list)
-        apply_overpower_degradation(armor_list)
-        apply_overpower_degradation(armor_list)
-        
-        assert chain_mail.current_sfe == chain_mail.sfe - 3
+class TestTargetedDegradation:
+    """Test zone-specific degradation (outermost layer only)."""
+
+    def test_reduce_sfe_outermost_layer(self, chain_mail, leather_armor):
+        leather_armor.layer = 5
+        system = ArmorSystem([chain_mail, leather_armor])
+        before_chain = chain_mail.current_parts.get("mellvért", 0)
+        system.reduce_sfe("mellvért", 2)
+        after_chain = chain_mail.current_parts.get("mellvért", 0)
+        assert after_chain == max(0, before_chain - 2)
+
+    def test_reduce_sfe_no_coverage(self, steel_helmet):
+        system = ArmorSystem([steel_helmet])
+        before = system.get_sfe_for_hit("mellvért")
+        system.reduce_sfe("mellvért", 3)
+        after = system.get_sfe_for_hit("mellvért")
+        assert before == after == 0
 
 
 # --- Edge Cases ---
@@ -323,26 +224,23 @@ class TestOverpowerDegradation:
 class TestArmorEdgeCases:
     """Test edge cases for armor mechanics."""
     
-    def test_armor_with_zero_sfe(self):
-        """Armor can have 0 base SFÉ (cloth)."""
-        cloth = ArmorPiece(id="cloth", name="Cloth", sfe=0)
+    def test_armor_with_zero_sfe_zone(self):
+        """Armor can have 0 base SFÉ on a zone."""
+        cloth = ArmorPiece(id="cloth", name="Cloth", parts={"mellvért": 0})
         
-        assert cloth.current_sfe == 0
-        assert cloth.is_broken()
+        assert cloth.get_sfé("mellvért") == 0
     
     def test_armor_with_zero_mgt(self, leather_armor):
         """Armor can have 0 MGT (light armor)."""
-        light = ArmorPiece(id="light", name="Light", sfe=2, mgt=0)
+        light = ArmorPiece(id="light", name="Light", parts={"mellvért": 2}, mgt=0)
         
         assert light.mgt == 0
     
     def test_high_sfe_armor(self):
         """Very high SFÉ armor works correctly."""
-        super_armor = ArmorPiece(id="super", name="Super Armor", sfe=20, mgt=10)
-        
-        super_armor.degrade(5)
-        assert super_armor.current_sfe == 15
-        assert not super_armor.is_broken()
+        super_armor = ArmorPiece(id="super", name="Super Armor", parts={"mellvért": 20}, mgt=10)
+        super_armor.degrade_zone("mellvért", 5)
+        assert super_armor.get_sfé("mellvért") == 15
 
 
 if __name__ == "__main__":

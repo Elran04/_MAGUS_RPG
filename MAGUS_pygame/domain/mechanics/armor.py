@@ -1,103 +1,162 @@
 """
-Armor system for MAGUS combat.
+Armor system for MAGUS combat (layered, zone-based).
 
 Handles:
-- Armor entities with SFÉ (Sebzésfelfogó Érték - damage absorption)
-- Armor degradation on overpower strikes
-- MGT (Mozgásgátló Tényező - movement penalty)
+- ArmorPiece: multi-zone SFÉ per main armor part, with layer and MGT
+- ArmorSystem: aggregation, validation, total SFÉ/MGT, and targeted degradation
+- HitzoneResolver: weighted selection of hit zones (main parts)
+
+Legacy helper shims removed; all integrations must use ArmorSystem and zone-based APIs.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Dict, Iterable, List
+import random
+
+
+# ------------------------------
+# ArmorPiece (layered, zone-based)
+# ------------------------------
+
+
+MAIN_PARTS = (
+    "sisak",
+    "mellvért",
+    "vállvédő",
+    "felkarvédő",
+    "alkarvédő",
+    "combvédő",
+    "lábszárvédő",
+    "csizma",
+)
 
 
 @dataclass
 class ArmorPiece:
+    """Represents one armor item across main parts and a specific layer.
+
+    parts: mapping of main part -> base SFÉ (e.g., {"mellvért": 8})
+    layer: 1 is outermost; higher numbers are inner layers
+    current_parts: mutable per-part current SFÉ values
     """
-    Single armor piece (vért, sisak, etc.).
-    
-    Attributes:
-        id: Armor identifier
-        name: Display name
-        sfe: Base damage absorption value
-        mgt: Movement penalty
-        location: Body part protected
-        current_sfe: Current absorption (degrades on overpower)
-    """
+
     id: str
     name: str
-    sfe: int  # Base SFÉ
-    mgt: int = 0  # Movement penalty
-    location: str = "torso"  # Body location
-    current_sfe: int = field(init=False)  # Degradable value
-    
-    def __post_init__(self):
-        # Initialize current SFÉ to base value
-        if not hasattr(self, 'current_sfe') or self.current_sfe is None:
-            self.current_sfe = self.sfe
-    
-    def degrade(self, amount: int = 1) -> None:
-        """
-        Degrade armor (reduce current SFÉ).
-        Called on overpower strikes.
-        
-        Args:
-            amount: Amount to reduce SFÉ by (default 1)
-        """
-        self.current_sfe = max(0, self.current_sfe - amount)
-    
-    def is_broken(self) -> bool:
-        """Check if armor is completely degraded."""
-        return self.current_sfe <= 0
-    
-    def repair(self, amount: Optional[int] = None) -> None:
-        """
-        Repair armor (restore SFÉ).
-        
-        Args:
-            amount: Amount to restore (None = full repair to base)
-        """
-        if amount is None:
-            self.current_sfe = self.sfe
-        else:
-            self.current_sfe = min(self.sfe, self.current_sfe + amount)
+    parts: Dict[str, int]
+    mgt: int = 0
+    armor_type: str = "leather"
+    layer: int = 3
+    protection_overrides: Dict[str, int] = field(default_factory=dict)
+    current_parts: Dict[str, int] = field(init=False)
+
+    def __post_init__(self) -> None:
+        # Initialize current per-part SFÉ
+        self.current_parts = {k: max(0, int(v)) for k, v in (self.parts or {}).items()}
+
+    # API per spec
+    def covers(self, zone: str) -> bool:
+        return self.parts.get(zone, 0) > 0
+
+    def get_sfé(self, zone: str) -> int:
+        return int(self.current_parts.get(zone, 0))
+
+    def get_mgt(self) -> int:
+        return int(self.mgt)
+
+    # Degrade only the specified zone
+    def degrade_zone(self, zone: str, amount: int = 1) -> None:
+        if zone in self.current_parts:
+            self.current_parts[zone] = max(0, self.current_parts[zone] - amount)
+
+    def total_current_sfe(self) -> int:
+        return sum(self.current_parts.values())
 
 
-def calculate_total_armor_absorption(armor_pieces: list[ArmorPiece]) -> int:
-    """
-    Calculate total armor absorption from all equipped armor.
-    
-    Args:
-        armor_pieces: List of equipped armor pieces
-        
-    Returns:
-        Total current SFÉ from all armor
-    """
-    return sum(piece.current_sfe for piece in armor_pieces if not piece.is_broken())
+# ------------------------------
+# ArmorSystem (aggregation)
+# ------------------------------
 
 
-def calculate_total_mgt(armor_pieces: list[ArmorPiece]) -> int:
-    """
-    Calculate total movement penalty from armor.
-    
-    Args:
-        armor_pieces: List of equipped armor pieces
-        
-    Returns:
-        Total MGT penalty
-    """
-    return sum(piece.mgt for piece in armor_pieces)
+@dataclass
+class ArmorSystem:
+    """Aggregates all equipped armor and provides queries/validation."""
+
+    pieces: List[ArmorPiece] = field(default_factory=list)
+
+    def validate_no_overlap_same_layer(self) -> tuple[bool, str]:
+        """Ensure no two pieces cover the same main part on the same layer."""
+        seen: Dict[tuple[int, str], str] = {}
+        for p in self.pieces:
+            for part, v in p.parts.items():
+                if v <= 0:
+                    continue
+                key = (p.layer, part)
+                if key in seen:
+                    return False, f"Overlap on layer {p.layer} for zone {part} ({seen[key]} vs {p.name})"
+                seen[key] = p.name
+        return True, ""
+
+    def get_sfe_for_hit(self, hit_zone: str) -> int:
+        """Sum SFÉ from all layers covering the given main part."""
+        total = 0
+        for p in self.pieces:
+            total += p.get_sfé(hit_zone)
+        return total
+
+    def get_total_mgt(self) -> int:
+        return sum(p.get_mgt() for p in self.pieces)
+
+    def reduce_sfe(self, hit_zone: str, amount: int = 1) -> None:
+        """Reduce SFÉ at hit_zone on the outermost covering layer (lowest layer index)."""
+        # Find covering pieces sorted by layer ascending (outermost first)
+        covering = [p for p in self.pieces if p.covers(hit_zone) and p.get_sfé(hit_zone) > 0]
+        if not covering:
+            return
+        covering.sort(key=lambda p: p.layer)  # layer 1 first
+        covering[0].degrade_zone(hit_zone, amount)
+
+    # Convenience for applying global degradation (fallback legacy behavior)
+    def degrade_all(self, amount: int = 1) -> None:
+        for p in self.pieces:
+            for part in list(p.current_parts.keys()):
+                p.degrade_zone(part, amount)
 
 
-def apply_overpower_degradation(armor_pieces: list[ArmorPiece]) -> None:
+# ------------------------------
+# HitzoneResolver (weighted)
+# ------------------------------
+
+
+class HitzoneResolver:
+    """Selects a main hit zone based on static weights.
+
+    Later can be extended with facing/height modifiers.
     """
-    Apply degradation to all armor pieces on overpower strike.
-    Reduces each piece's current_sfe by 1.
-    
-    Args:
-        armor_pieces: List of equipped armor to degrade
-    """
-    for piece in armor_pieces:
-        if not piece.is_broken():
-            piece.degrade(1)
+
+    HITZONE_WEIGHTS: Dict[str, int] = {
+        "sisak": 10,
+        "mellvért": 40,
+        "vállvédő": 10,
+        "felkarvédő": 5,
+        "alkarvédő": 5,
+        "combvédő": 10,
+        "lábszárvédő": 10,
+        "csizma": 10,
+    }
+
+    @classmethod
+    def resolve(cls, rng: Optional[random.Random] = None) -> str:
+        r = rng or random
+        items = list(cls.HITZONE_WEIGHTS.items())
+        parts, weights = zip(*items)
+        total = sum(weights)
+        roll = r.randint(1, total)
+        acc = 0
+        for part, w in items:
+            acc += w
+            if roll <= acc:
+                return part
+        return parts[-1]
+
+

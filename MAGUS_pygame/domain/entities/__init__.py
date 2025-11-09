@@ -7,6 +7,7 @@ from typing import Optional
 import pygame
 
 from domain.value_objects import Position, CombatStats, ResourcePool, Attributes, Facing
+from domain.mechanics.armor import ArmorSystem
 
 
 @dataclass
@@ -44,6 +45,9 @@ class Unit:
     
     # Weapon (if wielded)
     weapon: Optional["Weapon"] = None
+
+    # Armor system (layered); optional until equipped during loadout
+    armor_system: Optional[ArmorSystem] = None
     
     def is_alive(self) -> bool:
         """Check if unit is still alive."""

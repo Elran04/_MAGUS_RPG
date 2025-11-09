@@ -9,6 +9,9 @@ Modules:
 - attack_resolution: Complete attack flow from roll to damage application
 - weapon_wielding: Variable weapon wielding modes and bonuses
 - stamina: Stamina resource, thresholds, and combat penalties
+- actions: Player-initiated action abstractions (phase 1: attack, movement)
+ - actions: Player-initiated action abstractions (phase 1: attack, movement)
+ - reactions: Event-triggered mechanics (phase 2: opportunity attack)
 """
 
 from .damage import (
@@ -27,9 +30,8 @@ from .reach import (
 
 from .armor import (
     ArmorPiece,
-    calculate_total_armor_absorption,
-    calculate_total_mgt,
-    apply_overpower_degradation,
+    ArmorSystem,
+    HitzoneResolver,
 )
 
 from .critical import (
@@ -66,6 +68,23 @@ from .stamina import (
     CombatModifiers,
     DEFAULT_COMBAT_MODIFIERS,
     THRESHOLDS,
+    FatigueCondition,
+    create_fatigue_condition,
+)
+
+from .actions import (
+    ActionCategory,
+    ActionCost,
+    ActionResult,
+    AttackAction,
+    MovementAction,
+)
+
+from .reactions import (
+    ReactionCategory,
+    ReactionResult,
+    Reaction,
+    OpportunityAttackReaction,
 )
 
 __all__ = [
@@ -81,9 +100,8 @@ __all__ = [
     "calculate_mandatory_ep_loss",
     # Armor
     "ArmorPiece",
-    "calculate_total_armor_absorption",
-    "calculate_total_mgt",
-    "apply_overpower_degradation",
+    "ArmorSystem",
+    "HitzoneResolver",
     # Critical
     "CriticalContext",
     "is_critical_hit",
@@ -112,4 +130,17 @@ __all__ = [
     "CombatModifiers",
     "DEFAULT_COMBAT_MODIFIERS",
     "THRESHOLDS",
+    "FatigueCondition",
+    "create_fatigue_condition",
+    # Actions
+    "ActionCategory",
+    "ActionCost",
+    "ActionResult",
+    "AttackAction",
+    "MovementAction",
+    # Reactions
+    "ReactionCategory",
+    "ReactionResult",
+    "Reaction",
+    "OpportunityAttackReaction",
 ]

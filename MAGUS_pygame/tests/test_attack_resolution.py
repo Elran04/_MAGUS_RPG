@@ -14,7 +14,7 @@ import pytest
 
 from domain.entities import Unit, Weapon
 from domain.value_objects import Position, ResourcePool, Attributes, CombatStats, Facing
-from domain.mechanics.armor import ArmorPiece
+from domain.mechanics.armor import ArmorPiece, ArmorSystem, HitzoneResolver
 from domain.mechanics.attack_resolution import (
     AttackOutcome,
     calculate_defense_values,
@@ -71,11 +71,11 @@ def defender():
 
 @pytest.fixture
 def armor_set():
-    """Standard armor set."""
-    return [
-        ArmorPiece(id="chest", name="Chainmail", sfe=8, mgt=3),
-        ArmorPiece(id="helm", name="Helmet", sfe=5, mgt=1),
-    ]
+    """Standard armor set using layered, zone-based pieces (chest + helm)."""
+    chest = ArmorPiece(id="chest", name="Chainmail", parts={"mellvért": 8}, mgt=3, layer=1)
+    helm = ArmorPiece(id="helm", name="Helmet", parts={"sisak": 5}, mgt=1, layer=1)
+    system = ArmorSystem([chest, helm])
+    return {"system": system, "chest": chest, "helm": helm}
 
 
 # --- Test Defense Calculation ---
@@ -268,6 +268,7 @@ class TestAttackOutcomes:
             base_damage_roll=6,
             weapon_skill_level=2,
         )
+        assert result.hit_zone is not None
         
         # This is BOTH critical and overpower - devastating combo!
         assert result.outcome == AttackOutcome.CRITICAL_OVERPOWER
@@ -291,6 +292,7 @@ class TestAttackOutcomes:
             base_damage_roll=8,
             weapon_skill_level=2,
         )
+        assert result.hit_zone is not None
         
         assert result.outcome == AttackOutcome.CRITICAL
         assert result.is_critical
@@ -305,7 +307,7 @@ class TestAttackOutcomes:
 class TestCriticalOverpowerCombination:
     """Test the devastating combination of critical + overpower."""
     
-    def test_critical_and_overpower_both_active(self, attacker, defender, basic_weapon, armor_set):
+    def test_critical_and_overpower_both_active(self, attacker, defender, basic_weapon, armor_set, monkeypatch):
         """When both critical and overpower occur, both effects apply."""
         attacker.weapon = basic_weapon
         defender.weapon = basic_weapon
@@ -316,12 +318,15 @@ class TestCriticalOverpowerCombination:
         # VÉ: 60 + 8 = 68
         # 157 > 68 + 50 → Also OVERPOWER
         
+        # Force chest hit zone for deterministic degradation assertion
+        monkeypatch.setattr(HitzoneResolver, "resolve", classmethod(lambda cls, rng=None: "mellvért"))
+        defender.armor_system = armor_set["system"]
+
         result = resolve_attack(
             attacker, defender,
             attack_roll=97,
             base_damage_roll=10,
             weapon_skill_level=2,
-            defender_armor=armor_set,
         )
         
         # Should be marked as CRITICAL_OVERPOWER (distinct outcome)
@@ -337,34 +342,37 @@ class TestCriticalOverpowerCombination:
         # Overpower effects:
         # - Armor degraded (even though damage ignores it)
         # - Goes to EP (already from critical)
-        
+
         assert result.damage_to_ep > 0
         assert result.damage_to_fp == 0
-        assert result.armor_degraded  # Overpower still degrades armor!
+        assert result.armor_degraded  # Overpower still degrades armor (zone-specific)!
+        # Only chest (mellvért) should degrade on chest hit
+        assert armor_set["chest"].get_sfé("mellvért") == 7
     
-    def test_critical_overpower_ignores_armor(self, attacker, defender, basic_weapon, armor_set):
+    def test_critical_overpower_ignores_armor(self, attacker, defender, basic_weapon, armor_set, monkeypatch):
         """Critical component ignores armor even with overpower."""
         attacker.weapon = basic_weapon
         defender.weapon = basic_weapon
-        
+
+        defender.armor_system = armor_set["system"]
         # Record original armor values
-        original_chest_sfe = armor_set[0].current_sfe
-        original_helm_sfe = armor_set[1].current_sfe
+        original_chest_sfe = armor_set["chest"].get_sfé("mellvért")
+        original_helm_sfe = armor_set["helm"].get_sfé("sisak")
         
+        # Force hit zone to chest for deterministic check
+        monkeypatch.setattr(HitzoneResolver, "resolve", classmethod(lambda cls, rng=None: "mellvért"))
         result = resolve_attack(
             attacker, defender,
             attack_roll=97,  # Critical
             base_damage_roll=10,
             weapon_skill_level=2,
-            defender_armor=armor_set,
         )
         
         # Damage should ignore armor (critical effect)
         assert result.armor_absorbed == 0
-        
-        # But armor still degrades (overpower effect)
-        assert armor_set[0].current_sfe == original_chest_sfe - 1
-        assert armor_set[1].current_sfe == original_helm_sfe - 1
+        # Overpower degrades only the hit zone's outermost layer
+        assert armor_set["chest"].get_sfé("mellvért") == original_chest_sfe - 1
+        assert armor_set["helm"].get_sfé("sisak") == original_helm_sfe  # Helm unchanged on chest hit
     
     def test_critical_overpower_damage_multiplier(self, attacker, defender, basic_weapon):
         """Critical+overpower uses critical damage multiplier."""
@@ -499,56 +507,58 @@ class TestArmorInCombat:
             attacker, defender,
             attack_roll=45,
             base_damage_roll=10,
-            defender_armor=[],
         )
         
         # With armor
+        defender.armor_system = armor_set["system"]
         result_with_armor = resolve_attack(
             attacker, defender,
             attack_roll=45,
             base_damage_roll=10,
-            defender_armor=armor_set,
         )
         
         # Armor should reduce damage
         assert result_with_armor.damage_to_fp < result_no_armor.damage_to_fp
         assert result_with_armor.armor_absorbed > 0
     
-    def test_overpower_degrades_armor(self, attacker, defender, basic_weapon, armor_set):
+    def test_overpower_degrades_armor(self, attacker, defender, basic_weapon, armor_set, monkeypatch):
         """Overpower strike degrades armor."""
         attacker.weapon = basic_weapon
         
-        original_chest = armor_set[0].current_sfe
-        original_helm = armor_set[1].current_sfe
+        defender.armor_system = armor_set["system"]
+        original_chest = armor_set["chest"].get_sfé("mellvért")
+        original_helm = armor_set["helm"].get_sfé("sisak")
         
+        # Force chest hit to test deterministic degradation
+        monkeypatch.setattr(HitzoneResolver, "resolve", classmethod(lambda cls, rng=None: "mellvért"))
         result = resolve_attack(
             attacker, defender,
             attack_roll=88,
             base_damage_roll=10,
-            defender_armor=armor_set,
         )
         
         assert result.is_overpower
         assert result.armor_degraded
-        assert armor_set[0].current_sfe == original_chest - 1
-        assert armor_set[1].current_sfe == original_helm - 1
+        assert armor_set["chest"].get_sfé("mellvért") == original_chest - 1
+        # Helm should be unchanged since hit zone is chest
+        assert armor_set["helm"].get_sfé("sisak") == original_helm
     
     def test_normal_hit_preserves_armor(self, attacker, defender, basic_weapon, armor_set):
         """Normal hit doesn't degrade armor."""
         attacker.weapon = basic_weapon
         
-        original_chest = armor_set[0].current_sfe
+        defender.armor_system = armor_set["system"]
+        original_chest = armor_set["chest"].get_sfé("mellvért")
         
         result = resolve_attack(
             attacker, defender,
             attack_roll=45,
             base_damage_roll=10,
-            defender_armor=armor_set,
         )
         
         assert not result.is_overpower
         assert not result.armor_degraded
-        assert armor_set[0].current_sfe == original_chest  # Unchanged
+        assert armor_set["chest"].get_sfé("mellvért") == original_chest  # Unchanged
 
 
 if __name__ == "__main__":

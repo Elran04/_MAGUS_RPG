@@ -20,8 +20,9 @@ from domain.entities import Unit, Weapon
 from domain.value_objects import DamageResult
 from domain.mechanics.damage import DamageContext, calculate_final_damage
 from domain.mechanics.critical import is_critical_hit, get_critical_damage_multiplier
-from domain.mechanics.armor import ArmorPiece, apply_overpower_degradation
+from domain.mechanics.armor import HitzoneResolver
 from domain.mechanics.reach import calculate_mandatory_ep_loss
+from domain.mechanics.stamina import Stamina
 
 
 class AttackOutcome(Enum):
@@ -91,6 +92,10 @@ class AttackResult:
     
     requires_dodge_check: bool = False
     dodge_success: Optional[bool] = None
+    # Stamina integration
+    stamina_spent_defender: int = 0  # Additional stamina cost not represented by damage_to_fp (e.g., dodge attempt)
+    # New armor integration
+    hit_zone: Optional[str] = None
 
 
 def calculate_defense_values(
@@ -175,13 +180,16 @@ def resolve_attack(
     attack_roll: int,
     base_damage_roll: int,
     weapon: Optional[Weapon] = None,
-    defender_armor: Optional[list[ArmorPiece]] = None,
     weapon_skill_level: int = 0,
     shield_ve: int = 0,
     dodge_modifier: int = 0,
     attacker_conditions: int = 0,
     defender_conditions: int = 0,
     overpower_threshold: int = 50,
+    # Stamina modifiers (optional): dicts passed to Stamina.apply_cost
+    stamina_block: Optional[dict] = None,
+    stamina_parry: Optional[dict] = None,
+    stamina_dodge: Optional[dict] = None,
 ) -> AttackResult:
     """
     Resolve complete attack with all MAGUS rules.
@@ -192,7 +200,6 @@ def resolve_attack(
         attack_roll: d100 attack roll
         base_damage_roll: Base weapon damage roll
         weapon: Weapon used (defaults to attacker's weapon)
-        defender_armor: List of defender's armor pieces
         weapon_skill_level: Attacker's skill with weapon
         shield_ve: Defender's shield VÉ bonus
         dodge_modifier: Defender's dodge skill modifier
@@ -206,8 +213,7 @@ def resolve_attack(
     if weapon is None:
         weapon = attacker.weapon
     
-    if defender_armor is None:
-        defender_armor = []
+    # Armor is sourced from defender.armor_system (if present)
     
     # Check for critical hit first (affects everything)
     is_crit = is_critical_hit(attack_roll, weapon_skill_level)
@@ -221,6 +227,7 @@ def resolve_attack(
     hit = False
     requires_dodge = False
     is_overpower_strike = False
+    stamina_spent_defender = 0
     
     # Check for overpower first (independent of hit/miss)
     if all_te > defense.all_ve + overpower_threshold:
@@ -252,6 +259,12 @@ def resolve_attack(
         outcome = AttackOutcome.DODGE_ATTEMPT
         requires_dodge = True
         hit = True  # Pending dodge check
+        # Dodge always costs stamina even if it would fail; apply immediately as an action cost
+        # Placeholder base cost aligned with "action points" concept
+        DODGE_STAMINA_BASE_COST = 6
+        # Compute stamina using temporary Stamina adapter over FP pool
+        temp_sta = Stamina(max_stamina=defender.fp.maximum, current_stamina=defender.fp.current, attribute_ref=defender.attributes.endurance if hasattr(defender.attributes, 'endurance') else 10)
+        stamina_spent_defender = temp_sta.apply_cost(DODGE_STAMINA_BASE_COST, stamina_dodge or {"min_cost": 1})
     else:
         # Normal hit
         hit = True
@@ -270,19 +283,20 @@ def resolve_attack(
     
     if hit and not requires_dodge:  # Don't calculate damage until dodge resolved
         # Determine armor absorption
-        from domain.mechanics.armor import calculate_total_armor_absorption
-        armor_sfe = calculate_total_armor_absorption(defender_armor)
-        
-        # Overpower degrades armor before applying (even if critical will ignore it)
-        if is_overpower_strike and armor_sfe > 0:
-            apply_overpower_degradation(defender_armor)
-            armor_degraded = True
-            # Recalculate after degradation
-            armor_sfe = calculate_total_armor_absorption(defender_armor)
-        
-        # Critical hits ignore armor (after degradation if overpower)
-        if is_crit:
-            armor_sfe = 0
+        # Resolve hit zone (main part); used for layered armor systems
+        resolved_zone: Optional[str] = HitzoneResolver.resolve()
+
+        armor_sfe = 0
+        # Prefer defender's ArmorSystem if available
+        if hasattr(defender, "armor_system") and defender.armor_system is not None:
+            # Overpower degrades the outermost layer at that zone before applying armor
+            if is_overpower_strike and resolved_zone is not None:
+                defender.armor_system.reduce_sfe(resolved_zone, 1)
+                armor_degraded = True
+            # Critical ignores armor; otherwise use zone-specific SFE
+            if not is_crit and resolved_zone is not None:
+                armor_sfe = defender.armor_system.get_sfe_for_hit(resolved_zone)
+        # No legacy fallback; if no armor system, armor_sfe remains 0
         
         # Apply critical damage multiplier
         damage_multiplier = 1
@@ -298,10 +312,22 @@ def resolve_attack(
         
         # Determine where damage goes based on outcome
         if outcome in (AttackOutcome.BLOCKED, AttackOutcome.PARRIED):
-            # Block/parry: damage goes to FP only
-            # TODO: Apply block/parry skill modifiers to reduce FP damage
-            damage_to_fp = damage_result.final_damage
-            armor_absorbed = damage_result.armor_absorbed
+            # Block/parry: stamina cost based on RAW incoming damage (no armor absorption)
+            # Calculate damage WITHOUT armor to get true weapon impact
+            damage_ctx_no_armor = DamageContext(
+                charge_multiplier=damage_multiplier,
+                armor_absorption=0  # No armor absorption during active defense
+            )
+            damage_no_armor = calculate_final_damage(attacker, weapon, base_damage_roll, damage_ctx_no_armor)
+            base_fp_cost = damage_no_armor.final_damage
+            
+            temp_sta = Stamina(max_stamina=defender.fp.maximum, current_stamina=defender.fp.current, attribute_ref=defender.attributes.endurance if hasattr(defender.attributes, 'endurance') else 10)
+            if outcome == AttackOutcome.BLOCKED:
+                spent = temp_sta.apply_cost(base_fp_cost, stamina_block or {})
+            else:
+                spent = temp_sta.apply_cost(base_fp_cost, stamina_parry or {})
+            damage_to_fp = spent
+            armor_absorbed = 0  # No armor absorption during block/parry
             
         elif outcome == AttackOutcome.CRITICAL_OVERPOWER:
             # BOTH critical AND overpower: devastating combination
@@ -345,6 +371,8 @@ def resolve_attack(
         armor_degraded=armor_degraded,
         mandatory_ep_loss=mandatory_ep,
         requires_dodge_check=requires_dodge,
+        stamina_spent_defender=stamina_spent_defender,
+        hit_zone=resolved_zone if (hit and not requires_dodge) else None,
     )
 
 
@@ -360,9 +388,13 @@ def apply_attack_result(result: AttackResult, defender: Unit) -> None:
     if not result.hit:
         return
     
-    # Apply FP damage
+    # Apply FP damage (includes block/parry stamina costs when present)
     if result.damage_to_fp > 0:
         defender.spend_fatigue(result.damage_to_fp)
+
+    # Apply additional stamina spend (e.g., dodge attempt costs)
+    if result.stamina_spent_defender > 0:
+        defender.spend_fatigue(result.stamina_spent_defender)
     
     # Apply EP damage (direct + mandatory)
     total_ep_damage = result.damage_to_ep + result.mandatory_ep_loss

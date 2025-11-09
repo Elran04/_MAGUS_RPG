@@ -242,3 +242,42 @@ class Stamina:
             stamina.spend_action_points(5, multiplier=1.5)  # heavy armor penalty
         """
         return self.apply_cost(ap_cost, modifiers or None)
+
+    # ---------- Regeneration helper ----------
+    def regenerate_tick(self, *, resting: bool = False, intense: bool = False) -> int:
+        """Regenerate stamina over time.
+
+        Policy (placeholder, adjustable):
+        - intense=True (in combat/strenuous): 0 recovery
+        - resting=True (out of combat, resting): max(1, floor(0.05 * max))
+        - default (light activity): max(1, floor(0.02 * max))
+
+        Returns recovered amount actually applied.
+        """
+        if intense:
+            return 0
+        if resting:
+            amount = max(1, int(self.max_stamina * 0.05))
+        else:
+            amount = max(1, int(self.max_stamina * 0.02))
+        return self.recover(amount)
+
+
+# ---------- Fatigue condition placeholder hook ----------
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class FatigueCondition:
+    """Placeholder fatigue condition to be integrated with conditions system later.
+
+    severity: maps to StaminaState for now; consumers can translate to effects.
+    """
+
+    severity: StaminaState
+    note: str = ""
+
+
+def create_fatigue_condition(state: StaminaState, note: str = "") -> FatigueCondition:
+    """Create a fatigue condition placeholder based on current stamina state."""
+    return FatigueCondition(severity=state, note=note)

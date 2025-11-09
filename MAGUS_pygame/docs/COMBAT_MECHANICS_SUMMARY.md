@@ -18,8 +18,15 @@
 
 ### 3. BLOCKED / PARRIED
 - **Condition**: TÉ falls in block/parry threshold ranges
-- **Damage**: Reduced damage to **FP**
-- **Notes**: Currently same as normal hit, skill modifiers TODO
+  - BLOCKED: base_VÉ < TÉ ≤ block_VÉ (shield defense)
+  - PARRIED: block_VÉ < TÉ ≤ parry_VÉ (weapon defense)
+- **Damage**: Converted to **Stamina cost** (FP drain)
+- **Stamina Cost**: Based on RAW incoming weapon damage (NO armor absorption)
+  - Higher damage weapons (e.g., warhammer) cost more stamina to block/parry
+  - Lower damage weapons (e.g., knife) cost less stamina to block/parry
+  - Modified by defender's blocking/parrying skill level
+  - **Armor does NOT reduce stamina cost** - active defense negates armor benefit
+- **Example**: Blocking a 2d8+3 warhammer (damage 8) costs significantly more stamina than blocking a 1d4 knife (damage 2), regardless of armor worn
 
 ### 4. CRITICAL (Pure)
 - **Condition**: Attack roll ≥ critical threshold (based on weapon skill)
@@ -58,9 +65,13 @@
   - Both is_critical and is_overpower flags are True
 
 ### 7. DODGE_ATTEMPT
-- **Condition**: TÉ > dodge_VÉ
+- **Condition**: parry_VÉ < TÉ ≤ dodge_VÉ
 - **Effect**: Requires Gyorsaság (speed) check
-- **Notes**: Dodge resolution TODO
+- **Stamina Cost**: Fixed base cost (6 points) modified by dodge skill
+  - Unlike block/parry, dodge cost is independent of incoming damage
+  - Represents physical exertion of evasive movement
+  - Stamina spent immediately, even if dodge check fails
+- **Notes**: Dodge success resolution TODO
 
 ## Key Mechanics
 

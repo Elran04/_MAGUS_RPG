@@ -5,6 +5,8 @@ Value Objects - Immutable data structures for domain concepts.
 from dataclasses import dataclass, field
 from typing import Optional
 
+from .scenario_config import UnitSetup, ScenarioConfig
+
 
 @dataclass(frozen=True)
 class Position:

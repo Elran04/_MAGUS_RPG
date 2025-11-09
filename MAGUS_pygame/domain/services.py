@@ -6,6 +6,7 @@ from typing import Optional
 import uuid
 
 from domain.entities import Unit, Weapon
+from domain.mechanics.armor import ArmorPiece, ArmorSystem
 from domain.value_objects import Position, CombatStats, ResourcePool, Attributes, Facing
 from infrastructure.repositories import CharacterRepository, EquipmentRepository
 from logger.logger import get_logger
@@ -94,6 +95,9 @@ class UnitFactory:
             
             # Load weapon if equipped
             self._equip_primary_weapon(unit, char_data)
+
+            # Initialize armor system (optional equipment)
+            unit.armor_system = self._build_armor_system(char_data)
             
             logger.info(f"Created unit: {name} at {position}")
             return unit
@@ -151,3 +155,48 @@ class UnitFactory:
             can_disarm=weapon_data.get("can_disarm", False),
             can_break_weapon=weapon_data.get("can_break_weapon", False),
         )
+
+    def _build_armor_system(self, char_data: dict) -> ArmorSystem:
+        """Construct an ArmorSystem from character equipment if armor items listed.
+
+        Expected format inside character JSON: under 'Felszerelés' each dict item
+        may have category 'armor' and id referencing armor.json entries.
+        Layer derived directly from armor JSON 'layer'.
+        """
+        equipment_data = char_data.get("Felszerelés")
+        items: list[dict] = []
+        if isinstance(equipment_data, dict):
+            items = equipment_data.get("items", []) or []
+        elif isinstance(equipment_data, list):
+            items = equipment_data
+
+        armor_pieces: list[ArmorPiece] = []
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            if item.get("category") != "armor":
+                continue
+            armor_id = item.get("id")
+            if not armor_id:
+                continue
+            armor_data = self.equipment_repo.find_armor_by_id(armor_id)
+            if not armor_data:
+                continue
+            parts = armor_data.get("parts", {}) or {}
+            apiece = ArmorPiece(
+                id=armor_data.get("id", armor_id),
+                name=armor_data.get("name", armor_id),
+                parts=parts,
+                mgt=armor_data.get("mgt", 0),
+                armor_type=armor_data.get("armor_type", "leather"),
+                layer=int(armor_data.get("layer", 3)),
+                protection_overrides=armor_data.get("protection_overrides", {}) or {},
+            )
+            armor_pieces.append(apiece)
+
+        system = ArmorSystem(armor_pieces)
+        ok, msg = system.validate_no_overlap_same_layer()
+        if not ok:
+            # Log and still return system (can be fixed later in UI loadout)
+            logger.warning(f"Armor overlap detected: {msg}")
+        return system
