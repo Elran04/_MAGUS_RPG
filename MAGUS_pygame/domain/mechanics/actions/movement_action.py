@@ -9,23 +9,24 @@ Pure domain computation: does not mutate units. Returns instructions in ActionRe
 - intersection_index: index in path where ZoC is first entered (if any)
 - final_destination: destination if uninterrupted
 """
+
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Optional, Iterable
 
 from domain.entities import Unit
-from domain.value_objects import Position
 from domain.mechanics.reach import compute_reach_hexes
-from .base import Action, ActionCategory, ActionCost, ActionResult
+from domain.value_objects import Position
 
+from .base import Action, ActionCategory, ActionCost, ActionResult
 
 # Hex neighbor offsets (axial coordinates)
 NEIGHBORS = ((1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1))
 
 
 def bfs_path(
-    start: tuple[int, int], end: tuple[int, int], blocked: Optional[set[tuple[int, int]]] = None
+    start: tuple[int, int], end: tuple[int, int], blocked: set[tuple[int, int]] | None = None
 ) -> list[tuple[int, int]]:
     """Breadth-first search shortest path on hex grid."""
     if start == end:
@@ -52,7 +53,7 @@ def bfs_path(
 
 def path_intersects_zone(
     path: list[tuple[int, int]], zone: set[tuple[int, int]]
-) -> tuple[bool, Optional[int]]:
+) -> tuple[bool, int | None]:
     """Check if path (excluding start) enters any zone hex. Returns (bool, index)."""
     for i, hex_pos in enumerate(path):
         if i > 0 and hex_pos in zone:
@@ -65,7 +66,7 @@ class MovementAction(Action):
     """Compute movement feasibility and path on hex grid."""
 
     ap_per_hex: int = 2
-    max_range: Optional[int] = None  # Optional hard cap independent of AP
+    max_range: int | None = None  # Optional hard cap independent of AP
 
     @property
     def category(self) -> ActionCategory:
@@ -82,9 +83,9 @@ class MovementAction(Action):
         unit: Unit,
         start: Position,
         dest: Position,
-        enemy: Optional[Unit] = None,
+        enemy: Unit | None = None,
         ap_available: int,
-        blocked: Optional[Iterable[tuple[int, int]]] = None,
+        blocked: Iterable[tuple[int, int]] | None = None,
         **_: object,
     ) -> tuple[bool, str]:
         if unit is None:
@@ -102,9 +103,9 @@ class MovementAction(Action):
         unit: Unit,
         start: Position,
         dest: Position,
-        enemy: Optional[Unit] = None,
+        enemy: Unit | None = None,
         ap_available: int,
-        blocked: Optional[Iterable[tuple[int, int]]] = None,
+        blocked: Iterable[tuple[int, int]] | None = None,
     ) -> ActionResult:
         # Build blocked set and ensure enemy position is blocked to avoid stacking
         blocked_set: set[tuple[int, int]] = set(blocked or [])
@@ -129,7 +130,7 @@ class MovementAction(Action):
 
         # Compute enemy zone of control for potential reactions
         intersects = False
-        intersection_index: Optional[int] = None
+        intersection_index: int | None = None
         if enemy is not None:
             zone = compute_reach_hexes(enemy, enemy.weapon)
             intersects, intersection_index = path_intersects_zone(path, zone)

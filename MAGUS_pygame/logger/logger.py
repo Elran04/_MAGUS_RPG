@@ -5,8 +5,8 @@ Központi logging konfiguráció a MAGUS pygame projekthez.
 import logging
 import sys
 from datetime import datetime
-from pathlib import Path
 from typing import Optional
+
 from config import LOGS_DIR
 
 

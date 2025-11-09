@@ -1,151 +1,259 @@
 """
-Hex Grid Utilities - Coordinate conversion and distance calculation.
+Hex Grid Utilities - Coordinate conversion, distance calculation, and rendering.
+
+Supports camera transformations for future zoom/pan features.
 """
 
 import math
-from typing import Tuple
 
-from domain.value_objects import Position
+import pygame
+from config import (
+    ATTACKABLE_TINT,
+    CHARGE_AREA_TINT,
+    CHARGE_TINT,
+    ENEMY_ZONE_TINT,
+    HEIGHT,
+    HEX_BORDER,
+    HEX_SIZE,
+    HIGHLIGHT_BORDER_WIDTH,
+    HIGHLIGHT_COLOR,
+    HOVER_TINT,
+    REACHABLE_TINT,
+    WIDTH,
+)
+from config import (
+    HEX_COLOR as HEX_COLOR_OUTLINE,
+)
+
+# Grid origin offset (can be modified by camera)
+HEX_OFFSET_X = WIDTH // 2
+HEX_OFFSET_Y = HEIGHT // 2
 
 
-# Hex grid constants (will be moved to config if needed)
-HEX_SIZE = 40
-HEX_OFFSET_X = 400
-HEX_OFFSET_Y = 300
+def get_grid_bounds() -> tuple[int, int, int, int]:
+    """Calculate grid bounds to fill the screen.
 
-
-def hex_to_pixel(position: Position) -> Tuple[int, int]:
+    Returns:
+        (min_q, max_q, min_r, max_r) tuple
     """
-    Convert hex cube coordinates to pixel coordinates (pointy-top hexagons).
-    
+    hex_width = HEX_SIZE * math.sqrt(3)
+    vert_spacing = HEX_SIZE * 1.5
+    # Use a wide enough range to cover the screen
+    min_q = -int(WIDTH // hex_width)
+    max_q = int(WIDTH // hex_width) * 2
+    min_r = -int(HEIGHT // vert_spacing)
+    max_r = int(HEIGHT // vert_spacing) * 2
+    return min_q, max_q, min_r, max_r
+
+
+def hex_to_pixel(q: int, r: int) -> tuple[int, int]:
+    """Convert hex coordinates to pixel coordinates (pointy-topped).
+
     Args:
-        position: Hex position
-        
+        q: Hex Q coordinate
+        r: Hex R coordinate
+
     Returns:
         (x, y) pixel coordinates
     """
-    q, r = position.q, position.r
-    x = HEX_SIZE * (3/2 * q) + HEX_OFFSET_X
-    y = HEX_SIZE * (math.sqrt(3)/2 * q + math.sqrt(3) * r) + HEX_OFFSET_Y
+    x = HEX_SIZE * math.sqrt(3) * (q + r / 2) + HEX_OFFSET_X
+    y = HEX_SIZE * 3 / 2 * r + HEX_OFFSET_Y
     return int(x), int(y)
 
 
-def pixel_to_hex(x: int, y: int) -> Position:
-    """
-    Convert pixel coordinates to hex cube coordinates.
-    
+def pixel_to_hex(x: int, y: int) -> tuple[int, int]:
+    """Convert pixel coordinates to hex coordinates (inverse of hex_to_pixel).
+
     Args:
         x: Pixel x coordinate
         y: Pixel y coordinate
-        
+
     Returns:
-        Position in hex coordinates
+        (q, r) hex coordinates
     """
-    x = (x - HEX_OFFSET_X) / HEX_SIZE
-    y = (y - HEX_OFFSET_Y) / HEX_SIZE
-    
-    q = (2/3) * x
-    r = (-1/3 * x + math.sqrt(3)/3 * y)
-    
-    return hex_round(q, r)
+    x_adj = x - HEX_OFFSET_X
+    y_adj = y - HEX_OFFSET_Y
+
+    q = x_adj / (HEX_SIZE * math.sqrt(3)) - y_adj / (HEX_SIZE * 3 / 2) / 2
+    r = y_adj / (HEX_SIZE * 3 / 2)
+
+    # Round to nearest hex
+    rq = round(q)
+    rr = round(r)
+    return rq, rr
 
 
-def hex_round(q: float, r: float) -> Position:
-    """
-    Round fractional hex coordinates to nearest hex.
-    
+def hex_distance(q1: int, r1: int, q2: int, r2: int) -> int:
+    """Compute distance between two axial hex coordinates.
+
+    Uses cube coordinates (x=q, z=r, y=-x-z) and Chebyshev distance.
+
     Args:
-        q: Fractional q coordinate
-        r: Fractional r coordinate
-        
+        q1, r1: First hex coordinates
+        q2, r2: Second hex coordinates
+
     Returns:
-        Rounded Position
+        Distance in hexes
     """
-    s = -q - r
-    
-    q_round = round(q)
-    r_round = round(r)
-    s_round = round(s)
-    
-    q_diff = abs(q_round - q)
-    r_diff = abs(r_round - r)
-    s_diff = abs(s_round - s)
-    
-    if q_diff > r_diff and q_diff > s_diff:
-        q_round = -r_round - s_round
-    elif r_diff > s_diff:
-        r_round = -q_round - s_round
-    
-    return Position(q=q_round, r=r_round)
+    x1, z1, y1 = q1, r1, -q1 - r1
+    x2, z2, y2 = q2, r2, -q2 - r2
+    return max(abs(x1 - x2), abs(y1 - y2), abs(z1 - z2))
 
 
-def get_hex_neighbors(position: Position) -> list[Position]:
-    """
-    Get all 6 adjacent hex positions.
-    
+def hexes_in_range(q0: int, r0: int, rng: int) -> set[tuple[int, int]]:
+    """Return a set of axial hexes within range from (q0, r0).
+
     Args:
-        position: Center hex position
-        
+        q0, r0: Center hex coordinates
+        rng: Range radius
+
     Returns:
-        List of 6 neighboring positions
+        Set of (q, r) tuples within range
     """
-    # Hex cube coordinate directions (pointy-top)
-    directions = [
-        (1, 0),   # East
-        (1, -1),  # North-East
-        (0, -1),  # North-West
-        (-1, 0),  # West
-        (-1, 1),  # South-West
-        (0, 1),   # South-East
-    ]
-    
-    return [
-        Position(q=position.q + dq, r=position.r + dr)
-        for dq, dr in directions
-    ]
+    result = set()
+    for dq in range(-rng, rng + 1):
+        dr_min = max(-rng, -dq - rng)
+        dr_max = min(rng, -dq + rng)
+        for dr in range(dr_min, dr_max + 1):
+            result.add((q0 + dq, r0 + dr))
+    return result
 
 
-def get_hex_range(center: Position, radius: int) -> list[Position]:
-    """
-    Get all hexes within a given range.
-    
+def _hex_points(center: tuple[int, int], size: int) -> list[tuple[float, float]]:
+    """Return the list of 6 vertex points for a hex at center with given size.
+
     Args:
-        center: Center position
-        radius: Maximum distance
-        
+        center: (x, y) pixel center of hex
+        size: Hex size
+
     Returns:
-        List of positions within range (including center)
+        List of 6 vertex points
     """
-    results = []
-    for q in range(-radius, radius + 1):
-        r1 = max(-radius, -q - radius)
-        r2 = min(radius, -q + radius)
-        for r in range(r1, r2 + 1):
-            pos = Position(q=center.q + q, r=center.r + r)
-            results.append(pos)
-    return results
+    points = []
+    for i in range(6):
+        angle = math.pi / 180 * (60 * i - 30)
+        x = center[0] + size * math.cos(angle)
+        y = center[1] + size * math.sin(angle)
+        points.append((x, y))
+    return points
 
 
-def line_to_hex(start: Position, end: Position) -> list[Position]:
-    """
-    Get all hexes along a line between two positions.
-    
+def draw_hex(
+    surface: pygame.Surface,
+    color: tuple[int, int, int],
+    pos: tuple[int, int],
+    size: int,
+    border: int = 2,
+) -> None:
+    """Draw a single hex border at pos (center) with given size.
+
+    The interior is left transparent so backgrounds remain visible.
+
     Args:
-        start: Starting position
-        end: Ending position
-        
-    Returns:
-        List of positions forming the line
+        surface: Surface to draw on
+        color: Border color
+        pos: (x, y) center position
+        size: Hex size
+        border: Border width
     """
-    distance = start.distance_to(end)
-    if distance == 0:
-        return [start]
-    
-    results = []
-    for i in range(distance + 1):
-        t = i / distance
-        q = start.q + (end.q - start.q) * t
-        r = start.r + (end.r - start.r) * t
-        results.append(hex_round(q, r))
-    
-    return results
+    points = _hex_points(pos, size)
+    pygame.draw.polygon(surface, color, points, border)
+
+
+def draw_hex_outline(
+    surface: pygame.Surface,
+    x: int,
+    y: int,
+    color: tuple[int, int, int] = HEX_COLOR_OUTLINE,
+    width: int = 2,
+) -> None:
+    """Draw a hex outline at pixel position.
+
+    Args:
+        surface: Surface to draw on
+        x, y: Pixel coordinates
+        color: Outline color
+        width: Line width
+    """
+    points = _hex_points((x, y), HEX_SIZE)
+    pygame.draw.polygon(surface, color, points, width)
+
+
+def draw_grid(
+    screen: pygame.Surface,
+    min_q: int,
+    max_q: int,
+    min_r: int,
+    max_r: int,
+    sprite_positions: dict[tuple[int, int], pygame.Surface] | None = None,
+    reachable_hexes: set[tuple[int, int]] | None = None,
+    attackable_hexes: set[tuple[int, int]] | None = None,
+    charge_area_hexes: set[tuple[int, int]] | None = None,
+    charge_targets: set[tuple[int, int]] | None = None,
+    enemy_zone_hexes: set[tuple[int, int]] | None = None,
+    highlight_hex: tuple[int, int] | None = None,
+) -> None:
+    """Draw the hex grid and any sprites at their positions.
+
+    Args:
+        screen: pygame screen surface
+        min_q, max_q, min_r, max_r: grid bounds
+        sprite_positions: dict of {(q, r): sprite_surface} to draw
+        reachable_hexes: set of (q, r) within movement range
+        attackable_hexes: set of (q, r) within attack range
+        charge_area_hexes: set of (q, r) in chargeable range (4+ hexes away)
+        charge_targets: set of (q, r) valid for charge attacks (enemy positions)
+        enemy_zone_hexes: set of (q, r) in enemy's zone of control
+        highlight_hex: (q, r) hex to draw as hovered
+    """
+    margin = HEX_SIZE * 2
+    # Draw semi-transparent overlays onto a separate surface for correct alpha blending
+    overlay_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+
+    # Pass 1: draw base hex borders and accumulate overlay fills
+    for q in range(min_q, max_q):
+        for r in range(min_r, max_r):
+            px, py = hex_to_pixel(q, r)
+            if -margin < px < WIDTH + margin and -margin < py < HEIGHT + margin:
+                # Base hex border (interior transparent)
+                draw_hex(screen, HEX_BORDER, (px, py), HEX_SIZE)
+
+                # Compute polygon points once
+                points = _hex_points((px, py), HEX_SIZE)
+
+                # Accumulate semi-transparent fills (order matters - later = on top)
+                # 1. Base ranges (movement/charge area)
+                if reachable_hexes and (q, r) in reachable_hexes:
+                    pygame.draw.polygon(overlay_surface, REACHABLE_TINT, points, 0)
+                if charge_area_hexes and (q, r) in charge_area_hexes:
+                    pygame.draw.polygon(overlay_surface, CHARGE_AREA_TINT, points, 0)
+                # 2. Attack ranges
+                if attackable_hexes and (q, r) in attackable_hexes:
+                    pygame.draw.polygon(overlay_surface, ATTACKABLE_TINT, points, 0)
+                if charge_targets and (q, r) in charge_targets:
+                    pygame.draw.polygon(overlay_surface, CHARGE_TINT, points, 0)
+                # 3. Enemy zone (rendered on top so it's visible as warning)
+                if enemy_zone_hexes and (q, r) in enemy_zone_hexes:
+                    pygame.draw.polygon(overlay_surface, ENEMY_ZONE_TINT, points, 0)
+                # 4. Hover highlight (always on top)
+                if highlight_hex is not None and (q, r) == highlight_hex:
+                    pygame.draw.polygon(overlay_surface, HOVER_TINT, points, 0)
+
+    # Blit accumulated overlays once (under sprites)
+    screen.blit(overlay_surface, (0, 0))
+
+    # Pass 2: draw sprites above overlays
+    if sprite_positions:
+        for (sq, sr), sprite in sprite_positions.items():
+            spx, spy = hex_to_pixel(sq, sr)
+            if -margin < spx < WIDTH + margin and -margin < spy < HEIGHT + margin:
+                rect = sprite.get_rect(center=(spx, spy))
+                screen.blit(sprite, rect)
+
+    # On-top overlay: hover border only (no fill)
+    if highlight_hex is not None:
+        hq, hr = highlight_hex
+        hpx, hpy = hex_to_pixel(hq, hr)
+        if -margin < hpx < WIDTH + margin and -margin < hpy < HEIGHT + margin:
+            hpoints = _hex_points((hpx, hpy), HEX_SIZE)
+            pygame.draw.polygon(screen, HIGHLIGHT_COLOR, hpoints, HIGHLIGHT_BORDER_WIDTH)

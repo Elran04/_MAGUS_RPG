@@ -5,19 +5,20 @@ This action is pure: it computes attack resolution and returns an ActionResult
 containing an AttackResult payload. The application layer is responsible for
 applying the effects to the defender (mutating EP/FP) using apply_attack_result.
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Optional
 import random
+from dataclasses import dataclass
 
 from domain.entities import Unit, Weapon
 from domain.mechanics.attack_resolution import (
-    resolve_attack,
-    apply_attack_result,
     AttackResult as CoreAttackResult,
 )
-from domain.mechanics.armor import ArmorPiece
+from domain.mechanics.attack_resolution import (
+    resolve_attack,
+)
+
 from .base import Action, ActionCategory, ActionCost, ActionResult
 
 
@@ -40,7 +41,7 @@ class AttackAction(Action):
         *,
         attacker: Unit,
         defender: Unit,
-        weapon: Optional[Weapon] = None,
+        weapon: Weapon | None = None,
         attacker_conditions: int = 0,
         defender_conditions: int = 0,
         shield_ve: int = 0,
@@ -60,19 +61,18 @@ class AttackAction(Action):
         *,
         attacker: Unit,
         defender: Unit,
-        attack_roll: Optional[int] = None,
-        base_damage_roll: Optional[int] = None,
-        weapon: Optional[Weapon] = None,
-        defender_armor: Optional[list[ArmorPiece]] = None,
+        attack_roll: int | None = None,
+        base_damage_roll: int | None = None,
+        weapon: Weapon | None = None,
         weapon_skill_level: int = 0,
         shield_ve: int = 0,
         dodge_modifier: int = 0,
         attacker_conditions: int = 0,
         defender_conditions: int = 0,
         overpower_threshold: int = 50,
-        stamina_block: Optional[dict] = None,
-        stamina_parry: Optional[dict] = None,
-        stamina_dodge: Optional[dict] = None,
+        stamina_block: dict | None = None,
+        stamina_parry: dict | None = None,
+        stamina_dodge: dict | None = None,
     ) -> ActionResult:
         """Execute basic attack and return domain ActionResult.
 
@@ -86,6 +86,7 @@ class AttackAction(Action):
             wpn = weapon or attacker.weapon
             if wpn is not None:
                 import random as _rand
+
                 base_damage_roll = _rand.randint(wpn.damage_min, wpn.damage_max)
             else:
                 base_damage_roll = 1
@@ -96,7 +97,6 @@ class AttackAction(Action):
             attack_roll=attack_roll,
             base_damage_roll=base_damage_roll,
             weapon=weapon,
-            defender_armor=defender_armor,
             weapon_skill_level=weapon_skill_level,
             shield_ve=shield_ve,
             dodge_modifier=dodge_modifier,

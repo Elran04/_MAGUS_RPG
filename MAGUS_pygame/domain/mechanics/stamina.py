@@ -10,11 +10,11 @@ Design goals:
 - Deterministic, testable functions with clear contracts
 - Hooks for future extensions (regen, conditions, UI)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Tuple, Dict, Iterable
 
 
 class StaminaState(str, Enum):
@@ -37,7 +37,7 @@ class StaminaState(str, Enum):
 
 # Percentage thresholds as boundaries (ratio in 0..1)
 # Ordered from highest to lowest
-THRESHOLDS: Tuple[Tuple[float, StaminaState], ...] = (
+THRESHOLDS: tuple[tuple[float, StaminaState], ...] = (
     (0.80, StaminaState.FRISS),
     (0.60, StaminaState.FELPEZSDULT),
     (0.40, StaminaState.KIFULLADT),
@@ -58,7 +58,7 @@ class CombatModifiers:
 
 
 # Default mapping for derived combat penalties per stamina state (placeholder values)
-DEFAULT_COMBAT_MODIFIERS: Dict[StaminaState, CombatModifiers] = {
+DEFAULT_COMBAT_MODIFIERS: dict[StaminaState, CombatModifiers] = {
     StaminaState.FRISS: CombatModifiers(0, 0),
     StaminaState.FELPEZSDULT: CombatModifiers(-1, -1),
     StaminaState.KIFULLADT: CombatModifiers(-2, -2),
@@ -89,7 +89,7 @@ class Stamina:
     current_stamina: int
     attribute_ref: int
     skill_bonus_max: int = 0
-    combat_modifiers_map: Dict[StaminaState, CombatModifiers] = None
+    combat_modifiers_map: dict[StaminaState, CombatModifiers] = None
 
     def __post_init__(self) -> None:
         if self.combat_modifiers_map is None:
@@ -104,8 +104,8 @@ class Stamina:
         allokepesseg: int,
         skill_bonus_max: int = 0,
         start_full: bool = True,
-        combat_modifiers_map: Optional[Dict[StaminaState, CombatModifiers]] = None,
-    ) -> "Stamina":
+        combat_modifiers_map: dict[StaminaState, CombatModifiers] | None = None,
+    ) -> Stamina:
         """Create Stamina from Állóképesség value.
 
         Base: max = Állóképesség * 10 + skill_bonus_max
@@ -121,7 +121,7 @@ class Stamina:
         )
 
     # ---------- Core ops ----------
-    def apply_cost(self, base_cost: int, modifiers: Optional[Dict] = None) -> int:
+    def apply_cost(self, base_cost: int, modifiers: dict | None = None) -> int:
         """Spend stamina according to base cost and optional modifiers.
 
         Contract:
@@ -155,7 +155,7 @@ class Stamina:
 
         # Flat reduction from specific perks/stances
         if "flat_reduction" in m and m["flat_reduction"] is not None:
-            cost = max(0, cost - max(0, int(m["flat_reduction"])) )
+            cost = max(0, cost - max(0, int(m["flat_reduction"])))
 
         # Multiplicative penalties (heavy armor, conditions, etc.)
         mult = float(m.get("multiplier", 1.0))
@@ -170,7 +170,7 @@ class Stamina:
 
         # Enforce minimum cost if specified (e.g., dodge always costs some stamina)
         if "min_cost" in m and m["min_cost"] is not None:
-            cost = max(cost, max(0, int(m["min_cost"])) )
+            cost = max(cost, max(0, int(m["min_cost"])))
 
         # Apply to pool, clamped at 0
         actual_spent = min(cost, self.current_stamina)
@@ -197,7 +197,7 @@ class Stamina:
             return 0.0
         return max(0.0, min(1.0, self.current_stamina / float(self.max_stamina)))
 
-    def get_state(self) -> Tuple[float, StaminaState]:
+    def get_state(self) -> tuple[float, StaminaState]:
         """Return (ratio, stamina_state)."""
         r = self.ratio()
         # Special-case exact full to be FRISS

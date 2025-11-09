@@ -1,6 +1,6 @@
 from MAGUS_pygame.application.battle_service import BattleService
 from MAGUS_pygame.domain.entities import Unit
-from MAGUS_pygame.domain.value_objects import Position, CombatStats, ResourcePool, Attributes
+from MAGUS_pygame.domain.value_objects import Attributes, CombatStats, Position, ResourcePool
 
 
 def make_unit(uid: str, name: str, speed: int = 15) -> Unit:

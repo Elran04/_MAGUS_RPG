@@ -9,22 +9,19 @@ Tests variable weapon wielding system including:
 """
 
 import pytest
-
 from domain.entities import Unit, Weapon
-from domain.value_objects import Position, ResourcePool, CombatStats, Attributes
 from domain.mechanics.weapon_wielding import (
     WieldMode,
-    WieldingBonuses,
-    WieldingInfo,
-    can_wield_one_handed,
     calculate_wielding_bonuses,
-    get_wielding_mode,
+    can_wield_one_handed,
     get_wielding_info,
+    get_wielding_mode,
     validate_wielding_mode_change,
 )
-
+from domain.value_objects import Attributes, CombatStats, Position, ResourcePool
 
 # --- Fixtures ---
+
 
 @pytest.fixture
 def weak_unit():
@@ -36,7 +33,7 @@ def weak_unit():
         fp=ResourcePool(20, 20),
         ep=ResourcePool(15, 15),
         attributes=Attributes(strength=12, dexterity=10),
-        combat_stats=CombatStats(TE=50, VE=60)
+        combat_stats=CombatStats(TE=50, VE=60),
     )
 
 
@@ -50,7 +47,7 @@ def strong_unit():
         fp=ResourcePool(20, 20),
         ep=ResourcePool(15, 15),
         attributes=Attributes(strength=18, dexterity=16),
-        combat_stats=CombatStats(TE=60, VE=70)
+        combat_stats=CombatStats(TE=60, VE=70),
     )
 
 
@@ -64,7 +61,7 @@ def variable_weapon():
         ve_modifier=8,
         damage_min=5,
         damage_max=15,
-        size_category=3
+        size_category=3,
     )
 
 
@@ -78,11 +75,12 @@ def fixed_weapon():
         ve_modifier=6,
         damage_min=3,
         damage_max=10,
-        size_category=2
+        size_category=2,
     )
 
 
 # --- Test Attribute Requirements ---
+
 
 class TestAttributeRequirements:
     """Test attribute requirement checking for 1-handed wielding."""
@@ -105,7 +103,7 @@ class TestAttributeRequirements:
             fp=ResourcePool(20, 20),
             ep=ResourcePool(15, 15),
             attributes=Attributes(strength=18, dexterity=10),
-            combat_stats=CombatStats(TE=60, VE=70)
+            combat_stats=CombatStats(TE=60, VE=70),
         )
         assert not can_wield_one_handed(unit, variable_weapon, strength_req=16, dex_req=13)
 
@@ -118,7 +116,7 @@ class TestAttributeRequirements:
             fp=ResourcePool(20, 20),
             ep=ResourcePool(15, 15),
             attributes=Attributes(strength=16, dexterity=13),
-            combat_stats=CombatStats(TE=60, VE=70)
+            combat_stats=CombatStats(TE=60, VE=70),
         )
         assert can_wield_one_handed(unit, variable_weapon, strength_req=16, dex_req=13)
 
@@ -131,7 +129,7 @@ class TestAttributeRequirements:
             fp=ResourcePool(20, 20),
             ep=ResourcePool(15, 15),
             attributes=Attributes(strength=15, dexterity=13),
-            combat_stats=CombatStats(TE=60, VE=70)
+            combat_stats=CombatStats(TE=60, VE=70),
         )
         assert not can_wield_one_handed(unit, variable_weapon, strength_req=16, dex_req=13)
 
@@ -144,12 +142,13 @@ class TestAttributeRequirements:
             fp=ResourcePool(20, 20),
             ep=ResourcePool(15, 15),
             attributes=None,
-            combat_stats=CombatStats(TE=60, VE=70)
+            combat_stats=CombatStats(TE=60, VE=70),
         )
         assert not can_wield_one_handed(unit, variable_weapon, strength_req=16, dex_req=13)
 
 
 # --- Test Wielding Bonuses ---
+
 
 class TestWieldingBonuses:
     """Test bonus calculation for 2-handed wielding."""
@@ -157,11 +156,7 @@ class TestWieldingBonuses:
     def test_bonuses_with_requirements_and_2h(self):
         """Bonuses apply when unit meets reqs and wields 2-handed."""
         bonuses = calculate_wielding_bonuses(
-            can_wield_one_handed=True,
-            wielding_two_handed=True,
-            ke_bonus=2,
-            te_bonus=5,
-            ve_bonus=3
+            can_wield_one_handed=True, wielding_two_handed=True, ke_bonus=2, te_bonus=5, ve_bonus=3
         )
         assert bonuses.ke_bonus == 2
         assert bonuses.te_bonus == 5
@@ -171,11 +166,7 @@ class TestWieldingBonuses:
     def test_no_bonuses_without_requirements(self):
         """No bonuses if unit doesn't meet requirements."""
         bonuses = calculate_wielding_bonuses(
-            can_wield_one_handed=False,
-            wielding_two_handed=True,
-            ke_bonus=2,
-            te_bonus=5,
-            ve_bonus=3
+            can_wield_one_handed=False, wielding_two_handed=True, ke_bonus=2, te_bonus=5, ve_bonus=3
         )
         assert bonuses.ke_bonus == 0
         assert bonuses.te_bonus == 0
@@ -185,11 +176,7 @@ class TestWieldingBonuses:
     def test_no_bonuses_wielding_1h(self):
         """No bonuses if wielding 1-handed."""
         bonuses = calculate_wielding_bonuses(
-            can_wield_one_handed=True,
-            wielding_two_handed=False,
-            ke_bonus=2,
-            te_bonus=5,
-            ve_bonus=3
+            can_wield_one_handed=True, wielding_two_handed=False, ke_bonus=2, te_bonus=5, ve_bonus=3
         )
         assert bonuses.ke_bonus == 0
         assert bonuses.te_bonus == 0
@@ -199,22 +186,14 @@ class TestWieldingBonuses:
     def test_zero_bonuses(self):
         """Handle weapons with zero bonuses."""
         bonuses = calculate_wielding_bonuses(
-            can_wield_one_handed=True,
-            wielding_two_handed=True,
-            ke_bonus=0,
-            te_bonus=0,
-            ve_bonus=0
+            can_wield_one_handed=True, wielding_two_handed=True, ke_bonus=0, te_bonus=0, ve_bonus=0
         )
         assert not bonuses.is_active()
 
     def test_partial_bonuses(self):
         """Some stats have bonuses, others don't."""
         bonuses = calculate_wielding_bonuses(
-            can_wield_one_handed=True,
-            wielding_two_handed=True,
-            ke_bonus=0,
-            te_bonus=5,
-            ve_bonus=0
+            can_wield_one_handed=True, wielding_two_handed=True, ke_bonus=0, te_bonus=5, ve_bonus=0
         )
         assert bonuses.ke_bonus == 0
         assert bonuses.te_bonus == 5
@@ -224,67 +203,65 @@ class TestWieldingBonuses:
 
 # --- Test Wielding Mode Determination ---
 
+
 class TestWieldingMode:
     """Test wielding mode determination."""
 
     def test_variable_with_requirements_defaults_1h(self, strong_unit, variable_weapon):
         """Variable weapon with requirements defaults to 1-handed."""
         mode = get_wielding_mode(
-            strong_unit, variable_weapon,
-            wield_mode=WieldMode.VARIABLE,
-            strength_req=16, dex_req=13
+            strong_unit, variable_weapon, wield_mode=WieldMode.VARIABLE, strength_req=16, dex_req=13
         )
         assert mode == WieldMode.ONE_HANDED
 
     def test_variable_with_requirements_prefers_2h(self, strong_unit, variable_weapon):
         """Variable weapon with requirements respects 2-handed preference."""
         mode = get_wielding_mode(
-            strong_unit, variable_weapon,
+            strong_unit,
+            variable_weapon,
             wield_mode=WieldMode.VARIABLE,
-            strength_req=16, dex_req=13,
-            preference=WieldMode.TWO_HANDED
+            strength_req=16,
+            dex_req=13,
+            preference=WieldMode.TWO_HANDED,
         )
         assert mode == WieldMode.TWO_HANDED
 
     def test_variable_without_requirements_forced_2h(self, weak_unit, variable_weapon):
         """Variable weapon without requirements forces 2-handed."""
         mode = get_wielding_mode(
-            weak_unit, variable_weapon,
-            wield_mode=WieldMode.VARIABLE,
-            strength_req=16, dex_req=13
+            weak_unit, variable_weapon, wield_mode=WieldMode.VARIABLE, strength_req=16, dex_req=13
         )
         assert mode == WieldMode.TWO_HANDED
 
     def test_variable_without_reqs_ignores_preference(self, weak_unit, variable_weapon):
         """Preference ignored if requirements not met."""
         mode = get_wielding_mode(
-            weak_unit, variable_weapon,
+            weak_unit,
+            variable_weapon,
             wield_mode=WieldMode.VARIABLE,
-            strength_req=16, dex_req=13,
-            preference=WieldMode.ONE_HANDED
+            strength_req=16,
+            dex_req=13,
+            preference=WieldMode.ONE_HANDED,
         )
         assert mode == WieldMode.TWO_HANDED
 
     def test_fixed_1h_weapon(self, strong_unit, fixed_weapon):
         """Fixed 1-handed weapon stays 1-handed."""
         mode = get_wielding_mode(
-            strong_unit, fixed_weapon,
-            wield_mode=WieldMode.ONE_HANDED,
-            strength_req=0, dex_req=0
+            strong_unit, fixed_weapon, wield_mode=WieldMode.ONE_HANDED, strength_req=0, dex_req=0
         )
         assert mode == WieldMode.ONE_HANDED
 
     def test_fixed_2h_weapon(self, strong_unit, variable_weapon):
         """Fixed 2-handed weapon stays 2-handed."""
         mode = get_wielding_mode(
-            strong_unit, variable_weapon,
-            wield_mode=WieldMode.TWO_HANDED,
-            strength_req=0, dex_req=0
+            strong_unit, variable_weapon, wield_mode=WieldMode.TWO_HANDED, strength_req=0, dex_req=0
         )
         assert mode == WieldMode.TWO_HANDED
 
 
 # --- Test Complete Wielding Info ---
+
 
 class TestWieldingInfo:
     """Test complete wielding information."""
@@ -292,10 +269,13 @@ class TestWieldingInfo:
     def test_variable_strong_unit_1h(self, strong_unit, variable_weapon):
         """Strong unit with variable weapon choosing 1-handed."""
         info = get_wielding_info(
-            strong_unit, variable_weapon,
+            strong_unit,
+            variable_weapon,
             wield_mode=WieldMode.VARIABLE,
-            strength_req=16, dex_req=13,
-            te_bonus=5, ve_bonus=3
+            strength_req=16,
+            dex_req=13,
+            te_bonus=5,
+            ve_bonus=3,
         )
         assert info.mode == WieldMode.ONE_HANDED
         assert info.can_choose
@@ -306,11 +286,14 @@ class TestWieldingInfo:
     def test_variable_strong_unit_2h(self, strong_unit, variable_weapon):
         """Strong unit with variable weapon choosing 2-handed."""
         info = get_wielding_info(
-            strong_unit, variable_weapon,
+            strong_unit,
+            variable_weapon,
             wield_mode=WieldMode.VARIABLE,
-            strength_req=16, dex_req=13,
-            te_bonus=5, ve_bonus=3,
-            preference=WieldMode.TWO_HANDED
+            strength_req=16,
+            dex_req=13,
+            te_bonus=5,
+            ve_bonus=3,
+            preference=WieldMode.TWO_HANDED,
         )
         assert info.mode == WieldMode.TWO_HANDED
         assert info.can_choose
@@ -323,10 +306,13 @@ class TestWieldingInfo:
     def test_variable_weak_unit_forced_2h(self, weak_unit, variable_weapon):
         """Weak unit forced to use 2-handed (no bonuses)."""
         info = get_wielding_info(
-            weak_unit, variable_weapon,
+            weak_unit,
+            variable_weapon,
             wield_mode=WieldMode.VARIABLE,
-            strength_req=16, dex_req=13,
-            te_bonus=5, ve_bonus=3
+            strength_req=16,
+            dex_req=13,
+            te_bonus=5,
+            ve_bonus=3,
         )
         assert info.mode == WieldMode.TWO_HANDED
         assert not info.can_choose
@@ -336,10 +322,7 @@ class TestWieldingInfo:
 
     def test_fixed_1h_weapon_info(self, strong_unit, fixed_weapon):
         """Fixed 1-handed weapon info."""
-        info = get_wielding_info(
-            strong_unit, fixed_weapon,
-            wield_mode=WieldMode.ONE_HANDED
-        )
+        info = get_wielding_info(strong_unit, fixed_weapon, wield_mode=WieldMode.ONE_HANDED)
         assert info.mode == WieldMode.ONE_HANDED
         assert not info.can_choose
         assert not info.forced_two_handed
@@ -348,10 +331,7 @@ class TestWieldingInfo:
 
     def test_fixed_2h_weapon_info(self, strong_unit, variable_weapon):
         """Fixed 2-handed weapon info."""
-        info = get_wielding_info(
-            strong_unit, variable_weapon,
-            wield_mode=WieldMode.TWO_HANDED
-        )
+        info = get_wielding_info(strong_unit, variable_weapon, wield_mode=WieldMode.TWO_HANDED)
         assert info.mode == WieldMode.TWO_HANDED
         assert not info.can_choose
         assert info.forced_two_handed
@@ -361,51 +341,61 @@ class TestWieldingInfo:
 
 # --- Test Mode Validation ---
 
+
 class TestModeValidation:
     """Test wielding mode change validation."""
 
     def test_can_change_to_1h_with_requirements(self, strong_unit, variable_weapon):
         """Can change to 1-handed if requirements met."""
         valid = validate_wielding_mode_change(
-            strong_unit, variable_weapon,
+            strong_unit,
+            variable_weapon,
             wield_mode=WieldMode.VARIABLE,
             new_mode=WieldMode.ONE_HANDED,
-            strength_req=16, dex_req=13
+            strength_req=16,
+            dex_req=13,
         )
         assert valid
 
     def test_cannot_change_to_1h_without_requirements(self, weak_unit, variable_weapon):
         """Cannot change to 1-handed without requirements."""
         valid = validate_wielding_mode_change(
-            weak_unit, variable_weapon,
+            weak_unit,
+            variable_weapon,
             wield_mode=WieldMode.VARIABLE,
             new_mode=WieldMode.ONE_HANDED,
-            strength_req=16, dex_req=13
+            strength_req=16,
+            dex_req=13,
         )
         assert not valid
 
     def test_can_always_change_to_2h(self, weak_unit, variable_weapon):
         """Can always change to 2-handed."""
         valid = validate_wielding_mode_change(
-            weak_unit, variable_weapon,
+            weak_unit,
+            variable_weapon,
             wield_mode=WieldMode.VARIABLE,
             new_mode=WieldMode.TWO_HANDED,
-            strength_req=16, dex_req=13
+            strength_req=16,
+            dex_req=13,
         )
         assert valid
 
     def test_cannot_change_fixed_weapon(self, strong_unit, fixed_weapon):
         """Cannot change mode of fixed weapon."""
         valid = validate_wielding_mode_change(
-            strong_unit, fixed_weapon,
+            strong_unit,
+            fixed_weapon,
             wield_mode=WieldMode.ONE_HANDED,
             new_mode=WieldMode.TWO_HANDED,
-            strength_req=0, dex_req=0
+            strength_req=0,
+            dex_req=0,
         )
         assert not valid
 
 
 # --- Test Edge Cases ---
+
 
 class TestWieldingEdgeCases:
     """Test edge cases and boundary conditions."""
@@ -413,21 +403,28 @@ class TestWieldingEdgeCases:
     def test_all_zero_bonuses(self, strong_unit, variable_weapon):
         """Variable weapon with zero bonuses."""
         info = get_wielding_info(
-            strong_unit, variable_weapon,
+            strong_unit,
+            variable_weapon,
             wield_mode=WieldMode.VARIABLE,
-            strength_req=16, dex_req=13,
-            ke_bonus=0, te_bonus=0, ve_bonus=0,
-            preference=WieldMode.TWO_HANDED
+            strength_req=16,
+            dex_req=13,
+            ke_bonus=0,
+            te_bonus=0,
+            ve_bonus=0,
+            preference=WieldMode.TWO_HANDED,
         )
         assert not info.bonuses.is_active()
 
     def test_high_requirements(self, strong_unit, variable_weapon):
         """Requirements higher than unit's attributes."""
         info = get_wielding_info(
-            strong_unit, variable_weapon,
+            strong_unit,
+            variable_weapon,
             wield_mode=WieldMode.VARIABLE,
-            strength_req=25, dex_req=25,
-            te_bonus=10, ve_bonus=8
+            strength_req=25,
+            dex_req=25,
+            te_bonus=10,
+            ve_bonus=8,
         )
         assert info.forced_two_handed
         assert not info.bonuses.is_active()
@@ -435,19 +432,19 @@ class TestWieldingEdgeCases:
     def test_zero_requirements(self, weak_unit, variable_weapon):
         """Variable weapon with zero requirements."""
         info = get_wielding_info(
-            weak_unit, variable_weapon,
+            weak_unit,
+            variable_weapon,
             wield_mode=WieldMode.VARIABLE,
-            strength_req=0, dex_req=0,
-            te_bonus=5, ve_bonus=3
+            strength_req=0,
+            dex_req=0,
+            te_bonus=5,
+            ve_bonus=3,
         )
         assert info.can_choose
         assert not info.forced_two_handed
 
     def test_unknown_wield_mode(self, strong_unit, variable_weapon):
         """Unknown wield mode defaults to 1-handed."""
-        info = get_wielding_info(
-            strong_unit, variable_weapon,
-            wield_mode="unknown"
-        )
+        info = get_wielding_info(strong_unit, variable_weapon, wield_mode="unknown")
         assert info.mode == WieldMode.ONE_HANDED
         assert not info.can_choose

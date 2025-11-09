@@ -7,15 +7,15 @@ Tests cover:
 - MGT (movement penalty) calculation
 - Armor repair mechanics
 """
-import pytest
 
+import pytest
 from domain.mechanics.armor import (
     ArmorPiece,
     ArmorSystem,
 )
 
-
 # --- Fixtures ---
+
 
 @pytest.fixture
 def leather_armor():
@@ -67,9 +67,10 @@ def plate_armor():
 
 # --- Test ArmorPiece ---
 
+
 class TestArmorPiece:
     """Test ArmorPiece entity."""
-    
+
     def test_armor_creation(self):
         """Armor piece initializes correctly."""
         armor = ArmorPiece(
@@ -79,21 +80,21 @@ class TestArmorPiece:
             mgt=2,
             layer=3,
         )
-        
+
         assert armor.id == "test"
         assert armor.name == "Test Armor"
         assert armor.get_sfé("mellvért") == 5
         assert armor.get_mgt() == 2
         # Not covering other zones
         assert armor.get_sfé("sisak") == 0
-    
+
     def test_armor_defaults(self):
         """Armor uses default values."""
         armor = ArmorPiece(id="test", name="Test", parts={"mellvért": 3})
-        
+
         assert armor.mgt == 0
         assert armor.get_sfé("mellvért") == 3
-    
+
     def test_armor_fully_functional_initially(self, chain_mail):
         """Current SFÉ equals base SFÉ initially."""
         assert chain_mail.get_sfé("mellvért") == 8
@@ -101,36 +102,37 @@ class TestArmorPiece:
 
 # --- Test Armor Degradation ---
 
+
 class TestArmorDegradation:
     """Test armor degradation mechanics."""
-    
+
     def test_degrade_reduces_sfe(self, chain_mail):
         """Degrading armor reduces current SFÉ."""
         original_sfe = chain_mail.get_sfé("mellvért")
         chain_mail.degrade_zone("mellvért", 1)
-        
+
         assert chain_mail.get_sfé("mellvért") == original_sfe - 1
-    
+
     def test_degrade_custom_amount(self, chain_mail):
         """Can degrade by custom amount."""
         chain_mail.degrade_zone("mellvért", 3)
-        
+
         assert chain_mail.get_sfé("mellvért") == max(0, 8 - 3)
-    
+
     def test_degrade_cannot_go_negative(self, leather_armor):
         """Degrading armor cannot make SFÉ negative."""
         leather_armor.degrade_zone("mellvért", 10)  # Degrade more than max
-        
+
         assert leather_armor.get_sfé("mellvért") == 0
-    
+
     def test_multiple_degrades(self, chain_mail):
         """Multiple degradations accumulate."""
         chain_mail.degrade_zone("mellvért", 1)
         chain_mail.degrade_zone("mellvért", 1)
         chain_mail.degrade_zone("mellvért", 1)
-        
+
         assert chain_mail.get_sfé("mellvért") == 5
-    
+
     def test_zero_sfe_zone_is_zero(self, leather_armor):
         """Zero SFÉ zone returns 0."""
         # Not covering head on leather armor
@@ -143,6 +145,7 @@ class TestArmorDegradation:
 
 
 # --- Test Total Absorption ---
+
 
 class TestZoneAggregation:
     """Test zone-based SFÉ aggregation with ArmorSystem."""
@@ -181,6 +184,7 @@ class TestZoneAggregation:
 
 # --- Test MGT Calculation ---
 
+
 class TestMGTCalculation:
     """Test movement penalty (MGT) calculation via ArmorSystem."""
 
@@ -199,6 +203,7 @@ class TestMGTCalculation:
 
 
 # --- Test Overpower Degradation ---
+
 
 class TestTargetedDegradation:
     """Test zone-specific degradation (outermost layer only)."""
@@ -221,21 +226,22 @@ class TestTargetedDegradation:
 
 # --- Edge Cases ---
 
+
 class TestArmorEdgeCases:
     """Test edge cases for armor mechanics."""
-    
+
     def test_armor_with_zero_sfe_zone(self):
         """Armor can have 0 base SFÉ on a zone."""
         cloth = ArmorPiece(id="cloth", name="Cloth", parts={"mellvért": 0})
-        
+
         assert cloth.get_sfé("mellvért") == 0
-    
+
     def test_armor_with_zero_mgt(self, leather_armor):
         """Armor can have 0 MGT (light armor)."""
         light = ArmorPiece(id="light", name="Light", parts={"mellvért": 2}, mgt=0)
-        
+
         assert light.mgt == 0
-    
+
     def test_high_sfe_armor(self):
         """Very high SFÉ armor works correctly."""
         super_armor = ArmorPiece(id="super", name="Super Armor", parts={"mellvért": 20}, mgt=10)

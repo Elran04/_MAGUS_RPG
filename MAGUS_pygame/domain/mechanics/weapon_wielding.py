@@ -15,14 +15,13 @@ Rules:
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 from ..entities import Unit, Weapon
-from ..value_objects import Attributes
 
 
 class WieldMode(str, Enum):
     """Weapon wielding modes."""
+
     ONE_HANDED = "1-handed"
     TWO_HANDED = "2-handed"
     VARIABLE = "Változó"  # Hungarian: Variable/Changeable
@@ -31,6 +30,7 @@ class WieldMode(str, Enum):
 @dataclass(frozen=True)
 class WieldingBonuses:
     """Combat stat bonuses from 2-handed wielding of variable weapons."""
+
     ke_bonus: int = 0
     te_bonus: int = 0
     ve_bonus: int = 0
@@ -43,6 +43,7 @@ class WieldingBonuses:
 @dataclass(frozen=True)
 class WieldingInfo:
     """Complete information about how a weapon is being wielded."""
+
     mode: WieldMode
     can_choose: bool  # Can player choose wielding mode?
     bonuses: WieldingBonuses
@@ -74,7 +75,7 @@ def calculate_wielding_bonuses(
     wielding_two_handed: bool,
     ke_bonus: int = 0,
     te_bonus: int = 0,
-    ve_bonus: int = 0
+    ve_bonus: int = 0,
 ) -> WieldingBonuses:
     """
     Calculate combat stat bonuses when wielding a variable weapon 2-handed.
@@ -94,11 +95,7 @@ def calculate_wielding_bonuses(
         WieldingBonuses with appropriate values
     """
     if can_wield_one_handed and wielding_two_handed:
-        return WieldingBonuses(
-            ke_bonus=ke_bonus,
-            te_bonus=te_bonus,
-            ve_bonus=ve_bonus
-        )
+        return WieldingBonuses(ke_bonus=ke_bonus, te_bonus=te_bonus, ve_bonus=ve_bonus)
     return WieldingBonuses()
 
 
@@ -108,7 +105,7 @@ def get_wielding_mode(
     wield_mode: str,
     strength_req: int,
     dex_req: int,
-    preference: Optional[WieldMode] = None
+    preference: WieldMode | None = None,
 ) -> WieldMode:
     """
     Determine the wielding mode for a weapon based on unit's attributes and preference.
@@ -154,7 +151,7 @@ def get_wielding_info(
     ke_bonus: int = 0,
     te_bonus: int = 0,
     ve_bonus: int = 0,
-    preference: Optional[WieldMode] = None
+    preference: WieldMode | None = None,
 ) -> WieldingInfo:
     """
     Get complete wielding information for a unit's weapon.
@@ -188,13 +185,17 @@ def get_wielding_info(
     """
     # Non-variable weapons
     if wield_mode != WieldMode.VARIABLE:
-        mode = WieldMode(wield_mode) if wield_mode in [m.value for m in WieldMode] else WieldMode.ONE_HANDED
+        mode = (
+            WieldMode(wield_mode)
+            if wield_mode in [m.value for m in WieldMode]
+            else WieldMode.ONE_HANDED
+        )
         return WieldingInfo(
             mode=mode,
             can_choose=False,
             bonuses=WieldingBonuses(),
             forced_two_handed=(mode == WieldMode.TWO_HANDED),
-            meets_requirements=True
+            meets_requirements=True,
         )
 
     # Variable weapon
@@ -207,7 +208,7 @@ def get_wielding_info(
         wielding_two_handed=(current_mode == WieldMode.TWO_HANDED),
         ke_bonus=ke_bonus,
         te_bonus=te_bonus,
-        ve_bonus=ve_bonus
+        ve_bonus=ve_bonus,
     )
 
     return WieldingInfo(
@@ -215,7 +216,7 @@ def get_wielding_info(
         can_choose=meets_reqs,
         bonuses=bonuses,
         forced_two_handed=not meets_reqs,
-        meets_requirements=meets_reqs
+        meets_requirements=meets_reqs,
     )
 
 
@@ -225,7 +226,7 @@ def validate_wielding_mode_change(
     wield_mode: str,
     new_mode: WieldMode,
     strength_req: int,
-    dex_req: int
+    dex_req: int,
 ) -> bool:
     """
     Validate if a wielding mode change is allowed.

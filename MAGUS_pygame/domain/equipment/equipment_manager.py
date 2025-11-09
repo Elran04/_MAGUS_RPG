@@ -3,10 +3,10 @@ Equipment Manager - manages equipped armor sets and validation.
 
 Interfaces kept minimal for now; integrates with ArmorSystem for layering rules.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Tuple
 
 from domain.mechanics.armor import ArmorPiece, ArmorSystem
 
@@ -17,7 +17,7 @@ class EquipmentManager:
 
     armor_system: ArmorSystem = field(default_factory=ArmorSystem)
 
-    def equip_armor(self, piece: ArmorPiece) -> Tuple[bool, str]:
+    def equip_armor(self, piece: ArmorPiece) -> tuple[bool, str]:
         """Attempt to equip a new armor piece; validate overlapping zones on same layer."""
         candidate = ArmorSystem(self.armor_system.pieces + [piece])
         ok, msg = candidate.validate_no_overlap_same_layer()
@@ -26,7 +26,7 @@ class EquipmentManager:
         self.armor_system = candidate
         return True, ""
 
-    def set_armor_set(self, pieces: List[ArmorPiece]) -> Tuple[bool, str]:
+    def set_armor_set(self, pieces: list[ArmorPiece]) -> tuple[bool, str]:
         system = ArmorSystem(list(pieces))
         ok, msg = system.validate_no_overlap_same_layer()
         if not ok:

@@ -4,12 +4,10 @@ Unit information popup display - Migrated to new architecture.
 Shows detailed unit stats when right-clicking on a unit using new domain entities.
 """
 
-import pygame
-from typing import Optional
 
-from config import HEIGHT, UI_ACTIVE, UI_BORDER, UI_INACTIVE, UI_TEXT, WIDTH, HUMANOID_SILHOUETTE
+import pygame
+from config import HEIGHT, HUMANOID_SILHOUETTE, UI_ACTIVE, UI_BORDER, UI_INACTIVE, UI_TEXT, WIDTH
 from domain.entities import Unit
-from domain.mechanics import Stamina
 from domain.mechanics.weapon_wielding import get_wielding_info
 from logger.logger import get_logger
 
@@ -76,7 +74,7 @@ class PopupStyle:
 class UnitInfoPopup:
     """
     Popup window for displaying detailed unit information with tabs.
-    
+
     Clean architecture principles:
     - Accepts domain entities (Unit) not raw dicts
     - Pure presentation logic, no game state manipulation
@@ -85,8 +83,8 @@ class UnitInfoPopup:
 
     def __init__(self):
         self.visible = False
-        self.unit: Optional[Unit] = None
-        self.popup_rect: Optional[pygame.Rect] = None
+        self.unit: Unit | None = None
+        self.popup_rect: pygame.Rect | None = None
         self.cached_wield_info = None  # Cache to avoid recalculating every frame
         self.current_tab = "stats"  # "stats", "equipment", "armor", "conditions"
         self.tab_buttons = []  # Will store tab button rects
@@ -125,10 +123,10 @@ class UnitInfoPopup:
         if not self.unit or not self.unit.weapon:
             self.cached_wield_info = None
             return
-            
+
         weapon = self.unit.weapon
         # Check if weapon can be wielded variably
-        if hasattr(weapon, 'wield_mode') and getattr(weapon, 'wield_mode', None) == "Változó":
+        if hasattr(weapon, "wield_mode") and getattr(weapon, "wield_mode", None) == "Változó":
             self.cached_wield_info = get_wielding_info(self.unit, weapon)
         else:
             self.cached_wield_info = None
@@ -493,14 +491,14 @@ class UnitInfoPopup:
         weapon = self.unit.weapon
 
         # Weapon name
-        weapon_name = getattr(weapon, 'name', 'Unknown Weapon')
+        weapon_name = getattr(weapon, "name", "Unknown Weapon")
         name_text = self.style.text_font.render(weapon_name, True, (255, 215, 0))
         screen.blit(name_text, (x_left + 10, y))
         y += 25
 
         # Damage range
-        damage_min = getattr(weapon, 'damage_min', 1)
-        damage_max = getattr(weapon, 'damage_max', 6)
+        damage_min = getattr(weapon, "damage_min", 1)
+        damage_max = getattr(weapon, "damage_max", 6)
         damage_text = self.style.small_font.render(
             f"Damage: {damage_min}-{damage_max}", True, UI_TEXT
         )
@@ -508,7 +506,7 @@ class UnitInfoPopup:
         y += 22
 
         # Size category
-        size_cat = getattr(weapon, 'size_category', 1)
+        size_cat = getattr(weapon, "size_category", 1)
         size_text = self.style.small_font.render(f"Size Category: {size_cat}", True, UI_TEXT)
         screen.blit(size_text, (x_left + 20, y))
         y += 22
@@ -520,9 +518,7 @@ class UnitInfoPopup:
             bonuses = self.cached_wield_info["bonuses"]
 
             mode_color = (100, 255, 100) if can_choose else (255, 150, 100)
-            mode_text = self.style.small_font.render(
-                f"Wielding: {current_mode}", True, mode_color
-            )
+            mode_text = self.style.small_font.render(f"Wielding: {current_mode}", True, mode_color)
             screen.blit(mode_text, (x_left + 20, y))
             y += 22
 

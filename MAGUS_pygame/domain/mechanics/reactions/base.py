@@ -7,15 +7,17 @@ Reactions are pure computations that evaluate triggers and compute results
 They should not mutate application state; instead they return ReactionResult
 objects for the application layer to apply.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Protocol, Any
+from typing import Any, Protocol
 
 
 class ReactionCategory(Enum):
     """High-level reaction categories for UI/logging."""
+
     OPPORTUNITY = "opportunity"
     COUNTER = "counter"
     DEFENSE = "defense"
@@ -29,6 +31,7 @@ class ReactionResult:
     Mirrors ActionResult shape where useful and adds interruption hints
     for the application (e.g., stopping movement).
     """
+
     success: bool
     message: str = ""
     ap_spent: int = 0

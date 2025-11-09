@@ -1,6 +1,7 @@
 """
 Pytest configuration for MAGUS_pygame tests.
 """
+
 import sys
 from pathlib import Path
 

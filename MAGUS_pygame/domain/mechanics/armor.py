@@ -8,12 +8,11 @@ Handles:
 
 Legacy helper shims removed; all integrations must use ArmorSystem and zone-based APIs.
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Optional, Dict, Iterable, List
 import random
-
+from dataclasses import dataclass, field
 
 # ------------------------------
 # ArmorPiece (layered, zone-based)
@@ -43,12 +42,12 @@ class ArmorPiece:
 
     id: str
     name: str
-    parts: Dict[str, int]
+    parts: dict[str, int]
     mgt: int = 0
     armor_type: str = "leather"
     layer: int = 3
-    protection_overrides: Dict[str, int] = field(default_factory=dict)
-    current_parts: Dict[str, int] = field(init=False)
+    protection_overrides: dict[str, int] = field(default_factory=dict)
+    current_parts: dict[str, int] = field(init=False)
 
     def __post_init__(self) -> None:
         # Initialize current per-part SFÉ
@@ -82,18 +81,21 @@ class ArmorPiece:
 class ArmorSystem:
     """Aggregates all equipped armor and provides queries/validation."""
 
-    pieces: List[ArmorPiece] = field(default_factory=list)
+    pieces: list[ArmorPiece] = field(default_factory=list)
 
     def validate_no_overlap_same_layer(self) -> tuple[bool, str]:
         """Ensure no two pieces cover the same main part on the same layer."""
-        seen: Dict[tuple[int, str], str] = {}
+        seen: dict[tuple[int, str], str] = {}
         for p in self.pieces:
             for part, v in p.parts.items():
                 if v <= 0:
                     continue
                 key = (p.layer, part)
                 if key in seen:
-                    return False, f"Overlap on layer {p.layer} for zone {part} ({seen[key]} vs {p.name})"
+                    return (
+                        False,
+                        f"Overlap on layer {p.layer} for zone {part} ({seen[key]} vs {p.name})",
+                    )
                 seen[key] = p.name
         return True, ""
 
@@ -134,7 +136,7 @@ class HitzoneResolver:
     Later can be extended with facing/height modifiers.
     """
 
-    HITZONE_WEIGHTS: Dict[str, int] = {
+    HITZONE_WEIGHTS: dict[str, int] = {
         "sisak": 10,
         "mellvért": 40,
         "vállvédő": 10,
@@ -146,7 +148,7 @@ class HitzoneResolver:
     }
 
     @classmethod
-    def resolve(cls, rng: Optional[random.Random] = None) -> str:
+    def resolve(cls, rng: random.Random | None = None) -> str:
         r = rng or random
         items = list(cls.HITZONE_WEIGHTS.items())
         parts, weights = zip(*items)
@@ -158,5 +160,3 @@ class HitzoneResolver:
             if roll <= acc:
                 return part
         return parts[-1]
-
-

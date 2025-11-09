@@ -14,64 +14,6 @@ Modules:
  - reactions: Event-triggered mechanics (phase 2: opportunity attack)
 """
 
-from .damage import (
-    DamageContext,
-    DamageResult,
-    calculate_final_damage,
-    DamageService,
-)
-
-from .reach import (
-    get_weapon_reach,
-    compute_reach_hexes,
-    can_attack_target,
-    calculate_mandatory_ep_loss,
-)
-
-from .armor import (
-    ArmorPiece,
-    ArmorSystem,
-    HitzoneResolver,
-)
-
-from .critical import (
-    CriticalContext,
-    is_critical_hit,
-    get_critical_damage_multiplier,
-    apply_critical_effects,
-)
-
-from .attack_resolution import (
-    AttackOutcome,
-    DefenseValues,
-    AttackResult,
-    calculate_defense_values,
-    calculate_attack_value,
-    resolve_attack,
-    apply_attack_result,
-)
-
-from .weapon_wielding import (
-    WieldMode,
-    WieldingBonuses,
-    WieldingInfo,
-    can_wield_one_handed,
-    calculate_wielding_bonuses,
-    get_wielding_mode,
-    get_wielding_info,
-    validate_wielding_mode_change,
-)
-
-from .stamina import (
-    Stamina,
-    StaminaState,
-    CombatModifiers,
-    DEFAULT_COMBAT_MODIFIERS,
-    THRESHOLDS,
-    FatigueCondition,
-    create_fatigue_condition,
-)
-
 from .actions import (
     ActionCategory,
     ActionCost,
@@ -79,12 +21,62 @@ from .actions import (
     AttackAction,
     MovementAction,
 )
-
+from .armor import (
+    ArmorPiece,
+    ArmorSystem,
+    HitzoneResolver,
+)
+from .attack_resolution import (
+    AttackOutcome,
+    AttackResult,
+    DefenseValues,
+    apply_attack_result,
+    calculate_attack_value,
+    calculate_defense_values,
+    resolve_attack,
+)
+from .critical import (
+    CriticalContext,
+    apply_critical_effects,
+    get_critical_damage_multiplier,
+    is_critical_hit,
+)
+from .damage import (
+    DamageContext,
+    DamageResult,
+    DamageService,
+    calculate_final_damage,
+)
+from .reach import (
+    calculate_mandatory_ep_loss,
+    can_attack_target,
+    compute_reach_hexes,
+    get_weapon_reach,
+)
 from .reactions import (
+    OpportunityAttackReaction,
+    Reaction,
     ReactionCategory,
     ReactionResult,
-    Reaction,
-    OpportunityAttackReaction,
+)
+from .stamina import (
+    DEFAULT_COMBAT_MODIFIERS,
+    THRESHOLDS,
+    CombatModifiers,
+    FatigueCondition,
+    Stamina,
+    StaminaState,
+    create_fatigue_condition,
+)
+from .weapon_wielding import (
+    WieldingBonuses,
+    WieldingInfo,
+    WieldMode,
+    calculate_wielding_bonuses,
+    can_wield_one_handed,
+    get_wielding_info,
+    get_wielding_mode,
+    validate_wielding_mode_change,
 )
 
 __all__ = [

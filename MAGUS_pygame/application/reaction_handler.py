@@ -9,25 +9,26 @@ Responsibilities:
 
 This handler is intentionally thin: pure computations remain in domain.
 """
+
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Iterable, Tuple
 
 from domain.entities import Unit
 from domain.mechanics import (
     OpportunityAttackReaction,
     apply_attack_result,
 )
-from domain.mechanics.actions import ActionResult
 from domain.mechanics.reactions import ReactionResult
 
 
 @dataclass
 class ReactionBudget:
     """Tracks remaining reactions per unit for the current turn."""
+
     max_reactions_per_turn: int = 1
-    remaining: Dict[str, int] = field(default_factory=dict)
+    remaining: dict[str, int] = field(default_factory=dict)
 
     def reset_for_units(self, units: Iterable[Unit]) -> None:
         self.remaining = {u.id: self.max_reactions_per_turn for u in units}
@@ -45,6 +46,7 @@ class ReactionBudget:
 @dataclass
 class ReactionHandler:
     """Coordinates reaction evaluation and execution."""
+
     budget: ReactionBudget = field(default_factory=ReactionBudget)
 
     def start_turn(self, units: Iterable[Unit]) -> None:
@@ -54,21 +56,21 @@ class ReactionHandler:
     def handle_opportunity_attacks(
         self,
         *,
-        movers_path: List[Tuple[int, int]],
+        movers_path: list[tuple[int, int]],
         intersects_zoc: bool,
-        intersection_index: Optional[int],
+        intersection_index: int | None,
         mover: Unit,
         potential_reactors: Iterable[Unit],
         mover_shield_ve: int = 0,
         mover_dodge_mod: int = 0,
-        rng_overrides: Optional[dict] = None,
-    ) -> List[ReactionResult]:
+        rng_overrides: dict | None = None,
+    ) -> list[ReactionResult]:
         """Evaluate and execute opportunity attacks from potential reactors.
 
         Returns a list of ReactionResult in the order they are resolved.
         Stops early if a reaction interrupts movement.
         """
-        results: List[ReactionResult] = []
+        results: list[ReactionResult] = []
 
         if not intersects_zoc or intersection_index is None:
             return results

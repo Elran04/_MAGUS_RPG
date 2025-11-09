@@ -4,27 +4,27 @@ EquipmentScreen: lightweight screen model for viewing unit armor loadouts.
 Note: This is a data-only screen for now (no pygame drawing). It builds a report
 per unit that a UI layer can render. Uncovered zones are informational only.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List
 
-from domain.entities import Unit
 from application.equipment_view import EquipmentView
+from domain.entities import Unit
 
 
 @dataclass
 class UnitLoadoutReport:
     unit_id: str
     unit_name: str
-    zone_sfe: Dict[str, int]
-    uncovered_zones: List[str]
-    overlap_messages: List[str]
+    zone_sfe: dict[str, int]
+    uncovered_zones: list[str]
+    overlap_messages: list[str]
     total_mgt: int
 
 
 class EquipmentScreen:
-    def __init__(self, units: List[Unit]) -> None:
+    def __init__(self, units: list[Unit]) -> None:
         self._units = units
         self._complete = False
 
@@ -34,8 +34,8 @@ class EquipmentScreen:
     def mark_complete(self) -> None:
         self._complete = True
 
-    def build_reports(self) -> List[UnitLoadoutReport]:
-        reports: List[UnitLoadoutReport] = []
+    def build_reports(self) -> list[UnitLoadoutReport]:
+        reports: list[UnitLoadoutReport] = []
         for u in self._units:
             view = EquipmentView(u)
             reports.append(

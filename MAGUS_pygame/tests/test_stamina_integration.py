@@ -1,19 +1,19 @@
 """Integration tests for stamina costs inside attack resolution and regeneration/fatigue hooks."""
 
 import pytest
-
 from domain.entities import Unit, Weapon
-from domain.value_objects import Position, ResourcePool, CombatStats, Attributes
 from domain.mechanics import (
-    resolve_attack,
-    apply_attack_result,
     AttackOutcome,
     Stamina,
     StaminaState,
+    apply_attack_result,
     create_fatigue_condition,
+    resolve_attack,
 )
+from domain.value_objects import Attributes, CombatStats, Position, ResourcePool
 
 # --- Fixtures ---
+
 
 @pytest.fixture
 def attacker():
@@ -25,8 +25,17 @@ def attacker():
         ep=ResourcePool(30, 30),
         attributes=Attributes(strength=16, dexterity=14, endurance=12),
         combat_stats=CombatStats(TE=50),
-        weapon=Weapon(id="sword", name="Sword", te_modifier=10, ve_modifier=8, damage_min=2, damage_max=8, size_category=2)
+        weapon=Weapon(
+            id="sword",
+            name="Sword",
+            te_modifier=10,
+            ve_modifier=8,
+            damage_min=2,
+            damage_max=8,
+            size_category=2,
+        ),
     )
+
 
 @pytest.fixture
 def defender():
@@ -38,15 +47,27 @@ def defender():
         ep=ResourcePool(30, 30),
         attributes=Attributes(strength=14, dexterity=12, endurance=10),
         combat_stats=CombatStats(VE=55),
-        weapon=Weapon(id="parry", name="Parry Blade", te_modifier=5, ve_modifier=6, damage_min=1, damage_max=6, size_category=2)
+        weapon=Weapon(
+            id="parry",
+            name="Parry Blade",
+            te_modifier=5,
+            ve_modifier=6,
+            damage_min=1,
+            damage_max=6,
+            size_category=2,
+        ),
     )
 
+
 # --- Helper ---
+
 
 def fp(defender):
     return defender.fp.current
 
+
 # --- Tests ---
+
 
 class TestBlockParryStamina:
     def test_block_stamina_cost(self, attacker, defender):
@@ -56,7 +77,8 @@ class TestBlockParryStamina:
         attacker.combat_stats = CombatStats(TE=10)  # reduce TE for controlled range
         start_fp = fp(defender)
         result = resolve_attack(
-            attacker, defender,
+            attacker,
+            defender,
             attack_roll=5,  # TE: 10 + 10 + 5 = 25
             base_damage_roll=5,
             shield_ve=5,  # modest shield bonus
@@ -66,7 +88,8 @@ class TestBlockParryStamina:
         assert result.outcome == AttackOutcome.MISS
         # Adjust into block window: increase attack_roll to land between 56 and 60
         result = resolve_attack(
-            attacker, defender,
+            attacker,
+            defender,
             attack_roll=40,  # all_te = 10 +10 +40 =60 -> BLOCK (==block_ve)
             base_damage_roll=5,
             shield_ve=5,
@@ -83,7 +106,8 @@ class TestBlockParryStamina:
         attacker.combat_stats = CombatStats(TE=15)
         start_fp = fp(defender)
         result = resolve_attack(
-            attacker, defender,
+            attacker,
+            defender,
             attack_roll=35,  # all_te = 15 + 10 + 35 = 60 -> PARRIED (between 56..61)
             base_damage_roll=6,
             shield_ve=0,
@@ -105,7 +129,8 @@ class TestDodgeStamina:
         # Configure attacker TE low enough to land in that band.
         attacker.combat_stats = CombatStats(TE=5)
         result = resolve_attack(
-            attacker, defender,
+            attacker,
+            defender,
             attack_roll=50,  # all_te = 5 + weapon_te(10) + 50 = 65 -> within dodge window (62..71)
             base_damage_roll=4,
             dodge_modifier=10,

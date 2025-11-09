@@ -9,19 +9,17 @@ Handles rendering of the battle scene including:
 - Highlights and overlays
 """
 
-from typing import Optional, Set, Dict, List, Tuple
 import pygame
-
 from config import (
     BG_COLOR,
     HEIGHT,
-    WIDTH,
     PATH_DOT_COLOR,
     PATH_DOT_RADIUS,
     PATH_LINE_COLOR,
     PATH_LINE_WIDTH,
     PATH_ZONE_OVERLAP_COLOR,
     PATH_ZONE_OVERLAP_RADIUS,
+    WIDTH,
 )
 from domain.entities import Unit
 from domain.value_objects import Position
@@ -35,7 +33,7 @@ logger = get_logger(__name__)
 class BattleRenderer:
     """
     Renders the battle scene.
-    
+
     Clean architecture principles:
     - Accepts domain entities (Unit, Position)
     - Pure rendering logic, no game state modification
@@ -45,11 +43,11 @@ class BattleRenderer:
     def __init__(
         self,
         screen: pygame.Surface,
-        grid_bounds: Tuple[int, int, int, int],
-        background: Optional[pygame.Surface] = None
+        grid_bounds: tuple[int, int, int, int],
+        background: pygame.Surface | None = None,
     ):
         """Initialize the battle renderer.
-        
+
         Args:
             screen: Main pygame display surface
             grid_bounds: (MIN_Q, MAX_Q, MIN_R, MAX_R) hex grid boundaries
@@ -58,16 +56,16 @@ class BattleRenderer:
         self.screen = screen
         self.grid_bounds = grid_bounds
         self.background = background
-        
+
         # Fonts
         self.overlay_font = pygame.font.SysFont(None, 20)
         self.hud_font = pygame.font.SysFont(None, 32)
-        
+
         logger.info(f"BattleRenderer initialized with bounds {grid_bounds}")
 
-    def set_background(self, background: Optional[pygame.Surface]) -> None:
+    def set_background(self, background: pygame.Surface | None) -> None:
         """Set or update the background image.
-        
+
         Args:
             background: Background surface or None for solid color
         """
@@ -82,16 +80,16 @@ class BattleRenderer:
 
     def draw_grid(
         self,
-        units: List[Unit],
-        reachable_hexes: Optional[Set[Tuple[int, int]]] = None,
-        attackable_hexes: Optional[Set[Tuple[int, int]]] = None,
-        charge_area_hexes: Optional[Set[Tuple[int, int]]] = None,
-        charge_targets: Optional[Set[Tuple[int, int]]] = None,
-        enemy_zone_hexes: Optional[Set[Tuple[int, int]]] = None,
-        highlight_hex: Optional[Tuple[int, int]] = None
+        units: list[Unit],
+        reachable_hexes: set[tuple[int, int]] | None = None,
+        attackable_hexes: set[tuple[int, int]] | None = None,
+        charge_area_hexes: set[tuple[int, int]] | None = None,
+        charge_targets: set[tuple[int, int]] | None = None,
+        enemy_zone_hexes: set[tuple[int, int]] | None = None,
+        highlight_hex: tuple[int, int] | None = None,
     ) -> None:
         """Draw the hex grid with units and highlights.
-        
+
         Args:
             units: List of units to render
             reachable_hexes: Set of (q, r) hexes highlighted for movement
@@ -125,9 +123,9 @@ class BattleRenderer:
             highlight_hex=highlight_hex,
         )
 
-    def draw_units(self, units: List[Unit]) -> None:
+    def draw_units(self, units: list[Unit]) -> None:
         """Draw unit overlays (name, HP bars, facing).
-        
+
         Args:
             units: List of units to draw overlays for
         """
@@ -135,13 +133,9 @@ class BattleRenderer:
             if unit.is_alive():  # Only draw living units
                 draw_unit_overlays(self.screen, unit, self.overlay_font)
 
-    def draw_movement_path(
-        self,
-        path: List[Position],
-        enemy_zone: Set[Tuple[int, int]]
-    ) -> None:
+    def draw_movement_path(self, path: list[Position], enemy_zone: set[tuple[int, int]]) -> None:
         """Draw the movement path with danger highlights.
-        
+
         Args:
             path: List of Position objects representing the path
             enemy_zone: Set of (q, r) hex coordinates in enemy's zone of control
@@ -177,7 +171,7 @@ class BattleRenderer:
 
     def draw_victory_screen(self, winner: Unit, defeated: Unit) -> None:
         """Draw victory screen overlay.
-        
+
         Args:
             winner: The winning unit
             defeated: The defeated unit
@@ -203,21 +197,19 @@ class BattleRenderer:
         self.screen.blit(defeated_text, defeated_rect)
 
         # Instructions
-        instruction_text = info_font.render(
-            "Close window to exit", True, (150, 150, 150)
-        )
+        instruction_text = info_font.render("Close window to exit", True, (150, 150, 150))
         instruction_rect = instruction_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 70))
         self.screen.blit(instruction_text, instruction_rect)
 
     def draw_hud(
         self,
         round_num: int,
-        active_unit: Optional[Unit],
+        active_unit: Unit | None,
         action_mode: str = "Normal",
-        combat_message: Optional[str] = None
+        combat_message: str | None = None,
     ) -> None:
         """Draw the heads-up display.
-        
+
         Args:
             round_num: Current round number
             active_unit: Currently active unit
@@ -257,21 +249,21 @@ class BattleRenderer:
 
     def render_scene(
         self,
-        units: List[Unit],
+        units: list[Unit],
         round_num: int = 1,
-        active_unit: Optional[Unit] = None,
+        active_unit: Unit | None = None,
         action_mode: str = "Normal",
-        movement_path: Optional[List[Position]] = None,
-        enemy_zone: Optional[Set[Tuple[int, int]]] = None,
-        reachable_hexes: Optional[Set[Tuple[int, int]]] = None,
-        attackable_hexes: Optional[Set[Tuple[int, int]]] = None,
-        highlight_hex: Optional[Tuple[int, int]] = None,
-        combat_message: Optional[str] = None
+        movement_path: list[Position] | None = None,
+        enemy_zone: set[tuple[int, int]] | None = None,
+        reachable_hexes: set[tuple[int, int]] | None = None,
+        attackable_hexes: set[tuple[int, int]] | None = None,
+        highlight_hex: tuple[int, int] | None = None,
+        combat_message: str | None = None,
     ) -> None:
         """Render complete battle scene.
-        
+
         Convenience method that draws everything in the correct order.
-        
+
         Args:
             units: List of all units
             round_num: Current round number
@@ -292,7 +284,7 @@ class BattleRenderer:
             units,
             reachable_hexes=reachable_hexes,
             attackable_hexes=attackable_hexes,
-            highlight_hex=highlight_hex
+            highlight_hex=highlight_hex,
         )
 
         # Draw movement path if provided

@@ -7,18 +7,20 @@ Responsibilities:
 - Invoke ReactionHandler when actions trigger reactions (e.g., movement enters ZoC)
 - Provide a simple facade for the UI/presentation layer
 """
+
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Iterable, List, Optional, Tuple
 
 from domain.entities import Unit
-from domain.value_objects import Position
 from domain.mechanics import (
     AttackAction,
     MovementAction,
 )
 from domain.mechanics.actions import ActionResult
+from domain.value_objects import Position
+
 from .reaction_handler import ReactionHandler
 
 
@@ -35,12 +37,12 @@ class ActionHandler:
         *,
         unit: Unit,
         dest: Position,
-        enemy: Optional[Unit] = None,
+        enemy: Unit | None = None,
         ap_available: int = 0,
-        blocked: Optional[Iterable[Tuple[int, int]]] = None,
+        blocked: Iterable[tuple[int, int]] | None = None,
         apply_move: bool = True,
-        potential_reactors: Optional[Iterable[Unit]] = None,
-        rng_overrides: Optional[dict] = None,
+        potential_reactors: Iterable[Unit] | None = None,
+        rng_overrides: dict | None = None,
     ) -> dict:
         """Execute movement with optional reactions. Returns a summary dict.
 
@@ -111,7 +113,7 @@ class ActionHandler:
         *,
         attacker: Unit,
         defender: Unit,
-        rng_overrides: Optional[dict] = None,
+        rng_overrides: dict | None = None,
         **kwargs,
     ) -> ActionResult:
         act = AttackAction()

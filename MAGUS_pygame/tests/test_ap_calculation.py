@@ -1,6 +1,6 @@
 from MAGUS_pygame.application.battle_service import compute_unit_ap
 from MAGUS_pygame.domain.entities import Unit
-from MAGUS_pygame.domain.value_objects import Position, CombatStats, ResourcePool, Attributes
+from MAGUS_pygame.domain.value_objects import Attributes, CombatStats, Position, ResourcePool
 
 
 def make_unit_with_speed(speed: int) -> Unit:

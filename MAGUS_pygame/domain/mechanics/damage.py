@@ -3,25 +3,31 @@ Domain damage calculation mechanics.
 Ported and refactored from old_system/systems/damage_calculator.py
 Pure domain logic: no pygame, no global state, no printing.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import TYPE_CHECKING
 
-from domain.entities import Unit, Weapon
 from domain.value_objects import DamageResult
+
+if TYPE_CHECKING:
+    from domain.entities import Unit, Weapon
 
 
 # --- Data Structures ---
 
+
 @dataclass(frozen=True)
 class DamageContext:
     """Optional situational modifiers for damage resolution."""
+
     charge_multiplier: int = 1  # Multiplier applied after bonuses
     armor_absorption: int = 0  # Flat absorption (e.g., from armor piece)
 
 
 # --- Helpers ---
+
 
 def _get_attribute_value(unit: Unit, attr_hu: str) -> int:
     """Fetch attribute value from unit.attributes using Hungarian key mapping.
@@ -74,7 +80,7 @@ def _get_attribute_value(unit: Unit, attr_hu: str) -> int:
     return cap_map.get(key, 0)
 
 
-def _calculate_attribute_bonus(unit: Unit, weapon: Optional[Weapon]) -> int:
+def _calculate_attribute_bonus(unit: Unit, weapon: Weapon | None) -> int:
     """Legacy-compatible rule:
     For each attribute listed in weapon.damage_bonus_attributes (if present):
       if value > 15 => bonus += (value - 15)
@@ -90,15 +96,15 @@ def _calculate_attribute_bonus(unit: Unit, weapon: Optional[Weapon]) -> int:
     for attr_name in bonus_attrs:
         val = _get_attribute_value(unit, attr_name)
         if val > 15:
-            total += (val - 15)
+            total += val - 15
     return total
 
 
 def calculate_final_damage(
     attacker: Unit,
-    weapon: Optional[Weapon],
+    weapon: Weapon | None,
     base_damage: int,
-    ctx: Optional[DamageContext] = None,
+    ctx: DamageContext | None = None,
 ) -> DamageResult:
     """Compute final damage from base + attribute bonus + situational context.
 
@@ -151,12 +157,11 @@ class DamageService:
         self,
         attacker: Unit,
         defender: Unit,
-        weapon: Optional[Weapon],
+        weapon: Weapon | None,
         rolled_damage: int,
-        ctx: Optional[DamageContext] = None,
+        ctx: DamageContext | None = None,
     ) -> DamageResult:
         result = calculate_final_damage(attacker, weapon, rolled_damage, ctx)
         # Apply damage to defender as a side-effect
         defender.take_damage(result.final_damage)
         return result
- 

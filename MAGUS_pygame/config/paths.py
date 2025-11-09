@@ -3,7 +3,6 @@ Centralized path management for MAGUS Pygame.
 All file and directory paths are defined here for easy maintenance.
 """
 
-import os
 from pathlib import Path
 
 # Base directory - MAGUS_pygame root
@@ -20,7 +19,9 @@ TILESETS_DIR = ASSETS_DIR / "tilesets"
 # Data directories
 DATA_DIR = BASE_DIR / "data"
 CHARACTERS_DIR = BASE_DIR.parent / "characters"  # Goes up to _MAGUS_RPG/characters
-GAMEMASTER_DATA_DIR = BASE_DIR.parent / "Gamemaster_tools" / "data"  # Goes up to _MAGUS_RPG/Gamemaster_tools/data
+GAMEMASTER_DATA_DIR = (
+    BASE_DIR.parent / "Gamemaster_tools" / "data"
+)  # Goes up to _MAGUS_RPG/Gamemaster_tools/data
 EQUIPMENT_DATA_DIR = GAMEMASTER_DATA_DIR / "equipment"
 SCENARIOS_DIR = DATA_DIR / "scenarios"
 
@@ -37,10 +38,10 @@ GRASS_BACKGROUND = BACKGROUND_SPRITES_DIR / "grass_bg.jpg"  # TODO: Move to back
 
 def get_character_json_path(filename: str) -> Path:
     """Get path to a character JSON file.
-    
+
     Args:
         filename: Name of the character file (e.g., "Teszt.json")
-        
+
     Returns:
         Full path to the character file
     """
@@ -49,10 +50,10 @@ def get_character_json_path(filename: str) -> Path:
 
 def get_character_sprite_path(filename: str) -> Path:
     """Get path to a character sprite.
-    
+
     Args:
         filename: Name of the sprite file (e.g., "warrior.png")
-        
+
     Returns:
         Full path to the sprite file
     """
@@ -61,10 +62,10 @@ def get_character_sprite_path(filename: str) -> Path:
 
 def get_ui_asset_path(filename: str) -> Path:
     """Get path to a UI asset.
-    
+
     Args:
         filename: Name of the UI asset file
-        
+
     Returns:
         Full path to the asset file
     """
@@ -73,10 +74,10 @@ def get_ui_asset_path(filename: str) -> Path:
 
 def get_equipment_json_path(filename: str) -> Path:
     """Get path to an equipment JSON file.
-    
+
     Args:
         filename: Name of the equipment file (e.g., "weapons_and_shields.json")
-        
+
     Returns:
         Full path to the equipment file
     """
@@ -85,10 +86,10 @@ def get_equipment_json_path(filename: str) -> Path:
 
 def get_scenario_json_path(filename: str) -> Path:
     """Get path to a scenario JSON file.
-    
+
     Args:
         filename: Name of the scenario file (e.g., "default.json")
-        
+
     Returns:
         Full path to the scenario file
     """
@@ -97,7 +98,7 @@ def get_scenario_json_path(filename: str) -> Path:
 
 def ensure_dir_exists(path: Path) -> None:
     """Ensure a directory exists, creating it if necessary.
-    
+
     Args:
         path: Directory path to ensure exists
     """

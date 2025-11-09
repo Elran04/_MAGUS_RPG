@@ -5,15 +5,17 @@ These are framework-agnostic contracts. No pygame, no application state.
 All actions should be pure with respect to game rules: they compute results
 (ActionResult) that the application layer can apply to mutate state.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Protocol, Optional, Any
+from typing import Any, Protocol
 
 
 class ActionCategory(Enum):
     """High-level action categories for UI grouping and validation."""
+
     MOVEMENT = "movement"
     ATTACK = "attack"
     SPECIAL_ATTACK = "special"
@@ -25,6 +27,7 @@ class ActionCategory(Enum):
 @dataclass(frozen=True)
 class ActionCost:
     """Represents the cost to perform an action."""
+
     ap: int
     stamina: int = 0
     is_free: bool = False
@@ -37,6 +40,7 @@ class ActionResult:
 
     Application layer should interpret and apply these results to mutate game state.
     """
+
     success: bool
     message: str = ""
     ap_spent: int = 0

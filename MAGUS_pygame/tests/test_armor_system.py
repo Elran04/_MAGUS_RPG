@@ -1,4 +1,3 @@
-import math
 from MAGUS_pygame.domain.mechanics.armor import ArmorPiece, ArmorSystem, HitzoneResolver
 
 
@@ -37,7 +36,7 @@ def test_degradation_applies_to_outermost():
 
 
 def test_hitzone_resolver_distribution_bias():
-    rng_counts = {k: 0 for k in HitzoneResolver.HITZONE_WEIGHTS.keys()}
+    rng_counts = dict.fromkeys(HitzoneResolver.HITZONE_WEIGHTS.keys(), 0)
     import random
 
     rng = random.Random(42)

@@ -8,13 +8,15 @@ AP model:
 This AP computation is domain logic, but lightweight enough to live here; if it
 expands (skills, conditions), extract to domain.mechanics.ap or similar.
 """
+
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
-from typing import List, Dict, Callable, Optional, Iterable
 
 from domain.entities import Unit
 from domain.value_objects import Position
+
 from .action_handler import ActionHandler
 
 
@@ -27,17 +29,17 @@ def compute_unit_ap(unit: Unit) -> int:
 
 @dataclass
 class BattleService:
-    units: List[Unit]
+    units: list[Unit]
     action_handler: ActionHandler = field(default_factory=ActionHandler)
-    initiative_sort: Optional[Callable[[Unit], int]] = None
+    initiative_sort: Callable[[Unit], int] | None = None
 
     turn_index: int = 0
     round: int = 1
-    ap_pool: Dict[str, int] = field(default_factory=dict)
+    ap_pool: dict[str, int] = field(default_factory=dict)
 
     # Victory tracking (simple placeholder: teams distinguished externally)
-    team_a_ids: List[str] = field(default_factory=list)
-    team_b_ids: List[str] = field(default_factory=list)
+    team_a_ids: list[str] = field(default_factory=list)
+    team_b_ids: list[str] = field(default_factory=list)
 
     battle_active: bool = True
 
@@ -99,7 +101,9 @@ class BattleService:
         return not self.battle_active
 
     # --- Action wrappers integrating AP economy ---
-    def move_current_unit(self, dest: Position, enemy: Optional[Unit] = None, blocked=None, potential_reactors=None) -> dict:
+    def move_current_unit(
+        self, dest: Position, enemy: Unit | None = None, blocked=None, potential_reactors=None
+    ) -> dict:
         unit = self.current_unit()
         summary = self.action_handler.move_unit(
             unit=unit,
@@ -129,3 +133,54 @@ class BattleService:
         self.team_b_ids = [u.id for u in team_b]
         self._check_victory()
 
+    # --- Query methods for presentation layer ---
+    def get_enemies(self, unit: Unit) -> list[Unit]:
+        """Get all enemy units relative to the given unit.
+
+        Args:
+            unit: Unit to get enemies for
+
+        Returns:
+            List of enemy units
+        """
+        if unit.id in self.team_a_ids:
+            return [u for u in self.units if u.id in self.team_b_ids]
+        elif unit.id in self.team_b_ids:
+            return [u for u in self.units if u.id in self.team_a_ids]
+        return []
+
+    def get_unit_at_position(self, pos: Position) -> Unit | None:
+        """Find unit at given hex position.
+
+        Args:
+            pos: Position to check
+
+        Returns:
+            Unit at position, or None
+        """
+        for unit in self.units:
+            if unit.position.q == pos.q and unit.position.r == pos.r:
+                return unit
+        return None
+
+    def get_winner(self) -> str | None:
+        """Determine battle winner.
+
+        Returns:
+            "team_a" if Team A won
+            "team_b" if Team B won
+            "draw" if both teams eliminated
+            None if battle still active
+        """
+        if self.battle_active:
+            return None
+
+        team_a_alive = any(u.is_alive() for u in self.units if u.id in self.team_a_ids)
+        team_b_alive = any(u.is_alive() for u in self.units if u.id in self.team_b_ids)
+
+        if team_a_alive and not team_b_alive:
+            return "team_a"
+        elif team_b_alive and not team_a_alive:
+            return "team_b"
+        else:
+            return "draw"

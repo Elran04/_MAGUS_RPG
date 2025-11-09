@@ -6,17 +6,20 @@ This reaction performs a free attack against the moving unit. Pure computation:
 returns a ReactionResult with embedded AttackResult payload. Application layer
 is responsible for applying damage and truncating movement if instructed.
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Optional
 import random
+from dataclasses import dataclass
 
 from domain.entities import Unit, Weapon
 from domain.mechanics.attack_resolution import (
-    resolve_attack,
     AttackResult as CoreAttackResult,
 )
+from domain.mechanics.attack_resolution import (
+    resolve_attack,
+)
+
 from .base import Reaction, ReactionCategory, ReactionResult
 
 
@@ -38,7 +41,7 @@ class OpportunityAttackReaction(Reaction):
         *,
         path: list[tuple[int, int]],
         intersects_zoc: bool,
-        intersection_index: Optional[int],
+        intersection_index: int | None,
         attacker: Unit,
         mover: Unit,
         **_: object,
@@ -57,18 +60,18 @@ class OpportunityAttackReaction(Reaction):
         mover: Unit,
         intersection_index: int,
         path: list[tuple[int, int]],
-        attack_roll: Optional[int] = None,
-        base_damage_roll: Optional[int] = None,
-        weapon: Optional[Weapon] = None,
+        attack_roll: int | None = None,
+        base_damage_roll: int | None = None,
+        weapon: Weapon | None = None,
         weapon_skill_level: int = 0,
         shield_ve: int = 0,
         dodge_modifier: int = 0,
         attacker_conditions: int = 0,
         mover_conditions: int = 0,
         overpower_threshold: int = 50,
-        stamina_block: Optional[dict] = None,
-        stamina_parry: Optional[dict] = None,
-        stamina_dodge: Optional[dict] = None,
+        stamina_block: dict | None = None,
+        stamina_parry: dict | None = None,
+        stamina_dodge: dict | None = None,
     ) -> ReactionResult:
         """Resolve the opportunity attack and indicate if movement should be interrupted.
 

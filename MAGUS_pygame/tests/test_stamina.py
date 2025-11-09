@@ -1,13 +1,11 @@
 """Tests for stamina subsystem."""
 
-import math
-import pytest
 
 from domain.mechanics import (
+    DEFAULT_COMBAT_MODIFIERS,
+    CombatModifiers,
     Stamina,
     StaminaState,
-    CombatModifiers,
-    DEFAULT_COMBAT_MODIFIERS,
 )
 
 

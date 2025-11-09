@@ -5,8 +5,8 @@ Migrated from old_system/rendering/sprite_manager.py with clean architecture pri
 """
 
 import math
-import pygame
 
+import pygame
 from config import HEX_SIZE, UI_BORDER, UI_TEXT
 from domain.entities import Unit
 from domain.value_objects import Position
@@ -19,10 +19,10 @@ logger = get_logger(__name__)
 def load_and_mask_sprite(filepath: str) -> pygame.Surface:
     """
     Load a sprite image and mask it to a hex shape.
-    
+
     Args:
         filepath: path to the image file
-        
+
     Returns:
         pygame.Surface with the masked sprite
     """
@@ -60,15 +60,10 @@ def load_and_mask_sprite(filepath: str) -> pygame.Surface:
         return fallback
 
 
-def draw_facing_indicator(
-    screen: pygame.Surface,
-    unit: Unit,
-    px: int,
-    py: int
-) -> None:
+def draw_facing_indicator(screen: pygame.Surface, unit: Unit, px: int, py: int) -> None:
     """
     Draw a small triangle on the sprite indicating facing direction.
-    
+
     Args:
         screen: pygame surface to draw on
         unit: Unit with facing property (0-5)
@@ -108,20 +103,16 @@ def draw_facing_indicator(
     pygame.draw.polygon(screen, (200, 200, 50), points, width=2)  # Darker outline
 
 
-def draw_unit_overlays(
-    screen: pygame.Surface,
-    unit: Unit,
-    font: pygame.font.Font
-) -> None:
+def draw_unit_overlays(screen: pygame.Surface, unit: Unit, font: pygame.font.Font) -> None:
     """
     Draw the unit's name and FP/ÉP bars near the sprite.
-    
+
     Uses domain entity (Unit) instead of raw dict.
-    
+
     - Name: above the sprite
     - Bars: at the feet (near bottom of the hex)
     - Facing indicator: small triangle on the sprite
-    
+
     Args:
         screen: pygame surface to draw on
         unit: Unit entity to render overlays for
@@ -171,7 +162,7 @@ def draw_unit_overlays(
     max_fp = unit.fp.maximum
     current_ep = unit.ep.current
     max_ep = unit.ep.maximum
-    
+
     # Draw bars
     draw_bar(start_y, current_fp, max_fp, (235, 200, 50))
     draw_bar(start_y + bar_height + spacing, current_ep, max_ep, (200, 60, 60))
@@ -194,14 +185,11 @@ def draw_unit_overlays(
 
 
 def draw_hex_highlight(
-    screen: pygame.Surface,
-    position: Position,
-    color: tuple[int, int, int, int],
-    alpha: int = 100
+    screen: pygame.Surface, position: Position, color: tuple[int, int, int, int], alpha: int = 100
 ) -> None:
     """
     Draw a highlighted hex at the given position.
-    
+
     Args:
         screen: pygame surface to draw on
         position: Hex position to highlight
@@ -209,7 +197,7 @@ def draw_hex_highlight(
         alpha: Alpha transparency (0-255)
     """
     px, py = hex_to_pixel(position.q, position.r)
-    
+
     # Create hex points
     points = []
     for i in range(6):
@@ -217,17 +205,17 @@ def draw_hex_highlight(
         x = px + HEX_SIZE * math.cos(angle)
         y = py + HEX_SIZE * math.sin(angle)
         points.append((x, y))
-    
+
     # Draw filled hex with alpha
     if len(color) == 3:
         color = (*color, alpha)
-    
+
     # Create surface for alpha blending
     hex_surf = pygame.Surface((int(HEX_SIZE * 2.5), int(HEX_SIZE * 2.5)), pygame.SRCALPHA)
     offset_x = int(HEX_SIZE * 1.25)
     offset_y = int(HEX_SIZE * 1.25)
-    
+
     adjusted_points = [(x - px + offset_x, y - py + offset_y) for x, y in points]
     pygame.draw.polygon(hex_surf, color, adjusted_points)
-    
+
     screen.blit(hex_surf, (px - offset_x, py - offset_y))

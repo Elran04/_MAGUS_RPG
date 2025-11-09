@@ -12,7 +12,7 @@ class PerformanceProfiler:
 
     def __init__(self, sample_size: int = 60) -> None:
         """Initialize profiler with rolling window for metrics.
-        
+
         Args:
             sample_size: Number of frames to track for averaging
         """
@@ -32,7 +32,7 @@ class PerformanceProfiler:
 
     def get_fps(self) -> float:
         """Get current average FPS.
-        
+
         Returns:
             Average FPS over the sample window
         """
@@ -43,7 +43,7 @@ class PerformanceProfiler:
 
     def get_frame_time_ms(self) -> float:
         """Get current average frame time in milliseconds.
-        
+
         Returns:
             Average frame time in ms
         """
@@ -53,7 +53,7 @@ class PerformanceProfiler:
 
     def get_stats(self) -> dict[str, Any]:
         """Get comprehensive performance statistics.
-        
+
         Returns:
             Dict with fps, frame_time_ms, min_fps, max_fps
         """
@@ -83,7 +83,7 @@ _profiler: PerformanceProfiler | None = None
 
 def get_profiler() -> PerformanceProfiler:
     """Get or create the global profiler instance.
-    
+
     Returns:
         The global PerformanceProfiler instance
     """
