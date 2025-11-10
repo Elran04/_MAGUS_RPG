@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from application.equipment_view import EquipmentView
+from presentation.adapters.equipment_view import EquipmentView
 from domain.entities import Unit
 
 

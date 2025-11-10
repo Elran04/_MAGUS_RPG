@@ -20,6 +20,8 @@ class ScenarioState:
     background_file: Optional[str] = None
     team_a: List[UnitSetup] = field(default_factory=list)
     team_b: List[UnitSetup] = field(default_factory=list)
+    max_team_a_size: Optional[int] = None  # From spawn zones
+    max_team_b_size: Optional[int] = None  # From spawn zones
 
 
 class ScenarioService:
@@ -44,19 +46,44 @@ class ScenarioService:
         bg = self._scenario_repo.resolve_background(map_name)
         self._state.map_name = map_name
         self._state.background_file = bg or "grass_bg.jpg"
-        logger.debug(f"Scenario map set: {map_name} (bg={self._state.background_file})")
+        
+        # Load spawn zones to determine team size limits
+        scenario_data = self._scenario_repo.load_scenario(map_name)
+        if scenario_data:
+            spawn_zones = scenario_data.get('spawn_zones', {})
+            team_a_zones = spawn_zones.get('team_a', [])
+            team_b_zones = spawn_zones.get('team_b', [])
+            self._state.max_team_a_size = len(team_a_zones)
+            self._state.max_team_b_size = len(team_b_zones)
+            logger.debug(
+                f"Scenario map set: {map_name} (bg={self._state.background_file}), "
+                f"max team sizes: A={self._state.max_team_a_size}, B={self._state.max_team_b_size}"
+            )
+        else:
+            logger.warning(f"Could not load scenario data for {map_name}, no team size limits set")
+            self._state.max_team_a_size = None
+            self._state.max_team_b_size = None
 
     # Roster management ------------------------------------------------
-    def add_unit(self, team_a: bool, character_file: str, sprite_file: str) -> bool:
+    def add_unit(self, team_a: bool, character_file: str, sprite_file: str, equipment=None, inventory=None, skills=None) -> bool:
         """Add a unit to the chosen team.
 
         Returns True if added, False if rejected by validation.
+        equipment: dict or None
+        inventory: list or None
+        skills: list or None
         """
         roster = self._state.team_a if team_a else self._state.team_b
 
-        # Size limit
+        # Check scenario-specific spawn zone limit first
+        max_size = self._state.max_team_a_size if team_a else self._state.max_team_b_size
+        if max_size is not None and len(roster) >= max_size:
+            logger.info(f"Roster full (scenario spawn zone limit: {max_size}); rejecting add.")
+            return False
+        
+        # Fallback to generic size limit
         if self._max_team_size is not None and len(roster) >= self._max_team_size:
-            logger.info("Roster full; rejecting add.")
+            logger.info("Roster full (generic limit); rejecting add.")
             return False
 
         # Duplicate prevention
@@ -71,7 +98,15 @@ class ScenarioService:
         if not self._sprite_repo.character_sprite_exists(sprite_file):
             logger.warning(f"Sprite file missing: {sprite_file}")
 
-        roster.append(UnitSetup(character_file=character_file, sprite_file=sprite_file))
+        # Use provided equipment/inventory/skills if given, else default
+        if equipment is None:
+            equipment = {}
+        if inventory is None:
+            inventory = []
+        if skills is None:
+            skills = []
+
+        roster.append(UnitSetup(character_file=character_file, sprite_file=sprite_file, equipment=equipment, inventory=inventory, skills=skills))
         logger.debug(f"Added unit to {'A' if team_a else 'B'}: {character_file}/{sprite_file}")
         return True
 
@@ -94,6 +129,19 @@ class ScenarioService:
     # State exposure ---------------------------------------------------
     def get_team(self, team_a: bool) -> list[UnitSetup]:
         return self._state.team_a if team_a else self._state.team_b
+    
+    def get_max_team_size(self, team_a: bool) -> int | None:
+        """Get maximum team size based on scenario spawn zones.
+        
+        Args:
+            team_a: True for Team A, False for Team B
+            
+        Returns:
+            Maximum team size or None if no limit
+        """
+        max_size = self._state.max_team_a_size if team_a else self._state.max_team_b_size
+        # Fallback to generic limit if scenario limit not set
+        return max_size if max_size is not None else self._max_team_size
 
     def update_unit(self, team_a: bool, index: int, new_setup: UnitSetup) -> None:
         """Replace a unit setup in the specified team at index.

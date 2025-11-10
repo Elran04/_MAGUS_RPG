@@ -13,8 +13,7 @@ from domain.value_objects.scenario_config import UnitSetup
 
 from .phase_base import SelectionPhaseBase
 from presentation.components.equipment.roster_list import RosterList
-from presentation.components.equipment.equipment_slots_panel import EquipmentSlotsPanel
-from presentation.components.equipment.inventory_panel import InventoryPanel
+from presentation.components.equipment.equipment_panel_coordinator import EquipmentPanelCoordinator
 
 logger = get_logger(__name__)
 
@@ -97,24 +96,29 @@ class EquipmentPhase(SelectionPhaseBase):
         )
         self.roster_list.set_items(self.combined_roster)
 
-        # Equipment slots (middle)
-        self.slots_panel = EquipmentSlotsPanel(
-            x=20 + left_panel_w + 10,
-            y=top_y,
-            width=middle_w,
-            height=panel_h,
-            font=self.font_small,
-        )
-
-        # Inventory panel (right)
-        self.inventory_panel = InventoryPanel(
-            x=20 + left_panel_w + 10 + middle_w + 10,
-            y=top_y,
-            width=right_panel_w,
-            height=panel_h,
+        # Equipment coordinator (middle + right)
+        coord_width = screen_width - left_panel_w - 40
+        self.equipment_coordinator = EquipmentPanelCoordinator(
+            context=context,
             font=self.font_small,
             title_font=self.font_normal,
+            screen_width=coord_width,
+            screen_height=panel_h,
         )
+        # Adjust position
+        self.equipment_coordinator.equipment_panel.rect.x = 20 + left_panel_w + 10
+        self.equipment_coordinator.equipment_panel.rect.y = top_y
+        self.equipment_coordinator.inventory_panel.rect.x = (
+            20 + left_panel_w + 10 + (coord_width - 40) // 2 + 20
+        )
+        self.equipment_coordinator.inventory_panel.rect.y = top_y
+        
+        # Recalculate layouts after position adjustment
+        self.equipment_coordinator.equipment_panel._layout_slots()
+        self.equipment_coordinator.inventory_panel._layout()
+
+        # Current inventory items (tracked here)
+        self.current_inventory: list[dict] = []
 
         # Load initial selected unit equipment if any
         self._load_selected_unit_equipment()
@@ -134,8 +138,8 @@ class EquipmentPhase(SelectionPhaseBase):
         if selection_changed:
             self._load_selected_unit_equipment()
 
-        # Slot interaction
-        if self.slots_panel.handle_event(event):
+        # Equipment coordinator (handles both panels)
+        if self.equipment_coordinator.handle_event(event):
             # Persist equipment changes back to underlying unit
             self._persist_equipment_changes()
 
@@ -164,8 +168,7 @@ class EquipmentPhase(SelectionPhaseBase):
         
         # Phase title already drawn; draw sub-panels
         self.roster_list.draw(surface)
-        self.slots_panel.draw(surface)
-        self.inventory_panel.draw(surface)
+        self.equipment_coordinator.draw(surface)
         
         # Instructions
         self._draw_instructions(surface)
@@ -173,7 +176,7 @@ class EquipmentPhase(SelectionPhaseBase):
     def _draw_instructions(self, surface: pygame.Surface) -> None:
         """Draw control instructions."""
         y = self.screen_height - 40
-        instructions = "Roster: Click / Arrows | Slots: Click to cycle | Enter: Continue | ESC: Back"
+        instructions = "Select slot → Click item to equip | Right-click slot to remove | Enter: Continue | ESC: Back"
         inst_surf = self.font_small.render(instructions, True, self.color_instructions)
         inst_rect = inst_surf.get_rect(center=(self.screen_width // 2, y))
         surface.blit(inst_surf, inst_rect)
@@ -188,30 +191,36 @@ class EquipmentPhase(SelectionPhaseBase):
 
     # --- Internal helpers -------------------------------------------------
     def _load_selected_unit_equipment(self) -> None:
+        """Load equipment and inventory for the selected unit."""
         sel = self.roster_list.get_selected()
         if not sel:
             return
         name, is_team_a, idx = sel
         unit = self.context.scenario_service.get_team(is_team_a)[idx]
-        self.slots_panel.set_initial(unit.equipment)
-        self.inventory_panel.set_data(unit.equipment, unit.inventory)
+        
+        # Load fresh data for this unit (creates new instance each time)
+        self.equipment_coordinator.set_data(unit.equipment, unit.inventory)
 
     def _persist_equipment_changes(self) -> None:
+        """Persist equipment and inventory changes back to the unit."""
         sel = self.roster_list.get_selected()
         if not sel:
             return
         _, is_team_a, idx = sel
         unit = self.context.scenario_service.get_team(is_team_a)[idx]
-        # Rebuild UnitSetup with updated equipment mapping
+        
+        # Get updated equipment and inventory from coordinator
+        updated_equipment = self.equipment_coordinator.get_equipment()
+        updated_inventory = self.equipment_coordinator.get_current_inventory()
+        
+        # Rebuild UnitSetup with updated equipment and inventory
         updated = UnitSetup(
             character_file=unit.character_file,
             sprite_file=unit.sprite_file,
             start_q=unit.start_q,
             start_r=unit.start_r,
             facing=unit.facing,
-            equipment=self.slots_panel.get_equipment(),
-            inventory=unit.inventory,
+            equipment=updated_equipment,
+            inventory=updated_inventory,  # Updated inventory
         )
         self.context.scenario_service.update_unit(is_team_a, idx, updated)
-        # Update right panel
-        self.inventory_panel.set_data(updated.equipment, updated.inventory)

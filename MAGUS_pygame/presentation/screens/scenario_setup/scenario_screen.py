@@ -18,7 +18,7 @@ from application.game_context import GameContext
 from config import DEJAVU_FONT_PATH
 from domain.value_objects import ScenarioConfig
 from logger.logger import get_logger
-from presentation.screens.scenario_phases import (
+from presentation.screens.scenario_setup.scenario_phases import (
     EquipmentPhase,
     MapSelectionPhase,
     SelectionPhaseBase,
@@ -172,6 +172,9 @@ class ScenarioScreen:
         # Navigation buttons
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.button_next.collidepoint(event.pos) and phase_screen.can_proceed():
+                # For map phase, ensure selection is confirmed before advancing
+                if self.current_phase == FlowPhase.MAP and hasattr(phase_screen, '_confirm_selection'):
+                    phase_screen._confirm_selection()
                 phase_screen.completed = True
                 self._advance_phase()
             elif self.button_back.collidepoint(event.pos) and self.current_phase != FlowPhase.MAP:

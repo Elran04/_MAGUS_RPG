@@ -395,7 +395,6 @@ class Menu:
     def _start_new_game(self) -> None:
         """Start a new game."""
         self.last_action = "new_game"
-        self.close()
         logger.info("New game requested")
 
     def _load_game(self) -> None:

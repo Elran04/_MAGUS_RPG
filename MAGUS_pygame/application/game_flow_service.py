@@ -1,7 +1,10 @@
 """
-start_game(context) - Orchestrates complete game flow from scenario to battle.
+Game Flow Service - Orchestrates complete game flow from scenario to battle.
 
-Complete flow: Scenario Selection -> Deployment -> Battle
+Complete flow: Scenario Selection -> Equipment -> Deployment -> Battle
+
+This application service coordinates the high-level game workflow,
+managing transitions between different game phases and screens.
 """
 
 from __future__ import annotations
@@ -13,9 +16,9 @@ from domain.entities import Unit
 from domain.value_objects import Facing, Position
 from domain.value_objects.scenario_config import ScenarioConfig
 from logger.logger import get_logger
-from presentation.screens.battle_screen import BattleScreen
-from presentation.screens.deployment_screen import DeploymentScreen
-from presentation.screens.scenario_screen import ScenarioScreen
+from presentation.screens.game.battle_screen import BattleScreen
+from presentation.screens.game.deployment_screen import DeploymentScreen
+from presentation.screens.scenario_setup.scenario_screen import ScenarioScreen
 
 logger = get_logger(__name__)
 

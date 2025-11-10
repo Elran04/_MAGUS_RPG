@@ -15,6 +15,11 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 
 from domain.entities import Unit
+from domain.mechanics.initiation import (
+    calculate_initiative,
+    initiative_sort_key_factory,
+    InitiativeOrder,
+)
 from domain.value_objects import Position
 
 from .action_handler import ActionHandler
@@ -32,6 +37,9 @@ class BattleService:
     units: list[Unit]
     action_handler: ActionHandler = field(default_factory=ActionHandler)
     initiative_sort: Callable[[Unit], int] | None = None
+    initiative_order: InitiativeOrder | None = None
+    _rng_seed: int | None = None  # For deterministic testing if provided
+    _rng: object | None = None  # random.Random when initiative enabled
 
     turn_index: int = 0
     round: int = 1
@@ -44,10 +52,44 @@ class BattleService:
     battle_active: bool = True
 
     def start_battle(self) -> None:
-        """Initialize battle: sort units, compute initial AP, reset reactions."""
+        """Initialize battle: perform initiative (if enabled), sort units, compute AP, reset reactions."""
+        if self.initiative_order is not None and self.initiative_sort is None:
+            # Initiative was computed but key not yet set (edge case)
+            self.initiative_sort = initiative_sort_key_factory(self.initiative_order)
         self._sort_units()
         self._init_ap()
         self.action_handler.start_turn(self.units)
+
+    # ------------------------------------------------------------------
+    # Initiative Integration
+    # ------------------------------------------------------------------
+    def enable_initiative(self, *, seed: int | None = None, persistent: bool = False, re_roll_each_round: bool = True) -> None:
+        """Activate initiative system before calling start_battle.
+
+        Args:
+            seed: Optional RNG seed for deterministic rolls (tests).
+            persistent: If True, initiative order persists across rounds unless manually refreshed.
+            re_roll_each_round: If False and persistent=True, keeps same order.
+        """
+        import random
+
+        self._rng_seed = seed
+        self._rng = random.Random(seed) if seed is not None else random.Random()
+        self.initiative_order = calculate_initiative(self.units, rng=self._rng)
+        self.initiative_order.persistent = persistent and not re_roll_each_round
+        self.initiative_sort = initiative_sort_key_factory(self.initiative_order)
+        # Sort immediately so presentation can inspect order prior to start_battle if needed
+        self._sort_units()
+
+    def refresh_initiative_for_new_round(self) -> None:
+        """Re-roll (or retain) initiative at the start of a new round if enabled."""
+        if not self.initiative_order:
+            return
+        # Decide re_roll flag based on persistent setting
+        re_roll = not self.initiative_order.persistent
+        self.initiative_order.refresh_for_new_round(self.units, re_roll=re_roll, rng=self._rng)
+        self.initiative_sort = initiative_sort_key_factory(self.initiative_order)
+        self._sort_units()
 
     def _sort_units(self) -> None:
         if self.initiative_sort:
@@ -73,15 +115,32 @@ class BattleService:
         return True
 
     def end_turn(self) -> None:
-        """Advance to next unit; on wrap, start new round and refresh AP + reactions."""
+        """Advance to next unit; on wrap, start new round and refresh AP + reactions.
+
+        If initiative is enabled, possibly re-roll depending on persistent flag.
+        """
         self.turn_index += 1
         if self.turn_index >= len(self.units):
             self.turn_index = 0
             self.round += 1
+            # Refresh initiative ordering first (if enabled) then AP and reactions
+            self.refresh_initiative_for_new_round()
             self._init_ap()
             self.action_handler.start_turn(self.units)
         self._cleanup_dead_units()
         self._check_victory()
+
+    # ------------------------------------------------------------------
+    # Initiative inspection helpers
+    # ------------------------------------------------------------------
+    def get_initiative_table(self) -> list[tuple[str, int, int, int]]:
+        """Return debug table of current initiative entries.
+
+        Returns rows: (unit_id, total, base_ke, roll)
+        """
+        if not self.initiative_order:
+            return []
+        return self.initiative_order.to_debug_table()
 
     def _cleanup_dead_units(self) -> None:
         # Remove units that are dead from AP pool (keep in list for history; optional removal strategy)

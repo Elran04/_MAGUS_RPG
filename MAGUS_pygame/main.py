@@ -11,11 +11,11 @@ For quick start, see QUICKSTART.md
 import pygame
 import multiprocessing
 from application.game_context import GameContext
-from application.start_game import start_game
+from application.game_flow_service import start_game
 from config import HEIGHT, WIDTH
 from logger.logger import get_logger
-from presentation.screens.menu_screen import Menu
-from presentation.screens.scenario_editor_screen import ScenarioEditorScreen
+from presentation.screens.menu.menu_screen import Menu
+from presentation.screens.editor.scenario_editor_screen import ScenarioEditorScreen
 from presentation.desktop.editor_tool_window import run_tool_window
 
 logger = get_logger(__name__)
@@ -55,18 +55,16 @@ def main() -> None:
                     running = False
                 else:
                     menu.handle_event(event)
-                    
-        if game_state == "menu":
+            
             # Draw menu
             menu.draw(screen)
             pygame.display.flip()
 
-            # Check for menu actions
+            # Check for menu actions (only if menu is still open)
             action = menu.get_last_action()
             if action == "new_game":
                 logger.info("Starting new game")
                 menu.reset_action()
-                menu.close()
                 game_state = "playing"
 
                 # Start game (runs until completion or quit)
@@ -84,7 +82,6 @@ def main() -> None:
             elif action == "scenario_editor":
                 logger.info("Opening Scenario Editor - menu action received")
                 menu.reset_action()
-                menu.close()  # Close menu so it doesn't consume events!
                 
                 # Clear any pending events
                 pygame.event.clear()

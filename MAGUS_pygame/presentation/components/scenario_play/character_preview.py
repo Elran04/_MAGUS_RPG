@@ -5,11 +5,15 @@ Displays character information including sprite, stats, skills, and equipment
 in a three-column preview panel with scrollable sections during team composition.
 """
 
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 import pygame
 from logger.logger import get_logger
 from config.paths import DEJAVU_FONT_PATH
+
+if TYPE_CHECKING:
+    from application.game_context import GameContext
+
 logger = get_logger(__name__)
 
 
@@ -22,7 +26,7 @@ class CharacterPreview:
     - Right: Equipment (scrollable)
     """
 
-    def __init__(self, x: int, y: int, width: int, height: int):
+    def __init__(self, x: int, y: int, width: int, height: int, context: "GameContext"):
         """Initialize character preview panel.
 
         Args:
@@ -30,8 +34,10 @@ class CharacterPreview:
             y: Panel Y position
             width: Panel width
             height: Panel height
+            context: Game context for data access
         """
         self.rect = pygame.Rect(x, y, width, height)
+        self.context = context
 
         # Four-column layout sizing (custom percentages)
         self.col_padding = 15
@@ -42,12 +48,9 @@ class CharacterPreview:
         self.equipment_scroll = 0
         self.scroll_speed = 20
 
-        # Data lookup caches for names & repositories
+        # Data lookup caches for names
         self._skill_names: dict[str, str] = {}
         self._equipment_names: dict[str, str] = {}
-        self._skill_names_loaded = False
-        self._skills_repo = None  # lazy init
-        self._equipment_repo = None  # lazy init
 
         # Tooltip state (stores full text when truncated)
         self._hover_tooltip: str | None = None
@@ -501,53 +504,21 @@ class CharacterPreview:
         pygame.draw.rect(surface, self.color_scrollbar, thumb_rect, border_radius=4)
     
     def _get_skill_name(self, skill_id: str) -> str:
-        """Look up skill name from ID using the SkillsRepository fallback formatting if needed."""
+        """Look up skill name from ID using the application layer facade."""
         if skill_id in self._skill_names:
             return self._skill_names[skill_id]
-        # Lazy init repository
-        if self._skills_repo is None:
-            try:
-                from infrastructure.repositories.skills_repository import SkillsRepository
-                self._skills_repo = SkillsRepository()
-            except Exception as e:
-                logger.debug(f"SkillsRepository import failed: {e}")
-                self._skills_repo = None
-        if self._skills_repo:
-            readable_name = self._skills_repo.get_skill_name(skill_id)
-        else:
-            readable_name = skill_id.replace("_", " ").title()
+        
+        readable_name = self.context.get_skill_name(skill_id)
         self._skill_names[skill_id] = readable_name
         return readable_name
     
     def _get_equipment_name(self, item_id: str, category: str) -> str:
-        """Look up equipment name from ID and category using repository cache."""
+        """Look up equipment name from ID and category using application layer facade."""
         cache_key = f"{category}:{item_id}"
         if cache_key in self._equipment_names:
             return self._equipment_names[cache_key]
-        # Lazy init
-        if self._equipment_repo is None:
-            try:
-                from infrastructure.repositories.equipment_repository import EquipmentRepository
-                self._equipment_repo = EquipmentRepository()
-            except Exception as e:
-                logger.debug(f"EquipmentRepository import failed: {e}")
-                self._equipment_repo = None
-        name: str | None = None
-        if self._equipment_repo:
-            try:
-                if category == "weapons_and_shields":
-                    w = self._equipment_repo.find_weapon_by_id(item_id)
-                    name = w.get("name") if w else None
-                elif category == "armor":
-                    a = self._equipment_repo.find_armor_by_id(item_id)
-                    name = a.get("name") if a else None
-                else:
-                    g = self._equipment_repo.find_general_by_id(item_id)
-                    name = g.get("name") if g else None
-            except Exception as e:
-                logger.debug(f"Repository lookup failed: {e}")
-        if not name:
-            name = item_id.replace("_", " ").title()
+        
+        name = self.context.get_equipment_name(item_id, category)
         self._equipment_names[cache_key] = name
         return name
 

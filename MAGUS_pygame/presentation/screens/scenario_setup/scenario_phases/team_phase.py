@@ -72,7 +72,8 @@ class TeamCompositionPhase(SelectionPhaseBase):
         self.color_instructions = (180, 180, 180)
         
         # Buttons
-        self.button_add_unit = pygame.Rect(screen_width // 2 - 100, screen_height - 150, 200, 50)
+        self.button_add_unit = pygame.Rect(screen_width // 2 - 220, screen_height - 70, 200, 50)
+        self.button_remove_unit = pygame.Rect(screen_width // 2 + 20, screen_height - 70, 200, 50)
         
         logger.info(
             f"Team composition phase initialized: {team_name}, "
@@ -119,7 +120,8 @@ class TeamCompositionPhase(SelectionPhaseBase):
             x=50,
             y=preview_y,
             width=preview_width,
-            height=preview_height
+            height=preview_height,
+            context=self.context
         )
         
         # Roster panel (bottom)
@@ -192,6 +194,8 @@ class TeamCompositionPhase(SelectionPhaseBase):
             if event.button == 1:  # Left click
                 if self.button_add_unit.collidepoint(event.pos):
                     self._add_current_unit()
+                elif self.button_remove_unit.collidepoint(event.pos):
+                    self._remove_last_unit()
     
     def _add_current_unit(self) -> None:
         """Add currently selected character+sprite to team roster."""
@@ -202,14 +206,32 @@ class TeamCompositionPhase(SelectionPhaseBase):
         char_file = self.available_characters[self.current_char_index]
         sprite_file = self.available_sprites[self.current_sprite_index]
         
-        added = self.context.scenario_service.add_unit(self.is_team_a, char_file, sprite_file)
+        # Load character data with proper equipment, skills, and inventory using service
+        unit_data = self.context.unit_setup_service.prepare_unit_data(char_file)
+        if not unit_data:
+            logger.error(f"Failed to load unit data for {char_file}")
+            return
+        
+        # Extract equipment, inventory, and skills from character data
+        equipment = unit_data['equipment']
+        inventory = unit_data['inventory']
+        skills = unit_data['skills']
+        
+        added = self.context.scenario_service.add_unit(
+            self.is_team_a,
+            char_file,
+            sprite_file,
+            equipment=equipment,
+            inventory=inventory,
+            skills=skills
+        )
         if added:
-            logger.debug(f"Added unit to {self.team_name}: {char_file} / {sprite_file}")
+            logger.debug(f"Added unit to {self.team_name}: {char_file} / {sprite_file} "
+                        f"(equipment: {len(equipment)}, inventory: {len(inventory)}, skills: {len(skills)})")
         else:
             logger.info("Unit not added (validation prevented).")
         
-        # Warm caches via repositories
-        self.context.character_repo.load(char_file)
+        # Warm sprite cache
         self.context.sprite_repo.load_character_sprite(sprite_file, max_size=160)
     
     def _remove_last_unit(self) -> None:
@@ -242,10 +264,6 @@ class TeamCompositionPhase(SelectionPhaseBase):
         title_rect = title.get_rect(center=(self.screen_width // 2, 50))
         surface.blit(title, title_rect)
         
-        # Draw dropdowns
-        self.character_dropdown.draw(surface)
-        self.sprite_dropdown.draw(surface)
-        
         # Character preview
         if self.available_characters and self.available_sprites:
             char_file = self.available_characters[self.current_char_index]
@@ -257,23 +275,48 @@ class TeamCompositionPhase(SelectionPhaseBase):
             
             self.character_preview.draw(surface, char_data, sprite_surf, char_file, sprite_file)
         
-        # Roster panel
+        # Roster panel with size info
         roster = self.context.scenario_service.get_team(self.is_team_a)
-        roster_title = f"{self.team_name} Roster"
+        max_size = self.context.scenario_service.get_max_team_size(self.is_team_a)
+        if max_size is not None:
+            roster_title = f"{self.team_name} Roster ({len(roster)}/{max_size})"
+        else:
+            roster_title = f"{self.team_name} Roster ({len(roster)})"
         self.roster_panel.draw(surface, roster_title, roster, self.is_team_a)
         
-        # Add Unit button
-        pygame.draw.rect(surface, self.color_button, self.button_add_unit)
-        add_text = self.font_normal.render("Add Unit", True, self.color_text)
+        # Add Unit button (dim if roster is full)
+        max_size = self.context.scenario_service.get_max_team_size(self.is_team_a)
+        is_roster_full = max_size is not None and len(roster) >= max_size
+        button_color = (40, 40, 50) if is_roster_full else self.color_button
+        text_color = (100, 100, 100) if is_roster_full else self.color_text
+        
+        pygame.draw.rect(surface, button_color, self.button_add_unit)
+        add_text = self.font_normal.render("Add Unit", True, text_color)
         add_rect = add_text.get_rect(center=self.button_add_unit.center)
         surface.blit(add_text, add_rect)
         
+        # Show "FULL" message if roster is full
+        if is_roster_full:
+            full_text = self.font_small.render("(Roster Full)", True, (255, 100, 100))
+            full_rect = full_text.get_rect(center=(self.button_add_unit.centerx, self.button_add_unit.bottom + 15))
+            surface.blit(full_text, full_rect)
+        
+        # Remove Last Unit button
+        pygame.draw.rect(surface, self.color_button, self.button_remove_unit)
+        remove_text = self.font_normal.render("Remove Unit", True, self.color_text)
+        remove_rect = remove_text.get_rect(center=self.button_remove_unit.center)
+        surface.blit(remove_text, remove_rect)
+        
         # Instructions
         self._draw_instructions(surface)
-    
+
+        # Draw dropdowns
+        self.character_dropdown.draw(surface)
+        self.sprite_dropdown.draw(surface)
+
     def _draw_instructions(self, surface: pygame.Surface) -> None:
         """Draw control instructions."""
-        y = self.screen_height - 110
+        y = self.screen_height - 590
         
         instructions = [
             "Click dropdown or ←→: Change selection  |  Mouse wheel: Scroll preview",

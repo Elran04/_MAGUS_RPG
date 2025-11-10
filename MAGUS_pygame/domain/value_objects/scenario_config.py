@@ -19,8 +19,11 @@ class UnitSetup:
         start_q: Deployment hex Q coordinate (optional until deployment phase)
         start_r: Deployment hex R coordinate (optional until deployment phase)
         facing: Initial facing direction (0-5 for hex directions)
-        equipment: Mapping of equipment slot -> item id (added during equipment phase)
+        equipment: Mapping of equipment slot -> item id or list (added during equipment phase)
+            Slots: main_hand, off_hand, weapon_quick_1, weapon_quick_2,
+                   armor (list of armor piece IDs), quick_access_1, quick_access_2
         inventory: Mapping of item id -> quantity (simple aggregation for general items)
+        skills: Mapping of skill name -> skill value/level
     """
 
     character_file: str
@@ -30,6 +33,7 @@ class UnitSetup:
     facing: int = 0
     equipment: Dict[str, str] = field(default_factory=dict)
     inventory: Dict[str, int] = field(default_factory=dict)
+    skills: Dict[str, int] = field(default_factory=dict)
 
     def __post_init__(self):
         """Validate unit setup configuration."""
@@ -57,6 +61,7 @@ class UnitSetup:
             facing=facing,
             equipment=self.equipment.copy(),
             inventory=self.inventory.copy(),
+            skills=self.skills.copy(),
         )
 
     def with_equipment(self, slot: str, item_id: str) -> "UnitSetup":
@@ -79,6 +84,7 @@ class UnitSetup:
             facing=self.facing,
             equipment=new_equipment,
             inventory=self.inventory.copy(),
+            skills=self.skills.copy(),
         )
 
     def with_inventory_item(self, item_id: str, delta: int = 1) -> "UnitSetup":
@@ -103,6 +109,7 @@ class UnitSetup:
             facing=self.facing,
             equipment=self.equipment.copy(),
             inventory=new_inv,
+            skills=self.skills.copy(),
         )
 
     def is_deployed(self) -> bool:
