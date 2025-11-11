@@ -6,7 +6,6 @@ including team composition, deployment zones, and map selection.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, Tuple
 
 
 @dataclass(frozen=True)
@@ -31,9 +30,9 @@ class UnitSetup:
     start_q: int | None = None
     start_r: int | None = None
     facing: int = 0
-    equipment: Dict[str, str] = field(default_factory=dict)
-    inventory: Dict[str, int] = field(default_factory=dict)
-    skills: Dict[str, int] = field(default_factory=dict)
+    equipment: dict[str, str] = field(default_factory=dict)
+    inventory: dict[str, int] = field(default_factory=dict)
+    skills: dict[str, int] = field(default_factory=dict)
 
     def __post_init__(self):
         """Validate unit setup configuration."""

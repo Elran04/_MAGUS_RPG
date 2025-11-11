@@ -70,7 +70,7 @@ class Menu:
 
         # Track last selected action (for application layer to handle)
         self.last_action: str | None = None
-        
+
         # Track previous state for proper back navigation
         self.previous_state: MenuState | None = None
 

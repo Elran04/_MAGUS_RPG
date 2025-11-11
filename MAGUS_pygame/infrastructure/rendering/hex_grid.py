@@ -46,6 +46,63 @@ def get_grid_bounds() -> tuple[int, int, int, int]:
     return min_q, max_q, min_r, max_r
 
 
+def get_adjacent_hexes(q: int, r: int) -> list[tuple[int, int]]:
+    """Get all 6 adjacent hex coordinates.
+
+    Args:
+        q, r: Center hex coordinates
+
+    Returns:
+        List of 6 adjacent hex coordinates in facing order (0-5)
+    """
+    # Hex neighbor offsets in facing order
+    neighbors = [
+        (1, -1),  # 0: NE
+        (1, 0),  # 1: E
+        (0, 1),  # 2: SE
+        (-1, 1),  # 3: SW
+        (-1, 0),  # 4: W
+        (0, -1),  # 5: NW
+    ]
+    return [(q + dq, r + dr) for dq, dr in neighbors]
+
+
+def calculate_facing_to_hex(from_q: int, from_r: int, to_q: int, to_r: int) -> int | None:
+    """Calculate facing direction from one hex to an adjacent hex.
+
+    Hex directions (pointy-top):
+    - 0: NE (top-right)
+    - 1: E (right)
+    - 2: SE (bottom-right)
+    - 3: SW (bottom-left)
+    - 4: W (left)
+    - 5: NW (top-left)
+
+    Args:
+        from_q, from_r: Starting hex coordinates
+        to_q, to_r: Target hex coordinates (should be adjacent)
+
+    Returns:
+        Facing direction (0-5) or None if not adjacent
+    """
+    # Calculate direction vector
+    dq = to_q - from_q
+    dr = to_r - from_r
+
+    # Map direction vectors to facing values
+    # Based on HEX_DIRECTIONS in reach.py
+    direction_map = {
+        (1, -1): 0,  # NE
+        (1, 0): 1,  # E
+        (0, 1): 2,  # SE
+        (-1, 1): 3,  # SW
+        (-1, 0): 4,  # W
+        (0, -1): 5,  # NW
+    }
+
+    return direction_map.get((dq, dr))
+
+
 def hex_to_pixel(q: int, r: int) -> tuple[int, int]:
     """Convert hex coordinates to pixel coordinates (pointy-topped).
 

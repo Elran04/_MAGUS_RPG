@@ -4,7 +4,6 @@ Unit information popup display - Migrated to new architecture.
 Shows detailed unit stats when right-clicking on a unit using new domain entities.
 """
 
-
 import pygame
 from config import HEIGHT, HUMANOID_SILHOUETTE, UI_ACTIVE, UI_BORDER, UI_INACTIVE, UI_TEXT, WIDTH
 from domain.entities import Unit

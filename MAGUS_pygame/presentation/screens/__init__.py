@@ -8,18 +8,17 @@ Organized into logical subdirectories:
 """
 
 # Menu screens
-from .menu.menu_screen import Menu, MenuItem, MenuState
-
-# Scenario setup screens
-from .scenario_setup.scenario_screen import ScenarioScreen
+# Editor screens
+from .editor.scenario_editor_screen import ScenarioEditorScreen
 
 # Game screens
 from .game.battle_screen import BattleScreen
 from .game.deployment_screen import DeploymentScreen
 from .game.equipment_screen import EquipmentScreen
+from .menu.menu_screen import Menu, MenuItem, MenuState
 
-# Editor screens
-from .editor.scenario_editor_screen import ScenarioEditorScreen
+# Scenario setup screens
+from .scenario_setup.scenario_screen import ScenarioScreen
 
 __all__ = [
     # Menu

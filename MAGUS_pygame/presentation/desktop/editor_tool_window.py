@@ -1,42 +1,38 @@
 from __future__ import annotations
 
 import sys
-from typing import Optional
-import multiprocessing
 
+from config import BACKGROUND_SPRITES_DIR
+from infrastructure.events.editor_events import (
+    EV_CLOSE,
+    EV_LOAD,
+    EV_NEW,
+    EV_SAVE,
+    EV_SET_BACKGROUND,
+    EV_SET_DESCRIPTION,
+    EV_SET_NAME,
+    EV_STATE_UPDATE,
+    EV_TOOL_SELECT,
+    EditorEvent,
+)
+from infrastructure.events.event_bus import EditorEventBus
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QApplication,
-    QWidget,
-    QVBoxLayout,
-    QPushButton,
-    QLabel,
     QHBoxLayout,
+    QLabel,
     QLineEdit,
-    QFileDialog,
     QListWidget,
     QListWidgetItem,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
 )
-
-from infrastructure.events.editor_events import (
-    EditorEvent,
-    EV_TOOL_SELECT,
-    EV_SAVE,
-    EV_LOAD,
-    EV_CLOSE,
-    EV_STATE_UPDATE,
-    EV_NEW,
-    EV_SET_NAME,
-    EV_SET_DESCRIPTION,
-    EV_SET_BACKGROUND,
-)
-from infrastructure.events.event_bus import EditorEventBus
-from config import BACKGROUND_SPRITES_DIR
 
 # Shutdown signaling from game loop
 _QUIT_EVENT = None  # Will be set per-process
 # Event bus instance (injected)
-_EVENT_BUS: Optional[EditorEventBus] = None
+_EVENT_BUS: EditorEventBus | None = None
 
 
 class ToolWindow(QWidget):
@@ -107,10 +103,18 @@ class ToolWindow(QWidget):
         self.setLayout(layout)
 
         # Wire clicks -> publish events
-        self.btn_team_a.clicked.connect(lambda: self.event_bus.publish(EditorEvent(EV_TOOL_SELECT, {"tool": "team_a"})))
-        self.btn_team_b.clicked.connect(lambda: self.event_bus.publish(EditorEvent(EV_TOOL_SELECT, {"tool": "team_b"})))
-        self.btn_obstacle.clicked.connect(lambda: self.event_bus.publish(EditorEvent(EV_TOOL_SELECT, {"tool": "obstacle"})))
-        self.btn_erase.clicked.connect(lambda: self.event_bus.publish(EditorEvent(EV_TOOL_SELECT, {"tool": "erase"})))
+        self.btn_team_a.clicked.connect(
+            lambda: self.event_bus.publish(EditorEvent(EV_TOOL_SELECT, {"tool": "team_a"}))
+        )
+        self.btn_team_b.clicked.connect(
+            lambda: self.event_bus.publish(EditorEvent(EV_TOOL_SELECT, {"tool": "team_b"}))
+        )
+        self.btn_obstacle.clicked.connect(
+            lambda: self.event_bus.publish(EditorEvent(EV_TOOL_SELECT, {"tool": "obstacle"}))
+        )
+        self.btn_erase.clicked.connect(
+            lambda: self.event_bus.publish(EditorEvent(EV_TOOL_SELECT, {"tool": "erase"}))
+        )
         self.btn_new.clicked.connect(lambda: self.event_bus.publish(EditorEvent(EV_NEW)))
         self.btn_save.clicked.connect(lambda: self.event_bus.publish(EditorEvent(EV_SAVE)))
         self.btn_load.clicked.connect(lambda: self.event_bus.publish(EditorEvent(EV_LOAD)))
@@ -118,7 +122,9 @@ class ToolWindow(QWidget):
         self.name_edit.editingFinished.connect(self._emit_name_change)
         self.desc_edit.editingFinished.connect(self._emit_description_change)
         self.btn_refresh_bg.clicked.connect(self._load_background_list)
-        self.btn_clear_bg.clicked.connect(lambda: self.event_bus.publish(EditorEvent(EV_SET_BACKGROUND, {"background": None})))
+        self.btn_clear_bg.clicked.connect(
+            lambda: self.event_bus.publish(EditorEvent(EV_SET_BACKGROUND, {"background": None}))
+        )
         self.bg_list.itemClicked.connect(self._background_selected)
 
         # Initial population
@@ -174,6 +180,7 @@ class ToolWindow(QWidget):
 
     def _load_background_list(self) -> None:
         from pathlib import Path
+
         self.bg_list.clear()
         none_item = QListWidgetItem("<None>")
         none_item.setData(Qt.UserRole, None)
@@ -202,9 +209,11 @@ class ToolWindow(QWidget):
         if filename is None:
             # Select <None>
             self.bg_list.setCurrentRow(0)
+
+
 def run_tool_window(quit_event, ui_to_game_queue, game_to_ui_queue) -> None:
     """Run the tool window in a separate process.
-    
+
     Args:
         quit_event: multiprocessing.Event to signal shutdown
         ui_to_game_queue: multiprocessing.Queue for sending events to game
@@ -212,10 +221,10 @@ def run_tool_window(quit_event, ui_to_game_queue, game_to_ui_queue) -> None:
     """
     global _QUIT_EVENT
     _QUIT_EVENT = quit_event
-    
+
     # Create event bus instance for UI process
     event_bus = EditorEventBus(ui_to_game_queue, game_to_ui_queue)
-    
+
     app = QApplication.instance() or QApplication(sys.argv)
     w = ToolWindow(event_bus)
     w.move(50, 50)  # initial position; user can drag it anywhere

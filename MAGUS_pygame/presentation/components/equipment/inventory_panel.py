@@ -6,8 +6,10 @@ Supports clicking items to equip them in selected slot.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import TYPE_CHECKING
+
 import pygame
-from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
     from application.game_context import GameContext
@@ -20,7 +22,7 @@ CATEGORY_GENERAL = "general"
 
 class InventoryPanel:
     """Displays inventory items with eligibility highlighting.
-    
+
     Features:
     - Categorized item display (weapons, armor, general)
     - Highlight eligible items in green when slot selected
@@ -36,7 +38,7 @@ class InventoryPanel:
         height: int,
         font: pygame.font.Font,
         title_font: pygame.font.Font,
-        context: "GameContext",
+        context: GameContext,
         bg_color=(25, 25, 35),
         border_color=(70, 70, 90),
         text_color=(230, 230, 240),
@@ -47,7 +49,7 @@ class InventoryPanel:
         self.font = font
         self.title_font = title_font
         self.context = context
-        
+
         # Colors
         self.bg_color = bg_color
         self.border_color = border_color
@@ -61,27 +63,27 @@ class InventoryPanel:
             CATEGORY_ARMOR: [],
             CATEGORY_GENERAL: [],
         }
-        
+
         # Current equipment state (for eligibility checking)
         self.current_equipment: dict[str, str | list] = {}
-        
+
         # Selected slot (for highlighting eligible items)
         self.selected_slot: str | None = None
-        
+
         # Scroll offsets per category
         self.scroll_offsets: dict[str, int] = {
             CATEGORY_WEAPONS: 0,
             CATEGORY_ARMOR: 0,
             CATEGORY_GENERAL: 0,
         }
-        
+
         # Layout
         self.category_rects: dict[str, pygame.Rect] = {}
         self._layout()
-        
+
         # Item click callback
         self.on_item_click: Callable[[str, str], None] | None = None
-        
+
         # Category cache to avoid repeated lookups
         self._category_cache: dict[str, str] = {}
 
@@ -91,32 +93,34 @@ class InventoryPanel:
         x = self.rect.x + 10
         y = self.rect.y + 40
         w = self.rect.width - 20
-        
+
         self.category_rects[CATEGORY_WEAPONS] = pygame.Rect(x, y, w, section_h)
         y += section_h + 10
-        
+
         self.category_rects[CATEGORY_ARMOR] = pygame.Rect(x, y, w, section_h)
         y += section_h + 10
-        
+
         self.category_rects[CATEGORY_GENERAL] = pygame.Rect(x, y, w, section_h)
 
-    def set_data(self, inventory_items: list[dict] | dict[str, int], equipment: dict[str, str | list]) -> None:
+    def set_data(
+        self, inventory_items: list[dict] | dict[str, int], equipment: dict[str, str | list]
+    ) -> None:
         """Set inventory items and current equipment.
-        
+
         Args:
             inventory_items: List of item dicts with 'id', 'category', 'qty' fields
                            OR dict mapping item_id -> quantity
             equipment: Current equipment configuration
         """
         self.current_equipment = equipment
-        
+
         # Categorize items
         self.items = {
             CATEGORY_WEAPONS: [],
             CATEGORY_ARMOR: [],
             CATEGORY_GENERAL: [],
         }
-        
+
         # Handle different inventory formats
         if isinstance(inventory_items, dict):
             # Format: {item_id: qty}
@@ -124,10 +128,10 @@ class InventoryPanel:
             for item_id, qty in inventory_items.items():
                 if not item_id:
                     continue
-                
+
                 # Try to determine category from equipment repository
                 category = self._get_item_category(item_id)
-                
+
                 # Map categories
                 if category in ["weapons_and_shields", "weapon", "shield"]:
                     self.items[CATEGORY_WEAPONS].append((item_id, qty))
@@ -148,10 +152,10 @@ class InventoryPanel:
                     item_id = item.get("id")
                     category = item.get("category", "general")
                     qty = item.get("qty", 1)
-                
+
                 if not item_id:
                     continue
-                
+
                 # Map categories
                 if category in ["weapons_and_shields", "weapon", "shield"]:
                     self.items[CATEGORY_WEAPONS].append((item_id, qty))
@@ -162,7 +166,7 @@ class InventoryPanel:
 
     def set_selected_slot(self, slot: str | None) -> None:
         """Set the currently selected equipment slot for highlighting.
-        
+
         Args:
             slot: Slot name or None to clear selection
         """
@@ -170,20 +174,20 @@ class InventoryPanel:
 
     def _get_item_category(self, item_id: str) -> str:
         """Determine item category from repository.
-        
+
         Args:
             item_id: Item identifier
-            
+
         Returns:
             Category string
         """
         # Check cache first
         if item_id in self._category_cache:
             return self._category_cache[item_id]
-        
+
         repo = self.context.equipment_validation_service.equipment_repo
         category = "general"
-        
+
         # Check weapons (load all and search without logging each miss)
         weapons = repo.load_weapons()
         if any(w.get("id") == item_id for w in weapons):
@@ -198,94 +202,98 @@ class InventoryPanel:
                 general = repo.load_general_equipment()
                 if any(g.get("id") == item_id for g in general):
                     category = "general"
-        
+
         # Cache the result
         self._category_cache[item_id] = category
         return category
 
     def _is_item_eligible(self, item_id: str, category: str) -> tuple[bool, str]:
         """Check if item is eligible for currently selected slot.
-        
+
         Args:
             item_id: Item identifier
             category: Item category
-            
+
         Returns:
             Tuple of (is_eligible, reason)
         """
         if not self.selected_slot:
             return False, "No slot selected"
-        
+
         slot = self.selected_slot
         validation = self.context.equipment_validation_service
-        
+
         # Weapon slots
         if slot in ["main_hand", "weapon_quick_1", "weapon_quick_2"]:
             if category != CATEGORY_WEAPONS:
                 return False, "Not a weapon"
-            
+
             # Main hand: weapons only
             if slot == "main_hand":
-                is_weapon = (validation.is_one_handed_weapon(item_id) or 
-                            validation.is_two_handed_weapon(item_id) or
-                            validation.is_ranged_weapon(item_id))
+                is_weapon = (
+                    validation.is_one_handed_weapon(item_id)
+                    or validation.is_two_handed_weapon(item_id)
+                    or validation.is_ranged_weapon(item_id)
+                )
                 if not is_weapon:
                     return False, "Not a weapon"
             # Quick slots: weapons or shields allowed
             elif slot in ["weapon_quick_1", "weapon_quick_2"]:
-                is_weapon = (validation.is_one_handed_weapon(item_id) or 
-                            validation.is_two_handed_weapon(item_id) or
-                            validation.is_ranged_weapon(item_id))
+                is_weapon = (
+                    validation.is_one_handed_weapon(item_id)
+                    or validation.is_two_handed_weapon(item_id)
+                    or validation.is_ranged_weapon(item_id)
+                )
                 is_shield = validation.is_shield(item_id)
                 if not (is_weapon or is_shield):
                     return False, "Not a weapon or shield"
-            
+
             return True, "OK"
-        
+
         # Off-hand slot
         if slot == "off_hand":
             if category != CATEGORY_WEAPONS:
                 return False, "Not a weapon/shield"
-            
+
             main_hand = self.current_equipment.get("main_hand")
             main_hand_id = main_hand if isinstance(main_hand, str) else None
             can_equip, reason = validation.can_equip_offhand(main_hand_id, item_id)
             return can_equip, reason
-        
+
         # Armor slot
         if slot == "armor":
             if category != CATEGORY_ARMOR:
                 return False, "Not armor"
-            
+
             # Check if adding this armor would cause conflicts
             armor_list = self.current_equipment.get("armor", [])
             if not isinstance(armor_list, list):
                 armor_list = []
-            
+
             # Simulate adding this armor
             test_list = armor_list + [item_id]
             is_valid, warnings, conflicts = validation.validate_armor_compatibility(test_list)
-            
+
             if not is_valid and item_id in conflicts:
                 # Has conflicts, but still allowed
-                return True, f"Warning: Layer conflict"
-            
+                return True, "Warning: Layer conflict"
+
             return True, "OK"
-        
+
         # Quick access slots
         if slot in ["quick_access_1", "quick_access_2"]:
             if category == CATEGORY_WEAPONS:
                 return False, "Use weapon slots for weapons"
             return True, "OK"
-        
+
         return False, "Unknown slot"
 
     def handle_event(self, event: pygame.event.Event) -> tuple[bool, str | None, str | None]:
         """Handle events.
-        
+
         Args:
             event: Pygame event
-            
+
         Returns:
             Tuple of (handled, item_id, category) - item_id is set if item was clicked
         """
@@ -297,11 +305,11 @@ class InventoryPanel:
                     items = self.items.get(category, [])
                     if not items:
                         continue
-                    
+
                     # Calculate item position
                     item_y = rect.y + 30 - self.scroll_offsets[category]
                     item_h = 22
-                    
+
                     for item_id, qty in items:
                         item_rect = pygame.Rect(rect.x, item_y, rect.width, item_h)
                         if item_rect.collidepoint(event.pos):
@@ -316,30 +324,32 @@ class InventoryPanel:
                                 # Item clicked but not eligible - just ignore
                                 return True, None, None
                         item_y += item_h
-        
+
         # Scroll handling
         if event.type == pygame.MOUSEWHEEL:
             for category, rect in self.category_rects.items():
                 if rect.collidepoint(pygame.mouse.get_pos()):
-                    self.scroll_offsets[category] = max(0, self.scroll_offsets[category] - event.y * 20)
+                    self.scroll_offsets[category] = max(
+                        0, self.scroll_offsets[category] - event.y * 20
+                    )
                     return True, None, None
-        
+
         return False, None, None
 
     def draw(self, surface: pygame.Surface) -> None:
         """Draw the inventory panel.
-        
+
         Args:
             surface: Surface to draw on
         """
         # Background
         pygame.draw.rect(surface, self.bg_color, self.rect)
         pygame.draw.rect(surface, self.border_color, self.rect, 1)
-        
+
         # Title
         title = self.title_font.render("Inventory", True, self.text_color)
         surface.blit(title, (self.rect.x + 10, self.rect.y + 10))
-        
+
         # Draw each category
         self._draw_category(surface, CATEGORY_WEAPONS, "Weapons & Shields")
         self._draw_category(surface, CATEGORY_ARMOR, "Armor")
@@ -347,7 +357,7 @@ class InventoryPanel:
 
     def _draw_category(self, surface: pygame.Surface, category: str, title: str) -> None:
         """Draw a category section.
-        
+
         Args:
             surface: Surface to draw on
             category: Category identifier
@@ -356,33 +366,33 @@ class InventoryPanel:
         rect = self.category_rects.get(category)
         if not rect:
             return
-        
+
         # Section background
         pygame.draw.rect(surface, (30, 30, 40), rect, border_radius=4)
         pygame.draw.rect(surface, self.border_color, rect, 1, border_radius=4)
-        
+
         # Section title
         title_surf = self.font.render(title, True, (200, 200, 255))
         surface.blit(title_surf, (rect.x + 8, rect.y + 6))
-        
+
         # Items
         items = self.items.get(category, [])
         if not items:
             empty = self.font.render("(empty)", True, (120, 120, 130))
             surface.blit(empty, (rect.x + 12, rect.y + 32))
             return
-        
+
         # Create clipping surface for scrolling
         content_rect = pygame.Rect(rect.x, rect.y + 30, rect.width, rect.height - 30)
         clip_surface = surface.subsurface(content_rect)
-        
+
         y = -self.scroll_offsets[category]
         mouse_pos = pygame.mouse.get_pos()
-        
+
         for item_id, qty in items:
             # Check eligibility
             is_eligible, reason = self._is_item_eligible(item_id, category)
-            
+
             # Determine color
             if self.selected_slot and is_eligible:
                 color = self.highlight_color
@@ -390,7 +400,7 @@ class InventoryPanel:
                 color = self.invalid_color
             else:
                 color = self.text_color
-            
+
             # Get item name (convert internal category to repository category)
             repo_category = category
             if category == CATEGORY_WEAPONS:
@@ -399,28 +409,27 @@ class InventoryPanel:
                 repo_category = "armor"
             else:
                 repo_category = "general"
-            
+
             item_name = self.context.get_equipment_name(item_id, repo_category)
             if qty > 1:
                 display_text = f"• {item_name} x{qty}"
             else:
                 display_text = f"• {item_name}"
-            
+
             # Check hover
             item_rect = pygame.Rect(0, y, content_rect.width, 22)
             hover = item_rect.collidepoint(
-                mouse_pos[0] - content_rect.x,
-                mouse_pos[1] - content_rect.y
+                mouse_pos[0] - content_rect.x, mouse_pos[1] - content_rect.y
             )
-            
+
             # Draw background on hover
             if hover and 0 <= y < content_rect.height:
                 hover_rect = pygame.Rect(2, y, content_rect.width - 4, 20)
                 pygame.draw.rect(clip_surface, (50, 50, 60), hover_rect, border_radius=3)
-            
+
             # Draw item text
             if 0 <= y < content_rect.height:
                 item_surf = self.font.render(display_text, True, color)
                 clip_surface.blit(item_surf, (8, y + 2))
-            
+
             y += 22

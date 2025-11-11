@@ -19,7 +19,8 @@ from domain.mechanics import (
     MovementAction,
 )
 from domain.mechanics.actions import ActionResult
-from domain.value_objects import Position
+from domain.mechanics.actions.facing_action import FacingAction
+from domain.value_objects import Facing, Position
 
 from .reaction_handler import ReactionHandler
 
@@ -48,12 +49,23 @@ class ActionHandler:
 
         The summary includes: action_result, reaction_results, final_path, ap_spent.
         """
+        # Compute combined enemy zones if potential_reactors provided
+        enemy_zones: set[tuple[int, int]] = set()
+        if potential_reactors:
+            from domain.mechanics.reach import compute_reach_hexes
+
+            for reactor in potential_reactors:
+                if reactor.is_alive():
+                    zone = compute_reach_hexes(reactor, reactor.weapon)
+                    enemy_zones.update(zone)
+
         move = MovementAction()
         ok, msg = move.can_execute(
             unit=unit,
             start=unit.position,
             dest=dest,
             enemy=enemy,
+            enemy_zones=enemy_zones if enemy_zones else None,
             ap_available=ap_available,
             blocked=blocked,
         )
@@ -65,6 +77,7 @@ class ActionHandler:
             start=unit.position,
             dest=dest,
             enemy=enemy,
+            enemy_zones=enemy_zones if enemy_zones else None,
             ap_available=ap_available,
             blocked=blocked,
         )
@@ -128,3 +141,38 @@ class ActionHandler:
         # apply_attack_result(ares.data["attack_result"], defender)
 
         return ares
+
+    # --- Facing ---
+    def change_facing(
+        self,
+        *,
+        unit: Unit,
+        new_facing: Facing,
+        ap_available: int = 0,
+        apply_rotation: bool = True,
+    ) -> dict:
+        """Execute facing change. Returns a summary dict.
+
+        The summary includes: action_result, ap_spent.
+
+        Args:
+            unit: Unit to rotate
+            new_facing: Target facing direction
+            ap_available: Available action points
+            apply_rotation: If True, apply facing change to unit
+
+        Returns:
+            Dict with action_result and ap_spent, or error
+        """
+        action = FacingAction()
+        ok, msg = action.can_execute(unit=unit, new_facing=new_facing, ap_available=ap_available)
+        if not ok:
+            return {"error": msg}
+
+        result = action.execute(unit=unit, new_facing=new_facing)
+
+        # Apply rotation if requested
+        if apply_rotation and result.success:
+            unit.rotate_to(new_facing)
+
+        return {"action_result": result, "ap_spent": result.ap_spent}

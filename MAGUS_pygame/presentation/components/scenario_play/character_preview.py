@@ -5,11 +5,11 @@ Displays character information including sprite, stats, skills, and equipment
 in a three-column preview panel with scrollable sections during team composition.
 """
 
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pygame
-from logger.logger import get_logger
 from config.paths import DEJAVU_FONT_PATH
+from logger.logger import get_logger
 
 if TYPE_CHECKING:
     from application.game_context import GameContext
@@ -92,24 +92,24 @@ class CharacterPreview:
 
     def handle_scroll(self, event: pygame.event.Event) -> None:
         """Handle scroll events for skills and equipment columns.
-        
+
         Args:
             event: Pygame event
         """
         if event.type == pygame.MOUSEWHEEL:
             # Determine which column is being scrolled based on mouse position
             mouse_pos = pygame.mouse.get_pos()
-            
+
             # Column 3 (skills)
             skills_col_x = self.rect.x + self.col_starts[2]
             if skills_col_x <= mouse_pos[0] < skills_col_x + self.col_widths[2]:
                 self.skills_scroll = max(0, self.skills_scroll - event.y * self.scroll_speed)
-            
+
             # Column 4 (equipment)
             equipment_col_x = self.rect.x + self.col_starts[3]
             if equipment_col_x <= mouse_pos[0] < equipment_col_x + self.col_widths[3]:
                 self.equipment_scroll = max(0, self.equipment_scroll - event.y * self.scroll_speed)
-    
+
     def draw(
         self,
         surface: pygame.Surface,
@@ -145,25 +145,37 @@ class CharacterPreview:
         divider1_x = self.rect.x + self.col_starts[1]
         divider2_x = self.rect.x + self.col_starts[2]
         divider3_x = self.rect.x + self.col_starts[3]
-        pygame.draw.line(surface, self.color_divider, 
-                        (divider1_x, self.rect.y + 50), 
-                        (divider1_x, self.rect.bottom), 2)
-        pygame.draw.line(surface, self.color_divider,
-                        (divider2_x, self.rect.y + 50),
-                        (divider2_x, self.rect.bottom), 2)
-        pygame.draw.line(surface, self.color_divider,
-                        (divider3_x, self.rect.y + 50),
-                        (divider3_x, self.rect.bottom), 2)
+        pygame.draw.line(
+            surface,
+            self.color_divider,
+            (divider1_x, self.rect.y + 50),
+            (divider1_x, self.rect.bottom),
+            2,
+        )
+        pygame.draw.line(
+            surface,
+            self.color_divider,
+            (divider2_x, self.rect.y + 50),
+            (divider2_x, self.rect.bottom),
+            2,
+        )
+        pygame.draw.line(
+            surface,
+            self.color_divider,
+            (divider3_x, self.rect.y + 50),
+            (divider3_x, self.rect.bottom),
+            2,
+        )
 
         # COLUMN 1: Sprite
         self._draw_sprite_column(surface, character_data, sprite_surface, character_filename)
-        
+
         # COLUMN 2: Combat Stats and Attributes
         self._draw_stats_column(surface, character_data)
-        
+
         # COLUMN 3: Skills (scrollable)
         self._draw_skills_column(surface, character_data.get("Képzettségek", []))
-        
+
         # COLUMN 4: Equipment (scrollable)
         self._draw_equipment_column(surface, character_data.get("Felszerelés"))
 
@@ -173,16 +185,16 @@ class CharacterPreview:
         # Reset tooltip for next frame
         self._hover_tooltip = None
         self._hover_pos = None
-    
+
     def _draw_sprite_column(
         self,
         surface: pygame.Surface,
         character_data: dict[str, Any],
         sprite_surface: pygame.Surface,
-        character_filename: str
+        character_filename: str,
     ) -> None:
         """Draw first column with sprite and character name.
-        
+
         Args:
             surface: Surface to draw on
             character_data: Character data
@@ -191,7 +203,7 @@ class CharacterPreview:
         """
         col_x = self.rect.x + self.col_starts[0] + self.col_padding
         y = self.rect.y + 55
-        
+
         # Character name
         name = character_data.get("Név", character_filename.replace(".json", ""))
         name_surf = self.font_label.render(name, True, self.color_label)
@@ -199,7 +211,7 @@ class CharacterPreview:
         name_x = col_x + (self.col_widths[0] - self.col_padding * 2 - name_surf.get_width()) // 2
         surface.blit(name_surf, (name_x, y))
         y += 35
-        
+
         # Sprite (scaled to fit column)
         max_sprite_size = self.col_widths[0] - self.col_padding * 2 - 10
         sprite_scaled = self._scale_sprite(sprite_surface, max_sprite_size, max_sprite_size)
@@ -207,21 +219,17 @@ class CharacterPreview:
         # Center sprite in column
         sprite_x = col_x + (self.col_widths[0] - self.col_padding * 2 - sprite_rect.width) // 2
         surface.blit(sprite_scaled, (sprite_x, y))
-    
-    def _draw_stats_column(
-        self,
-        surface: pygame.Surface,
-        character_data: dict[str, Any]
-    ) -> None:
+
+    def _draw_stats_column(self, surface: pygame.Surface, character_data: dict[str, Any]) -> None:
         """Draw second column with combat stats and attributes using a compact table layout.
-        
+
         Args:
             surface: Surface to draw on
             character_data: Character data
         """
         col_x = self.rect.x + self.col_starts[1] + self.col_padding
         y = self.rect.y + 55
-        
+
         # Combat Stats Section
         combat = character_data.get("Harci értékek", {})
         section_title = self.font_section.render("Harci értékek", True, self.color_section)
@@ -241,8 +249,16 @@ class CharacterPreview:
         y += 25
 
         attr_keys = [
-            "Erő", "Ügyesség", "Gyorsaság", "Állóképesség", "Egészség",
-            "Intelligencia", "Akaraterő", "Asztrál", "Érzékelés", "Karizma"
+            "Erő",
+            "Ügyesség",
+            "Gyorsaság",
+            "Állóképesség",
+            "Egészség",
+            "Intelligencia",
+            "Akaraterő",
+            "Asztrál",
+            "Érzékelés",
+            "Karizma",
         ]
         attr_rows = self._build_table_rows(attr_keys, attributes, shorten_keys=True)
         self._draw_table(surface, attr_rows, col_x, y, columns=2, col_spacing=140)
@@ -302,6 +318,7 @@ class CharacterPreview:
         if not rows:
             return y
         import math
+
         per_col = math.ceil(len(rows) / columns)
         for idx, (label, value) in enumerate(rows):
             col_index = idx // per_col
@@ -313,7 +330,7 @@ class CharacterPreview:
 
     def _draw_skills_column(self, surface: pygame.Surface, skills: list[Any]) -> None:
         """Draw third column with scrollable skills list.
-        
+
         Args:
             surface: Surface to draw on
             skills: Skills list
@@ -321,35 +338,35 @@ class CharacterPreview:
         col_x = self.rect.x + self.col_starts[2] + self.col_padding
         col_width = self.col_widths[2] - self.col_padding * 2
         y_start = self.rect.y + 55
-        
+
         # Section title
         title = self.font_section.render("Képzettségek", True, self.color_section)
         surface.blit(title, (col_x, y_start))
-        
+
         # Create clipping rect for scrollable area
         content_y = y_start + 30
         content_height = self.rect.height - 90
         clip_rect = pygame.Rect(col_x, content_y, col_width, content_height)
-        
+
         # Create subsurface for clipping
         subsurface = surface.subsurface(clip_rect)
-        
+
         if not skills:
             empty = self.font_value.render("No skills", True, self.color_missing)
             subsurface.blit(empty, (5, 10))
             return
-        
+
         # Calculate total height first
         total_height = len(skills) * 22
-        
+
         # Clamp scroll position to prevent overflow
         max_scroll = max(0, total_height - content_height)
         self.skills_scroll = min(self.skills_scroll, max_scroll)
         self.skills_scroll = max(0, self.skills_scroll)
-        
+
         # Draw skills with scroll offset
         y = -self.skills_scroll
-        
+
         mouse_pos = pygame.mouse.get_pos()
         for skill in skills:
             if isinstance(skill, dict):
@@ -362,7 +379,7 @@ class CharacterPreview:
                     skill_text = skill_name
             else:
                 skill_text = str(skill)
-            
+
             # Truncate if too long
             truncated = False
             if len(skill_text) > 25:
@@ -370,24 +387,28 @@ class CharacterPreview:
                 display_text = skill_text[:22] + "..."
             else:
                 display_text = skill_text
-            
+
             line = self.font_small.render(f"• {display_text}", True, self.color_value)
             if -30 < y < content_height:  # Only draw if visible
                 subsurface.blit(line, (5, y))
                 if truncated:
-                    line_rect = pygame.Rect(col_x + 5, content_y + y, line.get_width(), line.get_height())
+                    line_rect = pygame.Rect(
+                        col_x + 5, content_y + y, line.get_width(), line.get_height()
+                    )
                     if line_rect.collidepoint(mouse_pos):
                         self._hover_tooltip = skill_text
                         self._hover_pos = mouse_pos
             y += 22
-        
+
         # Draw scrollbar if needed
         if total_height > content_height:
-            self._draw_scrollbar(surface, clip_rect, self.skills_scroll, total_height, content_height)
-    
+            self._draw_scrollbar(
+                surface, clip_rect, self.skills_scroll, total_height, content_height
+            )
+
     def _draw_equipment_column(self, surface: pygame.Surface, equipment: Any) -> None:
         """Draw fourth column with scrollable equipment list.
-        
+
         Args:
             surface: Surface to draw on
             equipment: Equipment data
@@ -395,42 +416,42 @@ class CharacterPreview:
         col_x = self.rect.x + self.col_starts[3] + self.col_padding
         col_width = self.col_widths[3] - self.col_padding * 2
         y_start = self.rect.y + 55
-        
+
         # Section title
         title = self.font_section.render("Felszerelés", True, self.color_section)
         surface.blit(title, (col_x, y_start))
-        
+
         # Parse equipment data
         equipment_items: list[Any] = []
         if isinstance(equipment, dict):
             equipment_items = equipment.get("items", [])
         elif isinstance(equipment, list):
             equipment_items = equipment
-        
+
         # Create clipping rect for scrollable area
         content_y = y_start + 30
         content_height = self.rect.height - 90
         clip_rect = pygame.Rect(col_x, content_y, col_width, content_height)
-        
+
         # Create subsurface for clipping
         subsurface = surface.subsurface(clip_rect)
-        
+
         if not equipment_items:
             empty = self.font_value.render("No equipment", True, self.color_missing)
             subsurface.blit(empty, (5, 10))
             return
-        
+
         # Calculate total height first
         total_height = len(equipment_items) * 22
-        
+
         # Clamp scroll position to prevent overflow
         max_scroll = max(0, total_height - content_height)
         self.equipment_scroll = min(self.equipment_scroll, max_scroll)
         self.equipment_scroll = max(0, self.equipment_scroll)
-        
+
         # Draw equipment with scroll offset
         y = -self.equipment_scroll
-        
+
         mouse_pos = pygame.mouse.get_pos()
         for item in equipment_items:
             if isinstance(item, dict):
@@ -438,14 +459,14 @@ class CharacterPreview:
                 item_category = item.get("category", "general")
                 item_name = self._get_equipment_name(item_id, item_category)  # Look up actual name
                 item_qty = item.get("qty")
-                
+
                 if item_qty and item_qty > 1:
                     item_text = f"{item_name} x{item_qty}"
                 else:
                     item_text = item_name
             else:
                 item_text = str(item)
-            
+
             # Truncate if too long
             truncated = False
             if len(item_text) > 25:
@@ -453,31 +474,35 @@ class CharacterPreview:
                 display_text = item_text[:22] + "..."
             else:
                 display_text = item_text
-            
+
             line = self.font_small.render(f"• {display_text}", True, self.color_value)
             if -30 < y < content_height:  # Only draw if visible
                 subsurface.blit(line, (5, y))
                 if truncated:
-                    line_rect = pygame.Rect(col_x + 5, content_y + y, line.get_width(), line.get_height())
+                    line_rect = pygame.Rect(
+                        col_x + 5, content_y + y, line.get_width(), line.get_height()
+                    )
                     if line_rect.collidepoint(mouse_pos):
                         self._hover_tooltip = item_text
                         self._hover_pos = mouse_pos
             y += 22
-        
+
         # Draw scrollbar if needed
         if total_height > content_height:
-            self._draw_scrollbar(surface, clip_rect, self.equipment_scroll, total_height, content_height)
-    
+            self._draw_scrollbar(
+                surface, clip_rect, self.equipment_scroll, total_height, content_height
+            )
+
     def _draw_scrollbar(
         self,
         surface: pygame.Surface,
         clip_rect: pygame.Rect,
         scroll_pos: int,
         content_height: int,
-        visible_height: int
+        visible_height: int,
     ) -> None:
         """Draw scrollbar for a column.
-        
+
         Args:
             surface: Surface to draw on
             clip_rect: Clipping rectangle of the scrollable area
@@ -489,35 +514,39 @@ class CharacterPreview:
         scrollbar_x = clip_rect.right - scrollbar_width - 2
         scrollbar_y = clip_rect.y
         scrollbar_height = clip_rect.height
-        
+
         # Draw scrollbar background
         bg_rect = pygame.Rect(scrollbar_x, scrollbar_y, scrollbar_width, scrollbar_height)
         pygame.draw.rect(surface, self.color_scrollbar_bg, bg_rect)
-        
+
         # Calculate thumb size and position
         thumb_height = max(30, int((visible_height / content_height) * scrollbar_height))
         max_scroll = content_height - visible_height
-        thumb_y = scrollbar_y + int((scroll_pos / max_scroll) * (scrollbar_height - thumb_height)) if max_scroll > 0 else scrollbar_y
-        
+        thumb_y = (
+            scrollbar_y + int((scroll_pos / max_scroll) * (scrollbar_height - thumb_height))
+            if max_scroll > 0
+            else scrollbar_y
+        )
+
         # Draw scrollbar thumb
         thumb_rect = pygame.Rect(scrollbar_x, thumb_y, scrollbar_width, thumb_height)
         pygame.draw.rect(surface, self.color_scrollbar, thumb_rect, border_radius=4)
-    
+
     def _get_skill_name(self, skill_id: str) -> str:
         """Look up skill name from ID using the application layer facade."""
         if skill_id in self._skill_names:
             return self._skill_names[skill_id]
-        
+
         readable_name = self.context.get_skill_name(skill_id)
         self._skill_names[skill_id] = readable_name
         return readable_name
-    
+
     def _get_equipment_name(self, item_id: str, category: str) -> str:
         """Look up equipment name from ID and category using application layer facade."""
         cache_key = f"{category}:{item_id}"
         if cache_key in self._equipment_names:
             return self._equipment_names[cache_key]
-        
+
         name = self.context.get_equipment_name(item_id, category)
         self._equipment_names[cache_key] = name
         return name

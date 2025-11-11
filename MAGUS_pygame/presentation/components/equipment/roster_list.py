@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pygame
-from typing import List, Tuple
 
 
 class RosterList:
@@ -33,17 +32,17 @@ class RosterList:
         self.border_color = border_color
 
         # Data: list of tuples (display_name, is_team_a, index_in_team)
-        self.items: List[Tuple[str, bool, int]] = []
+        self.items: list[tuple[str, bool, int]] = []
         self.selected: int = 0
         self.scroll_offset: int = 0
         self.item_height: int = max(28, font.get_height() + 8)
 
-    def set_items(self, items: List[Tuple[str, bool, int]]) -> None:
+    def set_items(self, items: list[tuple[str, bool, int]]) -> None:
         self.items = items
         self.selected = 0 if items else -1
         self.scroll_offset = 0
 
-    def get_selected(self) -> Tuple[str, bool, int] | None:
+    def get_selected(self) -> tuple[str, bool, int] | None:
         if 0 <= self.selected < len(self.items):
             return self.items[self.selected]
         return None
@@ -107,7 +106,9 @@ class RosterList:
             # Text color by team
             color = self.team_a_color if is_team_a else self.team_b_color
             label = self.font.render(name, True, color)
-            surface.blit(label, (self.rect.x + 10, y + (self.item_height - label.get_height()) // 2))
+            surface.blit(
+                label, (self.rect.x + 10, y + (self.item_height - label.get_height()) // 2)
+            )
             y += self.item_height
 
         # Restore clip

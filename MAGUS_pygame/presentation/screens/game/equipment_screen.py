@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from presentation.adapters.equipment_view import EquipmentView
 from domain.entities import Unit
+from presentation.adapters.equipment_view import EquipmentView
 
 
 @dataclass

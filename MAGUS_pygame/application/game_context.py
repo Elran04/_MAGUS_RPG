@@ -4,16 +4,16 @@ Game Context - Dependency container for the application.
 Manages lifecycle of repositories, services, and provides centralized access.
 """
 
-from domain.mechanics.damage import DamageService
-from domain.services import UnitFactory
+from application.equipment_validation_service import EquipmentValidationService
 from application.scenario_service import ScenarioService
 from application.unit_setup_service import UnitSetupService
-from application.equipment_validation_service import EquipmentValidationService
+from domain.mechanics.damage import DamageService
+from domain.services import UnitFactory
 from infrastructure.repositories import (
     CharacterRepository,
     EquipmentRepository,
-    SpriteRepository,
     ScenarioRepository,
+    SpriteRepository,
 )
 from infrastructure.repositories.skills_repository import SkillsRepository
 from logger.logger import get_logger
@@ -33,7 +33,7 @@ class GameContext:
 
     def __init__(self):
         logger.info("Initializing GameContext")
-        
+
         # Cache for equipment names to avoid repeated lookups during rendering
         self._equipment_name_cache: dict[str, str] = {}
 
@@ -43,10 +43,12 @@ class GameContext:
         self.sprite_repo = SpriteRepository()
         self.scenario_repo = ScenarioRepository()
         self.skills_repo = SkillsRepository()
-        
+
         # Application services
         self.unit_setup_service = UnitSetupService(character_repo=self.character_repo)
-        self.equipment_validation_service = EquipmentValidationService(equipment_repo=self.equipment_repo)
+        self.equipment_validation_service = EquipmentValidationService(
+            equipment_repo=self.equipment_repo
+        )
         self.scenario_service = ScenarioService(
             scenario_repo=self.scenario_repo,
             character_repo=self.character_repo,
@@ -69,26 +71,26 @@ class GameContext:
         self.sprite_repo.clear_cache()
         self.skills_repo.clear_cache()
         # Scenario repo currently stateless
-    
+
     # Facade methods for presentation layer
     def get_skill_name(self, skill_id: str) -> str:
         """Get human-readable skill name from skill ID.
-        
+
         Args:
             skill_id: Skill identifier
-            
+
         Returns:
             Human-readable skill name
         """
         return self.skills_repo.get_skill_name(skill_id)
-    
+
     def get_equipment_name(self, item_id: str, category: str) -> str:
         """Get human-readable equipment name from item ID and category.
-        
+
         Args:
             item_id: Equipment item identifier
             category: Equipment category ('weapons_and_shields', 'armor', 'general')
-            
+
         Returns:
             Human-readable equipment name
         """
@@ -96,9 +98,9 @@ class GameContext:
         cache_key = f"{category}:{item_id}"
         if cache_key in self._equipment_name_cache:
             return self._equipment_name_cache[cache_key]
-        
+
         result = item_id.replace("_", " ").title()  # Default fallback
-        
+
         try:
             if category == "weapons_and_shields":
                 item = self.equipment_repo.find_weapon_by_id(item_id)
@@ -114,7 +116,7 @@ class GameContext:
                     result = item.get("name", result)
         except Exception as e:
             logger.debug(f"Equipment lookup failed for {item_id}: {e}")
-        
+
         # Cache the result
         self._equipment_name_cache[cache_key] = result
         return result

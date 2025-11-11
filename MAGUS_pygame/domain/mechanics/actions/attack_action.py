@@ -26,7 +26,9 @@ from .base import Action, ActionCategory, ActionCost, ActionResult
 class AttackAction(Action):
     """Perform a basic weapon attack from attacker to defender."""
 
-    ap_cost: int = 5  # Default AP cost; application layer can override
+    # NOTE: ap_cost is determined dynamically from weapon's attack_time
+    # This is just a fallback for unarmed attacks
+    ap_cost: int = 5  # Default AP cost for unarmed
 
     @property
     def category(self) -> ActionCategory:
@@ -34,6 +36,7 @@ class AttackAction(Action):
 
     @property
     def cost(self) -> ActionCost:
+        # Cost is dynamic, determined in execute() from weapon
         return ActionCost(ap=self.ap_cost)
 
     def can_execute(
@@ -78,12 +81,17 @@ class AttackAction(Action):
 
         Caller may pass deterministic attack_roll/base_damage_roll for testing.
         """
+        # Determine weapon to use (passed explicitly or from attacker)
+        wpn = weapon or attacker.weapon
+
+        # Get AP cost from weapon's attack_time (or default for unarmed)
+        actual_ap_cost = wpn.attack_time if wpn is not None else self.ap_cost
+
         # Default random rolls if not provided (still pure wrt game state)
         if attack_roll is None:
             attack_roll = random.randint(1, 100)
         if base_damage_roll is None:
-            # If weapon provided/exists, use its min/max range; else 1
-            wpn = weapon or attacker.weapon
+            # If weapon exists, use its min/max range; else 1
             if wpn is not None:
                 import random as _rand
 
@@ -96,7 +104,7 @@ class AttackAction(Action):
             defender=defender,
             attack_roll=attack_roll,
             base_damage_roll=base_damage_roll,
-            weapon=weapon,
+            weapon=wpn,
             weapon_skill_level=weapon_skill_level,
             shield_ve=shield_ve,
             dodge_modifier=dodge_modifier,
@@ -121,7 +129,7 @@ class AttackAction(Action):
         return ActionResult(
             success=True,
             message=msg,
-            ap_spent=self.ap_cost,
+            ap_spent=actual_ap_cost,  # Use weapon's attack_time
             stamina_spent=0,
             data={"attack_result": core_result},
         )

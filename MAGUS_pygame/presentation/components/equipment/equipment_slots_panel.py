@@ -9,8 +9,9 @@ Displays equipment slots with proper validation and categorization:
 
 from __future__ import annotations
 
-import pygame
 from typing import TYPE_CHECKING
+
+import pygame
 
 if TYPE_CHECKING:
     from application.game_context import GameContext
@@ -22,7 +23,7 @@ QUICK_ACCESS_SLOTS = ["quick_access_1", "quick_access_2"]
 
 class EquipmentSlotsPanel:
     """Panel displaying equipment slots for a single unit with validation.
-    
+
     Layout:
     - Main hand (clickable)
     - Off hand (clickable, grayed if invalid)
@@ -38,7 +39,7 @@ class EquipmentSlotsPanel:
         width: int,
         height: int,
         font: pygame.font.Font,
-        context: "GameContext",
+        context: GameContext,
         bg_color=(25, 25, 35),
         border_color=(70, 70, 90),
         slot_color=(55, 65, 95),
@@ -51,7 +52,7 @@ class EquipmentSlotsPanel:
         self.rect = pygame.Rect(x, y, width, height)
         self.font = font
         self.context = context
-        
+
         # Colors
         self.bg_color = bg_color
         self.border_color = border_color
@@ -76,20 +77,20 @@ class EquipmentSlotsPanel:
             "quick_access_1": "",
             "quick_access_2": "",
         }
-        
+
         # Validation warnings
         self.warnings: dict[str, str] = {}
-        
+
         # Selected slot (for highlighting inventory)
         self.selected_slot: str | None = None
-        
+
         # UI layout
         self.slot_rects: dict[str, pygame.Rect] = {}
         self.armor_list_rect: pygame.Rect | None = None
         self.add_armor_button: pygame.Rect | None = None
         self.remove_armor_button: pygame.Rect | None = None
         self.armor_scroll_offset = 0
-        
+
         self._layout_slots()
 
     def _layout_slots(self) -> None:
@@ -104,43 +105,45 @@ class EquipmentSlotsPanel:
         # Section: Weapons
         section_label_h = 30
         y += section_label_h
-        
+
         # Main hand
         self.slot_rects["main_hand"] = pygame.Rect(x, y, slot_w, slot_h)
         y += slot_h + gap
-        
+
         # Off hand
         self.slot_rects["off_hand"] = pygame.Rect(x, y, slot_w, slot_h)
         y += slot_h + gap * 2
-        
+
         # Quick access weapons
         quick_w = (slot_w - gap) // 2
         self.slot_rects["weapon_quick_1"] = pygame.Rect(x, y, quick_w, slot_h)
         self.slot_rects["weapon_quick_2"] = pygame.Rect(x + quick_w + gap, y, quick_w, slot_h)
         y += slot_h + gap * 2
-        
+
         # Section: Armor
         y += section_label_h
         armor_list_h = 150
         self.armor_list_rect = pygame.Rect(x, y, slot_w, armor_list_h)
         y += armor_list_h + gap
-        
+
         # Add/Remove armor buttons
         button_h = 35
         button_w = (slot_w - gap) // 2
         self.add_armor_button = pygame.Rect(x, y, button_w, button_h)
         self.remove_armor_button = pygame.Rect(x + button_w + gap, y, button_w, button_h)
         y += button_h + gap * 2
-        
+
         # Section: Quick Access Items
         y += section_label_h
         quick_item_w = (slot_w - gap) // 2
         self.slot_rects["quick_access_1"] = pygame.Rect(x, y, quick_item_w, slot_h)
-        self.slot_rects["quick_access_2"] = pygame.Rect(x + quick_item_w + gap, y, quick_item_w, slot_h)
+        self.slot_rects["quick_access_2"] = pygame.Rect(
+            x + quick_item_w + gap, y, quick_item_w, slot_h
+        )
 
     def set_initial(self, equipment: dict[str, str | list]) -> None:
         """Set initial equipment state.
-        
+
         Args:
             equipment: Equipment configuration
         """
@@ -154,7 +157,7 @@ class EquipmentSlotsPanel:
             "quick_access_1": "",
             "quick_access_2": "",
         }
-        
+
         # Then apply incoming equipment (deep copy to avoid sharing references)
         for key in self.equipment:
             if key in equipment:
@@ -163,12 +166,12 @@ class EquipmentSlotsPanel:
                     self.equipment[key] = value.copy()
                 else:
                     self.equipment[key] = value
-        
+
         self._validate()
 
     def get_equipment(self) -> dict[str, str | list]:
         """Get current equipment configuration.
-        
+
         Returns:
             Equipment dictionary with all slots (deep copy)
         """
@@ -183,22 +186,22 @@ class EquipmentSlotsPanel:
 
     def equip_item(self, slot: str, item_id: str, quantity: int = 1) -> tuple[bool, str, str]:
         """Equip an item in a slot with validation and auto-unequip logic.
-        
+
         Args:
             slot: Slot name (main_hand, off_hand, etc.)
             item_id: Item identifier
             quantity: Quantity to equip (for stackable items)
-            
+
         Returns:
             Tuple of (success: bool, message: str, auto_unequipped_item: str)
             auto_unequipped_item is the item that was removed from off-hand (if any)
         """
         if slot not in self.equipment:
             return False, "Invalid slot", ""
-        
+
         validation = self.context.equipment_validation_service
         auto_unequipped = ""  # Track auto-removed off-hand item
-        
+
         # Validate item compatibility for this slot
         if slot == "off_hand":
             main_hand = self.equipment.get("main_hand")
@@ -208,25 +211,27 @@ class EquipmentSlotsPanel:
                 main_hand_id = main_hand
             elif isinstance(main_hand, dict):
                 main_hand_id = main_hand.get("id")
-            
+
             can_equip, reason = validation.can_equip_offhand(main_hand_id, item_id)
             if not can_equip:
                 return False, reason, ""
-        
+
         elif slot in ["main_hand", "weapon_quick_1", "weapon_quick_2"]:
             # Verify it's actually a weapon or shield (shields allowed in quick slots)
-            is_weapon = (validation.is_one_handed_weapon(item_id) or 
-                        validation.is_two_handed_weapon(item_id) or
-                        validation.is_ranged_weapon(item_id))
+            is_weapon = (
+                validation.is_one_handed_weapon(item_id)
+                or validation.is_two_handed_weapon(item_id)
+                or validation.is_ranged_weapon(item_id)
+            )
             is_shield = validation.is_shield(item_id)
-            
+
             # Main hand: weapons only
             if slot == "main_hand" and not is_weapon:
                 return False, "Not a weapon", ""
             # Quick slots: weapons or shields
             elif slot in ["weapon_quick_1", "weapon_quick_2"] and not (is_weapon or is_shield):
                 return False, "Not a weapon or shield", ""
-        
+
         # Handle armor separately (list)
         if slot == "armor":
             armor_list = self.equipment.get("armor", [])
@@ -236,12 +241,11 @@ class EquipmentSlotsPanel:
             self.equipment["armor"] = armor_list
             self._validate()
             return True, "Armor equipped", ""
-        
+
         # Auto-unequip logic for main hand
         if slot == "main_hand":
             # Check if new weapon is two-handed/ranged
-            if (validation.is_two_handed_weapon(item_id) or 
-                validation.is_ranged_weapon(item_id)):
+            if validation.is_two_handed_weapon(item_id) or validation.is_ranged_weapon(item_id):
                 # Auto-unequip off-hand and track what was removed
                 current_offhand = self.equipment.get("off_hand")
                 if current_offhand:
@@ -250,34 +254,34 @@ class EquipmentSlotsPanel:
                     elif isinstance(current_offhand, dict) and current_offhand.get("id"):
                         auto_unequipped = current_offhand.get("id")
                     self.equipment["off_hand"] = ""
-        
+
         # Set item (with quantity if > 1)
         if quantity > 1:
             self.equipment[slot] = {"id": item_id, "qty": quantity}
         else:
             self.equipment[slot] = item_id
-        
+
         self._validate()
         return True, "Item equipped", auto_unequipped
-    
+
     def remove_item(self, slot: str) -> tuple[bool, str, int]:
         """Remove an item from a slot.
-        
+
         Args:
             slot: Slot name
-            
+
         Returns:
             Tuple of (success: bool, removed_item_id: str, quantity: int)
         """
         if slot not in self.equipment:
             return False, "", 0
-        
+
         if slot == "armor":
             # Use remove_last_armor for armor list
             success = self.remove_last_armor()
             # TODO: Track which armor was removed
             return success, "", 0
-        
+
         # Get current item before clearing
         current = self.equipment.get(slot)
         if current:
@@ -293,12 +297,12 @@ class EquipmentSlotsPanel:
                 self.equipment[slot] = ""
                 self._validate()
                 return True, item_id, qty
-        
+
         return False, "", 0
 
     def remove_last_armor(self) -> bool:
         """Remove the last armor piece from the list.
-        
+
         Returns:
             True if armor was removed
         """
@@ -312,28 +316,31 @@ class EquipmentSlotsPanel:
 
     def _validate(self) -> None:
         """Validate equipment and update warnings."""
-        self.warnings = self.context.equipment_validation_service.validate_equipment_slots(self.equipment)
+        self.warnings = self.context.equipment_validation_service.validate_equipment_slots(
+            self.equipment
+        )
 
     def _is_offhand_disabled(self) -> bool:
         """Check if off-hand slot should be disabled."""
         main_hand = self.equipment.get("main_hand")
         if not main_hand:
             return False
-        
+
         # Extract item ID (handle both string and dict formats)
         main_hand_id = main_hand
         if isinstance(main_hand, dict):
             main_hand_id = main_hand.get("id", "")
         elif not isinstance(main_hand, str):
             return False
-        
+
         validation_service = self.context.equipment_validation_service
-        return (validation_service.is_two_handed_weapon(main_hand_id) or 
-                validation_service.is_ranged_weapon(main_hand_id))
+        return validation_service.is_two_handed_weapon(
+            main_hand_id
+        ) or validation_service.is_ranged_weapon(main_hand_id)
 
     def get_selected_slot(self) -> str | None:
         """Get currently selected slot.
-        
+
         Returns:
             Selected slot name or None
         """
@@ -341,16 +348,16 @@ class EquipmentSlotsPanel:
 
     def handle_event(self, event: pygame.event.Event) -> tuple[bool, str | None]:
         """Handle events.
-        
+
         Args:
             event: Pygame event
-            
+
         Returns:
             Tuple of (equipment_changed, slot_clicked)
         """
         equipment_changed = False
         slot_clicked = None
-        
+
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:  # Left click
                 # Check weapon/item slots
@@ -359,76 +366,76 @@ class EquipmentSlotsPanel:
                         # Don't allow clicking disabled off-hand
                         if slot == "off_hand" and self._is_offhand_disabled():
                             continue
-                        
+
                         # Select this slot
                         self.selected_slot = slot
                         slot_clicked = slot
                         break
-                
+
                 # Check add armor button
                 if self.add_armor_button and self.add_armor_button.collidepoint(event.pos):
                     self.selected_slot = "armor"
                     slot_clicked = "armor"
-                
+
                 # Check remove armor button
                 if self.remove_armor_button and self.remove_armor_button.collidepoint(event.pos):
                     equipment_changed = self.remove_last_armor()
-            
+
             elif event.button == 3:  # Right click - remove item
                 # Check weapon/item slots
                 for slot, rect in self.slot_rects.items():
                     if rect.collidepoint(event.pos):
                         equipment_changed = self.remove_item(slot)
                         break
-        
+
         # Scroll handling
         if event.type == pygame.MOUSEWHEEL:
             if self.armor_list_rect and self.armor_list_rect.collidepoint(pygame.mouse.get_pos()):
                 self.armor_scroll_offset = max(0, self.armor_scroll_offset - event.y * 20)
-        
+
         return equipment_changed, slot_clicked
 
     def draw(self, surface: pygame.Surface) -> None:
         """Draw the equipment slots panel.
-        
+
         Args:
             surface: Surface to draw on
         """
         # Background
         pygame.draw.rect(surface, self.bg_color, self.rect)
         pygame.draw.rect(surface, self.border_color, self.rect, 1)
-        
+
         y = self.rect.y + 12
         mouse_pos = pygame.mouse.get_pos()
-        
+
         # === WEAPONS SECTION ===
         section_label = self.font.render("Weapons", True, (200, 200, 255))
         surface.blit(section_label, (self.rect.x + 12, y))
-        
+
         # Main hand
         self._draw_slot(surface, "main_hand", "Main Hand", mouse_pos)
-        
+
         # Off hand (may be disabled)
         disabled = self._is_offhand_disabled()
         self._draw_slot(surface, "off_hand", "Off Hand", mouse_pos, disabled=disabled)
-        
+
         # Quick access weapons
         self._draw_slot(surface, "weapon_quick_1", "Quick 1", mouse_pos)
         self._draw_slot(surface, "weapon_quick_2", "Quick 2", mouse_pos)
-        
+
         # === ARMOR SECTION ===
         armor_y = self.armor_list_rect.y - 30 if self.armor_list_rect else 0
         section_label = self.font.render("Armor", True, (200, 200, 255))
         surface.blit(section_label, (self.rect.x + 12, armor_y))
-        
+
         self._draw_armor_list(surface)
         self._draw_add_armor_button(surface, mouse_pos)
-        
+
         # === QUICK ACCESS ITEMS SECTION ===
         qa_y = self.slot_rects["quick_access_1"].y - 30
         section_label = self.font.render("Quick Access", True, (200, 200, 255))
         surface.blit(section_label, (self.rect.x + 12, qa_y))
-        
+
         self._draw_slot(surface, "quick_access_1", "Item 1", mouse_pos)
         self._draw_slot(surface, "quick_access_2", "Item 2", mouse_pos)
 
@@ -438,10 +445,10 @@ class EquipmentSlotsPanel:
         slot_name: str,
         display_label: str,
         mouse_pos: tuple[int, int],
-        disabled: bool = False
+        disabled: bool = False,
     ) -> None:
         """Draw a single equipment slot.
-        
+
         Args:
             surface: Surface to draw on
             slot_name: Slot identifier
@@ -452,12 +459,12 @@ class EquipmentSlotsPanel:
         rect = self.slot_rects.get(slot_name)
         if not rect:
             return
-        
+
         # Determine slot color
         has_warning = slot_name in self.warnings
         hover = rect.collidepoint(mouse_pos) and not disabled
         is_selected = slot_name == self.selected_slot
-        
+
         if disabled:
             color = self.slot_disabled
         elif has_warning:
@@ -466,24 +473,24 @@ class EquipmentSlotsPanel:
             color = self.slot_hover
         else:
             color = self.slot_color
-        
+
         # Draw slot
         pygame.draw.rect(surface, color, rect, border_radius=6)
-        
+
         # Draw selection indicator
         if is_selected:
             pygame.draw.rect(surface, (100, 200, 255), rect, 3, border_radius=6)
-        
+
         # Draw label
         text_color = self.text_disabled if disabled else self.text_color
         label = self.font.render(display_label, True, text_color)
         surface.blit(label, (rect.x + 8, rect.y + 6))
-        
+
         # Draw value
         value = self.equipment.get(slot_name, "")
         has_item = False
         display_value = "<empty>"
-        
+
         if isinstance(value, str) and value:
             # Simple string item ID
             display_value = self.context.get_equipment_name(value, "weapons_and_shields")
@@ -495,15 +502,15 @@ class EquipmentSlotsPanel:
             item_name = self.context.get_equipment_name(item_id, "general")
             display_value = f"{item_name} x{qty}"
             has_item = True
-        
+
         value_label = self.font.render(display_value, True, (180, 180, 200))
         surface.blit(value_label, (rect.x + 8, rect.y + 26))
-        
+
         # Show remove hint on hover if item is equipped
         if has_item and hover and not disabled:
             hint = pygame.font.Font(None, 12).render("Right-click to remove", True, (200, 200, 100))
             surface.blit(hint, (rect.x + 8, rect.y + rect.height - 14))
-        
+
         # Draw warning if present
         if has_warning:
             warning_text = self.warnings[slot_name]
@@ -512,68 +519,71 @@ class EquipmentSlotsPanel:
 
     def _draw_armor_list(self, surface: pygame.Surface) -> None:
         """Draw the armor list area with conflict highlighting.
-        
+
         Args:
             surface: Surface to draw on
         """
         if not self.armor_list_rect:
             return
-        
+
         # Background
         pygame.draw.rect(surface, (30, 30, 40), self.armor_list_rect, border_radius=4)
         pygame.draw.rect(surface, self.border_color, self.armor_list_rect, 1, border_radius=4)
-        
+
         armor_list = self.equipment.get("armor", [])
         if not isinstance(armor_list, list):
             return
-        
+
         if not armor_list:
             empty = self.font.render("No armor equipped", True, (120, 120, 130))
             surface.blit(empty, (self.armor_list_rect.x + 10, self.armor_list_rect.y + 10))
             return
-        
+
         # Check for armor conflicts
-        _, _, conflicts = self.context.equipment_validation_service.validate_armor_compatibility(armor_list)
-        
+        _, _, conflicts = self.context.equipment_validation_service.validate_armor_compatibility(
+            armor_list
+        )
+
         # Draw armor pieces
         y = self.armor_list_rect.y + 8 - self.armor_scroll_offset
         for armor_id in armor_list:
             if isinstance(armor_id, str):
                 # Look up armor name
                 armor_name = self.context.get_equipment_name(armor_id, "armor")
-                
+
                 # Determine color based on conflicts
                 has_conflict = armor_id in conflicts
                 text_color = (255, 100, 100) if has_conflict else self.text_color
-                
+
                 armor_label = self.font.render(f"• {armor_name}", True, text_color)
-                
+
                 # Only draw if visible
                 if self.armor_list_rect.y < y < self.armor_list_rect.bottom:
                     surface.blit(armor_label, (self.armor_list_rect.x + 12, y))
-                    
+
                     # Show conflict details on hover
                     if has_conflict:
                         mouse_pos = pygame.mouse.get_pos()
                         item_rect = pygame.Rect(
-                            self.armor_list_rect.x,
-                            y,
-                            self.armor_list_rect.width,
-                            20
+                            self.armor_list_rect.x, y, self.armor_list_rect.width, 20
                         )
                         if item_rect.collidepoint(mouse_pos):
                             # Show tooltip with conflict info
                             conflict_list = conflicts[armor_id]
-                            zones = ", ".join([zone for _, zone in conflict_list[:3]])  # Show first 3
+                            zones = ", ".join(
+                                [zone for _, zone in conflict_list[:3]]
+                            )  # Show first 3
                             tooltip = f"Conflicts: {zones}"
-                            tooltip_surf = pygame.font.Font(None, 14).render(tooltip, True, (255, 200, 100))
+                            tooltip_surf = pygame.font.Font(None, 14).render(
+                                tooltip, True, (255, 200, 100)
+                            )
                             surface.blit(tooltip_surf, (self.armor_list_rect.x + 12, y + 18))
-                
+
                 y += 22
 
     def _draw_add_armor_button(self, surface: pygame.Surface, mouse_pos: tuple[int, int]) -> None:
         """Draw the add/remove armor buttons.
-        
+
         Args:
             surface: Surface to draw on
             mouse_pos: Current mouse position
@@ -583,32 +593,36 @@ class EquipmentSlotsPanel:
             hover = self.add_armor_button.collidepoint(mouse_pos)
             is_selected = self.selected_slot == "armor"
             color = self.slot_hover if hover else self.slot_color
-            
+
             pygame.draw.rect(surface, color, self.add_armor_button, border_radius=4)
-            
+
             # Selection indicator
             if is_selected:
-                pygame.draw.rect(surface, (100, 200, 255), self.add_armor_button, 2, border_radius=4)
-            
+                pygame.draw.rect(
+                    surface, (100, 200, 255), self.add_armor_button, 2, border_radius=4
+                )
+
             label = self.font.render("+ Add", True, self.text_color)
             label_rect = label.get_rect(center=self.add_armor_button.center)
             surface.blit(label, label_rect)
-        
+
         # Remove button
         if self.remove_armor_button:
             hover = self.remove_armor_button.collidepoint(mouse_pos)
-            
+
             # Check if there's armor to remove
             armor_list = self.equipment.get("armor", [])
             has_armor = isinstance(armor_list, list) and len(armor_list) > 0
-            
+
             if not has_armor:
                 color = self.slot_disabled
             else:
                 color = self.slot_hover if hover else self.slot_color
-            
+
             pygame.draw.rect(surface, color, self.remove_armor_button, border_radius=4)
-            
-            label = self.font.render("- Remove", True, self.text_color if has_armor else self.text_disabled)
+
+            label = self.font.render(
+                "- Remove", True, self.text_color if has_armor else self.text_disabled
+            )
             label_rect = label.get_rect(center=self.remove_armor_button.center)
             surface.blit(label, label_rect)

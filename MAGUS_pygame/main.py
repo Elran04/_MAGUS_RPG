@@ -8,15 +8,16 @@ For porting guide, see MIGRATION.md
 For quick start, see QUICKSTART.md
 """
 
-import pygame
 import multiprocessing
+
+import pygame
 from application.game_context import GameContext
 from application.game_flow_service import start_game
 from config import HEIGHT, WIDTH
 from logger.logger import get_logger
-from presentation.screens.menu.menu_screen import Menu
-from presentation.screens.editor.scenario_editor_screen import ScenarioEditorScreen
 from presentation.desktop.editor_tool_window import run_tool_window
+from presentation.screens.editor.scenario_editor_screen import ScenarioEditorScreen
+from presentation.screens.menu.menu_screen import Menu
 
 logger = get_logger(__name__)
 
@@ -55,7 +56,7 @@ def main() -> None:
                     running = False
                 else:
                     menu.handle_event(event)
-            
+
             # Draw menu
             menu.draw(screen)
             pygame.display.flip()
@@ -82,10 +83,10 @@ def main() -> None:
             elif action == "scenario_editor":
                 logger.info("Opening Scenario Editor - menu action received")
                 menu.reset_action()
-                
+
                 # Clear any pending events
                 pygame.event.clear()
-                
+
                 scenario_editor = ScenarioEditorScreen(WIDTH, HEIGHT, context)
                 game_state = "scenario_editor"
                 logger.info(f"Scenario Editor created, game_state is now: {game_state}")
@@ -95,17 +96,18 @@ def main() -> None:
                     # Create shared queues for inter-process communication
                     ui_to_game_queue = multiprocessing.Queue()
                     game_to_ui_queue = multiprocessing.Queue()
-                    
+
                     # Create event bus instance for game process
                     from infrastructure.events.event_bus import EditorEventBus
+
                     event_bus = EditorEventBus(ui_to_game_queue, game_to_ui_queue)
                     scenario_editor.set_event_bus(event_bus)
-                    
+
                     tool_window_quit_event = multiprocessing.Event()
                     tool_window_process = multiprocessing.Process(
                         target=run_tool_window,
                         args=(tool_window_quit_event, ui_to_game_queue, game_to_ui_queue),
-                        daemon=True
+                        daemon=True,
                     )
                     tool_window_process.start()
                     logger.info("Editor Tool Window launched in separate process")

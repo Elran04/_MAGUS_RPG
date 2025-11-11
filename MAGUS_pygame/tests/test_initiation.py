@@ -1,9 +1,9 @@
 import random
 
-from domain.entities import Unit
-from domain.value_objects import Position, Attributes, CombatStats, ResourcePool
-from domain.mechanics.initiation import calculate_initiative, initiative_sort_key_factory
 from application.battle_service import BattleService
+from domain.entities import Unit
+from domain.mechanics.initiation import calculate_initiative
+from domain.value_objects import Attributes, CombatStats, Position, ResourcePool
 
 
 def make_unit(uid: str, ke: int) -> Unit:
@@ -12,7 +12,15 @@ def make_unit(uid: str, ke: int) -> Unit:
     stats = CombatStats(KE=ke, TE=0, VE=0, CE=0)
     fp = ResourcePool(current=10, maximum=10)
     ep = ResourcePool(current=10, maximum=10)
-    return Unit(id=uid, name=uid, position=Position(0, 0), fp=fp, ep=ep, attributes=attrs, combat_stats=stats)
+    return Unit(
+        id=uid,
+        name=uid,
+        position=Position(0, 0),
+        fp=fp,
+        ep=ep,
+        attributes=attrs,
+        combat_stats=stats,
+    )
 
 
 def test_calculate_initiative_deterministic_order():

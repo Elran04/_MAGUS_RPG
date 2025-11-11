@@ -4,7 +4,6 @@ Heads-up display (HUD) for MAGUS Pygame - Migrated to new architecture.
 Shows character stats, health, stamina, and active effects using new domain entities.
 """
 
-
 import pygame
 from domain.entities import Unit
 from domain.mechanics import Stamina

@@ -11,11 +11,11 @@ def test_armor_validation():
     """Test armor conflict detection."""
     print("Testing Armor Validation System")
     print("=" * 60)
-    
+
     # Initialize repository and service
     repo = EquipmentRepository()
     service = EquipmentValidationService(repo)
-    
+
     # Test 1: No conflicts (different layers)
     print("\nTest 1: No conflicts (different layers)")
     armor_ids_1 = ["full_plate", "padded_armor"]  # Layer 1 and 3
@@ -23,7 +23,7 @@ def test_armor_validation():
     print(f"  Valid: {is_valid}")
     print(f"  Warnings: {warnings}")
     print(f"  Conflicts: {conflicts}")
-    
+
     # Test 2: Conflict on same layer
     print("\nTest 2: Conflict on same layer (two helmets)")
     # Note: Need actual armor IDs from your data
@@ -32,7 +32,7 @@ def test_armor_validation():
     print(f"  Valid: {is_valid}")
     print(f"  Warnings: {warnings}")
     print(f"  Conflicts: {conflicts}")
-    
+
     # Test 3: Empty list
     print("\nTest 3: Empty armor list")
     armor_ids_3 = []
@@ -40,7 +40,7 @@ def test_armor_validation():
     print(f"  Valid: {is_valid}")
     print(f"  Warnings: {warnings}")
     print(f"  Conflicts: {conflicts}")
-    
+
     # Test 4: Single armor piece
     print("\nTest 4: Single armor piece")
     armor_ids_4 = ["full_plate"]
@@ -48,7 +48,7 @@ def test_armor_validation():
     print(f"  Valid: {is_valid}")
     print(f"  Warnings: {warnings}")
     print(f"  Conflicts: {conflicts}")
-    
+
     print("\n" + "=" * 60)
     print("Testing complete!")
 

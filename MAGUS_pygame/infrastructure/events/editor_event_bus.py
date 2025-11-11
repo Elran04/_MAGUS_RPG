@@ -6,22 +6,23 @@ Directions:
 
 This keeps responsibilities clear and avoids the widget consuming its own outbound events.
 """
+
 from __future__ import annotations
 
 import multiprocessing
 from queue import Empty
-from typing import List, Optional
+
 from .editor_events import EditorEvent
 
 # Use multiprocessing.Queue for inter-process communication
 # These will be set by init_queues() from the main process
-_EVENT_QUEUE: Optional[multiprocessing.Queue] = None        # UI -> Game
-_EVENT_QUEUE_UI: Optional[multiprocessing.Queue] = None     # Game -> UI
+_EVENT_QUEUE: multiprocessing.Queue | None = None  # UI -> Game
+_EVENT_QUEUE_UI: multiprocessing.Queue | None = None  # Game -> UI
 
 
 def init_queues(ui_to_game: multiprocessing.Queue, game_to_ui: multiprocessing.Queue) -> None:
     """Initialize the queues (must be called from each process).
-    
+
     Args:
         ui_to_game: Queue for events from UI to Game
         game_to_ui: Queue for events from Game to UI
@@ -37,11 +38,11 @@ def publish(evt: EditorEvent) -> None:
         _EVENT_QUEUE.put(evt)
 
 
-def drain_events(max_batch: int = 128) -> List[EditorEvent]:
+def drain_events(max_batch: int = 128) -> list[EditorEvent]:
     """Collect all pending events (non-blocking)."""
     if _EVENT_QUEUE is None:
         return []
-    out: List[EditorEvent] = []
+    out: list[EditorEvent] = []
     for _ in range(max_batch):
         try:
             out.append(_EVENT_QUEUE.get_nowait())
@@ -56,11 +57,11 @@ def publish_to_ui(evt: EditorEvent) -> None:
         _EVENT_QUEUE_UI.put(evt)
 
 
-def drain_ui_events(max_batch: int = 128) -> List[EditorEvent]:
+def drain_ui_events(max_batch: int = 128) -> list[EditorEvent]:
     """Drain events destined for the tool window (game -> UI)."""
     if _EVENT_QUEUE_UI is None:
         return []
-    out: List[EditorEvent] = []
+    out: list[EditorEvent] = []
     for _ in range(max_batch):
         try:
             out.append(_EVENT_QUEUE_UI.get_nowait())

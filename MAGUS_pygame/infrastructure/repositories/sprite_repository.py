@@ -2,7 +2,6 @@
 Sprite Repository - Handles loading and caching sprite images.
 """
 
-
 import pygame
 from config import BACKGROUND_SPRITES_DIR, get_character_sprite_path
 from logger.logger import get_logger

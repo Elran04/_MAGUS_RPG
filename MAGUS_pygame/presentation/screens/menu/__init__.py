@@ -1,5 +1,5 @@
 """Menu screens package."""
 
-from .menu_screen import MenuScreen
+from .menu_screen import Menu
 
-__all__ = ["MenuScreen"]
+__all__ = ["Menu"]

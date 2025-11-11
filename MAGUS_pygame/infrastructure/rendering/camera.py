@@ -4,7 +4,6 @@ Camera system for managing viewport and scrolling - Migrated to new architecture
 Handles camera positioning, scrolling, and coordinate transformations.
 """
 
-
 import pygame
 from logger.logger import get_logger
 

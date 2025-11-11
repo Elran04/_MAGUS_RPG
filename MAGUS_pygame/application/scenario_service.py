@@ -6,7 +6,6 @@ Handles scenario assembly and roster validation independent of presentation.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Optional
 
 from domain.value_objects import ScenarioConfig, UnitSetup
 from logger.logger import get_logger
@@ -16,12 +15,12 @@ logger = get_logger(__name__)
 
 @dataclass
 class ScenarioState:
-    map_name: Optional[str] = None
-    background_file: Optional[str] = None
-    team_a: List[UnitSetup] = field(default_factory=list)
-    team_b: List[UnitSetup] = field(default_factory=list)
-    max_team_a_size: Optional[int] = None  # From spawn zones
-    max_team_b_size: Optional[int] = None  # From spawn zones
+    map_name: str | None = None
+    background_file: str | None = None
+    team_a: list[UnitSetup] = field(default_factory=list)
+    team_b: list[UnitSetup] = field(default_factory=list)
+    max_team_a_size: int | None = None  # From spawn zones
+    max_team_b_size: int | None = None  # From spawn zones
 
 
 class ScenarioService:
@@ -33,7 +32,14 @@ class ScenarioService:
     - Produce immutable ScenarioConfig when complete
     """
 
-    def __init__(self, scenario_repo, character_repo, sprite_repo, max_team_size: int | None = None, allow_duplicates: bool = True):
+    def __init__(
+        self,
+        scenario_repo,
+        character_repo,
+        sprite_repo,
+        max_team_size: int | None = None,
+        allow_duplicates: bool = True,
+    ):
         self._scenario_repo = scenario_repo
         self._character_repo = character_repo
         self._sprite_repo = sprite_repo
@@ -46,13 +52,13 @@ class ScenarioService:
         bg = self._scenario_repo.resolve_background(map_name)
         self._state.map_name = map_name
         self._state.background_file = bg or "grass_bg.jpg"
-        
+
         # Load spawn zones to determine team size limits
         scenario_data = self._scenario_repo.load_scenario(map_name)
         if scenario_data:
-            spawn_zones = scenario_data.get('spawn_zones', {})
-            team_a_zones = spawn_zones.get('team_a', [])
-            team_b_zones = spawn_zones.get('team_b', [])
+            spawn_zones = scenario_data.get("spawn_zones", {})
+            team_a_zones = spawn_zones.get("team_a", [])
+            team_b_zones = spawn_zones.get("team_b", [])
             self._state.max_team_a_size = len(team_a_zones)
             self._state.max_team_b_size = len(team_b_zones)
             logger.debug(
@@ -65,7 +71,15 @@ class ScenarioService:
             self._state.max_team_b_size = None
 
     # Roster management ------------------------------------------------
-    def add_unit(self, team_a: bool, character_file: str, sprite_file: str, equipment=None, inventory=None, skills=None) -> bool:
+    def add_unit(
+        self,
+        team_a: bool,
+        character_file: str,
+        sprite_file: str,
+        equipment=None,
+        inventory=None,
+        skills=None,
+    ) -> bool:
         """Add a unit to the chosen team.
 
         Returns True if added, False if rejected by validation.
@@ -80,7 +94,7 @@ class ScenarioService:
         if max_size is not None and len(roster) >= max_size:
             logger.info(f"Roster full (scenario spawn zone limit: {max_size}); rejecting add.")
             return False
-        
+
         # Fallback to generic size limit
         if self._max_team_size is not None and len(roster) >= self._max_team_size:
             logger.info("Roster full (generic limit); rejecting add.")
@@ -88,7 +102,9 @@ class ScenarioService:
 
         # Duplicate prevention
         if not self._allow_duplicates:
-            if any(u.character_file == character_file and u.sprite_file == sprite_file for u in roster):
+            if any(
+                u.character_file == character_file and u.sprite_file == sprite_file for u in roster
+            ):
                 logger.info("Duplicate unit rejected (duplicates disabled).")
                 return False
 
@@ -106,7 +122,15 @@ class ScenarioService:
         if skills is None:
             skills = []
 
-        roster.append(UnitSetup(character_file=character_file, sprite_file=sprite_file, equipment=equipment, inventory=inventory, skills=skills))
+        roster.append(
+            UnitSetup(
+                character_file=character_file,
+                sprite_file=sprite_file,
+                equipment=equipment,
+                inventory=inventory,
+                skills=skills,
+            )
+        )
         logger.debug(f"Added unit to {'A' if team_a else 'B'}: {character_file}/{sprite_file}")
         return True
 
@@ -129,13 +153,13 @@ class ScenarioService:
     # State exposure ---------------------------------------------------
     def get_team(self, team_a: bool) -> list[UnitSetup]:
         return self._state.team_a if team_a else self._state.team_b
-    
+
     def get_max_team_size(self, team_a: bool) -> int | None:
         """Get maximum team size based on scenario spawn zones.
-        
+
         Args:
             team_a: True for Team A, False for Team B
-            
+
         Returns:
             Maximum team size or None if no limit
         """
@@ -163,7 +187,9 @@ class ScenarioService:
         if not self.can_advance_from_team_a() or not self.can_finish():
             raise ValueError("Teams incomplete")
         config = ScenarioConfig()
-        config = config.with_map(self._state.map_name, self._state.background_file or "grass_bg.jpg")
+        config = config.with_map(
+            self._state.map_name, self._state.background_file or "grass_bg.jpg"
+        )
         config = config.with_team_a(self._state.team_a)
         config = config.with_team_b(self._state.team_b)
         return config
@@ -171,36 +197,36 @@ class ScenarioService:
     # Presentation layer facade methods -------------------------------
     def get_scenario_list(self) -> list[str]:
         """Get list of available scenario files.
-        
+
         Facade method for presentation layer to avoid direct repository access.
-        
+
         Returns:
             List of scenario file stems (without extension)
         """
         return self._scenario_repo.list_scenarios()
-    
+
     def load_scenario_data(self, scenario_name: str) -> dict | None:
         """Load scenario data by name.
-        
+
         Facade method for presentation layer to avoid direct repository access.
-        
+
         Args:
             scenario_name: Scenario file stem (without extension)
-            
+
         Returns:
             Scenario data dictionary or None if not found
         """
         return self._scenario_repo.load_scenario(scenario_name)
-    
+
     def get_scenario_preview_data(self, scenario_name: str) -> dict | None:
         """Get scenario data formatted for preview display.
-        
+
         Provides a convenient facade for presentation components that need
         read-only access to scenario metadata and layout.
-        
+
         Args:
             scenario_name: Scenario file stem (without extension)
-            
+
         Returns:
             Dictionary with preview-ready data or None if not found.
             Includes: name, description, background, spawn_zones, obstacles
@@ -208,22 +234,22 @@ class ScenarioService:
         data = self._scenario_repo.load_scenario(scenario_name)
         if not data:
             return None
-        
+
         # Ensure all expected keys exist for preview
         return {
-            'name': data.get('name', scenario_name),
-            'description': data.get('description', ''),
-            'background': data.get('background'),
-            'spawn_zones': data.get('spawn_zones', {'team_a': [], 'team_b': []}),
-            'obstacles': data.get('obstacles', []),
+            "name": data.get("name", scenario_name),
+            "description": data.get("description", ""),
+            "background": data.get("background"),
+            "spawn_zones": data.get("spawn_zones", {"team_a": [], "team_b": []}),
+            "obstacles": data.get("obstacles", []),
         }
-    
+
     def get_background_path(self, scenario_name: str) -> str | None:
         """Get resolved background file path for a scenario.
-        
+
         Args:
             scenario_name: Scenario file stem (without extension)
-            
+
         Returns:
             Background file name or None if scenario not found
         """

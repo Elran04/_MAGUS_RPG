@@ -84,6 +84,7 @@ class MovementAction(Action):
         start: Position,
         dest: Position,
         enemy: Unit | None = None,
+        enemy_zones: set[tuple[int, int]] | None = None,
         ap_available: int,
         blocked: Iterable[tuple[int, int]] | None = None,
         **_: object,
@@ -104,6 +105,7 @@ class MovementAction(Action):
         start: Position,
         dest: Position,
         enemy: Unit | None = None,
+        enemy_zones: set[tuple[int, int]] | None = None,
         ap_available: int,
         blocked: Iterable[tuple[int, int]] | None = None,
     ) -> ActionResult:
@@ -131,7 +133,11 @@ class MovementAction(Action):
         # Compute enemy zone of control for potential reactions
         intersects = False
         intersection_index: int | None = None
-        if enemy is not None:
+
+        # Use provided enemy_zones if available, otherwise compute from single enemy
+        if enemy_zones:
+            intersects, intersection_index = path_intersects_zone(path, enemy_zones)
+        elif enemy is not None:
             zone = compute_reach_hexes(enemy, enemy.weapon)
             intersects, intersection_index = path_intersects_zone(path, zone)
 

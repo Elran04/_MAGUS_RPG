@@ -6,7 +6,6 @@ before the combat phase begins. Supports click-to-place, position validation,
 and auto-advance to next undeployed unit.
 """
 
-
 import pygame
 from application.game_context import GameContext
 from config import GRASS_BACKGROUND, HEIGHT, WIDTH, get_character_sprite_path
@@ -57,7 +56,7 @@ class DeploymentScreen:
 
         # Hovered hex
         self.hovered_hex: tuple[int, int] | None = None
-        
+
         # Load spawn zones from scenario
         self.spawn_zones = self._load_spawn_zones()
 
@@ -91,28 +90,28 @@ class DeploymentScreen:
 
     def _load_spawn_zones(self) -> dict[str, list[tuple[int, int]]]:
         """Load spawn zones from scenario data.
-        
+
         Returns:
             Dictionary with 'team_a' and 'team_b' spawn zone coordinates
         """
         scenario_name = self.config.map_name
         if not scenario_name:
             logger.warning("No map name in config, no spawn zones available")
-            return {'team_a': [], 'team_b': []}
-        
+            return {"team_a": [], "team_b": []}
+
         scenario_data = self.context.scenario_service.get_scenario_preview_data(scenario_name)
         if not scenario_data:
             logger.warning(f"Could not load scenario data for {scenario_name}")
-            return {'team_a': [], 'team_b': []}
-        
-        spawn_zones_raw = scenario_data.get('spawn_zones', {})
-        
+            return {"team_a": [], "team_b": []}
+
+        spawn_zones_raw = scenario_data.get("spawn_zones", {})
+
         # Convert to tuples for easier lookup
-        team_a_zones = [(zone['q'], zone['r']) for zone in spawn_zones_raw.get('team_a', [])]
-        team_b_zones = [(zone['q'], zone['r']) for zone in spawn_zones_raw.get('team_b', [])]
-        
+        team_a_zones = [(zone["q"], zone["r"]) for zone in spawn_zones_raw.get("team_a", [])]
+        team_b_zones = [(zone["q"], zone["r"]) for zone in spawn_zones_raw.get("team_b", [])]
+
         logger.info(f"Loaded spawn zones: Team A={len(team_a_zones)}, Team B={len(team_b_zones)}")
-        return {'team_a': team_a_zones, 'team_b': team_b_zones}
+        return {"team_a": team_a_zones, "team_b": team_b_zones}
 
     def _load_unit_sprites(self) -> None:
         """Load sprites for all units using sprite repository."""
@@ -235,7 +234,7 @@ class DeploymentScreen:
         if not self._is_position_valid_for_current_unit(q, r):
             logger.debug(f"Position ({q}, {r}) not in spawn zone for current unit")
             return
-        
+
         # Check if position is already occupied
         if self._is_position_occupied(q, r):
             logger.debug(f"Position ({q}, {r}) already occupied")
@@ -265,21 +264,21 @@ class DeploymentScreen:
             if unit.start_q == q and unit.start_r == r:
                 return True
         return False
-    
+
     def _is_position_valid_for_current_unit(self, q: int, r: int) -> bool:
         """Check if position is valid for current unit (in correct spawn zone).
-        
+
         Args:
             q: Hex Q coordinate
             r: Hex R coordinate
-            
+
         Returns:
             True if position is in the current unit's team spawn zone
         """
         team_a_size = len(self.config.team_a)
         is_team_a = self.current_unit_index < team_a_size
-        
-        spawn_zone = self.spawn_zones['team_a'] if is_team_a else self.spawn_zones['team_b']
+
+        spawn_zone = self.spawn_zones["team_a"] if is_team_a else self.spawn_zones["team_b"]
         return (q, r) in spawn_zone
 
     def _all_units_deployed(self) -> bool:
@@ -335,19 +334,20 @@ class DeploymentScreen:
         # Get current unit's valid spawn zone
         team_a_size = len(self.config.team_a)
         is_team_a = self.current_unit_index < team_a_size
-        valid_spawn_zone = self.spawn_zones['team_a'] if is_team_a else self.spawn_zones['team_b']
+        valid_spawn_zone = self.spawn_zones["team_a"] if is_team_a else self.spawn_zones["team_b"]
 
         # Draw all hexes
         for q in range(self.min_q, self.max_q):
             for r in range(self.min_r, self.max_r):
                 x, y = hex_to_pixel(q, r)
-                
+
                 is_valid_spawn = (q, r) in valid_spawn_zone
-                
+
                 # Highlight spawn zones with subtle color
                 if is_valid_spawn and not self._is_position_occupied(q, r):
                     # Draw filled hex for spawn zone
                     from infrastructure.rendering.hex_grid import HEX_SIZE, _hex_points
+
                     spawn_color = (100, 150, 255) if is_team_a else (255, 100, 100)
                     points = _hex_points((x, y), HEX_SIZE)
                     # Create semi-transparent surface for spawn zone

@@ -8,19 +8,19 @@ from __future__ import annotations
 import pygame
 from application.game_context import GameContext
 from config import DEJAVU_FONT_PATH
-from logger.logger import get_logger
 from domain.value_objects.scenario_config import UnitSetup
+from logger.logger import get_logger
+from presentation.components.equipment.equipment_panel_coordinator import EquipmentPanelCoordinator
+from presentation.components.equipment.roster_list import RosterList
 
 from .phase_base import SelectionPhaseBase
-from presentation.components.equipment.roster_list import RosterList
-from presentation.components.equipment.equipment_panel_coordinator import EquipmentPanelCoordinator
 
 logger = get_logger(__name__)
 
 
 class EquipmentPhase(SelectionPhaseBase):
     """Equipment phase (placeholder).
-    
+
     Future functionality:
     - Select weapons for each character
     - Choose armor/protection
@@ -28,17 +28,17 @@ class EquipmentPhase(SelectionPhaseBase):
     - Preview equipment stats
     - Validate equipment restrictions (class/race requirements)
     """
-    
+
     def __init__(
         self,
         screen_width: int,
         screen_height: int,
         context: GameContext,
         team_a_size: int,
-        team_b_size: int
+        team_b_size: int,
     ):
         """Initialize equipment phase.
-        
+
         Args:
             screen_width: Screen width in pixels
             screen_height: Screen height in pixels
@@ -47,7 +47,7 @@ class EquipmentPhase(SelectionPhaseBase):
             team_b_size: Number of units in team B
         """
         super().__init__(screen_width, screen_height, context)
-        
+
         self.team_a_size = team_a_size
         self.team_b_size = team_b_size
 
@@ -60,10 +60,10 @@ class EquipmentPhase(SelectionPhaseBase):
         team_b = context.scenario_service.get_team(False)
         self.combined_roster: list[tuple[str, bool, int]] = []
         for idx, unit in enumerate(team_a):
-            name = unit.character_file.rsplit('.', 1)[0]
+            name = unit.character_file.rsplit(".", 1)[0]
             self.combined_roster.append((name, True, idx))
         for idx, unit in enumerate(team_b):
-            name = unit.character_file.rsplit('.', 1)[0]
+            name = unit.character_file.rsplit(".", 1)[0]
             self.combined_roster.append((name, False, idx))
 
         # Fonts
@@ -112,7 +112,7 @@ class EquipmentPhase(SelectionPhaseBase):
             20 + left_panel_w + 10 + (coord_width - 40) // 2 + 20
         )
         self.equipment_coordinator.inventory_panel.rect.y = top_y
-        
+
         # Recalculate layouts after position adjustment
         self.equipment_coordinator.equipment_panel._layout_slots()
         self.equipment_coordinator.inventory_panel._layout()
@@ -122,14 +122,14 @@ class EquipmentPhase(SelectionPhaseBase):
 
         # Load initial selected unit equipment if any
         self._load_selected_unit_equipment()
-        
+
         logger.info(
             f"Equipment phase initialized: Team A={team_a_size} units, Team B={team_b_size} units"
         )
-    
+
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle input events.
-        
+
         Args:
             event: Pygame event
         """
@@ -151,28 +151,28 @@ class EquipmentPhase(SelectionPhaseBase):
                 # Proceed to deployment (future: validation of equipment)
                 self.completed = True
                 logger.info("Equipment phase completed")
-    
+
     def draw(self, surface: pygame.Surface) -> None:
         """Draw equipment screen (placeholder).
-        
+
         Args:
             surface: Surface to draw on
         """
         # Background
         surface.fill(self.color_bg)
-        
+
         # Title
         title = self.font_title.render("Equipment Selection", True, self.color_text)
         title_rect = title.get_rect(center=(self.screen_width // 2, 50))
         surface.blit(title, title_rect)
-        
+
         # Phase title already drawn; draw sub-panels
         self.roster_list.draw(surface)
         self.equipment_coordinator.draw(surface)
-        
+
         # Instructions
         self._draw_instructions(surface)
-    
+
     def _draw_instructions(self, surface: pygame.Surface) -> None:
         """Draw control instructions."""
         y = self.screen_height - 40
@@ -180,10 +180,10 @@ class EquipmentPhase(SelectionPhaseBase):
         inst_surf = self.font_small.render(instructions, True, self.color_instructions)
         inst_rect = inst_surf.get_rect(center=(self.screen_width // 2, y))
         surface.blit(inst_surf, inst_rect)
-    
+
     def can_proceed(self) -> bool:
         """Check if can proceed to next phase.
-        
+
         Returns:
             True (equipment currently optional)
         """
@@ -197,7 +197,7 @@ class EquipmentPhase(SelectionPhaseBase):
             return
         name, is_team_a, idx = sel
         unit = self.context.scenario_service.get_team(is_team_a)[idx]
-        
+
         # Load fresh data for this unit (creates new instance each time)
         self.equipment_coordinator.set_data(unit.equipment, unit.inventory)
 
@@ -208,11 +208,11 @@ class EquipmentPhase(SelectionPhaseBase):
             return
         _, is_team_a, idx = sel
         unit = self.context.scenario_service.get_team(is_team_a)[idx]
-        
+
         # Get updated equipment and inventory from coordinator
         updated_equipment = self.equipment_coordinator.get_equipment()
         updated_inventory = self.equipment_coordinator.get_current_inventory()
-        
+
         # Rebuild UnitSetup with updated equipment and inventory
         updated = UnitSetup(
             character_file=unit.character_file,

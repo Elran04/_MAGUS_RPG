@@ -16,11 +16,11 @@ from dataclasses import dataclass, field
 
 from domain.entities import Unit
 from domain.mechanics.initiation import (
+    InitiativeOrder,
     calculate_initiative,
     initiative_sort_key_factory,
-    InitiativeOrder,
 )
-from domain.value_objects import Position
+from domain.value_objects import Facing, Position
 
 from .action_handler import ActionHandler
 
@@ -63,7 +63,9 @@ class BattleService:
     # ------------------------------------------------------------------
     # Initiative Integration
     # ------------------------------------------------------------------
-    def enable_initiative(self, *, seed: int | None = None, persistent: bool = False, re_roll_each_round: bool = True) -> None:
+    def enable_initiative(
+        self, *, seed: int | None = None, persistent: bool = False, re_roll_each_round: bool = True
+    ) -> None:
         """Activate initiative system before calling start_battle.
 
         Args:
@@ -180,12 +182,37 @@ class BattleService:
 
     def attack_current_unit(self, defender: Unit, **kwargs) -> dict:
         unit = self.current_unit()
+
+        # Validate target is in attack range
+        from domain.mechanics.reach import can_attack_target
+
+        if not can_attack_target(unit, defender.position, unit.weapon):
+            return {"error": f"{defender.name} is not in attack range"}
+
         # AttackAction has fixed AP cost inside result.ap_spent
         result = self.action_handler.attack(attacker=unit, defender=defender, **kwargs)
         if result.success:
             if not self.spend_ap(unit, result.ap_spent):
                 return {"error": "Insufficient AP after attack", "action_result": result}
         return {"action_result": result}
+
+    def rotate_current_unit(self, new_facing: Facing) -> dict:
+        """Rotate current unit to face a new direction.
+
+        Args:
+            new_facing: Target facing direction (0-5)
+
+        Returns:
+            Dict with action_result and ap_spent, or error
+        """
+        unit = self.current_unit()
+        summary = self.action_handler.change_facing(
+            unit=unit, new_facing=new_facing, ap_available=self.remaining_ap(unit)
+        )
+        if "error" not in summary:
+            if not self.spend_ap(unit, summary.get("ap_spent", 0)):
+                summary["error"] = "Insufficient AP after rotation"
+        return summary
 
     def set_teams(self, team_a: Iterable[Unit], team_b: Iterable[Unit]) -> None:
         self.team_a_ids = [u.id for u in team_a]
@@ -243,3 +270,91 @@ class BattleService:
             return "team_b"
         else:
             return "draw"
+
+    # --- Helper methods for UI highlighting ---
+    def compute_reachable_hexes(self, unit: Unit) -> set[tuple[int, int]]:
+        """Calculate hexes reachable by unit based on remaining AP.
+
+        Uses BFS flood fill to find all hexes within movement range,
+        accounting for AP cost per hex and blocked positions.
+
+        Args:
+            unit: Unit to calculate reachable hexes for
+
+        Returns:
+            Set of (q, r) hex coordinates the unit can reach
+        """
+        from collections import deque
+
+        from config import AP_COST_MOVEMENT
+        from domain.mechanics.actions.movement_action import NEIGHBORS
+
+        ap_available = self.remaining_ap(unit)
+        max_distance = ap_available // AP_COST_MOVEMENT
+
+        if max_distance <= 0:
+            return set()
+
+        start = (unit.position.q, unit.position.r)
+        visited = {start}
+        queue = deque([(start, 0)])
+        reachable = set()
+
+        # Get all occupied positions to block (can't move through other units)
+        blocked = {(u.position.q, u.position.r) for u in self.units if u.id != unit.id}
+
+        while queue:
+            (q, r), dist = queue.popleft()
+
+            # Add to reachable if beyond start position and within range
+            if 0 < dist <= max_distance:
+                reachable.add((q, r))
+
+            # Continue exploring if not at max distance
+            if dist < max_distance:
+                for dq, dr in NEIGHBORS:
+                    nxt = (q + dq, r + dr)
+                    if nxt not in visited and nxt not in blocked:
+                        visited.add(nxt)
+                        queue.append((nxt, dist + 1))
+
+        return reachable
+
+    def compute_attackable_hexes(self, unit: Unit) -> set[tuple[int, int]]:
+        """Calculate hexes attackable by unit based on weapon reach and facing.
+
+        Uses the domain reach mechanics to determine which hexes are in
+        the unit's attack range based on weapon size and facing direction.
+
+        Args:
+            unit: Unit to calculate attackable hexes for
+
+        Returns:
+            Set of (q, r) hex coordinates the unit can attack
+        """
+        from domain.mechanics.reach import compute_reach_hexes
+
+        return compute_reach_hexes(unit, unit.weapon)
+
+    def compute_enemy_zones(self, unit: Unit) -> set[tuple[int, int]]:
+        """Calculate combined zone of control for all enemies of the given unit.
+
+        Useful for visual warning when planning movement paths.
+
+        Args:
+            unit: Unit to calculate enemy zones for
+
+        Returns:
+            Set of (q, r) hex coordinates covered by enemy zones of control
+        """
+        from domain.mechanics.reach import compute_reach_hexes
+
+        enemies = self.get_enemies(unit)
+        enemy_zones = set()
+
+        for enemy in enemies:
+            if enemy.is_alive():
+                zone = compute_reach_hexes(enemy, enemy.weapon)
+                enemy_zones.update(zone)
+
+        return enemy_zones

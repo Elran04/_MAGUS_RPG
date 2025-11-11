@@ -44,6 +44,15 @@ def _units_from_config(context, config: ScenarioConfig) -> tuple[list[Unit], lis
             facing=Facing(setup.facing),
         )
 
+        # Set wield state for variable weapons
+        if u and u.weapon and getattr(u.weapon, "wield_mode", None) == "variable":
+            eq = setup.equipment
+            main_hand = eq.get("main_hand")
+            off_hand = eq.get("off_hand")
+            # If main hand weapon is variable, set wield state
+            off_hand_equipped = bool(off_hand)
+            u.weapon.set_wield_state(main_hand=True, off_hand_equipped=off_hand_equipped)
+
         if u:
             # Load sprite
             sprite = sprite_repo.load_character_sprite(setup.sprite_file)
@@ -62,6 +71,14 @@ def _units_from_config(context, config: ScenarioConfig) -> tuple[list[Unit], lis
             position=Position(setup.start_q, setup.start_r),  # type: ignore[arg-type]
             facing=Facing(setup.facing),
         )
+
+        # Set wield state for variable weapons
+        if u and u.weapon and getattr(u.weapon, "wield_mode", None) == "variable":
+            eq = setup.equipment
+            main_hand = eq.get("main_hand")
+            off_hand = eq.get("off_hand")
+            off_hand_equipped = bool(off_hand)
+            u.weapon.set_wield_state(main_hand=True, off_hand_equipped=off_hand_equipped)
 
         if u:
             # Load sprite

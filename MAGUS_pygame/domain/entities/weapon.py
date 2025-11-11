@@ -9,6 +9,21 @@ from dataclasses import dataclass, field
 
 @dataclass
 class Weapon:
+    def set_wield_state(self, main_hand: bool, off_hand_equipped: bool) -> None:
+        """
+        Set current wield state for variable wield mode weapons.
+        If equipped in main hand and no off-hand weapon, set to two-handed.
+        If off-hand weapon is equipped, set to one-handed.
+        Only applies if wield_mode is 'variable'.
+        """
+        if self.wield_mode == "variable":
+            if main_hand and not off_hand_equipped:
+                self.current_wield_state = "two_handed"
+            elif main_hand and off_hand_equipped:
+                self.current_wield_state = "one_handed"
+            else:
+                self.current_wield_state = None
+
     """Weapon definition with combat modifiers."""
 
     id: str
@@ -29,6 +44,9 @@ class Weapon:
     attack_time: int = 5  # Initiative cost
     size_category: int = 1
     wield_mode: str = "one_handed"  # one_handed, two_handed, dual
+
+    # For variable wield mode weapons, track current state
+    current_wield_state: str = None  # None, "one_handed", "two_handed"
 
     # Requirements
     strength_required: int = 0

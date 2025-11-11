@@ -1,6 +1,5 @@
 """Tests for stamina subsystem."""
 
-
 from domain.mechanics import (
     DEFAULT_COMBAT_MODIFIERS,
     CombatModifiers,

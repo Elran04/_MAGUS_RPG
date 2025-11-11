@@ -5,11 +5,11 @@ Displays scenario background image preview and map information
 for scenario selection screens.
 """
 
+import math
 
 import pygame
-import math
-from infrastructure.rendering.hex_grid import hex_to_pixel, get_grid_bounds
 from config import HEX_SIZE
+from infrastructure.rendering.hex_grid import get_grid_bounds, hex_to_pixel
 from logger.logger import get_logger
 
 logger = get_logger(__name__)
@@ -88,7 +88,7 @@ class MapPreview:
 
         # Create a subsurface/render target for the preview area
         preview_rect = pygame.Rect(img_x, img_y, self.preview_width, self.preview_height)
-        
+
         if scenario_data:
             # Render the scenario like the editor does, then scale down
             self._draw_scenario_preview(surface, preview_rect, background_surface, scenario_data)
@@ -141,19 +141,19 @@ class MapPreview:
         """
         # Get screen size from surface (this is what the editor uses)
         screen_width, screen_height = surface.get_size()
-        
+
         # Create a full-resolution render surface (like in editor)
         full_render = pygame.Surface((screen_width, screen_height))
         full_render.fill((20, 20, 30))  # Dark background
-        
+
         # Draw background at full resolution
         if background_surface:
             scaled_bg = pygame.transform.scale(background_surface, (screen_width, screen_height))
             full_render.blit(scaled_bg, (0, 0))
-        
+
         # Draw hex grid with zones/obstacles using editor's approach
         self._draw_hex_grid_on_surface(full_render, scenario_data)
-        
+
         # Scale down the full render to fit preview area
         scaled_preview = pygame.transform.smoothscale(
             full_render, (preview_rect.width, preview_rect.height)
@@ -170,71 +170,74 @@ class MapPreview:
         # Colors matching editor
         color_team_a = (100, 150, 255, 140)  # Blue
         color_team_b = (255, 100, 100, 140)  # Red
-        color_obstacle = (80, 80, 80, 180)   # Gray
+        color_obstacle = (80, 80, 80, 180)  # Gray
         color_hex_border = (100, 100, 120)
-        
+
         # Get grid bounds from infrastructure (same as editor)
         min_q, max_q, min_r, max_r = get_grid_bounds()
-        
+
         # Extract zone data
         team_a_zones = set(
-            (z['q'], z['r']) 
-            for z in scenario_data.get('spawn_zones', {}).get('team_a', [])
+            (z["q"], z["r"]) for z in scenario_data.get("spawn_zones", {}).get("team_a", [])
         )
         team_b_zones = set(
-            (z['q'], z['r']) 
-            for z in scenario_data.get('spawn_zones', {}).get('team_b', [])
+            (z["q"], z["r"]) for z in scenario_data.get("spawn_zones", {}).get("team_b", [])
         )
-        obstacles = set(
-            (o['q'], o['r']) 
-            for o in scenario_data.get('obstacles', [])
-        )
-        
+        obstacles = set((o["q"], o["r"]) for o in scenario_data.get("obstacles", []))
+
         # Create overlay for transparent zones
         screen_w, screen_h = surface.get_size()
         overlay = pygame.Surface((screen_w, screen_h), pygame.SRCALPHA)
-        
+
         # Draw hexes
         hex_size = HEX_SIZE
         margin = hex_size * 2
-        
+
         for q in range(min_q, max_q + 1):
             for r in range(min_r, max_r + 1):
                 cx, cy = hex_to_pixel(q, r)
-                
+
                 # Skip if off-screen
                 if not (-margin < cx < screen_w + margin and -margin < cy < screen_h + margin):
                     continue
-                
+
                 # Draw hex border
                 corners = self._get_hex_corners(cx, cy, hex_size)
                 pygame.draw.polygon(surface, color_hex_border, corners, 2)
-                
+
                 # Draw zone overlays
                 if (q, r) in team_a_zones:
                     pygame.draw.polygon(overlay, color_team_a, corners, 0)
-                
+
                 if (q, r) in team_b_zones:
                     pygame.draw.polygon(overlay, color_team_b, corners, 0)
-                
+
                 if (q, r) in obstacles:
                     pygame.draw.polygon(overlay, color_obstacle, corners, 0)
-        
+
         # Blit overlay
         surface.blit(overlay, (0, 0))
-        
+
         # Draw obstacle markers
         for q, r in obstacles:
             cx, cy = hex_to_pixel(q, r)
             if -margin < cx < screen_w + margin and -margin < cy < screen_h + margin:
                 # Draw X for obstacle
                 mark_size = hex_size // 3
-                pygame.draw.line(surface, (200, 200, 200), 
-                               (cx - mark_size, cy - mark_size), 
-                               (cx + mark_size, cy + mark_size), 3)
-                pygame.draw.line(surface, (200, 200, 200), 
-                               (cx - mark_size, cy + mark_size), 
-                               (cx + mark_size, cy - mark_size), 3)
+                pygame.draw.line(
+                    surface,
+                    (200, 200, 200),
+                    (cx - mark_size, cy - mark_size),
+                    (cx + mark_size, cy + mark_size),
+                    3,
+                )
+                pygame.draw.line(
+                    surface,
+                    (200, 200, 200),
+                    (cx - mark_size, cy + mark_size),
+                    (cx + mark_size, cy - mark_size),
+                    3,
+                )
 
     def _get_hex_corners(self, cx: int, cy: int, hex_size: int) -> list[tuple[int, int]]:
         """Get hex corner points for pointy-top hex.
@@ -300,24 +303,26 @@ class MapPreview:
         hex_size = 25
         hex_height = hex_size * 2
         hex_width = int(hex_size * 1.732)  # sqrt(3)
-        
+
         # Offset rows for hex pattern
         rows = int(height / (hex_height * 0.75)) + 2
         cols = int(width / hex_width) + 2
-        
+
         for row in range(rows):
             for col in range(cols):
                 # Offset every other row
                 offset_x = (hex_width // 2) if row % 2 == 1 else 0
                 center_x = col * hex_width + offset_x
                 center_y = int(row * hex_height * 0.75)
-                
+
                 # Draw hex outline
                 if 0 <= center_x < width and 0 <= center_y < height:
-                    self._draw_hex_outline(placeholder, center_x, center_y, hex_size, self.color_grid)
+                    self._draw_hex_outline(
+                        placeholder, center_x, center_y, hex_size, self.color_grid
+                    )
 
         surface.blit(placeholder, (x, y))
-    
+
     def _draw_hex_outline(
         self, surface: pygame.Surface, cx: int, cy: int, size: int, color: tuple[int, int, int]
     ) -> None:
@@ -331,14 +336,14 @@ class MapPreview:
             color: Line color
         """
         import math
-        
+
         points = []
         for i in range(6):
             angle = math.pi / 3 * i - math.pi / 6  # Start from flat top
             px = cx + size * math.cos(angle)
             py = cy + size * math.sin(angle)
             points.append((px, py))
-        
+
         # Draw hex outline
         for i in range(6):
             start = points[i]

@@ -5,7 +5,6 @@ Handles combat phase with turn management, player input, unit actions,
 and victory conditions. Integrates BattleService, ActionHandler, and BattleRenderer.
 """
 
-
 import pygame
 from application.battle_service import BattleService
 from application.game_context import GameContext
@@ -121,6 +120,14 @@ class BattleScreen:
             elif event.key == pygame.K_i:
                 self._enter_inspect_mode()
 
+            elif event.key == pygame.K_q:
+                # Rotate counterclockwise (left)
+                self._rotate_current_unit(-1)
+
+            elif event.key == pygame.K_e:
+                # Rotate clockwise (right)
+                self._rotate_current_unit(1)
+
         elif event.type == pygame.MOUSEMOTION:
             self._update_hover(event.pos)
 
@@ -131,7 +138,7 @@ class BattleScreen:
                 self._handle_right_click(event.pos)
 
     def _update_hover(self, mouse_pos: tuple[int, int]) -> None:
-        """Update hovered hex from mouse position.
+        """Update hovered hex from mouse position and compute movement path preview.
 
         Args:
             mouse_pos: Mouse position (x, y)
@@ -141,11 +148,21 @@ class BattleScreen:
 
         if min_q <= q < max_q and min_r <= r < max_r:
             self.hovered_hex = (q, r)
+
+            # Update movement path preview if in MOVE mode
+            if self.action_mode == ActionMode.MOVE:
+                self._update_movement_path_preview(q, r)
         else:
             self.hovered_hex = None
+            self.movement_path = None
 
     def _handle_click(self, mouse_pos: tuple[int, int]) -> None:
         """Handle left mouse click.
+
+        Clicking behavior:
+        - MOVE mode: Execute movement to hex
+        - ATTACK mode: Execute attack on hex
+        - IDLE/INSPECT mode: Inspect hex OR rotate if clicking adjacent hex to current unit
 
         Args:
             mouse_pos: Mouse position (x, y)
@@ -154,15 +171,32 @@ class BattleScreen:
             return
 
         q, r = self.hovered_hex
+        current = self.battle.current_unit()
 
         if self.action_mode == ActionMode.MOVE:
+            # Only allow clicking on reachable hexes
+            if current:
+                reachable = self.battle.compute_reachable_hexes(current)
+                if (q, r) not in reachable:
+                    self._show_message("Hex not in movement range")
+                    return
             self._execute_move(Position(q, r))
 
         elif self.action_mode == ActionMode.ATTACK:
+            # Only allow clicking on attackable hexes with enemies
+            if current:
+                attackable = self.battle.compute_attackable_hexes(current)
+                if (q, r) not in attackable:
+                    self._show_message("Hex not in attack range")
+                    return
             self._execute_attack(Position(q, r))
 
         elif self.action_mode == ActionMode.INSPECT or self.action_mode == ActionMode.IDLE:
-            self._inspect_hex(q, r)
+            # Check if clicking adjacent hex to current unit for facing change
+            if current and self._is_adjacent_to_unit(q, r, current):
+                self._change_facing_to_hex(q, r)
+            else:
+                self._inspect_hex(q, r)
 
     def _handle_right_click(self, mouse_pos: tuple[int, int]) -> None:
         """Handle right mouse click (quick inspect).
@@ -385,14 +419,17 @@ class BattleScreen:
         # Compute highlights based on action mode
         reachable_hexes: set[tuple[int, int]] | None = None
         attackable_hexes: set[tuple[int, int]] | None = None
+        enemy_zones: set[tuple[int, int]] = set()
 
         if self.action_mode == ActionMode.MOVE and current_unit:
-            # TODO: Calculate reachable hexes based on AP and movement
-            reachable_hexes = set()  # Placeholder
+            # Calculate reachable hexes based on remaining AP
+            reachable_hexes = self.battle.compute_reachable_hexes(current_unit)
+            # Show enemy zones as warning during movement
+            enemy_zones = self.battle.compute_enemy_zones(current_unit)
 
         elif self.action_mode == ActionMode.ATTACK and current_unit:
-            # TODO: Calculate attackable hexes based on weapon reach
-            attackable_hexes = set()  # Placeholder
+            # Calculate attackable hexes based on weapon reach and facing
+            attackable_hexes = self.battle.compute_attackable_hexes(current_unit)
 
         # Render complete scene
         self.renderer.render_scene(
@@ -401,7 +438,7 @@ class BattleScreen:
             active_unit=current_unit,
             action_mode=self.action_mode,
             movement_path=self.movement_path,
-            enemy_zone=set(),  # TODO: Calculate enemy zones
+            enemy_zone=enemy_zones,
             reachable_hexes=reachable_hexes,
             attackable_hexes=attackable_hexes,
             highlight_hex=self.hovered_hex,
@@ -435,7 +472,15 @@ class BattleScreen:
         Args:
             surface: Surface to draw on
         """
-        controls = ["M: Move", "A: Attack", "I: Inspect", "Space: End Turn", "ESC: Cancel/Quit"]
+        controls = [
+            "M: Move",
+            "A: Attack",
+            "Q/E: Rotate",
+            "Click Adjacent: Face",
+            "I: Inspect",
+            "Space: End Turn",
+            "ESC: Cancel",
+        ]
 
         y = self.screen_height - 30
         x = 10
@@ -502,3 +547,119 @@ class BattleScreen:
             True if battle ended or cancelled
         """
         return self.action is not None
+
+    # --- Movement path preview ---
+    def _update_movement_path_preview(self, dest_q: int, dest_r: int) -> None:
+        """Update movement path preview when hovering in MOVE mode.
+
+        Args:
+            dest_q, dest_r: Destination hex coordinates
+        """
+        current = self.battle.current_unit()
+        if not current:
+            self.movement_path = None
+            return
+
+        # Check if destination is reachable
+        reachable = self.battle.compute_reachable_hexes(current)
+        if (dest_q, dest_r) not in reachable:
+            self.movement_path = None
+            return
+
+        # Compute path using BFS (same as movement action)
+        from domain.mechanics.actions.movement_action import bfs_path
+
+        start = (current.position.q, current.position.r)
+        dest = (dest_q, dest_r)
+
+        # Get blocked positions (other units)
+        blocked = {(u.position.q, u.position.r) for u in self.battle.units if u.id != current.id}
+
+        path_coords = bfs_path(start, dest, blocked)
+
+        # Convert to Position objects for rendering
+        if path_coords:
+            self.movement_path = [Position(q, r) for q, r in path_coords]
+        else:
+            self.movement_path = None
+
+    # --- Facing control helpers ---
+    def _is_adjacent_to_unit(self, q: int, r: int, unit: Unit) -> bool:
+        """Check if hex (q, r) is adjacent to unit's position.
+
+        Args:
+            q, r: Hex coordinates
+            unit: Unit to check adjacency to
+
+        Returns:
+            True if hex is adjacent to unit
+        """
+        from infrastructure.rendering.hex_grid import get_adjacent_hexes
+
+        adjacent = get_adjacent_hexes(unit.position.q, unit.position.r)
+        return (q, r) in adjacent
+
+    def _change_facing_to_hex(self, q: int, r: int) -> None:
+        """Change current unit's facing to point toward hex (q, r).
+
+        Args:
+            q, r: Target hex coordinates (should be adjacent)
+        """
+        from domain.value_objects import Facing
+        from infrastructure.rendering.hex_grid import calculate_facing_to_hex
+
+        current = self.battle.current_unit()
+        if not current:
+            return
+
+        # Calculate facing direction
+        facing_dir = calculate_facing_to_hex(current.position.q, current.position.r, q, r)
+        if facing_dir is None:
+            self._show_message("Not an adjacent hex")
+            return
+
+        # Execute facing change
+        new_facing = Facing(facing_dir)
+        result = self.battle.rotate_current_unit(new_facing)
+
+        if "error" in result:
+            self._show_message(result["error"])
+            logger.warning(f"Facing change failed: {result['error']}")
+        else:
+            ap_spent = result.get("ap_spent", 0)
+            self._show_message(f"Rotated to face hex (AP: -{ap_spent})")
+            logger.info(f"{current.name} rotated to facing {facing_dir} (AP spent: {ap_spent})")
+
+    def _rotate_current_unit(self, direction: int) -> None:
+        """Rotate current unit by direction offset.
+
+        Args:
+            direction: +1 for clockwise, -1 for counterclockwise
+        """
+        from domain.value_objects import Facing
+
+        current = self.battle.current_unit()
+        if not current:
+            return
+
+        if self.battle.is_victory():
+            return
+
+        # Calculate new facing
+        current_facing = current.facing.direction
+        new_facing_dir = (current_facing + direction) % 6
+        new_facing = Facing(new_facing_dir)
+
+        # Execute rotation
+        result = self.battle.rotate_current_unit(new_facing)
+
+        if "error" in result:
+            self._show_message(result["error"])
+            logger.warning(f"Rotation failed: {result['error']}")
+        else:
+            ap_spent = result.get("ap_spent", 0)
+            direction_name = "clockwise" if direction > 0 else "counterclockwise"
+            self._show_message(f"Rotated {direction_name} (AP: -{ap_spent})")
+            logger.info(
+                f"{current.name} rotated {direction_name} to facing {new_facing_dir} (AP spent: {ap_spent})"
+            )

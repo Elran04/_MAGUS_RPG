@@ -1,10 +1,8 @@
 """Scenario Repository - Lists scenarios and resolves background assets."""
 
 import json
-from pathlib import Path
-from typing import List
 
-from config import SCENARIOS_DIR, BACKGROUND_SPRITES_DIR, get_scenario_json_path
+from config import BACKGROUND_SPRITES_DIR, SCENARIOS_DIR, get_scenario_json_path
 from logger.logger import get_logger
 
 logger = get_logger(__name__)
@@ -13,7 +11,7 @@ logger = get_logger(__name__)
 class ScenarioRepository:
     """Repository for scenario metadata and assets."""
 
-    def list_scenarios(self) -> List[str]:
+    def list_scenarios(self) -> list[str]:
         """Return available scenario names (stem without extension)."""
         try:
             files = [f.stem for f in SCENARIOS_DIR.iterdir() if f.suffix.lower() == ".json"]
@@ -21,19 +19,19 @@ class ScenarioRepository:
         except Exception as e:
             logger.warning(f"Failed to list scenarios: {e}")
             return ["default"]
-    
+
     def load_scenario(self, scenario_name: str) -> dict | None:
         """Load scenario data from JSON file.
-        
+
         Args:
             scenario_name: Scenario name (without .json extension)
-            
+
         Returns:
             Scenario data dict or None if failed
         """
         try:
             path = get_scenario_json_path(f"{scenario_name}.json")
-            with open(path, 'r', encoding='utf-8') as f:
+            with open(path, encoding="utf-8") as f:
                 data = json.load(f)
             logger.info(f"Loaded scenario: {scenario_name}")
             return data
@@ -46,20 +44,20 @@ class ScenarioRepository:
         except Exception as e:
             logger.error(f"Failed to load scenario {scenario_name}: {e}")
             return None
-    
+
     def save_scenario(self, scenario_name: str, data: dict) -> bool:
         """Save scenario data to JSON file.
-        
+
         Args:
             scenario_name: Scenario name (without .json extension)
             data: Scenario data dict
-            
+
         Returns:
             True if saved successfully, False otherwise
         """
         try:
             path = get_scenario_json_path(f"{scenario_name}.json")
-            with open(path, 'w', encoding='utf-8') as f:
+            with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
             logger.info(f"Saved scenario: {scenario_name}")
             return True

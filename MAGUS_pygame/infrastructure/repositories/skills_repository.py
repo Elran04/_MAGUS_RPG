@@ -6,9 +6,8 @@ Falls back gracefully if DB or table unavailable.
 
 from __future__ import annotations
 
-from pathlib import Path
 import sqlite3
-from typing import Dict
+from pathlib import Path
 
 from logger.logger import get_logger
 
@@ -25,7 +24,7 @@ class SkillsRepository:
 
     def __init__(self, db_path: Path | None = None):
         self._db_path = db_path or Path("Gamemaster_tools/data/skills/skills_data.db")
-        self._cache: Dict[str, str] | None = None
+        self._cache: dict[str, str] | None = None
         self._initialized = False
 
     def _ensure_loaded(self) -> None:
@@ -44,7 +43,12 @@ class SkillsRepository:
 
             # Try common table name candidates
             candidates = [
-                "skills", "skill", "skill_defs", "skills_defs", "skill_names", "skill_catalog"
+                "skills",
+                "skill",
+                "skill_defs",
+                "skills_defs",
+                "skill_names",
+                "skill_catalog",
             ]
             table_found = None
             for cand in candidates:
@@ -54,8 +58,8 @@ class SkillsRepository:
                     if cols:
                         # Look for probable id/name columns
                         col_names = [c[1].lower() for c in cols]
-                        if any("id" == cn or cn.endswith("_id") for cn in col_names) and any(
-                            "name" == cn or cn.endswith("_name") for cn in col_names
+                        if any(cn == "id" or cn.endswith("_id") for cn in col_names) and any(
+                            cn == "name" or cn.endswith("_name") for cn in col_names
                         ):
                             table_found = cand
                             break
@@ -83,7 +87,9 @@ class SkillsRepository:
                     if cname == "name" or cname.endswith("_name"):
                         name_idx = col[0]
                 if id_idx is None or name_idx is None:
-                    logger.warning("Could not detect id/name columns; fallback formatting will be used.")
+                    logger.warning(
+                        "Could not detect id/name columns; fallback formatting will be used."
+                    )
                 else:
                     for r in rows:
                         try:
@@ -92,7 +98,9 @@ class SkillsRepository:
                             self._cache[sid] = sname
                         except Exception:
                             continue
-                    logger.info(f"Loaded {len(self._cache)} skill names from '{table_found}' table.")
+                    logger.info(
+                        f"Loaded {len(self._cache)} skill names from '{table_found}' table."
+                    )
             finally:
                 conn.close()
         except Exception as e:
