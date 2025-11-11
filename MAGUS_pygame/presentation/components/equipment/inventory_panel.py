@@ -87,6 +87,9 @@ class InventoryPanel:
         # Category cache to avoid repeated lookups
         self._category_cache: dict[str, str] = {}
 
+        # Selected wield mode for variable wield mode weapons
+        self.selected_wield_mode: str | None = None  # 'one_handed' or 'two_handed'
+
     def _layout(self) -> None:
         """Calculate layout for category sections."""
         section_h = (self.rect.height - 60) // 3
@@ -172,6 +175,18 @@ class InventoryPanel:
         """
         self.selected_slot = slot
 
+    def show_wield_mode_dropdown(self, item_id: str) -> None:
+        """Show dropdown for variable wield mode weapons."""
+        repo = self.context.equipment_repo
+        weapon = repo.find_weapon_by_id(item_id)
+        if not weapon or weapon.get("wield_mode", "") != "variable":
+            self.selected_wield_mode = None
+            return
+        # UI code to show dropdown (pseudo-code, replace with your UI framework)
+        # Example: self.selected_wield_mode = user_selection_from_dropdown(["one_handed", "two_handed"])
+        # For now, default to two_handed
+        self.selected_wield_mode = "two_handed"
+
     def _get_item_category(self, item_id: str) -> str:
         """Determine item category from repository.
 
@@ -206,87 +221,15 @@ class InventoryPanel:
         # Cache the result
         self._category_cache[item_id] = category
         return category
-
-    def _is_item_eligible(self, item_id: str, category: str) -> tuple[bool, str]:
-        """Check if item is eligible for currently selected slot.
-
-        Args:
-            item_id: Item identifier
-            category: Item category
-
-        Returns:
-            Tuple of (is_eligible, reason)
-        """
+    
+    def _is_item_eligible(self, item_id: str, category: str, weapon: dict | None = None) -> tuple[bool, str]:
+        """Delegate to validation service (application layer)."""
         if not self.selected_slot:
             return False, "No slot selected"
-
+        unit = getattr(self, "unit", None)
         slot = self.selected_slot
-        validation = self.context.equipment_validation_service
-
-        # Weapon slots
-        if slot in ["main_hand", "weapon_quick_1", "weapon_quick_2"]:
-            if category != CATEGORY_WEAPONS:
-                return False, "Not a weapon"
-
-            # Main hand: weapons only
-            if slot == "main_hand":
-                is_weapon = (
-                    validation.is_one_handed_weapon(item_id)
-                    or validation.is_two_handed_weapon(item_id)
-                    or validation.is_ranged_weapon(item_id)
-                )
-                if not is_weapon:
-                    return False, "Not a weapon"
-            # Quick slots: weapons or shields allowed
-            elif slot in ["weapon_quick_1", "weapon_quick_2"]:
-                is_weapon = (
-                    validation.is_one_handed_weapon(item_id)
-                    or validation.is_two_handed_weapon(item_id)
-                    or validation.is_ranged_weapon(item_id)
-                )
-                is_shield = validation.is_shield(item_id)
-                if not (is_weapon or is_shield):
-                    return False, "Not a weapon or shield"
-
-            return True, "OK"
-
-        # Off-hand slot
-        if slot == "off_hand":
-            if category != CATEGORY_WEAPONS:
-                return False, "Not a weapon/shield"
-
-            main_hand = self.current_equipment.get("main_hand")
-            main_hand_id = main_hand if isinstance(main_hand, str) else None
-            can_equip, reason = validation.can_equip_offhand(main_hand_id, item_id)
-            return can_equip, reason
-
-        # Armor slot
-        if slot == "armor":
-            if category != CATEGORY_ARMOR:
-                return False, "Not armor"
-
-            # Check if adding this armor would cause conflicts
-            armor_list = self.current_equipment.get("armor", [])
-            if not isinstance(armor_list, list):
-                armor_list = []
-
-            # Simulate adding this armor
-            test_list = armor_list + [item_id]
-            is_valid, warnings, conflicts = validation.validate_armor_compatibility(test_list)
-
-            if not is_valid and item_id in conflicts:
-                # Has conflicts, but still allowed
-                return True, "Warning: Layer conflict"
-
-            return True, "OK"
-
-        # Quick access slots
-        if slot in ["quick_access_1", "quick_access_2"]:
-            if category == CATEGORY_WEAPONS:
-                return False, "Use weapon slots for weapons"
-            return True, "OK"
-
-        return False, "Unknown slot"
+        selected_wield_mode = self.selected_wield_mode
+        return self.context.equipment_validation_service.is_item_eligible(unit, slot, item_id, selected_wield_mode)
 
     def handle_event(self, event: pygame.event.Event) -> tuple[bool, str | None, str | None]:
         """Handle events.
@@ -389,9 +332,20 @@ class InventoryPanel:
         y = -self.scroll_offsets[category]
         mouse_pos = pygame.mouse.get_pos()
 
+        # Cache for weapon lookups
+        weapon_cache = {}
+
         for item_id, qty in items:
-            # Check eligibility
-            is_eligible, reason = self._is_item_eligible(item_id, category)
+            # Only lookup weapon if in weapons category
+            weapon = None
+            if category == CATEGORY_WEAPONS:
+                if item_id in weapon_cache:
+                    weapon = weapon_cache[item_id]
+                else:
+                    weapon = self.context.equipment_repo.find_weapon_by_id(item_id)
+                    weapon_cache[item_id] = weapon
+            # Check eligibility, pass weapon if available
+            is_eligible, reason = self._is_item_eligible(item_id, category, weapon)
 
             # Determine color
             if self.selected_slot and is_eligible:
@@ -415,6 +369,16 @@ class InventoryPanel:
                 display_text = f"• {item_name} x{qty}"
             else:
                 display_text = f"• {item_name}"
+
+            # --- Wield mode hint logic ---
+            wield_mode_hint = ""
+            unit = getattr(self, "unit", None)
+            if category == CATEGORY_WEAPONS and weapon:
+                wield_mode_hint = self.context.equipment_validation_service.get_wield_mode_hint(unit, item_id, weapon)
+            # --- End wield mode hint logic ---
+
+            if wield_mode_hint:
+                display_text += f" {wield_mode_hint}"
 
             # Check hover
             item_rect = pygame.Rect(0, y, content_rect.width, 22)

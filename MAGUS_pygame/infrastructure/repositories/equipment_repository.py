@@ -34,23 +34,7 @@ class EquipmentRepository:
             logger.exception("Failed to load weapons data")
             return []
 
-    def find_weapon_by_id(self, weapon_id: str) -> dict | None:
-        """
-        Find a weapon by its ID.
 
-        Args:
-            weapon_id: Weapon identifier
-
-        Returns:
-            Weapon data dict or None
-        """
-        weapons = self.load_weapons()
-        for weapon in weapons:
-            if weapon.get("id") == weapon_id:
-                return weapon
-
-        logger.warning(f"Weapon not found: {weapon_id}")
-        return None
 
     def load_armor(self) -> list[dict]:
         """Load all armor data."""
@@ -109,3 +93,20 @@ class EquipmentRepository:
         self._armor_cache = None
         self._general_cache = None
         logger.debug("Equipment cache cleared")
+    def find_weapon_by_id(self, weapon_id: str) -> dict | None:
+        """
+        Find a weapon by its ID.
+
+        Args:
+            weapon_id: Weapon identifier
+
+        Returns:
+            Weapon data dict or None
+        """
+        weapons = self.load_weapons()
+        for weapon in weapons:
+            if weapon.get("id") == weapon_id:
+                return weapon
+
+        logger.warning(f"Weapon not found: {weapon_id}")
+        return None

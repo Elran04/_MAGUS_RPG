@@ -87,8 +87,6 @@ class EquipmentSlotsPanel:
         # UI layout
         self.slot_rects: dict[str, pygame.Rect] = {}
         self.armor_list_rect: pygame.Rect | None = None
-        self.add_armor_button: pygame.Rect | None = None
-        self.remove_armor_button: pygame.Rect | None = None
         self.armor_scroll_offset = 0
 
         self._layout_slots()
@@ -126,12 +124,7 @@ class EquipmentSlotsPanel:
         self.armor_list_rect = pygame.Rect(x, y, slot_w, armor_list_h)
         y += armor_list_h + gap
 
-        # Add/Remove armor buttons
-        button_h = 35
-        button_w = (slot_w - gap) // 2
-        self.add_armor_button = pygame.Rect(x, y, button_w, button_h)
-        self.remove_armor_button = pygame.Rect(x + button_w + gap, y, button_w, button_h)
-        y += button_h + gap * 2
+    # No add/remove armor buttons; armor managed by coordinator
 
         # Section: Quick Access Items
         y += section_label_h
@@ -372,14 +365,10 @@ class EquipmentSlotsPanel:
                         slot_clicked = slot
                         break
 
-                # Check add armor button
-                if self.add_armor_button and self.add_armor_button.collidepoint(event.pos):
+                # Mimic add armor button: clicking armor list area selects armor slot
+                if self.armor_list_rect and self.armor_list_rect.collidepoint(event.pos):
                     self.selected_slot = "armor"
                     slot_clicked = "armor"
-
-                # Check remove armor button
-                if self.remove_armor_button and self.remove_armor_button.collidepoint(event.pos):
-                    equipment_changed = self.remove_last_armor()
 
             elif event.button == 3:  # Right click - remove item
                 # Check weapon/item slots
@@ -429,7 +418,7 @@ class EquipmentSlotsPanel:
         surface.blit(section_label, (self.rect.x + 12, armor_y))
 
         self._draw_armor_list(surface)
-        self._draw_add_armor_button(surface, mouse_pos)
+    # No add/remove armor button drawing; armor managed by coordinator
 
         # === QUICK ACCESS ITEMS SECTION ===
         qa_y = self.slot_rects["quick_access_1"].y - 30
@@ -581,48 +570,4 @@ class EquipmentSlotsPanel:
 
                 y += 22
 
-    def _draw_add_armor_button(self, surface: pygame.Surface, mouse_pos: tuple[int, int]) -> None:
-        """Draw the add/remove armor buttons.
-
-        Args:
-            surface: Surface to draw on
-            mouse_pos: Current mouse position
-        """
-        # Add button
-        if self.add_armor_button:
-            hover = self.add_armor_button.collidepoint(mouse_pos)
-            is_selected = self.selected_slot == "armor"
-            color = self.slot_hover if hover else self.slot_color
-
-            pygame.draw.rect(surface, color, self.add_armor_button, border_radius=4)
-
-            # Selection indicator
-            if is_selected:
-                pygame.draw.rect(
-                    surface, (100, 200, 255), self.add_armor_button, 2, border_radius=4
-                )
-
-            label = self.font.render("+ Add", True, self.text_color)
-            label_rect = label.get_rect(center=self.add_armor_button.center)
-            surface.blit(label, label_rect)
-
-        # Remove button
-        if self.remove_armor_button:
-            hover = self.remove_armor_button.collidepoint(mouse_pos)
-
-            # Check if there's armor to remove
-            armor_list = self.equipment.get("armor", [])
-            has_armor = isinstance(armor_list, list) and len(armor_list) > 0
-
-            if not has_armor:
-                color = self.slot_disabled
-            else:
-                color = self.slot_hover if hover else self.slot_color
-
-            pygame.draw.rect(surface, color, self.remove_armor_button, border_radius=4)
-
-            label = self.font.render(
-                "- Remove", True, self.text_color if has_armor else self.text_disabled
-            )
-            label_rect = label.get_rect(center=self.remove_armor_button.center)
-            surface.blit(label, label_rect)
+    # No add/remove armor button drawing; armor managed by coordinator

@@ -20,6 +20,86 @@ logger = get_logger(__name__)
 
 
 class EquipmentValidationService:
+    def get_wield_mode_hint(self, unit, weapon_id: str, weapon: dict | None = None) -> str:
+        """Return wield mode hint for a weapon for a given unit (e.g., '(1h/2h)', '(2h only)'). Accepts cached weapon object."""
+        if weapon is None:
+            weapon = self.equipment_repo.find_weapon_by_id(weapon_id)
+        if not weapon:
+            return ""
+        wield_mode = weapon.get("wield_mode", "").lower()
+        if wield_mode in ["változó", "variable"]:
+            can_wield_1h, _ = self.can_wield_variable_one_handed(unit, weapon_id, weapon)
+            if can_wield_1h:
+                return "(1h/2h)"
+            else:
+                return "(2h only)"
+        elif wield_mode in ["egykezes", "one-handed", "1h"]:
+            return "(1h)"
+        elif wield_mode in ["kétkezes", "two-handed", "2h"]:
+            return "(2h)"
+        return ""
+
+    def is_item_eligible(self, unit, slot: str, item_id: str, selected_wield_mode: str | None = None) -> tuple[bool, str]:
+        """Check if an item is eligible for a slot for a given unit. Only call weapon logic for weapon/shield items."""
+        repo = self.equipment_repo
+        # Determine item category
+        weapons = repo.load_weapons()
+        armor = repo.load_armor()
+        is_weapon = any(w.get("id") == item_id for w in weapons)
+        is_armor = any(a.get("id") == item_id for a in armor)
+        weapon = repo.find_weapon_by_id(item_id) if is_weapon else None
+        wield_mode = weapon.get("wield_mode", "") if weapon else ""
+        # Weapon slots
+        if slot in ["main_hand", "weapon_quick_1", "weapon_quick_2"]:
+            if not is_weapon:
+                return False, "Not a weapon"
+            # Main hand: weapons only
+            if slot == "main_hand":
+                is_valid_weapon = (
+                    self.is_one_handed_weapon(item_id)
+                    or self.is_two_handed_weapon(item_id)
+                    or self.is_ranged_weapon(item_id)
+                )
+                if not is_valid_weapon:
+                    return False, "Not a weapon"
+            # Quick slots: weapons or shields allowed
+            elif slot in ["weapon_quick_1", "weapon_quick_2"]:
+                is_valid_weapon = (
+                    self.is_one_handed_weapon(item_id)
+                    or self.is_two_handed_weapon(item_id)
+                    or self.is_ranged_weapon(item_id)
+                )
+                is_shield = self.is_shield(item_id)
+                if not (is_valid_weapon or is_shield):
+                    return False, "Not a weapon or shield"
+            # If variable, check selected wield mode
+            if wield_mode in ["variable", "változó"] and selected_wield_mode:
+                if selected_wield_mode == "one_handed":
+                    can_wield, reason = self.can_wield_variable_one_handed(unit, item_id, weapon)
+                    if not can_wield:
+                        return False, reason
+                    return True, "OK"
+                elif selected_wield_mode == "two_handed":
+                    return True, "OK"
+            return True, "OK"
+        # Off-hand slot
+        if slot == "off_hand":
+            if not is_weapon:
+                return False, "Not a weapon/shield"
+            main_hand_id = None
+            can_equip, reason = self.can_equip_offhand(main_hand_id, item_id)
+            return can_equip, reason
+        # Armor slot
+        if slot == "armor":
+            if not is_armor:
+                return False, "Not armor"
+            return True, "OK"
+        # Quick access slots
+        if slot in ["quick_access_1", "quick_access_2"]:
+            if is_weapon or is_armor:
+                return False, "Not general item"
+            return True, "OK"
+        return False, "Unknown slot"
     """Service for validating equipment configurations.
 
     Responsibilities:
@@ -55,7 +135,7 @@ class EquipmentValidationService:
         wield_mode = weapon.get("wield_mode", "").lower()
         if wield_mode in ["egykezes", "one-handed", "1h"]:
             return True
-        if wield_mode == "variable" and off_hand_present:
+        if wield_mode == "változó" and off_hand_present:
             return True
         return False
 
@@ -77,7 +157,7 @@ class EquipmentValidationService:
         wield_mode = weapon.get("wield_mode", "").lower()
         if wield_mode in ["kétkezes", "two-handed", "2h"]:
             return True
-        if wield_mode == "variable" and not off_hand_present:
+        if wield_mode == "változó" and not off_hand_present:
             return True
         return False
 
@@ -141,6 +221,24 @@ class EquipmentValidationService:
         if not (self.is_one_handed_weapon(offhand_id, off_hand_present=True) or self.is_shield(offhand_id)):
             return False, "Off-hand must be one-handed weapon or shield"
 
+        return True, "OK"
+
+    def can_wield_variable_one_handed(self, unit, weapon_id: str, weapon: dict | None = None) -> tuple[bool, str]:
+        """Check if unit meets Erő and Ügyesség requirements for one-handed wielding of variable weapon. Accepts cached weapon object."""
+        if weapon is None:
+            weapon = self.equipment_repo.find_weapon_by_id(weapon_id)
+        if not weapon or weapon.get("wield_mode", "").lower() not in ["variable", "változó"]:
+            return False, "Not a variable wield mode weapon"
+        # Read requirements from weapon JSON
+        str_req = weapon.get("variable_strength_req", 0)
+        dex_req = weapon.get("variable_dex_req", 0)
+        # Get unit attributes
+        unit_str = getattr(unit, "Tulajdonságok", {}).get("Erő", 0)
+        unit_dex = getattr(unit, "Tulajdonságok", {}).get("Ügyesség", 0)
+        if unit_str < str_req:
+            return False, f"Insufficient strength (required: {str_req})"
+        if unit_dex < dex_req:
+            return False, f"Insufficient dexterity (required: {dex_req})"
         return True, "OK"
 
     def validate_armor_compatibility(
