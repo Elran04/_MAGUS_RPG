@@ -20,6 +20,7 @@ from domain.mechanics import (
 )
 from domain.mechanics.actions import ActionResult
 from domain.mechanics.actions.facing_action import FacingAction
+from domain.mechanics.attack_resolution import apply_attack_result
 from domain.value_objects import Facing, Position
 
 from .reaction_handler import ReactionHandler
@@ -34,7 +35,7 @@ class ActionHandler:
 
     # --- Movement ---
     def move_unit(
-        self,
+        self: "ActionHandler",
         *,
         unit: Unit,
         dest: Position,
@@ -43,8 +44,8 @@ class ActionHandler:
         blocked: Iterable[tuple[int, int]] | None = None,
         apply_move: bool = True,
         potential_reactors: Iterable[Unit] | None = None,
-        rng_overrides: dict | None = None,
-    ) -> dict:
+        rng_overrides: dict[str, object] | None = None,
+    ) -> dict[str, object]:
         """Execute movement with optional reactions. Returns a summary dict.
 
         The summary includes: action_result, reaction_results, final_path, ap_spent.
@@ -107,7 +108,13 @@ class ActionHandler:
                     break
 
         # Apply movement (only the final truncated or full path)
-        ap_spent = ares.ap_spent
+        # Calculate AP spent for the actual path taken (truncated if interrupted)
+        if final_path:
+            ap_per_hex = move.ap_per_hex if hasattr(move, "ap_per_hex") else 2
+            ap_spent = (len(final_path) - 1) * ap_per_hex
+        else:
+            ap_spent = 0
+
         if apply_move and final_path:
             end_q, end_r = final_path[-1]
             unit.move_to(Position(end_q, end_r))
@@ -122,12 +129,12 @@ class ActionHandler:
 
     # --- Attack ---
     def attack(
-        self,
+        self: "ActionHandler",
         *,
         attacker: Unit,
         defender: Unit,
-        rng_overrides: dict | None = None,
-        **kwargs,
+        rng_overrides: dict[str, object] | None = None,
+        **kwargs: object,
     ) -> ActionResult:
         act = AttackAction()
         ok, msg = act.can_execute(attacker=attacker, defender=defender, **kwargs)
@@ -137,20 +144,20 @@ class ActionHandler:
         ares = act.execute(attacker=attacker, defender=defender, **(rng_overrides or {}), **kwargs)
 
         # Attack action is pure; application layer applies to defender if desired
-        # from domain.mechanics.attack_resolution import apply_attack_result
-        # apply_attack_result(ares.data["attack_result"], defender)
+
+        apply_attack_result(ares.data["attack_result"], defender)
 
         return ares
 
     # --- Facing ---
     def change_facing(
-        self,
+        self: "ActionHandler",
         *,
         unit: Unit,
         new_facing: Facing,
         ap_available: int = 0,
         apply_rotation: bool = True,
-    ) -> dict:
+    ) -> dict[str, object]:
         """Execute facing change. Returns a summary dict.
 
         The summary includes: action_result, ap_spent.

@@ -199,7 +199,7 @@ class EquipmentPhase(SelectionPhaseBase):
         unit = self.context.scenario_service.get_team(is_team_a)[idx]
 
         # Load fresh data for this unit (creates new instance each time)
-        self.equipment_coordinator.set_data(unit.equipment, unit.inventory)
+        self.equipment_coordinator.set_data(unit.equipment, unit.inventory, unit)
 
     def _persist_equipment_changes(self) -> None:
         """Persist equipment and inventory changes back to the unit."""

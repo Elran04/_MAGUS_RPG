@@ -132,6 +132,17 @@ class BattleScreen:
             self._update_hover(event.pos)
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
+            # If popup is open, check for tab clicks or outside click
+            if self.unit_popup and self.unit_popup.visible:
+                mx, my = event.pos
+                # First, check if click is inside popup and on a tab
+                if self.unit_popup.handle_click(mx, my):
+                    return  # Tab switched, do not close
+                # If click is outside popup, close it
+                if self.unit_popup.is_click_outside(mx, my):
+                    self.unit_popup.hide()
+                    return
+            # If popup not open or click not handled, continue normal click handling
             if event.button == 1:  # Left click
                 self._handle_click(event.pos)
             elif event.button == 3:  # Right click
@@ -287,10 +298,29 @@ class BattleScreen:
             self._show_message(f"Moved (AP: -{ap_spent})")
             logger.info(f"{current.name} moved to {dest} (AP spent: {ap_spent})")
 
-            # Check for opportunity attacks
-            if summary.get("opportunity_attacks"):
-                oa_count = len(summary["opportunity_attacks"])
+            # Show full feedback for opportunity attacks
+            oa_results = summary.get("reaction_results") or summary.get("opportunity_attacks")
+            if oa_results:
+                oa_count = len(oa_results)
                 self._show_message(f"Movement triggered {oa_count} opportunity attack(s)!")
+                for rr in oa_results:
+                    # Show the main message for the reaction
+                    if hasattr(rr, "message"):
+                        self._show_message(rr.message)
+                    # If there is an attack result, show details
+                    attack_result = None
+                    if hasattr(rr, "data") and rr.data:
+                        attack_result = rr.data.get("attack_result")
+                    if attack_result:
+                        # Compose a detailed message
+                        msg = f"Result: {attack_result.outcome.value.title()} | Hit: {attack_result.hit} | EP: -{attack_result.damage_to_ep} | FP: -{attack_result.damage_to_fp}"
+                        if attack_result.is_critical:
+                            msg += " | Critical!"
+                        if attack_result.is_overpower:
+                            msg += " | Overpower!"
+                        if attack_result.requires_dodge_check:
+                            msg += " | Dodge check required!"
+                        self._show_message(msg)
 
         self._cancel_action()
 

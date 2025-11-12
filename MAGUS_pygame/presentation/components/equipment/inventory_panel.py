@@ -21,6 +21,10 @@ CATEGORY_GENERAL = "general"
 
 
 class InventoryPanel:
+    def set_unit(self, unit) -> None:
+        """Set the current unit for validation/highlighting only."""
+        self.unit = unit
+
     """Displays inventory items with eligibility highlighting.
 
     Features:
@@ -108,13 +112,7 @@ class InventoryPanel:
     def set_data(
         self, inventory_items: list[dict] | dict[str, int], equipment: dict[str, str | list]
     ) -> None:
-        """Set inventory items and current equipment.
-
-        Args:
-            inventory_items: List of item dicts with 'id', 'category', 'qty' fields
-                           OR dict mapping item_id -> quantity
-            equipment: Current equipment configuration
-        """
+        """Set inventory items and current equipment (unit is set separately for validation)."""
         self.current_equipment = equipment
 
         # Categorize items
@@ -221,15 +219,20 @@ class InventoryPanel:
         # Cache the result
         self._category_cache[item_id] = category
         return category
-    
-    def _is_item_eligible(self, item_id: str, category: str, weapon: dict | None = None) -> tuple[bool, str]:
+
+    def _is_item_eligible(
+        self, item_id: str, category: str, weapon: dict | None = None
+    ) -> tuple[bool, str]:
         """Delegate to validation service (application layer)."""
         if not self.selected_slot:
             return False, "No slot selected"
         unit = getattr(self, "unit", None)
         slot = self.selected_slot
         selected_wield_mode = self.selected_wield_mode
-        return self.context.equipment_validation_service.is_item_eligible(unit, slot, item_id, selected_wield_mode)
+        result = self.context.equipment_validation_service.is_item_eligible(
+            unit, slot, item_id, selected_wield_mode
+        )
+        return result.success, result.message
 
     def handle_event(self, event: pygame.event.Event) -> tuple[bool, str | None, str | None]:
         """Handle events.
@@ -374,7 +377,9 @@ class InventoryPanel:
             wield_mode_hint = ""
             unit = getattr(self, "unit", None)
             if category == CATEGORY_WEAPONS and weapon:
-                wield_mode_hint = self.context.equipment_validation_service.get_wield_mode_hint(unit, item_id, weapon)
+                wield_mode_hint = self.context.equipment_validation_service.get_wield_mode_hint(
+                    unit, item_id, weapon
+                )
             # --- End wield mode hint logic ---
 
             if wield_mode_hint:

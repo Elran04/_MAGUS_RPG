@@ -46,7 +46,10 @@ def test_battle_service_uses_initiative_sort_and_refreshes_each_round():
     u3 = make_unit("C", 15)
 
     bs = BattleService(units=[u1, u2, u3])
-    bs.enable_initiative(seed=42, persistent=False, re_roll_each_round=True)
+    bs.enable_initiative(seed=42)
+    # Ensure not persistent (should re-roll each round)
+    if bs.initiative_order:
+        bs.initiative_order.persistent = False
     first_order = [u.id for u in bs.units]
 
     # Start battle and complete one round
@@ -69,7 +72,10 @@ def test_battle_service_persistent_order_when_configured():
     u3 = make_unit("C", 15)
 
     bs = BattleService(units=[u1, u2, u3])
-    bs.enable_initiative(seed=99, persistent=True, re_roll_each_round=False)
+    bs.enable_initiative(seed=99)
+    # Set persistent order (should not re-roll each round)
+    if bs.initiative_order:
+        bs.initiative_order.persistent = True
     first_order = [u.id for u in bs.units]
 
     bs.start_battle()

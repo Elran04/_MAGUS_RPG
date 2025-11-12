@@ -29,7 +29,11 @@ class UnitFactory:
         self.equipment_repo = equipment_repo
 
     def create_unit(
-        self, character_filename: str, position: Position, facing: Facing = Facing(0)
+        self,
+        character_filename: str,
+        position: Position,
+        facing: Facing = Facing(0),
+        char_data: dict | None = None,
     ) -> Unit | None:
         """
         Create a unit from a character file.
@@ -42,8 +46,9 @@ class UnitFactory:
         Returns:
             Unit instance or None if creation fails
         """
-        # Load character data
-        char_data = self.character_repo.load(character_filename)
+        # Use provided char_data or load from disk if not given
+        if char_data is None:
+            char_data = self.character_repo.load(character_filename)
         if char_data is None:
             logger.error(f"Cannot create unit: character file not found: {character_filename}")
             return None
@@ -71,6 +76,25 @@ class UnitFactory:
             ep_max = combat_data.get("ÉP", 10)
             fp = ResourcePool(current=fp_max, maximum=fp_max)
             ep = ResourcePool(current=ep_max, maximum=ep_max)
+
+            # --- Preserve scenario-injected equipment mapping if present ---
+            if "equipment" not in char_data:
+                felszereles = char_data.get("Felszerelés", {})
+                if isinstance(felszereles, dict):
+                    items = felszereles.get("items", [])
+                elif isinstance(felszereles, list):
+                    items = felszereles
+                else:
+                    items = []
+                equipment_map = {}
+                for item in items:
+                    if not isinstance(item, dict):
+                        continue
+                    item_id = item.get("id")
+                    slot = item.get("slot")
+                    if item_id and slot:
+                        equipment_map[slot] = item_id
+                char_data["equipment"] = equipment_map
 
             # Create unit
             unit = Unit(

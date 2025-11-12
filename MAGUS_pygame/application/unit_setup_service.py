@@ -55,19 +55,18 @@ class UnitSetupService:
 
         return char_data
 
-    def extract_equipment_from_character(self, char_data: dict) -> dict[str, str]:
+    def extract_equipment_from_character(self, char_data: dict) -> dict:
         """Extract equipment mapping from character data.
 
-        Equipment in character JSON is typically stored as a list of items
-        with slots. This converts it to a slot->item_id mapping.
-
-        Args:
-            char_data: Character data dictionary
-
-        Returns:
-            Dictionary mapping equipment slot names to item IDs
+        If slots are missing, assign defaults:
+        - First weapon as 'main_hand'
+        - First shield as 'off_hand'
+        - All armor as 'armor' list
         """
-        equipment_map: dict[str, str] = {}
+        equipment_map: dict = {}
+        armor_list = []
+        weapons = []
+        shields = []
 
         felszereles = char_data.get("Felszerelés", {})
         if isinstance(felszereles, dict):
@@ -80,26 +79,46 @@ class UnitSetupService:
         for item in items:
             if not isinstance(item, dict):
                 continue
-
             item_id = item.get("id")
             slot = item.get("slot")
-
-            if item_id and slot:
+            category = item.get("category")
+            if not item_id:
+                continue
+            if slot:
                 equipment_map[slot] = item_id
+            elif category == "armor":
+                armor_list.append(item_id)
+            elif category == "weapons_and_shields":
+                # Heuristic: treat shields as those with 'shield' in id
+                if "shield" in item_id:
+                    shields.append(item_id)
+                else:
+                    weapons.append(item_id)
 
-        logger.debug(f"Extracted {len(equipment_map)} equipment items from character")
+        # Assign default slots if not already set
+        if "main_hand" not in equipment_map and weapons:
+            equipment_map["main_hand"] = weapons[0]
+        if "off_hand" not in equipment_map and shields:
+            equipment_map["off_hand"] = shields[0]
+        if armor_list:
+            equipment_map["armor"] = armor_list
+
+        logger.debug(f"Extracted equipment: {equipment_map}")
         return equipment_map
 
     def extract_inventory_from_character(self, char_data: dict) -> dict[str, int]:
-        """Extract inventory from character data.
-
-        Args:
-            char_data: Character data dictionary
-
-        Returns:
-            Dictionary mapping item IDs to quantities
-        """
+        """Extract inventory from character data, excluding equipped items."""
         inventory_map: dict[str, int] = {}
+
+        # Get equipped item ids from equipment mapping (if present)
+        equipped_ids = set()
+        equipment = char_data.get("equipment", {})
+        if isinstance(equipment, dict):
+            for slot, value in equipment.items():
+                if isinstance(value, list):
+                    equipped_ids.update(value)
+                elif isinstance(value, str):
+                    equipped_ids.add(value)
 
         felszereles = char_data.get("Felszerelés", {})
         if isinstance(felszereles, dict):
@@ -116,11 +135,13 @@ class UnitSetupService:
             item_id = item.get("id")
             qty = item.get("qty", 1)
 
-            # Only include items without specific slots (general inventory)
-            if item_id and not item.get("slot"):
+            # Only include items not equipped and without specific slots (general inventory)
+            if item_id and not item.get("slot") and item_id not in equipped_ids:
                 inventory_map[item_id] = inventory_map.get(item_id, 0) + qty
 
-        logger.debug(f"Extracted {len(inventory_map)} inventory items from character")
+        logger.debug(
+            f"Extracted {len(inventory_map)} inventory items from character (excluding equipped)"
+        )
         return inventory_map
 
     def extract_skills_from_character(self, char_data: dict) -> dict[str, int]:

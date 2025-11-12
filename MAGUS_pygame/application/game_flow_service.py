@@ -38,10 +38,18 @@ def _units_from_config(context, config: ScenarioConfig) -> tuple[list[Unit], lis
             logger.warning(f"Team A unit {setup.character_file} not deployed - skipping")
             continue
 
+        # Load character data and inject scenario equipment mapping
+        char_data = context.character_repo.load(setup.character_file)
+        if char_data is None:
+            logger.error(f"Cannot create unit: character file not found: {setup.character_file}")
+            continue
+        char_data["equipment"] = setup.equipment.copy() if setup.equipment else {}
+
         u = unit_factory.create_unit(
             character_filename=setup.character_file,
             position=Position(setup.start_q, setup.start_r),  # type: ignore[arg-type]
             facing=Facing(setup.facing),
+            char_data=char_data,
         )
 
         # Set wield state for variable weapons
@@ -49,7 +57,6 @@ def _units_from_config(context, config: ScenarioConfig) -> tuple[list[Unit], lis
             eq = setup.equipment
             main_hand = eq.get("main_hand")
             off_hand = eq.get("off_hand")
-            # If main hand weapon is variable, set wield state
             off_hand_equipped = bool(off_hand)
             u.weapon.set_wield_state(main_hand=True, off_hand_equipped=off_hand_equipped)
 
@@ -66,11 +73,20 @@ def _units_from_config(context, config: ScenarioConfig) -> tuple[list[Unit], lis
             logger.warning(f"Team B unit {setup.character_file} not deployed - skipping")
             continue
 
+        # Load character data and inject scenario equipment mapping
+        char_data = context.character_repo.load(setup.character_file)
+        if char_data is None:
+            logger.error(f"Cannot create unit: character file not found: {setup.character_file}")
+            continue
+        char_data["equipment"] = setup.equipment.copy() if setup.equipment else {}
+
         u = unit_factory.create_unit(
             character_filename=setup.character_file,
             position=Position(setup.start_q, setup.start_r),  # type: ignore[arg-type]
             facing=Facing(setup.facing),
         )
+        # Overwrite the unit's character_data with the injected equipment
+        u.character_data = char_data
 
         # Set wield state for variable weapons
         if u and u.weapon and getattr(u.weapon, "wield_mode", None) == "variable":

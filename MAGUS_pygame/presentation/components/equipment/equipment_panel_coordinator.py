@@ -75,14 +75,10 @@ class EquipmentPanelCoordinator:
         self.current_inventory: dict[str, int] = {}
 
     def set_data(
-        self, equipment: dict[str, str | list], inventory: list[dict] | dict[str, int]
+        self, equipment: dict[str, str | list], inventory: list[dict] | dict[str, int], unit=None
     ) -> None:
-        """Set data for both panels.
-
-        Args:
-            equipment: Current equipment configuration
-            inventory: Inventory items (list of dicts or dict mapping id->qty)
-        """
+        """Set data for both panels, and set unit for validation/highlighting.
+        Ensures equipped items are removed from inventory by simulating equip logic."""
         # Store inventory in dict format
         if isinstance(inventory, dict):
             self.current_inventory = inventory.copy()
@@ -100,8 +96,31 @@ class EquipmentPanelCoordinator:
                 elif isinstance(item, str):
                     self.current_inventory[item] = self.current_inventory.get(item, 0) + 1
 
-        self.equipment_panel.set_initial(equipment)
-        self.inventory_panel.set_data(self.current_inventory, equipment)
+        # Clear equipment panel first
+        self.equipment_panel.set_initial({})
+
+        # Actually equip items using the same logic as user interaction
+        for slot, value in equipment.items():
+            if isinstance(value, list):
+                # For slots like 'armor' (list of item_ids)
+                for item_id in value:
+                    if item_id and self.current_inventory.get(item_id, 0) > 0:
+                        # Use equip_item to ensure inventory is decremented
+                        self.equipment_panel.equip_item(slot, item_id, 1)
+                        self.current_inventory[item_id] -= 1
+                        if self.current_inventory[item_id] <= 0:
+                            del self.current_inventory[item_id]
+            elif isinstance(value, str):
+                item_id = value
+                if item_id and self.current_inventory.get(item_id, 0) > 0:
+                    self.equipment_panel.equip_item(slot, item_id, 1)
+                    self.current_inventory[item_id] -= 1
+                    if self.current_inventory[item_id] <= 0:
+                        del self.current_inventory[item_id]
+
+        self.inventory_panel.set_data(self.current_inventory, self.equipment_panel.get_equipment())
+        if unit is not None:
+            self.inventory_panel.set_unit(unit)
 
     def _on_item_clicked(self, item_id: str, category: str) -> None:
         """Handle item click from inventory.
@@ -226,19 +245,28 @@ class EquipmentPanelCoordinator:
                         armor_items = self.inventory_panel.items.get("armor", [])
                         armor_rect = self.inventory_panel.category_rects.get("armor")
                         if armor_rect and armor_rect.collidepoint(mouse_pos):
-                            y = mouse_pos[1] - armor_rect.y - 30 + self.inventory_panel.scroll_offsets["armor"]
+                            y = (
+                                mouse_pos[1]
+                                - armor_rect.y
+                                - 30
+                                + self.inventory_panel.scroll_offsets["armor"]
+                            )
                             idx = y // 22
                             if 0 <= idx < len(armor_items):
                                 item_id, qty = armor_items[idx]
-                                is_eligible, _ = self.inventory_panel._is_item_eligible(item_id, "armor")
+                                is_eligible, _ = self.inventory_panel._is_item_eligible(
+                                    item_id, "armor"
+                                )
                                 if is_eligible and qty > 0:
                                     self.current_inventory[item_id] -= 1
                                     if self.current_inventory[item_id] <= 0:
                                         del self.current_inventory[item_id]
                                     self.equipment_panel.equip_item("armor", item_id, 1)
-                                    self.inventory_panel.set_data(self.current_inventory, self.equipment_panel.get_equipment())
+                                    self.inventory_panel.set_data(
+                                        self.current_inventory, self.equipment_panel.get_equipment()
+                                    )
                                     return True
-            # Right click: remove armor
+            # Right click: remove equipped item (armor or other slots)
             elif event.button == 3:
                 # Remove specific armor item if right-clicked in armor list area
                 armor_rect = self.equipment_panel.armor_list_rect
@@ -246,7 +274,12 @@ class EquipmentPanelCoordinator:
                     armor_list = self.equipment_panel.equipment.get("armor", [])
                     if isinstance(armor_list, list) and armor_list:
                         # Calculate which armor item is clicked
-                        y = event.pos[1] - armor_rect.y + self.equipment_panel.armor_scroll_offset - 8
+                        y = (
+                            event.pos[1]
+                            - armor_rect.y
+                            + self.equipment_panel.armor_scroll_offset
+                            - 8
+                        )
                         idx = y // 22
                         if 0 <= idx < len(armor_list):
                             removed_id = armor_list[idx]
@@ -255,7 +288,20 @@ class EquipmentPanelCoordinator:
                             self.equipment_panel.equipment["armor"] = armor_list
                             self.equipment_panel._validate()
                             self._return_item_to_inventory(removed_id)
-                            self.inventory_panel.set_data(self.current_inventory, self.equipment_panel.get_equipment())
+                            self.inventory_panel.set_data(
+                                self.current_inventory, self.equipment_panel.get_equipment()
+                            )
+                            return True
+                # Handle right-click unequip for other slots
+                for slot, rect in self.equipment_panel.slot_rects.items():
+                    if slot != "armor" and rect.collidepoint(event.pos):
+                        # Remove item from this slot
+                        success, removed_id, qty = self.equipment_panel.remove_item(slot)
+                        if success and removed_id:
+                            self._return_item_to_inventory(removed_id, qty)
+                            self.inventory_panel.set_data(
+                                self.current_inventory, self.equipment_panel.get_equipment()
+                            )
                             return True
 
         # Equipment panel (other slots)
@@ -264,7 +310,9 @@ class EquipmentPanelCoordinator:
             self.inventory_panel.set_selected_slot(slot_clicked)
             return True
         if equipment_changed:
-            self.inventory_panel.set_data(self.current_inventory, self.equipment_panel.get_equipment())
+            self.inventory_panel.set_data(
+                self.current_inventory, self.equipment_panel.get_equipment()
+            )
             return True
 
         # Inventory panel

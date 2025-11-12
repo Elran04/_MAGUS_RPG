@@ -124,7 +124,7 @@ class EquipmentSlotsPanel:
         self.armor_list_rect = pygame.Rect(x, y, slot_w, armor_list_h)
         y += armor_list_h + gap
 
-    # No add/remove armor buttons; armor managed by coordinator
+        # No add/remove armor buttons; armor managed by coordinator
 
         # Section: Quick Access Items
         y += section_label_h
@@ -205,9 +205,9 @@ class EquipmentSlotsPanel:
             elif isinstance(main_hand, dict):
                 main_hand_id = main_hand.get("id")
 
-            can_equip, reason = validation.can_equip_offhand(main_hand_id, item_id)
-            if not can_equip:
-                return False, reason, ""
+            result = validation.can_equip_offhand(main_hand_id, item_id)
+            if not result.success:
+                return False, result.message, ""
 
         elif slot in ["main_hand", "weapon_quick_1", "weapon_quick_2"]:
             # Verify it's actually a weapon or shield (shields allowed in quick slots)
@@ -418,7 +418,7 @@ class EquipmentSlotsPanel:
         surface.blit(section_label, (self.rect.x + 12, armor_y))
 
         self._draw_armor_list(surface)
-    # No add/remove armor button drawing; armor managed by coordinator
+        # No add/remove armor button drawing; armor managed by coordinator
 
         # === QUICK ACCESS ITEMS SECTION ===
         qa_y = self.slot_rects["quick_access_1"].y - 30

@@ -136,7 +136,11 @@ class Dropdown:
                 elif event.key == pygame.K_DOWN:
                     self.selected_index = (self.selected_index + 1) % len(self.options)
                     return True
-                elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE or event.key == pygame.K_ESCAPE:
+                elif (
+                    event.key == pygame.K_RETURN
+                    or event.key == pygame.K_SPACE
+                    or event.key == pygame.K_ESCAPE
+                ):
                     self.is_open = False
                     return False
 

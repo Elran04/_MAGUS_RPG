@@ -65,6 +65,35 @@ class ResourcePool:
 
 @dataclass(frozen=True)
 class Attributes:
+    def get_attribute(self, name: str, default: int = 0) -> int:
+        """Get attribute value by English or Hungarian name. Returns default if not found."""
+        lookup = {
+            # English
+            "strength": self.strength,
+            "dexterity": self.dexterity,
+            "speed": self.speed,
+            "endurance": self.endurance,
+            "health": self.health,
+            "charisma": self.charisma,
+            "intelligence": self.intelligence,
+            "willpower": self.willpower,
+            "astral": self.astral,
+            "perception": self.perception,
+            # Hungarian
+            "erő": self.strength,
+            "erősség": self.strength,
+            "ügyesség": self.dexterity,
+            "gyorsaság": self.speed,
+            "állóképesség": self.endurance,
+            "egészség": self.health,
+            "karizma": self.charisma,
+            "intelligencia": self.intelligence,
+            "akaraterő": self.willpower,
+            "asztrál": self.astral,
+            "érzékelés": self.perception,
+        }
+        key = (name or "").strip().lower()
+        return lookup.get(key, default)
     """Character attributes (strength, dexterity, etc.)."""
 
     strength: int = 10  # Erő

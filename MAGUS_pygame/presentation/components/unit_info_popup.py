@@ -89,13 +89,6 @@ class UnitInfoPopup:
         self.tab_buttons = []  # Will store tab button rects
         self.style = PopupStyle()
 
-        # Load humanoid silhouette image for armor display
-        self.silhouette_image = None
-        try:
-            self.silhouette_image = pygame.image.load(str(HUMANOID_SILHOUETTE)).convert_alpha()
-        except Exception as e:
-            logger.warning(f"Could not load humanoid_silhouette.png: {e}")
-
     def show(self, unit: Unit) -> None:
         """Show popup for the given unit."""
         self.visible = True
@@ -192,8 +185,6 @@ class UnitInfoPopup:
             y_offset = self._draw_stats_tab(screen, x_left, x_right, y_offset)
         elif self.current_tab == "equipment":
             y_offset = self._draw_equipment_tab(screen, x_left, x_right, y_offset)
-        elif self.current_tab == "armor":
-            y_offset = self._draw_armor_tab(screen, x_left, x_right, y_offset, popup_x, popup_width)
         elif self.current_tab == "conditions":
             y_offset = self._draw_conditions_tab(screen, x_left, x_right, y_offset)
 
@@ -211,7 +202,6 @@ class UnitInfoPopup:
         tabs = [
             ("stats", "Stats"),
             ("equipment", "Equipment"),
-            ("armor", "Armor"),
             ("conditions", "Conditions"),
         ]
 
@@ -253,78 +243,87 @@ class UnitInfoPopup:
 
     def _draw_equipment_tab(self, screen: pygame.Surface, x_left: int, x_right: int, y: int) -> int:
         """Draw equipment tab content. Returns new y offset."""
-        # Equipped Weapon
-        y = self._draw_weapon_info(screen, x_left, x_right, y)
-        y += 10
+        # Helper to get equipment mapping
+        equipment = {}
+        if self.unit.character_data and "equipment" in self.unit.character_data:
+            equipment = self.unit.character_data["equipment"]
+        elif hasattr(self.unit, "equipment"):
+            equipment = getattr(self.unit, "equipment", {})
 
-        # TODO: Add armor, items, etc.
+        def get_item_name(item_id):
+            if not item_id:
+                return "(empty)"
+            # Try to get name from weapon or armor if possible
+            if (
+                self.unit.weapon
+                and hasattr(self.unit.weapon, "id")
+                and self.unit.weapon.id == item_id
+            ):
+                return getattr(self.unit.weapon, "name", item_id)
+            # Fallback: just show the id
+            return str(item_id)
+
+        # Main hand
+        main_hand = equipment.get("main_hand", "")
+        main_hand_name = get_item_name(main_hand)
+        main_hand_text = self.style.text_font.render(f"Main Hand: {main_hand_name}", True, UI_TEXT)
+        screen.blit(main_hand_text, (x_left + 10, y))
+        y += 28
+
+        # Off hand
+        off_hand = equipment.get("off_hand", "")
+        off_hand_name = get_item_name(off_hand)
+        off_hand_text = self.style.text_font.render(f"Off Hand: {off_hand_name}", True, UI_TEXT)
+        screen.blit(off_hand_text, (x_left + 10, y))
+        y += 28
+
+        # Quick weapons
+        quick1 = equipment.get("weapon_quick_1", "")
+        quick1_name = get_item_name(quick1)
+        quick1_text = self.style.text_font.render(f"Quick Weapon 1: {quick1_name}", True, UI_TEXT)
+        screen.blit(quick1_text, (x_left + 10, y))
+        y += 24
+
+        quick2 = equipment.get("weapon_quick_2", "")
+        quick2_name = get_item_name(quick2)
+        quick2_text = self.style.text_font.render(f"Quick Weapon 2: {quick2_name}", True, UI_TEXT)
+        screen.blit(quick2_text, (x_left + 10, y))
+        y += 24
+
+        # Armor pieces
+        armor_list = equipment.get("armor", [])
+        armor_header = self.style.header_font.render(
+            "Armor Pieces:", True, self.style.color_header_armor
+        )
+        screen.blit(armor_header, (x_left + 10, y))
+        y += 28
+        if armor_list:
+            for armor_id in armor_list:
+                armor_name = get_item_name(armor_id)
+                armor_text = self.style.small_font.render(f"- {armor_name}", True, UI_TEXT)
+                screen.blit(armor_text, (x_left + 30, y))
+                y += 20
+        else:
+            no_armor = self.style.small_font.render("(none)", True, (150, 150, 150))
+            screen.blit(no_armor, (x_left + 30, y))
+            y += 20
+
+        # Quick access items
+        qa1 = equipment.get("quick_access_1", "")
+        qa1_name = get_item_name(qa1)
+        qa1_text = self.style.text_font.render(f"Quick Item 1: {qa1_name}", True, UI_TEXT)
+        screen.blit(qa1_text, (x_left + 10, y))
+        y += 24
+
+        qa2 = equipment.get("quick_access_2", "")
+        qa2_name = get_item_name(qa2)
+        qa2_text = self.style.text_font.render(f"Quick Item 2: {qa2_name}", True, UI_TEXT)
+        screen.blit(qa2_text, (x_left + 10, y))
+        y += 24
 
         return y
 
-    def _draw_armor_tab(
-        self,
-        screen: pygame.Surface,
-        x_left: int,
-        x_right: int,
-        y: int,
-        popup_x: int,
-        popup_width: int,
-    ) -> int:
-        """Draw armor tab content with humanoid silhouette. Returns new y offset."""
-        # Header
-        header = self.style.header_font.render(
-            "Armor Coverage", True, self.style.color_header_armor
-        )
-        screen.blit(header, (x_left, y))
-        y += 35
-
-        if not self.silhouette_image:
-            # Fallback if image not loaded
-            no_image = self.style.text_font.render(
-                "Silhouette image not available", True, (150, 150, 150)
-            )
-            screen.blit(no_image, (x_left + 10, y))
-            return y + 30
-
-        # Calculate centered position for silhouette
-        img_width = self.silhouette_image.get_width()
-        img_height = self.silhouette_image.get_height()
-
-        # Scale if needed to fit in popup
-        max_width = self.style.silhouette_max_width
-        max_height = self.style.silhouette_max_height
-        scale = min(max_width / img_width, max_height / img_height, 1.0)
-
-        if scale < 1.0:
-            new_width = int(img_width * scale)
-            new_height = int(img_height * scale)
-            scaled_image = pygame.transform.smoothscale(
-                self.silhouette_image, (new_width, new_height)
-            )
-        else:
-            scaled_image = self.silhouette_image
-            new_width = img_width
-            new_height = img_height
-
-        # Center the image in the popup
-        img_x = popup_x + (popup_width - new_width) // 2
-        img_y = y
-
-        # Draw the silhouette
-        screen.blit(scaled_image, (img_x, img_y))
-
-        # Future: Draw colored overlays on body parts using unit.armor
-
-        y += new_height + 10
-
-        # Placeholder text for armor pieces
-        armor_text = self.style.small_font.render(
-            "(Armor data not yet implemented)", True, (150, 150, 150)
-        )
-        armor_rect = armor_text.get_rect(center=(popup_x + popup_width // 2, y))
-        screen.blit(armor_text, armor_rect)
-
-        return y + 30
+    # Armor tab removed
 
     def _draw_conditions_tab(
         self, screen: pygame.Surface, x_left: int, x_right: int, y: int

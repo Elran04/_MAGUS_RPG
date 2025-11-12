@@ -34,8 +34,6 @@ class EquipmentRepository:
             logger.exception("Failed to load weapons data")
             return []
 
-
-
     def load_armor(self) -> list[dict]:
         """Load all armor data."""
         if self._armor_cache is not None:
@@ -93,6 +91,7 @@ class EquipmentRepository:
         self._armor_cache = None
         self._general_cache = None
         logger.debug("Equipment cache cleared")
+
     def find_weapon_by_id(self, weapon_id: str) -> dict | None:
         """
         Find a weapon by its ID.

@@ -35,49 +35,7 @@ def _get_attribute_value(unit: Unit, attr_hu: str) -> int:
     Intelligencia, Akaraterő, Asztrál, Érzékelés.
     Unknown returns 0.
     """
-    key = (attr_hu or "").strip()
-    lower = key.lower()
-    # Support both capitalized and lowercase Hungarian keys
-    mapping = {
-        "erő": unit.attributes.strength,
-        "erősség": unit.attributes.strength,
-        "ügyesség": unit.attributes.dexterity,
-        "gyorsaság": unit.attributes.speed,
-        "állóképesség": unit.attributes.endurance,
-        "egészség": unit.attributes.health,
-        "karizma": unit.attributes.charisma,
-        "intelligencia": unit.attributes.intelligence,
-        "akaraterő": unit.attributes.willpower,
-        "asztrál": unit.attributes.astral,
-        "érzékelés": unit.attributes.perception,
-        # Capitalized variants
-        "erő_cap": unit.attributes.strength,
-        "ügyesség_cap": unit.attributes.dexterity,
-        "gyorsaság_cap": unit.attributes.speed,
-        "állóképesség_cap": unit.attributes.endurance,
-        "egészség_cap": unit.attributes.health,
-        "karizma_cap": unit.attributes.charisma,
-        "intelligencia_cap": unit.attributes.intelligence,
-        "akaraterő_cap": unit.attributes.willpower,
-        "asztrál_cap": unit.attributes.astral,
-        "érzékelés_cap": unit.attributes.perception,
-    }
-    if lower in mapping:
-        return mapping[lower]
-    # Fallback for capitalized input keys
-    cap_map = {
-        "Erő": mapping["erő"],
-        "Ügyesség": mapping["ügyesség"],
-        "Gyorsaság": mapping["gyorsaság"],
-        "Állóképesség": mapping["állóképesség"],
-        "Egészség": mapping["egészség"],
-        "Karizma": mapping["karizma"],
-        "Intelligencia": mapping["intelligencia"],
-        "Akaraterő": mapping["akaraterő"],
-        "Asztrál": mapping["asztrál"],
-        "Érzékelés": mapping["érzékelés"],
-    }
-    return cap_map.get(key, 0)
+    return unit.attributes.get_attribute(attr_hu, 0)
 
 
 def _calculate_attribute_bonus(unit: Unit, weapon: Weapon | None) -> int:
