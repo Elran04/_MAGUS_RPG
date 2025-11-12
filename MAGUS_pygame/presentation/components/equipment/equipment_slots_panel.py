@@ -19,12 +19,17 @@ from application.weapon_type_check import (
     is_ranged_weapon,
     is_shield,
 )
+from application.equipment_validation_service import ValidationResult, Slot
+
 if TYPE_CHECKING:
     from application.game_context import GameContext
+from logger.logger import get_logger
 
-# Equipment slot definitions
-WEAPON_SLOTS = ["main_hand", "off_hand", "weapon_quick_1", "weapon_quick_2"]
-QUICK_ACCESS_SLOTS = ["quick_access_1", "quick_access_2"]
+logger = get_logger(__name__)
+
+# Equipment slot definitions (using enums)
+WEAPON_SLOTS = [Slot.MAIN_HAND, Slot.OFF_HAND, Slot.WEAPON_QUICK_1, Slot.WEAPON_QUICK_2]
+QUICK_ACCESS_SLOTS = [Slot.QUICK_ACCESS_1, Slot.QUICK_ACCESS_2]
 
 
 class EquipmentSlotsPanel:
@@ -74,14 +79,14 @@ class EquipmentSlotsPanel:
         #   - String: single item ID (e.g., "sword_01")
         #   - Dict: item with quantity (e.g., {"id": "arrow", "qty": 20}) for stackable items
         #   - List: for armor slot only
-        self.equipment: dict[str, str | dict | list] = {
-            "main_hand": "",
-            "off_hand": "",
-            "weapon_quick_1": "",
-            "weapon_quick_2": "",
+        self.equipment: dict[Slot | str, str | dict | list] = {
+            Slot.MAIN_HAND: "",
+            Slot.OFF_HAND: "",
+            Slot.WEAPON_QUICK_1: "",
+            Slot.WEAPON_QUICK_2: "",
             "armor": [],  # List of armor piece IDs
-            "quick_access_1": "",
-            "quick_access_2": "",
+            Slot.QUICK_ACCESS_1: "",
+            Slot.QUICK_ACCESS_2: "",
         }
 
         # Validation warnings
@@ -159,8 +164,10 @@ class EquipmentSlotsPanel:
 
         # Then apply incoming equipment (deep copy to avoid sharing references)
         for key in self.equipment:
-            if key in equipment:
-                value = equipment[key]
+            # For enum keys, check both enum and string in incoming equipment
+            lookup_key = key.value if isinstance(key, Slot) else key
+            if lookup_key in equipment:
+                value = equipment[lookup_key]
                 if isinstance(value, list):
                     self.equipment[key] = value.copy()
                 else:
@@ -177,13 +184,14 @@ class EquipmentSlotsPanel:
         # Deep copy to avoid sharing list references
         result = {}
         for key, value in self.equipment.items():
+            out_key = key.value if isinstance(key, Slot) else key
             if isinstance(value, list):
-                result[key] = value.copy()
+                result[out_key] = value.copy()
             else:
-                result[key] = value
+                result[out_key] = value
         return result
 
-    def equip_item(self, slot: str, item_id: str, quantity: int = 1) -> tuple[bool, str, str]:
+    def equip_item(self, slot: str, item_id: str, quantity: int = 1):
         """Equip an item in a slot with validation and auto-unequip logic.
 
         Args:
@@ -192,72 +200,82 @@ class EquipmentSlotsPanel:
             quantity: Quantity to equip (for stackable items)
 
         Returns:
-            Tuple of (success: bool, message: str, auto_unequipped_item: str)
-            auto_unequipped_item is the item that was removed from off-hand (if any)
+            ValidationResult: result of the operation
         """
-        if slot not in self.equipment:
-            return False, "Invalid slot", ""
+        # Always convert slot to Slot enum if possible
+        try:
+            slot_enum = Slot(slot) if not isinstance(slot, Slot) else slot
+        except Exception:
+            return ValidationResult(False, "Invalid slot")
+
+        # Normalize all keys in self.equipment to Slot enums (except 'armor')
+        normalized_equipment = {}
+        for k, v in self.equipment.items():
+            if k == "armor":
+                normalized_equipment["armor"] = v
+            else:
+                normalized_equipment[Slot(k) if not isinstance(k, Slot) else k] = v
+        self.equipment = normalized_equipment
+
+        if slot_enum not in self.equipment:
+            return ValidationResult(False, f"Slot {slot_enum} not found in equipment")
 
         validation = self.context.equipment_validation_service
-        auto_unequipped = ""  # Track auto-removed off-hand item
-
+        auto_unequipped = None  # Track auto-removed off-hand item
 
         # Validate item compatibility for this slot
-        if slot == "off_hand":
-            main_hand = self.equipment.get("main_hand")
+        if slot_enum == Slot.OFF_HAND:
+            main_hand = self.equipment.get(Slot.MAIN_HAND)
             main_hand_id = None
             if isinstance(main_hand, str):
                 main_hand_id = main_hand
             elif isinstance(main_hand, dict):
                 main_hand_id = main_hand.get("id")
-
             result = validation.can_equip_offhand(main_hand_id, item_id)
             if not result.success:
-                return False, result.message, ""
+                return result
 
-        elif slot in ["main_hand", "weapon_quick_1", "weapon_quick_2"]:
-            # Look up weapon dict for type checks
+        elif slot_enum in [Slot.MAIN_HAND, Slot.WEAPON_QUICK_1, Slot.WEAPON_QUICK_2]:
             repo = self.context.equipment_validation_service.equipment_repo
             weapon = repo.find_weapon_by_id(item_id)
-            is_weapon = (
-                weapon and (
-                    is_one_handed_weapon(weapon)
-                    or is_two_handed_weapon(weapon)
-                    or is_ranged_weapon(weapon)
-                )
+            is_weapon = weapon and (
+                is_one_handed_weapon(weapon)
+                or is_two_handed_weapon(weapon)
+                or is_ranged_weapon(weapon)
             )
             is_shield_item = weapon and is_shield(weapon)
-
-            # Main hand: weapons only (NOT shields)
-            if slot == "main_hand":
+            if slot_enum == Slot.MAIN_HAND:
                 if not is_weapon:
-                    return False, "Not a weapon", ""
+                    return ValidationResult(False, "Not a weapon")
                 if is_shield_item:
-                    return False, "Cannot equip shield in main hand", ""
-            # Quick slots: weapons or shields
-            elif slot in ["weapon_quick_1", "weapon_quick_2"] and not (is_weapon or is_shield_item):
-                return False, "Not a weapon or shield", ""
+                    return ValidationResult(False, "Cannot equip shield in main hand")
+            elif slot_enum in [Slot.WEAPON_QUICK_1, Slot.WEAPON_QUICK_2] and not (
+                is_weapon or is_shield_item
+            ):
+                return ValidationResult(False, "Not a weapon or shield")
 
         # Handle armor separately (list)
-        if slot == "armor":
+        if slot_enum == "armor" or slot == "armor":
             armor_list = self.equipment.get("armor", [])
             if not isinstance(armor_list, list):
                 armor_list = []
             armor_list.append(item_id)
             self.equipment["armor"] = armor_list
             self._validate()
-            return True, "Armor equipped", ""
+            return ValidationResult(True, "Armor equipped")
 
         # No auto-unequip or overwrite logic here. Only equip in the specified slot.
 
         # Set item (with quantity if > 1)
         if quantity > 1:
-            self.equipment[slot] = {"id": item_id, "qty": quantity}
+            self.equipment[slot_enum] = {"id": item_id, "qty": quantity}
         else:
-            self.equipment[slot] = item_id
+            self.equipment[slot_enum] = item_id
 
         self._validate()
-        return True, "Item equipped", auto_unequipped
+        return ValidationResult(True, "Item equipped", details=auto_unequipped)
+
+        # No auto-unequip or overwrite logic here. Only equip in the specified slot
 
     def remove_item(self, slot: str) -> tuple[bool, str, int]:
         """Remove an item from a slot.
@@ -269,27 +287,33 @@ class EquipmentSlotsPanel:
             Tuple of (success: bool, removed_item_id: str, quantity: int)
         """
         if slot not in self.equipment:
-            return False, "", 0
+            # Try to convert string slot to enum
+            try:
+                slot_enum = Slot(slot)
+            except Exception:
+                return False, "", 0
+        else:
+            slot_enum = slot
 
-        if slot == "armor":
+        if slot_enum == "armor" or slot == "armor":
             # Use remove_last_armor for armor list
             success = self.remove_last_armor()
             # TODO: Track which armor was removed
             return success, "", 0
 
         # Get current item before clearing
-        current = self.equipment.get(slot)
+        current = self.equipment.get(slot_enum)
         if current:
             if isinstance(current, str):
                 # Simple item
-                self.equipment[slot] = ""
+                self.equipment[slot_enum] = ""
                 self._validate()
                 return True, current, 1
             elif isinstance(current, dict) and current.get("id"):
                 # Item with quantity
                 item_id = current.get("id")
                 qty = current.get("qty", 1)
-                self.equipment[slot] = ""
+                self.equipment[slot_enum] = ""
                 self._validate()
                 return True, item_id, qty
 
@@ -317,7 +341,7 @@ class EquipmentSlotsPanel:
 
     def _is_offhand_disabled(self) -> bool:
         """Check if off-hand slot should be disabled."""
-        main_hand = self.equipment.get("main_hand")
+        main_hand = self.equipment.get(Slot.MAIN_HAND)
         if not main_hand:
             return False
 
@@ -341,7 +365,9 @@ class EquipmentSlotsPanel:
         Returns:
             Selected slot name or None
         """
-        return self.selected_slot
+        return (
+            self.selected_slot.value if isinstance(self.selected_slot, Slot) else self.selected_slot
+        )
 
     def handle_event(self, event: pygame.event.Event) -> tuple[bool, str | None]:
         """Handle events.
@@ -361,12 +387,12 @@ class EquipmentSlotsPanel:
                 for slot, rect in self.slot_rects.items():
                     if rect.collidepoint(event.pos):
                         # Don't allow clicking disabled off-hand
-                        if slot == "off_hand" and self._is_offhand_disabled():
+                        if slot == Slot.OFF_HAND and self._is_offhand_disabled():
                             continue
 
                         # Select this slot
                         self.selected_slot = slot
-                        slot_clicked = slot
+                        slot_clicked = slot.value if isinstance(slot, Slot) else slot
                         break
 
                 # Mimic add armor button: clicking armor list area selects armor slot
@@ -378,14 +404,15 @@ class EquipmentSlotsPanel:
                 # Check weapon/item slots
                 for slot, rect in self.slot_rects.items():
                     if rect.collidepoint(event.pos):
-                        equipment_changed = self.remove_item(slot)
+                        equipment_changed = self.remove_item(
+                            slot.value if isinstance(slot, Slot) else slot
+                        )
                         break
 
         # Scroll handling
         if event.type == pygame.MOUSEWHEEL:
             if self.armor_list_rect and self.armor_list_rect.collidepoint(pygame.mouse.get_pos()):
                 self.armor_scroll_offset = max(0, self.armor_scroll_offset - event.y * 20)
-
         return equipment_changed, slot_clicked
 
     def draw(self, surface: pygame.Surface) -> None:
@@ -406,15 +433,15 @@ class EquipmentSlotsPanel:
         surface.blit(section_label, (self.rect.x + 12, y))
 
         # Main hand
-        self._draw_slot(surface, "main_hand", "Main Hand", mouse_pos)
+        self._draw_slot(surface, Slot.MAIN_HAND, "Main Hand", mouse_pos)
 
         # Off hand (may be disabled)
         disabled = self._is_offhand_disabled()
-        self._draw_slot(surface, "off_hand", "Off Hand", mouse_pos, disabled=disabled)
+        self._draw_slot(surface, Slot.OFF_HAND, "Off Hand", mouse_pos, disabled=disabled)
 
         # Quick access weapons
-        self._draw_slot(surface, "weapon_quick_1", "Quick 1", mouse_pos)
-        self._draw_slot(surface, "weapon_quick_2", "Quick 2", mouse_pos)
+        self._draw_slot(surface, Slot.WEAPON_QUICK_1, "Quick 1", mouse_pos)
+        self._draw_slot(surface, Slot.WEAPON_QUICK_2, "Quick 2", mouse_pos)
 
         # === ARMOR SECTION ===
         armor_y = self.armor_list_rect.y - 30 if self.armor_list_rect else 0
@@ -425,12 +452,12 @@ class EquipmentSlotsPanel:
         # No add/remove armor button drawing; armor managed by coordinator
 
         # === QUICK ACCESS ITEMS SECTION ===
-        qa_y = self.slot_rects["quick_access_1"].y - 30
+        qa_y = self.slot_rects[Slot.QUICK_ACCESS_1].y - 30
         section_label = self.font.render("Quick Access", True, (200, 200, 255))
         surface.blit(section_label, (self.rect.x + 12, qa_y))
 
-        self._draw_slot(surface, "quick_access_1", "Item 1", mouse_pos)
-        self._draw_slot(surface, "quick_access_2", "Item 2", mouse_pos)
+        self._draw_slot(surface, Slot.QUICK_ACCESS_1, "Item 1", mouse_pos)
+        self._draw_slot(surface, Slot.QUICK_ACCESS_2, "Item 2", mouse_pos)
 
     def _draw_slot(
         self,
@@ -454,9 +481,13 @@ class EquipmentSlotsPanel:
             return
 
         # Determine slot color
-        has_warning = slot_name in self.warnings
+        has_warning = (slot_name in self.warnings) or (
+            slot_name.value in self.warnings if isinstance(slot_name, Slot) else False
+        )
         hover = rect.collidepoint(mouse_pos) and not disabled
-        is_selected = slot_name == self.selected_slot
+        is_selected = (slot_name == self.selected_slot) or (
+            isinstance(slot_name, Slot) and slot_name.value == self.selected_slot
+        )
 
         if disabled:
             color = self.slot_disabled
@@ -506,7 +537,8 @@ class EquipmentSlotsPanel:
 
         # Draw warning if present
         if has_warning:
-            warning_text = self.warnings[slot_name]
+            warning_key = slot_name.value if isinstance(slot_name, Slot) else slot_name
+            warning_text = self.warnings.get(warning_key, "")
             warning_label = pygame.font.Font(None, 14).render(warning_text, True, (255, 150, 150))
             surface.blit(warning_label, (rect.x + 8, rect.y + 46))
 

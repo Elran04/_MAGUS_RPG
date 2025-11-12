@@ -94,6 +94,7 @@ class Attributes:
         }
         key = (name or "").strip().lower()
         return lookup.get(key, default)
+
     """Character attributes (strength, dexterity, etc.)."""
 
     strength: int = 10  # Erő

@@ -13,15 +13,22 @@ from typing import TYPE_CHECKING, Any
 from dataclasses import dataclass
 from typing import Any, Optional
 
+
 # Local result object for validation outcomes
 @dataclass
 class ValidationResult:
     success: bool
     message: str = ""
     details: Optional[Any] = None
+
+
 from .weapon_type_check import (
-    Slot, WeaponType,
-    is_one_handed_weapon, is_two_handed_weapon, is_ranged_weapon, is_shield
+    Slot,
+    WeaponType,
+    is_one_handed_weapon,
+    is_two_handed_weapon,
+    is_ranged_weapon,
+    is_shield,
 )
 
 from domain.mechanics.armor import ArmorPiece, ArmorSystem
@@ -34,7 +41,9 @@ logger = get_logger(__name__)
 
 
 class EquipmentValidationService:
-    def get_wield_mode_hint(self, unit: Any, weapon_id: str, weapon: dict[str, Any] | None = None) -> str:
+    def get_wield_mode_hint(
+        self, unit: Any, weapon_id: str, weapon: dict[str, Any] | None = None
+    ) -> str:
         """Return wield mode hint for a weapon for a given unit (e.g., '(1h/2h)', '(2h only)'). Accepts cached weapon object."""
         if weapon is None:
             weapon = self.equipment_repo.find_weapon_by_id(weapon_id)
@@ -54,13 +63,15 @@ class EquipmentValidationService:
         return ""
 
     def is_item_eligible(
-        self,
-        unit: Any,
-        slot: str,
-        item_id: str,
-        selected_wield_mode: str | None = None
+        self, unit: Any, slot: str, item_id: str, selected_wield_mode: str | None = None
     ) -> ValidationResult:
         """Check if an item is eligible for a slot for a given unit. Only call weapon logic for weapon/shield items."""
+        # Normalize slot to Slot enum for all logic
+        try:
+            slot_enum = Slot(slot) if not isinstance(slot, Slot) else slot
+        except Exception:
+            return ValidationResult(False, f"Invalid slot: {slot}")
+
         repo = self.equipment_repo
         # Determine item category
         weapons = repo.load_weapons()
@@ -69,33 +80,32 @@ class EquipmentValidationService:
         is_armor = any(a.get("id") == item_id for a in armor)
         weapon = repo.find_weapon_by_id(item_id) if is_weapon else None
         wield_mode = weapon.get("wield_mode", "") if weapon else ""
-        # Weapon/shield slots
-        if slot in [Slot.MAIN_HAND, Slot.OFF_HAND, Slot.WEAPON_QUICK_1, Slot.WEAPON_QUICK_2]:
-            weapon = self.equipment_repo.find_weapon_by_id(item_id)
-            is_valid_weapon = (
-                is_one_handed_weapon(weapon) if weapon else False
-                or is_two_handed_weapon(weapon) if weapon else False
-                or is_ranged_weapon(weapon) if weapon else False
-            )
-            is_shield_item = is_shield(weapon) if weapon else False
-            if slot == Slot.MAIN_HAND:
-                # Only allow weapons (NOT shields)
+
+        # Weapon slots
+        if slot_enum in [Slot.MAIN_HAND, Slot.WEAPON_QUICK_1, Slot.WEAPON_QUICK_2]:
+            if not is_weapon:
+                return ValidationResult(False, "Not a weapon")
+            # Main hand: weapons only
+            if slot_enum == Slot.MAIN_HAND:
+                is_1h = is_one_handed_weapon(weapon) if weapon else False
+                is_2h = is_two_handed_weapon(weapon) if weapon else False
+                is_ranged = is_ranged_weapon(weapon) if weapon else False
+                is_valid_weapon = is_1h or is_2h or is_ranged
                 if not is_valid_weapon:
                     return ValidationResult(False, "Not a weapon")
-                if is_shield_item:
-                    return ValidationResult(False, "Cannot equip shield in main hand")
-            elif slot == Slot.OFF_HAND:
-                # Offhand logic is handled by can_equip_offhand elsewhere
+                else:
+                    return ValidationResult(True, "OK")
+            # Quick slots: weapons or shields allowed
+            elif slot_enum in [Slot.WEAPON_QUICK_1, Slot.WEAPON_QUICK_2]:
+                is_1h = is_one_handed_weapon(weapon) if weapon else False
+                is_2h = is_two_handed_weapon(weapon) if weapon else False
+                is_ranged = is_ranged_weapon(weapon) if weapon else False
+                is_shield_item = is_shield(weapon) if weapon else False
+                is_valid_weapon = is_1h or is_2h or is_ranged
                 if not (is_valid_weapon or is_shield_item):
                     return ValidationResult(False, "Not a weapon or shield")
-            elif slot in [Slot.WEAPON_QUICK_1, Slot.WEAPON_QUICK_2]:
-                if not (is_valid_weapon or is_shield_item):
-                    return ValidationResult(False, "Not a weapon or shield")
-        # Quick access/general slots: allow any item that is not a weapon or armor
-        elif slot in [Slot.QUICK_ACCESS_1, Slot.QUICK_ACCESS_2]:
-            if is_weapon or is_armor:
-                return ValidationResult(False, "Not general item")
-            return ValidationResult(True, "OK")
+                else:
+                    return ValidationResult(True, "OK")
             # If variable, check selected wield mode
         if wield_mode in ["variable", "változó"] and selected_wield_mode:
             if selected_wield_mode == "one_handed":
@@ -107,19 +117,19 @@ class EquipmentValidationService:
                 return ValidationResult(True, "OK")
             return ValidationResult(True, "OK")
         # Off-hand slot
-        if slot == Slot.OFF_HAND:
+        if slot_enum == Slot.OFF_HAND:
             if not is_weapon:
                 return ValidationResult(False, "Not a weapon/shield")
             main_hand_id = None
             result = self.can_equip_offhand(main_hand_id, item_id)
             return result
         # Armor slot
-        if slot == Slot.ARMOR:
+        if slot_enum == Slot.ARMOR:
             if not is_armor:
                 return ValidationResult(False, "Not armor")
             return ValidationResult(True, "OK")
         # Quick access slots
-        if slot in [Slot.QUICK_ACCESS_1, Slot.QUICK_ACCESS_2]:
+        if slot_enum in [Slot.QUICK_ACCESS_1, Slot.QUICK_ACCESS_2]:
             if is_weapon or is_armor:
                 return ValidationResult(False, "Not general item")
             return ValidationResult(True, "OK")
@@ -141,7 +151,6 @@ class EquipmentValidationService:
         """
         self.equipment_repo = equipment_repo
 
-
     def can_equip_offhand(self, main_hand_id: str | None, offhand_id: str) -> ValidationResult:
         """Check if an item can be equipped in the off-hand.
 
@@ -157,7 +166,9 @@ class EquipmentValidationService:
         offhand_weapon = repo.find_weapon_by_id(offhand_id) if offhand_id else None
         # If no main hand weapon, off-hand must be one-handed weapon or shield
         if not main_hand_weapon:
-            if offhand_weapon and (is_one_handed_weapon(offhand_weapon) or is_shield(offhand_weapon)):
+            if offhand_weapon and (
+                is_one_handed_weapon(offhand_weapon) or is_shield(offhand_weapon)
+            ):
                 return ValidationResult(True, "OK")
             return ValidationResult(False, "Off-hand requires one-handed weapon or shield")
         if is_two_handed_weapon(main_hand_weapon, off_hand_present=True):
@@ -165,15 +176,18 @@ class EquipmentValidationService:
         if is_ranged_weapon(main_hand_weapon):
             return ValidationResult(False, "Ranged weapons cannot be dual-wielded")
         if not (
-            offhand_weapon and (is_one_handed_weapon(offhand_weapon, off_hand_present=True)
-            or is_shield(offhand_weapon))
+            offhand_weapon
+            and (
+                is_one_handed_weapon(offhand_weapon, off_hand_present=True)
+                or is_shield(offhand_weapon)
+            )
         ):
             return ValidationResult(False, "Off-hand must be one-handed weapon or shield")
         return ValidationResult(True, "OK")
 
     def can_wield_variable_one_handed(
         self, unit, weapon_id: str, weapon: dict | None = None
-    ) -> ValidationResult:  
+    ) -> ValidationResult:
         """Check if unit meets Erő and Ügyesség requirements for one-handed wielding of variable weapon. Accepts cached weapon object."""
         if weapon is None:
             weapon = self.equipment_repo.find_weapon_by_id(weapon_id)
@@ -190,7 +204,7 @@ class EquipmentValidationService:
         if unit_dex < dex_req:
             return ValidationResult(False, f"Insufficient dexterity (required: {dex_req})")
         return ValidationResult(True, "OK")
-    
+
     def validate_armor_compatibility(
         self, armor_ids: list[str]
     ) -> tuple[bool, list[str], dict[str, list[tuple[str, str]]]]:
@@ -275,8 +289,9 @@ class EquipmentValidationService:
         """
         warnings = {}
 
-        main_hand = equipment.get("main_hand")
-        off_hand = equipment.get("off_hand")
+        # Use enums for slot keys
+        main_hand = equipment.get(Slot.MAIN_HAND)
+        off_hand = equipment.get(Slot.OFF_HAND)
 
         # Validate off-hand
         if off_hand and isinstance(off_hand, str):
@@ -284,7 +299,7 @@ class EquipmentValidationService:
                 main_hand if isinstance(main_hand, str) else None, off_hand
             )
             if not result.success:
-                warnings["off_hand"] = result.message
+                warnings[Slot.OFF_HAND.value] = result.message
 
         # Validate armor
         armor_list = equipment.get("armor", [])

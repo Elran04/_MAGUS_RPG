@@ -123,22 +123,23 @@ class EquipmentPanelCoordinator:
             self.inventory_panel.set_unit(unit)
 
     def _on_item_clicked(self, item_id: str, category: str) -> None:
-        """Handle item click from inventory.
+        """Handle item click from inventory. Enforce Slot enum strictly."""
+        import logging
 
-        Args:
-            item_id: Item identifier
-            category: Item category
-        """
+        logger = logging.getLogger(
+            "magus_pygame.presentation.components.equipment.equipment_panel_coordinator"
+        )
         selected_slot = self.equipment_panel.get_selected_slot()
         if not selected_slot:
+            logger.error("[on_item_clicked] No slot selected.")
             return
 
         # Check if item is in inventory
         if item_id not in self.current_inventory or self.current_inventory[item_id] <= 0:
+            logger.error(f"[on_item_clicked] Item {item_id} not in inventory or qty <= 0.")
             return
 
         # Determine how many items to equip
-        # For stackable ammunition ("lőszer" category), move entire stack
         qty_to_equip = 1
         if self._is_stackable_ammunition(item_id):
             qty_to_equip = self.current_inventory[item_id]
@@ -147,10 +148,8 @@ class EquipmentPanelCoordinator:
         current_equipment = self.equipment_panel.get_equipment()
         old_item = current_equipment.get(selected_slot)
         if old_item:
-            # If old_item is a string (item_id), return one to inventory
             if isinstance(old_item, str):
                 self._return_item_to_inventory(old_item)
-            # If old_item is a dict with 'id' and 'qty', return correct quantity
             elif isinstance(old_item, dict):
                 old_id = old_item.get("id")
                 old_qty = old_item.get("qty", 1)
@@ -158,31 +157,31 @@ class EquipmentPanelCoordinator:
                     self._return_item_to_inventory(old_id, old_qty)
 
         # Equip the item with validation
-        success, message, auto_unequipped = self.equipment_panel.equip_item(
-            selected_slot, item_id, qty_to_equip
-        )
+        # Always use Slot enum for selected_slot, fail if not possible
+        try:
+            from application.weapon_type_check import Slot
 
-        if not success:
-            # Log the reason for failure
+            slot_enum = (
+                Slot(selected_slot) if not isinstance(selected_slot, Slot) else selected_slot
+            )
+        except Exception as e:
+            logger.error(
+                f"[on_item_clicked] Invalid slot '{selected_slot}' could not be converted to Slot enum: {e}"
+            )
+            return
+        result = self.equipment_panel.equip_item(slot_enum, item_id, qty_to_equip)
+        if not result.success:
             from logger.logger import get_logger
 
             logger = get_logger(__name__)
-            logger.info(f"Cannot equip {item_id} in {selected_slot}: {message}")
+            logger.info(f"Cannot equip {item_id} in {selected_slot}: {result.message}")
             return
-
-        # Remove items from inventory
         qty_to_remove = qty_to_equip
-
-        # Remove item(s) from inventory
         self.current_inventory[item_id] -= qty_to_remove
         if self.current_inventory[item_id] <= 0:
             del self.current_inventory[item_id]
-
-        # Return auto-unequipped item to inventory (if any)
-        if auto_unequipped:
-            self._return_item_to_inventory(auto_unequipped)
-
-        # Update inventory panel with new equipment state
+        if result.details:
+            self._return_item_to_inventory(result.details)
         self.inventory_panel.set_data(self.current_inventory, self.equipment_panel.get_equipment())
 
     def get_current_inventory(self) -> dict[str, int]:
@@ -254,10 +253,8 @@ class EquipmentPanelCoordinator:
                             idx = y // 22
                             if 0 <= idx < len(armor_items):
                                 item_id, qty = armor_items[idx]
-                                is_eligible, _ = self.inventory_panel._is_item_eligible(
-                                    item_id, "armor"
-                                )
-                                if is_eligible and qty > 0:
+                                result = self.inventory_panel._is_item_eligible(item_id, "armor")
+                                if result.success and qty > 0:
                                     self.current_inventory[item_id] -= 1
                                     if self.current_inventory[item_id] <= 0:
                                         del self.current_inventory[item_id]

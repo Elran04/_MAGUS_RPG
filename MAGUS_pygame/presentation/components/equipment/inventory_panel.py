@@ -8,12 +8,13 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from typing import TYPE_CHECKING
-
+from logger.logger import get_logger
 import pygame
 
 if TYPE_CHECKING:
     from application.game_context import GameContext
 
+logger = get_logger(__name__)
 # Item categories
 CATEGORY_WEAPONS = "weapons_shields"
 CATEGORY_ARMOR = "armor"
@@ -166,12 +167,19 @@ class InventoryPanel:
                     self.items[CATEGORY_GENERAL].append((item_id, qty))
 
     def set_selected_slot(self, slot: str | None) -> None:
-        """Set the currently selected equipment slot for highlighting.
+        """Set the currently selected equipment slot for highlighting. Enforce Slot enum strictly."""
+        if slot is not None:
+            try:
+                from application.weapon_type_check import Slot
 
-        Args:
-            slot: Slot name or None to clear selection
-        """
-        self.selected_slot = slot
+                if not isinstance(slot, Slot):
+                    self.selected_slot = Slot(slot)
+                else:
+                    self.selected_slot = slot
+            except Exception as e:
+                self.selected_slot = None
+        else:
+            self.selected_slot = None
 
     def show_wield_mode_dropdown(self, item_id: str) -> None:
         """Show dropdown for variable wield mode weapons."""
@@ -220,32 +228,41 @@ class InventoryPanel:
         self._category_cache[item_id] = category
         return category
 
-    def _is_item_eligible(
-        self, item_id: str, category: str, weapon: dict | None = None
-    ) -> tuple[bool, str]:
-        """Delegate to validation service (application layer), but avoid weapon lookups for non-weapons."""
+    def _is_item_eligible(self, item_id: str, category: str, weapon: dict | None = None):
+        from application.equipment_validation_service import ValidationResult
+
         if not self.selected_slot:
-            return False, "No slot selected"
+            return ValidationResult(False, "No slot selected")
         unit = getattr(self, "unit", None)
         slot = self.selected_slot
         selected_wield_mode = self.selected_wield_mode
 
-        # Only allow weapons (and shields for quick slots) in weapon slots
-        weapon_slots = ["main_hand", "off_hand", "weapon_quick_1", "weapon_quick_2"]
-        quick_slots = ["weapon_quick_1", "weapon_quick_2"]
-        if slot in weapon_slots:
-            # Only check eligibility for items in weapons_and_shields category
-            if category not in ["weapons_and_shields", "weapon", "shield"]:
-                return False, "Not a weapon"
-        # For quick access slots, only allow general items
-        if slot in ["quick_access_1", "quick_access_2"]:
-            if category != "general":
-                return False, "Not a general item"
+        # Always use Slot enum for slot, fail if not possible
+        try:
+            from application.weapon_type_check import Slot
 
-        result = self.context.equipment_validation_service.is_item_eligible(
-            unit, slot, item_id, selected_wield_mode
+            slot_enum = Slot(slot) if not isinstance(slot, Slot) else slot
+        except Exception as e:
+            logger.error(
+                f"[_is_item_eligible] Invalid slot '{slot}' could not be converted to Slot enum: {e}"
+            )
+            return ValidationResult(False, "Invalid slot")
+
+        weapon_slots = [Slot.MAIN_HAND, Slot.OFF_HAND, Slot.WEAPON_QUICK_1, Slot.WEAPON_QUICK_2]
+        # Normalize category for weapon slots
+        normalized_category = category
+        if category == "weapons_shields":
+            normalized_category = "weapons_and_shields"
+        if slot_enum in weapon_slots:
+            if normalized_category not in ["weapons_and_shields", "weapon", "shield"]:
+                return ValidationResult(False, "Not a weapon")
+        if slot_enum in [Slot.QUICK_ACCESS_1, Slot.QUICK_ACCESS_2]:
+            if normalized_category != "general":
+                return ValidationResult(False, "Not a general item")
+
+        return self.context.equipment_validation_service.is_item_eligible(
+            unit, slot_enum, item_id, selected_wield_mode
         )
-        return result.success, result.message
 
     def handle_event(self, event: pygame.event.Event) -> tuple[bool, str | None, str | None]:
         """Handle events.
@@ -273,8 +290,8 @@ class InventoryPanel:
                         item_rect = pygame.Rect(rect.x, item_y, rect.width, item_h)
                         if item_rect.collidepoint(event.pos):
                             # Check if item is eligible before allowing click
-                            is_eligible, reason = self._is_item_eligible(item_id, category)
-                            if is_eligible:
+                            result = self._is_item_eligible(item_id, category)
+                            if result.success:
                                 # Item clicked and eligible
                                 if self.on_item_click:
                                     self.on_item_click(item_id, category)
@@ -351,6 +368,8 @@ class InventoryPanel:
         # Cache for weapon lookups
         weapon_cache = {}
 
+        # Determine which slot is currently selected and use it for eligibility
+        selected_slot = self.selected_slot
         for item_id, qty in items:
             # Only lookup weapon if in weapons category
             weapon = None
@@ -360,13 +379,25 @@ class InventoryPanel:
                 else:
                     weapon = self.context.equipment_repo.find_weapon_by_id(item_id)
                     weapon_cache[item_id] = weapon
-            # Check eligibility, pass weapon if available
-            is_eligible, reason = self._is_item_eligible(item_id, category, weapon)
+            # Patch: If selected_slot is not a weapon slot, but we're drawing weapons, use MAIN_HAND as default for eligibility
+            slot_for_eligibility = selected_slot
+            if category == CATEGORY_WEAPONS and selected_slot is None:
+                try:
+                    from application.weapon_type_check import Slot
+
+                    slot_for_eligibility = Slot.MAIN_HAND
+                except Exception:
+                    slot_for_eligibility = "main_hand"
+            # Patch: Temporarily override self.selected_slot for eligibility check
+            orig_selected_slot = self.selected_slot
+            self.selected_slot = slot_for_eligibility
+            result = self._is_item_eligible(item_id, category, weapon)
+            self.selected_slot = orig_selected_slot
 
             # Determine color
-            if self.selected_slot and is_eligible:
+            if self.selected_slot and result.success:
                 color = self.highlight_color
-            elif self.selected_slot and not is_eligible:
+            elif self.selected_slot and not result.success:
                 color = self.invalid_color
             else:
                 color = self.text_color

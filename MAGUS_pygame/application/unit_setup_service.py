@@ -1,110 +1,83 @@
-"""Unit Setup Service - Handles loading and initializing unit data.
-
-Centralizes logic for extracting equipment, skills, and inventory from
-character JSON files and preparing them for scenario configuration.
-"""
-
-from __future__ import annotations
+"""Unit Setup Service - Loads inventory and skills for scenario setup."""
 
 from typing import TYPE_CHECKING
 
-from logger.logger import get_logger
-
 if TYPE_CHECKING:
     from infrastructure.repositories import CharacterRepository
+
+from logger.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 class UnitSetupService:
-    """Service for loading and initializing unit data from character files.
-
-    Responsibilities:
-    - Load character data with proper defaults
-    - Extract equipment, skills, and inventory from character JSON
-    - Provide consistent data structure for scenario configuration
-    """
-
-    def __init__(self, character_repo: CharacterRepository):
-        """Initialize unit setup service.
-
-        Args:
-            character_repo: Character repository for loading character data
-        """
+    def __init__(self, character_repo: "CharacterRepository"):
         self.character_repo = character_repo
 
     def load_character_with_defaults(self, char_file: str) -> dict | None:
-        """Load character data with equipment, skills, and inventory.
-
-        Args:
-            char_file: Character filename (e.g., "Warrior.json")
-
-        Returns:
-            Character data dictionary or None if not found
-        """
         char_data = self.character_repo.load(char_file)
         if not char_data:
-            logger.warning(f"Character file not found: {char_file}")
             return None
-
-        # Ensure all expected keys exist with defaults
         if "Felszerelés" not in char_data:
             char_data["Felszerelés"] = {"items": []}
         if "Képzettségek" not in char_data:
             char_data["Képzettségek"] = []
-
         return char_data
 
-    def extract_equipment_from_character(self, char_data: dict) -> dict:
-        """Extract equipment mapping from character data.
-
-        If slots are missing, assign defaults:
-        - First weapon as 'main_hand'
-        - First shield as 'off_hand'
-        - All armor as 'armor' list
-        """
-        equipment_map: dict = {}
-        armor_list = []
-        weapons = []
-        shields = []
-
+    def extract_inventory_from_character(self, char_data: dict) -> dict[str, int]:
+        inventory_map: dict[str, int] = {}
+        equipped_ids = set()
+        equipment = char_data.get("equipment", {})
+        if isinstance(equipment, dict):
+            for value in equipment.values():
+                if isinstance(value, list):
+                    equipped_ids.update(value)
+                elif isinstance(value, str):
+                    equipped_ids.add(value)
         felszereles = char_data.get("Felszerelés", {})
         if isinstance(felszereles, dict):
             items = felszereles.get("items", [])
         elif isinstance(felszereles, list):
             items = felszereles
         else:
-            return equipment_map
-
+            return inventory_map
         for item in items:
             if not isinstance(item, dict):
                 continue
             item_id = item.get("id")
-            slot = item.get("slot")
-            category = item.get("category")
-            if not item_id:
+            qty = item.get("qty", 1)
+            if item_id and not item.get("slot") and item_id not in equipped_ids:
+                inventory_map[item_id] = inventory_map.get(item_id, 0) + qty
+        return inventory_map
+
+    def extract_skills_from_character(self, char_data: dict) -> dict[str, int]:
+        skills_map: dict[str, int] = {}
+        kepzettsegek = char_data.get("Képzettségek", [])
+        if not isinstance(kepzettsegek, list):
+            return skills_map
+        for skill in kepzettsegek:
+            if not isinstance(skill, dict):
                 continue
-            if slot:
-                equipment_map[slot] = item_id
-            elif category == "armor":
-                armor_list.append(item_id)
-            elif category == "weapons_and_shields":
-                # Heuristic: treat shields as those with 'shield' in id
-                if "shield" in item_id:
-                    shields.append(item_id)
-                else:
-                    weapons.append(item_id)
+            skill_id = skill.get("id")
+            if not skill_id:
+                continue
+            level = skill.get("Szint") or skill.get("%")
+            if level is not None:
+                try:
+                    skills_map[skill_id] = int(level)
+                except (ValueError, TypeError):
+                    pass
+        return skills_map
 
-        # Assign default slots if not already set
-        if "main_hand" not in equipment_map and weapons:
-            equipment_map["main_hand"] = weapons[0]
-        if "off_hand" not in equipment_map and shields:
-            equipment_map["off_hand"] = shields[0]
-        if armor_list:
-            equipment_map["armor"] = armor_list
-
-        logger.debug(f"Extracted equipment: {equipment_map}")
-        return equipment_map
+    def prepare_unit_data(self, char_file: str) -> dict | None:
+        char_data = self.load_character_with_defaults(char_file)
+        if not char_data:
+            return None
+        return {
+            "char_data": char_data,
+            "inventory": self.extract_inventory_from_character(char_data),
+            "skills": self.extract_skills_from_character(char_data),
+        }
 
     def extract_inventory_from_character(self, char_data: dict) -> dict[str, int]:
         """Extract inventory from character data, excluding equipped items."""
@@ -197,7 +170,7 @@ class UnitSetupService:
 
         return {
             "char_data": char_data,
-            "equipment": self.extract_equipment_from_character(char_data),
+            "equipment": {},
             "inventory": self.extract_inventory_from_character(char_data),
             "skills": self.extract_skills_from_character(char_data),
         }

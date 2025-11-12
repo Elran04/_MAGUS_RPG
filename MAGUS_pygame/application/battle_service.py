@@ -230,7 +230,9 @@ class BattleService:
                 rng_overrides = candidate
             else:
                 rng_overrides = None
-        result = self.action_handler.attack(attacker=unit, defender=defender, rng_overrides=rng_overrides, **kwargs)
+        result = self.action_handler.attack(
+            attacker=unit, defender=defender, rng_overrides=rng_overrides, **kwargs
+        )
         ap_spent_obj = getattr(result, "ap_spent", 0)
         if isinstance(ap_spent_obj, int):
             ap_spent = ap_spent_obj

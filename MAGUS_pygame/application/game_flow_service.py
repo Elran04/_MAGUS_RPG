@@ -1,4 +1,3 @@
-
 """
 Game Flow Service - Orchestrates complete game flow from scenario to battle.
 
@@ -42,7 +41,9 @@ def run_screen_loop(screen_obj, screen, clock, cancel_action=None, update_method
         return "cancelled"
     return action
 
+
 logger = get_logger(__name__)
+
 
 def handle_error(message: str, user_facing: bool = True):
     logger.error(message)
@@ -64,6 +65,7 @@ def handle_error(message: str, user_facing: bool = True):
                     if event.type in (pygame.KEYDOWN, pygame.QUIT, pygame.MOUSEBUTTONDOWN):
                         waiting = False
 
+
 def _create_units_for_team(context, team_setups, team_label: str) -> list[Unit]:
     """Create units for a team from scenario config setups."""
     unit_factory = context.unit_factory
@@ -77,7 +79,9 @@ def _create_units_for_team(context, team_setups, team_label: str) -> list[Unit]:
         try:
             char_data = context.character_repo.load(setup.character_file)
             if char_data is None:
-                handle_error(f"Cannot create unit: character file not found: {setup.character_file}")
+                handle_error(
+                    f"Cannot create unit: character file not found: {setup.character_file}"
+                )
                 continue
             char_data["equipment"] = setup.equipment.copy() if setup.equipment else {}
 
@@ -103,10 +107,15 @@ def _create_units_for_team(context, team_setups, team_label: str) -> list[Unit]:
                 except Exception as e:
                     handle_error(f"Failed to load sprite for {u.name}: {e}")
                 team_units.append(u)
-                logger.debug(f"Created {team_label} unit: {u.name} at ({setup.start_q}, {setup.start_r})")
+                logger.debug(
+                    f"Created {team_label} unit: {u.name} at ({setup.start_q}, {setup.start_r})"
+                )
         except Exception as e:
-            handle_error(f"Error creating {team_label} unit {getattr(setup, 'character_file', '?')}: {e}")
+            handle_error(
+                f"Error creating {team_label} unit {getattr(setup, 'character_file', '?')}: {e}"
+            )
     return team_units
+
 
 def _units_from_config(context, config: ScenarioConfig) -> tuple[list[Unit], list[Unit]]:
     """Create units for both teams from a finalized ScenarioConfig."""
