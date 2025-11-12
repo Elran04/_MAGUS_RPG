@@ -223,12 +223,25 @@ class InventoryPanel:
     def _is_item_eligible(
         self, item_id: str, category: str, weapon: dict | None = None
     ) -> tuple[bool, str]:
-        """Delegate to validation service (application layer)."""
+        """Delegate to validation service (application layer), but avoid weapon lookups for non-weapons."""
         if not self.selected_slot:
             return False, "No slot selected"
         unit = getattr(self, "unit", None)
         slot = self.selected_slot
         selected_wield_mode = self.selected_wield_mode
+
+        # Only allow weapons (and shields for quick slots) in weapon slots
+        weapon_slots = ["main_hand", "off_hand", "weapon_quick_1", "weapon_quick_2"]
+        quick_slots = ["weapon_quick_1", "weapon_quick_2"]
+        if slot in weapon_slots:
+            # Only check eligibility for items in weapons_and_shields category
+            if category not in ["weapons_and_shields", "weapon", "shield"]:
+                return False, "Not a weapon"
+        # For quick access slots, only allow general items
+        if slot in ["quick_access_1", "quick_access_2"]:
+            if category != "general":
+                return False, "Not a general item"
+
         result = self.context.equipment_validation_service.is_item_eligible(
             unit, slot, item_id, selected_wield_mode
         )

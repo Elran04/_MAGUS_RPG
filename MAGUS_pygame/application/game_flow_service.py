@@ -1,3 +1,4 @@
+
 """
 Game Flow Service - Orchestrates complete game flow from scenario to battle.
 
@@ -20,90 +21,97 @@ from presentation.screens.game.battle_screen import BattleScreen
 from presentation.screens.game.deployment_screen import DeploymentScreen
 from presentation.screens.scenario_setup.scenario_screen import ScenarioScreen
 
+
+def run_screen_loop(screen_obj, screen, clock, cancel_action=None, update_method=None):
+    """Generic loop for any screen with is_complete(), handle_event(), draw(), get_action().
+    Optionally calls update_method() each frame (for battle screens).
+    Returns: 'quit', 'cancelled', or the action from get_action().
+    """
+    while not screen_obj.is_complete():
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return "quit"
+            screen_obj.handle_event(event)
+        if update_method:
+            update_method()
+        screen_obj.draw(screen)
+        pygame.display.flip()
+        clock.tick(60)
+    action = screen_obj.get_action()
+    if cancel_action and action == cancel_action:
+        return "cancelled"
+    return action
+
 logger = get_logger(__name__)
 
+def handle_error(message: str, user_facing: bool = True):
+    logger.error(message)
+    if user_facing:
+        font = pygame.font.SysFont(None, 36)
+        screen = pygame.display.get_surface()
+        if screen:
+            overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 180))
+            text = font.render(message, True, (255, 0, 0))
+            rect = text.get_rect(center=screen.get_rect().center)
+            overlay.blit(text, rect)
+            screen.blit(overlay, (0, 0))
+            pygame.display.flip()
+            # Wait for user to acknowledge
+            waiting = True
+            while waiting:
+                for event in pygame.event.get():
+                    if event.type in (pygame.KEYDOWN, pygame.QUIT, pygame.MOUSEBUTTONDOWN):
+                        waiting = False
 
-def _units_from_config(context, config: ScenarioConfig) -> tuple[list[Unit], list[Unit]]:
-    """Create units for both teams from a finalized ScenarioConfig.
-
-    Returns (team_a_units, team_b_units).
-    """
+def _create_units_for_team(context, team_setups, team_label: str) -> list[Unit]:
+    """Create units for a team from scenario config setups."""
     unit_factory = context.unit_factory
     sprite_repo = context.sprite_repo
-    team_a: list[Unit] = []
-    team_b: list[Unit] = []
+    team_units: list[Unit] = []
 
-    for setup in config.team_a:
+    for setup in team_setups:
         if not setup.is_deployed():
-            logger.warning(f"Team A unit {setup.character_file} not deployed - skipping")
+            logger.warning(f"{team_label} unit {setup.character_file} not deployed - skipping")
             continue
+        try:
+            char_data = context.character_repo.load(setup.character_file)
+            if char_data is None:
+                handle_error(f"Cannot create unit: character file not found: {setup.character_file}")
+                continue
+            char_data["equipment"] = setup.equipment.copy() if setup.equipment else {}
 
-        # Load character data and inject scenario equipment mapping
-        char_data = context.character_repo.load(setup.character_file)
-        if char_data is None:
-            logger.error(f"Cannot create unit: character file not found: {setup.character_file}")
-            continue
-        char_data["equipment"] = setup.equipment.copy() if setup.equipment else {}
+            u = unit_factory.create_unit(
+                character_filename=setup.character_file,
+                position=Position(setup.start_q, setup.start_r),  # type: ignore[arg-type]
+                facing=Facing(setup.facing),
+                char_data=char_data,
+            )
 
-        u = unit_factory.create_unit(
-            character_filename=setup.character_file,
-            position=Position(setup.start_q, setup.start_r),  # type: ignore[arg-type]
-            facing=Facing(setup.facing),
-            char_data=char_data,
-        )
+            # Set wield state for variable weapons
+            if u and u.weapon and getattr(u.weapon, "wield_mode", None) == "variable":
+                eq = setup.equipment
+                off_hand = eq.get("off_hand")
+                off_hand_equipped = bool(off_hand)
+                u.weapon.set_wield_state(main_hand=True, off_hand_equipped=off_hand_equipped)
 
-        # Set wield state for variable weapons
-        if u and u.weapon and getattr(u.weapon, "wield_mode", None) == "variable":
-            eq = setup.equipment
-            main_hand = eq.get("main_hand")
-            off_hand = eq.get("off_hand")
-            off_hand_equipped = bool(off_hand)
-            u.weapon.set_wield_state(main_hand=True, off_hand_equipped=off_hand_equipped)
+            if u:
+                try:
+                    sprite = sprite_repo.load_character_sprite(setup.sprite_file)
+                    if sprite:
+                        u.sprite = sprite
+                except Exception as e:
+                    handle_error(f"Failed to load sprite for {u.name}: {e}")
+                team_units.append(u)
+                logger.debug(f"Created {team_label} unit: {u.name} at ({setup.start_q}, {setup.start_r})")
+        except Exception as e:
+            handle_error(f"Error creating {team_label} unit {getattr(setup, 'character_file', '?')}: {e}")
+    return team_units
 
-        if u:
-            # Load sprite
-            sprite = sprite_repo.load_character_sprite(setup.sprite_file)
-            if sprite:
-                u.sprite = sprite
-            team_a.append(u)
-            logger.debug(f"Created Team A unit: {u.name} at ({setup.start_q}, {setup.start_r})")
-
-    for setup in config.team_b:
-        if not setup.is_deployed():
-            logger.warning(f"Team B unit {setup.character_file} not deployed - skipping")
-            continue
-
-        # Load character data and inject scenario equipment mapping
-        char_data = context.character_repo.load(setup.character_file)
-        if char_data is None:
-            logger.error(f"Cannot create unit: character file not found: {setup.character_file}")
-            continue
-        char_data["equipment"] = setup.equipment.copy() if setup.equipment else {}
-
-        u = unit_factory.create_unit(
-            character_filename=setup.character_file,
-            position=Position(setup.start_q, setup.start_r),  # type: ignore[arg-type]
-            facing=Facing(setup.facing),
-        )
-        # Overwrite the unit's character_data with the injected equipment
-        u.character_data = char_data
-
-        # Set wield state for variable weapons
-        if u and u.weapon and getattr(u.weapon, "wield_mode", None) == "variable":
-            eq = setup.equipment
-            main_hand = eq.get("main_hand")
-            off_hand = eq.get("off_hand")
-            off_hand_equipped = bool(off_hand)
-            u.weapon.set_wield_state(main_hand=True, off_hand_equipped=off_hand_equipped)
-
-        if u:
-            # Load sprite
-            sprite = sprite_repo.load_character_sprite(setup.sprite_file)
-            if sprite:
-                u.sprite = sprite
-            team_b.append(u)
-            logger.debug(f"Created Team B unit: {u.name} at ({setup.start_q}, {setup.start_r})")
-
+def _units_from_config(context, config: ScenarioConfig) -> tuple[list[Unit], list[Unit]]:
+    """Create units for both teams from a finalized ScenarioConfig."""
+    team_a = _create_units_for_team(context, config.team_a, "Team A")
+    team_b = _create_units_for_team(context, config.team_b, "Team B")
     return team_a, team_b
 
 
@@ -119,21 +127,9 @@ def start_game(context, screen: pygame.Surface, clock: pygame.time.Clock) -> Non
 
     # 1) Scenario selection
     scenario_screen = ScenarioScreen(WIDTH, HEIGHT, context)
-
-    while not scenario_screen.is_complete():
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                logger.info("Game quit during scenario selection")
-                return
-            scenario_screen.handle_event(event)
-
-        scenario_screen.draw(screen)
-        pygame.display.flip()
-        clock.tick(60)
-
-    # Check if cancelled
-    if scenario_screen.get_action() == "scenario_cancelled":
-        logger.info("Scenario selection cancelled")
+    result = run_screen_loop(scenario_screen, screen, clock, cancel_action="scenario_cancelled")
+    if result in ("quit", "cancelled"):
+        logger.info("Scenario selection cancelled or quit")
         return
 
     scenario_config = scenario_screen.get_config()
@@ -145,21 +141,9 @@ def start_game(context, screen: pygame.Surface, clock: pygame.time.Clock) -> Non
     # 2) Deployment
     logger.info("Starting deployment phase")
     deployment_screen = DeploymentScreen(WIDTH, HEIGHT, scenario_config, context)
-
-    while not deployment_screen.is_complete():
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                logger.info("Game quit during deployment")
-                return
-            deployment_screen.handle_event(event)
-
-        deployment_screen.draw(screen)
-        pygame.display.flip()
-        clock.tick(60)
-
-    # Check if cancelled
-    if deployment_screen.get_action() == "deployment_cancelled":
-        logger.info("Deployment cancelled")
+    result = run_screen_loop(deployment_screen, screen, clock, cancel_action="deployment_cancelled")
+    if result in ("quit", "cancelled"):
+        logger.info("Deployment cancelled or quit")
         return
 
     final_config = deployment_screen.get_config()
@@ -194,18 +178,10 @@ def start_game(context, screen: pygame.Surface, clock: pygame.time.Clock) -> Non
 
     # 6) Battle screen
     battle_screen = BattleScreen(WIDTH, HEIGHT, battle_service, context, background)
-
-    while not battle_screen.is_complete():
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                logger.info("Game quit during battle")
-                return
-            battle_screen.handle_event(event)
-
-        battle_screen.update()
-        battle_screen.draw(screen)
-        pygame.display.flip()
-        clock.tick(60)
+    result = run_screen_loop(battle_screen, screen, clock, update_method=battle_screen.update)
+    if result == "quit":
+        logger.info("Game quit during battle")
+        return
 
     # Battle ended
     action = battle_screen.get_action()

@@ -13,6 +13,12 @@ from typing import TYPE_CHECKING
 
 import pygame
 
+from application.weapon_type_check import (
+    is_one_handed_weapon,
+    is_two_handed_weapon,
+    is_ranged_weapon,
+    is_shield,
+)
 if TYPE_CHECKING:
     from application.game_context import GameContext
 
@@ -195,10 +201,10 @@ class EquipmentSlotsPanel:
         validation = self.context.equipment_validation_service
         auto_unequipped = ""  # Track auto-removed off-hand item
 
+
         # Validate item compatibility for this slot
         if slot == "off_hand":
             main_hand = self.equipment.get("main_hand")
-            # Extract item ID (handle both string and dict formats)
             main_hand_id = None
             if isinstance(main_hand, str):
                 main_hand_id = main_hand
@@ -210,19 +216,26 @@ class EquipmentSlotsPanel:
                 return False, result.message, ""
 
         elif slot in ["main_hand", "weapon_quick_1", "weapon_quick_2"]:
-            # Verify it's actually a weapon or shield (shields allowed in quick slots)
+            # Look up weapon dict for type checks
+            repo = self.context.equipment_validation_service.equipment_repo
+            weapon = repo.find_weapon_by_id(item_id)
             is_weapon = (
-                validation.is_one_handed_weapon(item_id)
-                or validation.is_two_handed_weapon(item_id)
-                or validation.is_ranged_weapon(item_id)
+                weapon and (
+                    is_one_handed_weapon(weapon)
+                    or is_two_handed_weapon(weapon)
+                    or is_ranged_weapon(weapon)
+                )
             )
-            is_shield = validation.is_shield(item_id)
+            is_shield_item = weapon and is_shield(weapon)
 
-            # Main hand: weapons only
-            if slot == "main_hand" and not is_weapon:
-                return False, "Not a weapon", ""
+            # Main hand: weapons only (NOT shields)
+            if slot == "main_hand":
+                if not is_weapon:
+                    return False, "Not a weapon", ""
+                if is_shield_item:
+                    return False, "Cannot equip shield in main hand", ""
             # Quick slots: weapons or shields
-            elif slot in ["weapon_quick_1", "weapon_quick_2"] and not (is_weapon or is_shield):
+            elif slot in ["weapon_quick_1", "weapon_quick_2"] and not (is_weapon or is_shield_item):
                 return False, "Not a weapon or shield", ""
 
         # Handle armor separately (list)
@@ -235,18 +248,7 @@ class EquipmentSlotsPanel:
             self._validate()
             return True, "Armor equipped", ""
 
-        # Auto-unequip logic for main hand
-        if slot == "main_hand":
-            # Check if new weapon is two-handed/ranged
-            if validation.is_two_handed_weapon(item_id) or validation.is_ranged_weapon(item_id):
-                # Auto-unequip off-hand and track what was removed
-                current_offhand = self.equipment.get("off_hand")
-                if current_offhand:
-                    if isinstance(current_offhand, str) and current_offhand:
-                        auto_unequipped = current_offhand
-                    elif isinstance(current_offhand, dict) and current_offhand.get("id"):
-                        auto_unequipped = current_offhand.get("id")
-                    self.equipment["off_hand"] = ""
+        # No auto-unequip or overwrite logic here. Only equip in the specified slot.
 
         # Set item (with quantity if > 1)
         if quantity > 1:
@@ -326,10 +328,12 @@ class EquipmentSlotsPanel:
         elif not isinstance(main_hand, str):
             return False
 
-        validation_service = self.context.equipment_validation_service
-        return validation_service.is_two_handed_weapon(
-            main_hand_id
-        ) or validation_service.is_ranged_weapon(main_hand_id)
+        # Look up weapon dict for type checks
+        repo = self.context.equipment_validation_service.equipment_repo
+        weapon = repo.find_weapon_by_id(main_hand_id)
+        if not weapon:
+            return False
+        return is_two_handed_weapon(weapon) or is_ranged_weapon(weapon)
 
     def get_selected_slot(self) -> str | None:
         """Get currently selected slot.
@@ -569,5 +573,3 @@ class EquipmentSlotsPanel:
                             surface.blit(tooltip_surf, (self.armor_list_rect.x + 12, y + 18))
 
                 y += 22
-
-    # No add/remove armor button drawing; armor managed by coordinator
