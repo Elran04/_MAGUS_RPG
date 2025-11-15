@@ -23,7 +23,7 @@ from domain.mechanics import (
 from domain.mechanics.reactions import ReactionResult
 from logger.logger import get_logger
 
-logger = get_logger("opportunity_attack_debug")
+logger = get_logger(__name__)
 
 
 @dataclass

@@ -339,9 +339,9 @@ class TeamCompositionPhase(SelectionPhaseBase):
             True if at least one unit has been added to roster
         """
         if self.is_team_a:
-            return self.context.scenario_service.can_advance_from_team_a()
+            return self.context.scenario_service.has_team_a_units()
         else:
-            return self.context.scenario_service.can_finish()
+            return self.context.scenario_service.has_team_b_units()
 
     def get_roster(self) -> list[UnitSetup]:
         """Get current team roster.

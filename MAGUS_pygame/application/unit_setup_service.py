@@ -24,60 +24,7 @@ class UnitSetupService:
             char_data["Képzettségek"] = []
         return char_data
 
-    def extract_inventory_from_character(self, char_data: dict) -> dict[str, int]:
-        inventory_map: dict[str, int] = {}
-        equipped_ids = set()
-        equipment = char_data.get("equipment", {})
-        if isinstance(equipment, dict):
-            for value in equipment.values():
-                if isinstance(value, list):
-                    equipped_ids.update(value)
-                elif isinstance(value, str):
-                    equipped_ids.add(value)
-        felszereles = char_data.get("Felszerelés", {})
-        if isinstance(felszereles, dict):
-            items = felszereles.get("items", [])
-        elif isinstance(felszereles, list):
-            items = felszereles
-        else:
-            return inventory_map
-        for item in items:
-            if not isinstance(item, dict):
-                continue
-            item_id = item.get("id")
-            qty = item.get("qty", 1)
-            if item_id and not item.get("slot") and item_id not in equipped_ids:
-                inventory_map[item_id] = inventory_map.get(item_id, 0) + qty
-        return inventory_map
-
-    def extract_skills_from_character(self, char_data: dict) -> dict[str, int]:
-        skills_map: dict[str, int] = {}
-        kepzettsegek = char_data.get("Képzettségek", [])
-        if not isinstance(kepzettsegek, list):
-            return skills_map
-        for skill in kepzettsegek:
-            if not isinstance(skill, dict):
-                continue
-            skill_id = skill.get("id")
-            if not skill_id:
-                continue
-            level = skill.get("Szint") or skill.get("%")
-            if level is not None:
-                try:
-                    skills_map[skill_id] = int(level)
-                except (ValueError, TypeError):
-                    pass
-        return skills_map
-
-    def prepare_unit_data(self, char_file: str) -> dict | None:
-        char_data = self.load_character_with_defaults(char_file)
-        if not char_data:
-            return None
-        return {
-            "char_data": char_data,
-            "inventory": self.extract_inventory_from_character(char_data),
-            "skills": self.extract_skills_from_character(char_data),
-        }
+    # ...existing code...
 
     def extract_inventory_from_character(self, char_data: dict) -> dict[str, int]:
         """Extract inventory from character data, excluding equipped items."""

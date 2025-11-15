@@ -144,10 +144,10 @@ class ScenarioService:
     def can_advance_from_map(self) -> bool:
         return self._state.map_name is not None
 
-    def can_advance_from_team_a(self) -> bool:
+    def has_team_a_units(self) -> bool:
         return len(self._state.team_a) > 0
 
-    def can_finish(self) -> bool:
+    def has_team_b_units(self) -> bool:
         return len(self._state.team_b) > 0
 
     # State exposure ---------------------------------------------------
@@ -184,7 +184,7 @@ class ScenarioService:
     def build_config(self) -> ScenarioConfig:
         if not self._state.map_name:
             raise ValueError("Map not selected")
-        if not self.can_advance_from_team_a() or not self.can_finish():
+        if not self.has_team_a_units() or not self.has_team_b_units():
             raise ValueError("Teams incomplete")
         config = ScenarioConfig()
         config = config.with_map(
