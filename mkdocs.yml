@@ -33,17 +33,18 @@ theme:
 
 nav:
   - Home: README.md
-  - Getting Started: DEVELOPER_GUIDE.md
-  - Current Status: PROJECT_STATUS.md
-  - Architecture: ARCHITECTURE.md
-  - Game Systems:
-    - Combat Mechanics: COMBAT_MECHANICS.md
-    - Equipment System: EQUIPMENT_SYSTEM.md
-    - Scenario Editor: SCENARIO_EDITOR.md
+  - Getting Started:
+    - Developer Guide: getting-started/DEVELOPER_GUIDE.md
+    - CI/CD Setup: getting-started/CI_CD_SETUP.md
   - Project:
-    - Roadmap: PROJECT_ROADMAP.md
-    - Changelog: CHANGELOG.md
-    - CI/CD Setup: CI_CD_SETUP.md
+    - Current Status: project/PROJECT_STATUS.md
+    - Roadmap: project/PROJECT_ROADMAP.md
+    - Changelog: project/CHANGELOG.md
+  - Architecture: architecture/ARCHITECTURE.md
+  - Game Systems:
+    - Combat Mechanics: game-systems/COMBAT_MECHANICS.md
+    - Equipment System: game-systems/EQUIPMENT_SYSTEM.md
+    - Scenario Editor: game-systems/SCENARIO_EDITOR.md
   - Archive:
     - Migration Guide: archive/MIGRATION.md
     - Quickstart (legacy): archive/QUICKSTART.md

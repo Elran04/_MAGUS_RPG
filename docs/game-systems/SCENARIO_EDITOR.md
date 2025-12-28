@@ -191,5 +191,5 @@ Potential additions:
 
 ---
 
-*For game architecture: [ARCHITECTURE.md](./ARCHITECTURE.md)*  
-*For setup and running: [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)*
+*For game architecture: [ARCHITECTURE.md](../architecture/ARCHITECTURE.md)*  
+*For setup and running: [DEVELOPER_GUIDE.md](../getting-started/DEVELOPER_GUIDE.md)*

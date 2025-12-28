@@ -1,15 +1,15 @@
 # MAGUS Pygame Docs — Index
 
-Start here: [Developer Guide](DEVELOPER_GUIDE.md)
+Start here: [Developer Guide](getting-started/DEVELOPER_GUIDE.md)
 
-Current snapshot: [Project Status](PROJECT_STATUS.md)
+Current snapshot: [Project Status](project/PROJECT_STATUS.md)
 
 ## Topic References
 
-- [Architecture](ARCHITECTURE.md)
-- [Combat Mechanics](COMBAT_MECHANICS.md)
-- [Equipment System](EQUIPMENT_SYSTEM.md)
-- [Scenario Editor](SCENARIO_EDITOR.md)
+- [Architecture](architecture/ARCHITECTURE.md)
+- [Combat Mechanics](game-systems/COMBAT_MECHANICS.md)
+- [Equipment System](game-systems/EQUIPMENT_SYSTEM.md)
+- [Scenario Editor](game-systems/SCENARIO_EDITOR.md)
 
 ## Archive
 
