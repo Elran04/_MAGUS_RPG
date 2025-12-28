@@ -1,36 +1,88 @@
 # Project Status — MAGUS RPG (as of 2025-12-28)
 
 ## Overview
+
 Two actively developed modules:
-- GM Toolkit (PySide6): Editors for skills, classes, equipment, races, and a multi-step Character Creator.
-- Game Demo (Pygame): Turn-based tactical combat on a hex grid with melee combat playable.
+
+- **GM Toolkit (PySide6)**: Full-featured editors for skills, classes, equipment, races, and a complete 5-step Character Creator with working export.
+- **Game Demo (Pygame)**: Hex-based tactical combat with functional melee, stamina system, initiative queue, and scenario loading.
 
 ## Current Capabilities
-- Data: Hybrid JSON + SQLite, managers for races, classes, skills, equipment; currency handling.
-- Character Creation: 5-step wizard with KP tracking, prerequisite checks, inventory/shop, dark-mode UI.
-- Combat: Initiative, basic melee, hex grid, scenario loading from JSON.
-- Scenario: ScenarioService builds configs, enforces team size from spawn zones or generic limits; duplicate control optional.
-- Testing/Quality: Extensive tests for combat and equipment; new tests cover scenario service edge cases; mypy/ruff/black configured.
 
-## Recent Changes
-- ScenarioService: Renamed methods `can_advance_from_team_a` → `has_team_a_units` and `can_finish` → `has_team_b_units`; updated usages.
-- ScenarioService: Added focused unit tests (team size limits, duplicates, missing files, update/remove, build_config validation).
-- UnitSetupService: Removed duplicate method definitions; kept documented+logged versions; behavior unchanged.
-- Equipment Validation: Earlier fixes + tests to catch missing returns and slot mismatches.
-- Type Checking: `reaction_handler.py` passes mypy strict; ongoing cleanup across application.
+### GM Toolkit
+- **Editors**: Skills, classes (with specializations), equipment (weapons/armor/general), races (11 races with attributes/skills)
+- **Character Creator**: Complete 5-step wizard
+  - Basic info + class/specialization selection
+  - Skills assignment with placeholder resolution
+  - Skill learning with KP spending
+  - Equipment/inventory with currency management
+  - Summary with JSON export to `characters/*.json`
+- **Character Loader**: Browse saved characters, view summary, delete, refresh (read-only display; full editing planned)
+- **UI/UX**: Dark mode, responsive layouts, currency widgets, validation feedback
 
-## Known Documentation Gaps
-- README: Mentions `MAGUS_pygame/tools/map_editor.py` which is not present; command likely outdated.
-- Scenario Docs: Should mention team size derives from spawn zones (with generic fallback) and non-strict asset existence checks.
-- Architecture: Application layer services/handlers clarified (ScenarioService, UnitSetupService, Reaction/Action handlers) — reflect recent refactors.
-- Roadmap: Several items can be marked complete (validation, scenario setup flow, tests); Next focus might shift to stamina/ranged.
+### Game Demo
+- **Combat**: Melee attacks, damage calculation, armor absorption, critical hits, overpower strikes
+- **Stamina System**: Fully integrated (`domain/mechanics/Stamina`), affects block/parry/dodge costs, combat modifiers based on fatigue states
+- **Initiative**: Turn queue with charge mechanics
+- **Hex Grid**: Coordinate system, reach patterns, distance calculation
+- **Scenario Loading**: JSON-based scenarios with spawn zones, team size enforcement, obstacle support
+- **Camera**: Infrastructure present (`infrastructure/rendering/camera.py`) but not yet fully integrated into gameplay
 
-## Proposed Documentation Updates
-1) Fix README run commands and requirements; remove/replace map editor instruction.
-2) Update QUICKSTART and SCENARIO docs to reflect scenario flow and team size rules.
-3) Refresh ARCHITECTURE/IMPLEMENTATION_SUMMARY with current service boundaries and testing approach.
-4) Update Project_Roadmap with completed items and near-term priorities.
-5) Add CHANGELOG.md to capture refactors and test additions going forward.
+### Data Layer
+- **Hybrid Storage**: JSON (races, equipment, characters) + SQLite (skills, classes, combat stats)
+- **Managers**: RaceManager, ClassDBManager, SkillManager, EquipmentLoader all operational
+- **Models**: Pydantic models for races, dataclasses for combat entities
+
+### Quality & Testing
+- **Tests**: 115+ tests covering combat mechanics, stamina, equipment validation, scenario service
+- **Type Safety**: mypy configured; strict checking in progress
+- **Linting**: ruff + black for code quality
+- **Documentation**: MkDocs Material site (builds successfully), consolidated guides, archived legacy docs
+
+## Recent Changes (December 2025)
+
+- **ScenarioService**: Refactored method names for clarity (`has_team_a_units`, `has_team_b_units`); added comprehensive tests for team limits, duplicates, validation
+- **UnitSetupService**: Cleaned up duplicate method definitions
+- **Equipment Validation**: Fixed missing returns, added slot mismatch tests
+- **Documentation**: Merged combat docs, created DEVELOPER_GUIDE, archived legacy files, fixed MkDocs build, standardized naming
+- **Character Creator**: Summary step finalized with working JSON export via `character_storage.save_character`
+- **Stamina**: Full implementation with combat hooks, fatigue states, regeneration, extensive tests
+- **Character Loader**: New UI to browse saved characters, view summary, delete; integrates existing SummaryStepWidget for read-only display
+
+## Outstanding Work
+
+### High Priority
+- **Character Load/Edit UI**: No UI exists to open/edit saved `characters/*.json` files (only export works)
+- **Camera Integration**: Camera module exists but not wired into game controls (panning/zoom)
+- **Ranged Combat**: Detection logic present, but no ranged attack resolution or ammunition tracking
+- **Combat Feedback**: Minimal visual feedback for stamina drain, conditions, damage numbers
+
+### Medium Priority
+- **Scenario Generator**: No random encounter/combat setup tool
+- **Origin/Birthplace System**: Data models exist (`Origin` in `race_model.py`) but not in Character Creator UI
+- **XP/Leveling**: CombatStats support XP tracking but no progression UI
+- **Item Templates**: No template system for procedural equipment generation
+
+### Documentation
+- Scenario docs should clarify spawn-zone-based team limits and non-strict asset checks
+- Architecture doc could reflect recent application layer refactors (ScenarioService, UnitSetupService)
+
+## Known Limitations
+
+- **Pygame Demo**: Mechanics prototype only; final game likely targets Godot
+- **Stamina UX**: System works but lacks polish (no icons, minimal feedback)
+- **Armor Layering**: Schema present in JSON but conflict validation is warning-only
+- **Dual-Wielding**: Basic support but no bonuses/penalties wired
+- **Adventure Mode**: No travel/exploration; combat-only prototype
+
+## Next Steps
+
+1. **Character Load/Edit Flow**: Implement UI to select and modify saved characters
+2. **Combat Polish**: Add visual feedback for stamina, conditions, damage; integrate camera controls
+3. **Ranged Support**: Wire ranged attack resolution and ammunition system
+4. **Versioning**: Start semantic tags (v0.1-alpha, etc.) and maintain CHANGELOG
+5. **Documentation Cadence**: Keep MkDocs site updated as features land
 
 ---
-This file is a living snapshot intended to guide doc cleanup and roadmap updates.
+
+This snapshot reflects the state as of December 28, 2025. See [PROJECT_ROADMAP.md](PROJECT_ROADMAP.md) for detailed plans and [CHANGELOG.md](CHANGELOG.md) for tracked changes.

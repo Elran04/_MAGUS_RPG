@@ -72,6 +72,21 @@ def open_character_creator():
         logger.error(f"Hiba a karakteralkotó megnyitásakor: {e}", exc_info=True)
 
 
+# --- KARAKTERBETÖLTÉS ÉS SZERKESZTÉS MEGNYITÁSA ---
+def open_character_loader():
+    try:
+        logger.info("Karakterbetöltő megnyitása")
+        from ui.character_creation.character_loader import CharacterLoaderQt
+
+        dlg = CharacterLoaderQt()
+        # Non-modal to avoid blocking main window; keep reference
+        _windows.append(dlg)
+        dlg.show()
+        logger.debug("Karakterbetöltő sikeresen megnyitva")
+    except Exception as e:
+        logger.error(f"Hiba a karakterbetöltő megnyitásakor: {e}", exc_info=True)
+
+
 # --- KASZT SZERKESZTŐ MEGNYITÁSA ---
 def open_class_editor():
     try:
@@ -175,6 +190,11 @@ class MagusGMTools(QMainWindow):
         btn_create_char.setMinimumHeight(40)
         btn_create_char.clicked.connect(open_character_creator)
         char_layout.addWidget(btn_create_char)
+
+        btn_load_char = QPushButton("Karakter betöltése")
+        btn_load_char.setMinimumHeight(40)
+        btn_load_char.clicked.connect(open_character_loader)
+        char_layout.addWidget(btn_load_char)
 
         # Editors panel
         editors_box = QGroupBox()

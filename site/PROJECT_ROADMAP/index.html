@@ -810,10 +810,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#current-focus-short-term_1" class="md-nav__link">
+  <a href="#backlog-future" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🎯 Current Focus (short-term)
+        🔭 Backlog / Future
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-milestones-near-term" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚧 Next Milestones (near-term)
       
     </span>
   </a>
@@ -1259,10 +1270,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#current-focus-short-term_1" class="md-nav__link">
+  <a href="#backlog-future" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🎯 Current Focus (short-term)
+        🔭 Backlog / Future
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-milestones-near-term" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚧 Next Milestones (near-term)
       
     </span>
   </a>
@@ -1325,12 +1347,25 @@
 <li>Stamina system fully wired (domain <code>Stamina</code>, combat hooks, <code>tests/test_stamina*.py</code>)</li>
 </ul>
 <h2 id="current-focus-short-term">🎯 Current Focus (short-term)<a class="headerlink" href="#current-focus-short-term" title="Permanent link">&para;</a></h2>
-<h2 id="current-focus-short-term_1">🎯 Current Focus (short-term)<a class="headerlink" href="#current-focus-short-term_1" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Character Creator: add load/edit flow (UI to open <code>characters/*.json</code>, edit, re-save)</li>
 <li>Combat UX: stamina/condition tuning + better feedback (icons/log text); ranged/thrown support remains</li>
-<li>Docs platform: wire CHANGELOG into MkDocs nav and keep publishing cadence now that build succeeds again</li>
+<li>Docs platform: keep publishing cadence and update docs when new features land</li>
 <li>Versioning: start semantic version tags; keep CHANGELOG up to date alongside doc site updates</li>
+</ul>
+<h2 id="backlog-future">🔭 Backlog / Future<a class="headerlink" href="#backlog-future" title="Permanent link">&para;</a></h2>
+<ul>
+<li>AI and encounter generation</li>
+<li>Adventure-mode framework (travel, events, persistence)</li>
+<li>Skill-driven combat depth (parry/dodge mastery, block cost tuning, hit localization, conditions)</li>
+<li>Dual-wielding and two-handed bonuses; item templates for GM Toolkit</li>
+<li>Game balance config (constants/game_balance.py), settings.json for runtime prefs</li>
+</ul>
+<h2 id="next-milestones-near-term">🚧 Next Milestones (near-term)<a class="headerlink" href="#next-milestones-near-term" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Combat demo: integrate existing camera module (panning/zoom), add map scaling controls, scenario generator, ranged/aoe, combat log polish</li>
+<li>Character system: wrap load/edit UI, origin/birthplace integration, XP/level progression wiring (CombatStats) when ready</li>
+<li>Assets: expand tiles/ui/maps placeholders; plan replacement pipeline</li>
 </ul>
 <h2 id="status-snapshot">📌 Status Snapshot<a class="headerlink" href="#status-snapshot" title="Permanent link">&para;</a></h2>
 <ul>
@@ -1339,21 +1374,6 @@
 <li>Combat demo: melee functional; initiative/turn queue; armor layering; stamina hooks active; tests for damage/attack resolution (~115+)</li>
 <li>Services: ScenarioService and UnitSetupService clean; equipment validation verified by tests</li>
 <li>Docs: DEVELOPER_GUIDE + COMBAT_MECHANICS up to date; MkDocs build succeeds (warning: CHANGELOG missing from nav)</li>
-<li>Tests/Quality: pytest, mypy, ruff/black configured; ScenarioService tests cover team limits/duplicates/validation</li>
-<li>AI and encounter generation</li>
-<li>Adventure-mode framework (travel, events, persistence)</li>
-<li>Skill-driven combat depth (parry/dodge mastery, block cost tuning, hit localization, conditions)</li>
-<li>Dual-wielding and two-handed bonuses; item templates for GM Toolkit</li>
-<li>
-<p>Game balance config (constants/game_balance.py), settings.json for runtime prefs</p>
-</li>
-<li>
-<p>GM Toolkit: editors for skills/classes/equipment/races; dark-mode UI; currency/shop/inventory; 5-step character wizard with working summary/export</p>
-</li>
-<li>Data layer: JSON + SQLite hybrid; managers for races/classes/skills/equipment; Pydantic models in place</li>
-<li>Combat demo: melee functional; initiative/turn queue; armor layering; stamina hooks active; tests for damage/attack resolution (~115+)</li>
-<li>Services: ScenarioService and UnitSetupService clean; equipment validation verified by tests</li>
-<li>Docs: DEVELOPER_GUIDE + COMBAT_MECHANICS up to date; MkDocs build currently failing (needs fix) before site redeploy</li>
 <li>Tests/Quality: pytest, mypy, ruff/black configured; ScenarioService tests cover team limits/duplicates/validation</li>
 </ul>
 <h2 id="tracking">📝 Tracking<a class="headerlink" href="#tracking" title="Permanent link">&para;</a></h2>

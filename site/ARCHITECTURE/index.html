@@ -556,6 +556,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#architecture-at-a-glance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture at a Glance
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1475,6 +1492,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#architecture-at-a-glance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture at a Glance
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1799,6 +1833,17 @@
 <h1 id="magus-rpg-new-clean-architecture">MAGUS RPG - New Clean Architecture<a class="headerlink" href="#magus-rpg-new-clean-architecture" title="Permanent link">&para;</a></h1>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>This project has been restructured with a clean, layered architecture for better maintainability and scalability.</p>
+<h3 id="architecture-at-a-glance">Architecture at a Glance<a class="headerlink" href="#architecture-at-a-glance" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>flowchart TD
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>   UI[Presentation\nUI / Screens] --&gt; APP[Application\nOrchestration]
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>   APP --&gt; DOM[Domain\nEntities, Value Objects, Mechanics]
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>   INFRA[Infrastructure\nRepos, Rendering] --&gt; DOM
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>   CONFIG[Cross-Cutting\nconfig, logger] -.-&gt; UI
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>   CONFIG -.-&gt; APP
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>   CONFIG -.-&gt; DOM
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>   APP --&gt; INFRA
+</span></code></pre></div>
+<p>Data flow (combat setup): Presentation → ScenarioService / UnitSetupService → ScenarioConfig → Battle loop.</p>
 <h2 id="architecture-layers">Architecture Layers<a class="headerlink" href="#architecture-layers" title="Permanent link">&para;</a></h2>
 <h3 id="1-domain-layer-domain">1. <strong>Domain Layer</strong> (<code>domain/</code>)<a class="headerlink" href="#1-domain-layer-domain" title="Permanent link">&para;</a></h3>
 <p>Core business logic, independent of external concerns.</p>
@@ -1870,99 +1915,90 @@
 <li>Centralizes validation and error handling</li>
 </ul>
 <h2 id="directory-structure">Directory Structure<a class="headerlink" href="#directory-structure" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>MAGUS_pygame/
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── domain/
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│   ├── entities/
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│   │   └── __init__.py          # Unit, Weapon entities
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│   ├── value_objects/
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│   │   └── __init__.py          # Position, CombatStats, Attributes, etc.
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│   ├── mechanics/               # [TODO] Combat, movement, magic systems
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│   └── services.py              # UnitFactory, etc.
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>├── infrastructure/
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>│   ├── repositories/
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>│   │   ├── character_repository.py
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>│   │   ├── equipment_repository.py
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>│   │   └── sprite_repository.py
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>│   └── rendering/
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>│       └── hex_grid.py
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>│
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>├── application/
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>│   └── game_context.py          # Dependency container
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>│
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>├── presentation/
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>│   └── test_screen.py           # Minimal test UI
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>│
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>├── config/                      # Configuration (unchanged)
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>├── logger/                      # Logging (unchanged)
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>├── old_system/                  # Previous implementation (reference)
-</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>│
-</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>├── data/
-</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>│   └── scenarios/
-</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>├── assets/
-</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>│   └── sprites/
-</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>│       ├── characters/
-</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>│       └── backgrounds/
-</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>│
-</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>└── main.py                      # Entry point (new minimal version)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>MAGUS_pygame/
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>├── domain/
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>│   ├── entities/
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>│   │   └── __init__.py          # Unit, Weapon entities
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>│   ├── value_objects/
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>│   │   └── __init__.py          # Position, CombatStats, Attributes, etc.
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>│   ├── mechanics/               # [TODO] Combat, movement, magic systems
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>│   └── services.py              # UnitFactory, etc.
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>│
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>├── infrastructure/
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>│   ├── repositories/
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>│   │   ├── character_repository.py
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>│   │   ├── equipment_repository.py
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>│   │   └── sprite_repository.py
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>│   └── rendering/
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>│       └── hex_grid.py
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>│
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>├── application/
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>│   └── game_context.py          # Dependency container
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>│
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>├── presentation/
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>│   └── test_screen.py           # Minimal test UI
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>│
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>├── config/                      # Configuration (unchanged)
+</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>├── logger/                      # Logging (unchanged)
+</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>├── old_system/                  # Previous implementation (reference)
+</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>│
+</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>├── data/
+</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>│   └── scenarios/
+</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>├── assets/
+</span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>│   └── sprites/
+</span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>│       ├── characters/
+</span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>│       └── backgrounds/
+</span><span id="__span-1-34"><a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>│
+</span><span id="__span-1-35"><a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>└── main.py                      # Entry point (new minimal version)
 </span></code></pre></div>
 <h2 id="current-status">Current Status<a class="headerlink" href="#current-status" title="Permanent link">&para;</a></h2>
 <h3 id="completed">✅ Completed<a class="headerlink" href="#completed" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Domain entities and value objects</li>
-<li>Repository pattern for data access</li>
-<li>Hex grid coordinate system</li>
-<li>Dependency injection container</li>
-<li>Basic test screen</li>
-<li>New main.py entry point</li>
+<li>Combat mechanics implemented: damage, reach, weapon wielding, attack resolution, critical/overpower, armor system, stamina with fatigue states</li>
+<li>Repositories for characters, equipment, sprites; scenario loading with spawn zones</li>
+<li>Application services: ScenarioService, UnitSetupService, ActionHandler/ReactionHandler, EquipmentValidationService</li>
+<li>Hex grid utilities and dependency injection container</li>
+<li>Test coverage: 115+ tests across mechanics, stamina, equipment validation, scenario service</li>
 </ul>
 <h3 id="in-progress">🚧 In Progress<a class="headerlink" href="#in-progress" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Testing basic architecture</li>
+<li>Camera/viewport integration into gameplay loop (panning/zoom, map scaling)</li>
+<li>UI screens beyond test screen (scenario selector, deployment, battle HUD)</li>
+<li>Combat feedback polish (logs, icons, condition/stamina visuals)</li>
 </ul>
 <h3 id="todo-next-steps">📋 TODO (Next Steps)<a class="headerlink" href="#todo-next-steps" title="Permanent link">&para;</a></h3>
 <ol>
-<li><strong>Combat Mechanics</strong></li>
-<li>Port damage calculation to <code>domain/mechanics/damage.py</code></li>
-<li>Port reach/range to <code>domain/mechanics/reach.py</code></li>
+<li><strong>Battle/Combat Enhancements</strong></li>
+<li>Add ranged/thrown attack resolution and ammunition handling</li>
+<li>Improve combat feedback (damage/stamina/conditions log and UI cues)</li>
 <li>
-<p>Port weapon wielding to <code>domain/mechanics/weapon.py</code></p>
+<p>Wire camera/zoom into active combat rendering</p>
 </li>
 <li>
-<p><strong>Battle System</strong></p>
+<p><strong>Scenario &amp; Flow</strong></p>
 </li>
-<li>Create <code>BattleState</code> in application layer</li>
-<li>Implement turn order and initiative</li>
+<li>Scenario generator or quick setup tool</li>
+<li>Deployment validation and preview UI</li>
 <li>
-<p>Port action system (attack, movement, etc.)</p>
-</li>
-<li>
-<p><strong>Rendering</strong></p>
-</li>
-<li>Port sprite masking and hex rendering</li>
-<li>Create camera/viewport system</li>
-<li>
-<p>Port visual effects and animations</p>
+<p>Integrate scenario selection into front-end screens</p>
 </li>
 <li>
-<p><strong>UI Screens</strong></p>
+<p><strong>UI &amp; Navigation</strong></p>
 </li>
-<li>Main menu</li>
-<li>Scenario selector</li>
-<li>Deployment screen</li>
+<li>Build main menu, scenario selector, deployment screen, battle screen</li>
 <li>
-<p>Battle screen</p>
+<p>Hook existing services into UI components</p>
 </li>
 <li>
-<p><strong>Scenario System</strong></p>
+<p><strong>Data &amp; Save/Load</strong></p>
 </li>
-<li>Scenario repository</li>
-<li>Scenario loader service</li>
-<li>Deployment validation</li>
+<li>Character load/edit flow (currently export-only from GM Toolkit)</li>
+<li>Optional: persist battle/scenario configs for quick replay</li>
 </ol>
 <h2 id="running-the-test">Running the Test<a class="headerlink" href="#running-the-test" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">cd</span><span class="w"> </span>d:<span class="se">\_</span>Projekt<span class="se">\_</span>MAGUS_RPG<span class="se">\M</span>AGUS_pygame
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>python<span class="w"> </span>main.py
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">cd </span><span class="n">d</span><span class="p">:\</span><span class="n">_Projekt</span><span class="p">\</span><span class="n">_MAGUS_RPG</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">python</span> <span class="n">MAGUS_pygame</span><span class="p">/</span><span class="n">main</span><span class="p">.</span><span class="n">py</span>
 </span></code></pre></div>
 <p><strong>Requirements:</strong>
 - Character JSON: <code>Warri.json</code> in <code>characters/</code> folder (repo level)

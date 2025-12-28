@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `docs/DEVELOPER_GUIDE.md` - consolidated developer onboarding guide
 - `docs/PROJECT_STATUS.md` - current capabilities and recent changes snapshot
 - `docs/archive/` - organized historical documentation
+- **CharacterLoaderQt**: UI for browsing, viewing, and deleting saved character files; integrates existing SummaryStepWidget for read-only display
 
 ### Changed
 - Renamed `ScenarioService` methods for clarity: `can_advance_from_team_a` → `has_team_a_units`, `can_finish` → `has_team_b_units`
@@ -48,6 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## How to Update
 
 When making notable changes:
+
 1. Add entries under `[Unreleased]` in appropriate categories (Added/Changed/Fixed/Removed)
 2. Use present tense ("Add feature" not "Added feature")
 3. Reference issue/PR numbers when applicable

@@ -527,6 +527,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#quick-tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Tasks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#scenarios-current-behavior" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -593,10 +604,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#future-docs-system-optional" class="md-nav__link">
+  <a href="#glossary-quick" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Future Docs System (Optional)
+        Glossary (quick)
       
     </span>
   </a>
@@ -1300,6 +1311,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#quick-tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Tasks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#scenarios-current-behavior" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1366,10 +1388,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#future-docs-system-optional" class="md-nav__link">
+  <a href="#glossary-quick" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Future Docs System (Optional)
+        Glossary (quick)
       
     </span>
   </a>
@@ -1399,6 +1421,7 @@
 <h1 id="magus-rpg-developer-guide">MAGUS RPG — Developer Guide<a class="headerlink" href="#magus-rpg-developer-guide" title="Permanent link">&para;</a></h1>
 <p>This guide consolidates the essentials for working on the project.</p>
 <h2 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h2>
+<p><strong>Requirements:</strong></p>
 <ul>
 <li>Python 3.13+</li>
 <li>Poetry</li>
@@ -1425,6 +1448,23 @@
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c"># GM Toolkit</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">python</span> <span class="n">Gamemaster_tools</span><span class="p">/</span><span class="n">main</span><span class="p">.</span><span class="n">py</span>
 </span></code></pre></div>
+<h2 id="quick-tasks">Quick Tasks<a class="headerlink" href="#quick-tasks" title="Permanent link">&para;</a></h2>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c"># Run tests (quiet)</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">pytest</span> <span class="n">-q</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c"># Type check</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">mypy</span> <span class="n">MAGUS_pygame</span><span class="p">/</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c"># Lint &amp; format check</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">ruff</span> <span class="n">check</span> <span class="p">.</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">black</span> <span class="p">-</span><span class="n">-check</span> <span class="p">.</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="c"># Build docs</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">mkdocs</span> <span class="n">build</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="c"># Serve docs locally</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">mkdocs</span> <span class="n">serve</span>
+</span></code></pre></div>
 <h2 id="scenarios-current-behavior">Scenarios (Current Behavior)<a class="headerlink" href="#scenarios-current-behavior" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Scenario selection is handled by <code>ScenarioService</code>.</li>
@@ -1441,15 +1481,15 @@
 <li>Data sources: JSON (races, equipment, characters) + SQLite (skills/classes/combat stats)</li>
 </ul>
 <h2 id="testing-quality">Testing &amp; Quality<a class="headerlink" href="#testing-quality" title="Permanent link">&para;</a></h2>
-<div class="language-powershell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c"># Run tests</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">pytest</span> <span class="n">-q</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c"># Type checking</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">mypy</span> <span class="n">MAGUS_pygame</span><span class="p">/</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c"># Lint/format</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">ruff</span> <span class="n">check</span> <span class="p">.</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">black</span> <span class="p">-</span><span class="n">-check</span> <span class="p">.</span>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c"># Run tests</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">pytest</span> <span class="n">-q</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c"># Type checking</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">mypy</span> <span class="n">MAGUS_pygame</span><span class="p">/</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c"># Lint/format</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">ruff</span> <span class="n">check</span> <span class="p">.</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">black</span> <span class="p">-</span><span class="n">-check</span> <span class="p">.</span>
 </span></code></pre></div>
 <p>New tests exist for <code>ScenarioService</code> validating team limits, duplicates, update/remove, and config building.</p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
@@ -1473,11 +1513,18 @@
 <li>Roadmap: <code>docs/PROJECT_ROADMAP.md</code></li>
 <li>Recommended: add and maintain <code>CHANGELOG.md</code> for noteworthy updates</li>
 </ul>
-<h2 id="future-docs-system-optional">Future Docs System (Optional)<a class="headerlink" href="#future-docs-system-optional" title="Permanent link">&para;</a></h2>
-<p>Adopt MkDocs (Material theme) for a navigable site:
-- <code>mkdocs.yml</code> at repo root, <code>docs/</code> as source
-- Sections: Overview, Quickstart, Architecture, Mechanics, Scenarios, Testing, Roadmap, Changelog
-- Keep topic pages focused; keep this guide as the on-ramp</p>
+<h2 id="glossary-quick">Glossary (quick)<a class="headerlink" href="#glossary-quick" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>FP / ÉP</strong>: Pain tolerance/ Health points; FP absorbs most weapon damage, EP loss occurs on big hits or by reach rules.</li>
+<li><strong>KP</strong>: Skill points spent during character creation/learning.</li>
+<li><strong>SFÉ</strong>: Armor absorption value; reduced by overpower hits and used to mitigate FP damage.</li>
+<li><strong>Reach</strong>: Weapon reach category; dictates mandatory EP loss per FP damage bucket.</li>
+<li><strong>Stamina / Stamina State</strong>: Fatigue resource; state modifies TE/VE and gates actions (block/parry/dodge costs).</li>
+<li><strong>TE / VE / CE</strong>: Attack / Defense / Ranged values on characters.</li>
+<li><strong>MGT</strong>: Armor movement penalty.</li>
+<li><strong>ScenarioConfig</strong>: Immutable config built by ScenarioService before starting combat.</li>
+<li><strong>UnitSetup</strong>: Input bundle for units (character file, sprite, equipment/skills) used by ScenarioService/UnitSetupService.</li>
+</ul>
 
 
 

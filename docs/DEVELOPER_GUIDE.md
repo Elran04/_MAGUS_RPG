@@ -4,6 +4,8 @@ This guide consolidates the essentials for working on the project.
 
 ## Setup
 
+**Requirements:**
+
 - Python 3.13+
 - Poetry
 
@@ -32,6 +34,28 @@ poetry run python MAGUS_pygame/main.py
 
 # GM Toolkit
 poetry run python Gamemaster_tools/main.py
+  # Character Creator: "Karaktergenerálás" button
+  # Character Loader: "Karakter betöltése" button (browse, view, delete saved characters)
+```
+
+## Quick Tasks
+
+```powershell
+# Run tests (quiet)
+poetry run pytest -q
+
+# Type check
+poetry run mypy MAGUS_pygame/
+
+# Lint & format check
+poetry run ruff check .
+poetry run black --check .
+
+# Build docs
+poetry run mkdocs build
+
+# Serve docs locally
+poetry run mkdocs serve
 ```
 
 ## Scenarios (Current Behavior)
@@ -86,9 +110,15 @@ New tests exist for `ScenarioService` validating team limits, duplicates, update
 - Roadmap: `docs/PROJECT_ROADMAP.md`
 - Recommended: add and maintain `CHANGELOG.md` for noteworthy updates
 
-## Future Docs System (Optional)
+## Glossary (quick)
 
-Adopt MkDocs (Material theme) for a navigable site:
-- `mkdocs.yml` at repo root, `docs/` as source
-- Sections: Overview, Quickstart, Architecture, Mechanics, Scenarios, Testing, Roadmap, Changelog
-- Keep topic pages focused; keep this guide as the on-ramp
+- **FP / ÉP**: Pain tolerance/ Health points; FP absorbs most weapon damage, EP loss occurs on big hits or by reach rules.
+- **KP**: Skill points spent during character creation/learning.
+- **SFÉ**: Armor absorption value; reduced by overpower hits and used to mitigate FP damage.
+- **Reach**: Weapon reach category; dictates mandatory EP loss per FP damage bucket.
+- **Stamina / Stamina State**: Fatigue resource; state modifies TE/VE and gates actions (block/parry/dodge costs).
+- **TE / VE / CE**: Attack / Defense / Ranged values on characters.
+- **MGT**: Armor movement penalty.
+- **ScenarioConfig**: Immutable config built by ScenarioService before starting combat.
+- **UnitSetup**: Input bundle for units (character file, sprite, equipment/skills) used by ScenarioService/UnitSetupService.
+

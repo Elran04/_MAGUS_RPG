@@ -4,6 +4,21 @@
 
 This project has been restructured with a clean, layered architecture for better maintainability and scalability.
 
+### Architecture at a Glance
+
+```mermaid
+flowchart TD
+   UI[Presentation\nUI / Screens] --> APP[Application\nOrchestration]
+   APP --> DOM[Domain\nEntities, Value Objects, Mechanics]
+   INFRA[Infrastructure\nRepos, Rendering] --> DOM
+   CONFIG[Cross-Cutting\nconfig, logger] -.-> UI
+   CONFIG -.-> APP
+   CONFIG -.-> DOM
+   APP --> INFRA
+```
+
+Data flow (combat setup): Presentation → ScenarioService / UnitSetupService → ScenarioConfig → Battle loop.
+
 ## Architecture Layers
 
 ### 1. **Domain Layer** (`domain/`)
@@ -114,47 +129,41 @@ MAGUS_pygame/
 
 ### ✅ Completed
 - Domain entities and value objects
-- Repository pattern for data access
-- Hex grid coordinate system
-- Dependency injection container
-- Basic test screen
-- New main.py entry point
+- Combat mechanics implemented: damage, reach, weapon wielding, attack resolution, critical/overpower, armor system, stamina with fatigue states
+- Repositories for characters, equipment, sprites; scenario loading with spawn zones
+- Application services: ScenarioService, UnitSetupService, ActionHandler/ReactionHandler, EquipmentValidationService
+- Hex grid utilities and dependency injection container
+- Test coverage: 115+ tests across mechanics, stamina, equipment validation, scenario service
 
 ### 🚧 In Progress
-- Testing basic architecture
+- Camera/viewport integration into gameplay loop (panning/zoom, map scaling)
+- UI screens beyond test screen (scenario selector, deployment, battle HUD)
+- Combat feedback polish (logs, icons, condition/stamina visuals)
 
 ### 📋 TODO (Next Steps)
-1. **Combat Mechanics**
-   - Port damage calculation to `domain/mechanics/damage.py`
-   - Port reach/range to `domain/mechanics/reach.py`
-   - Port weapon wielding to `domain/mechanics/weapon.py`
+1. **Battle/Combat Enhancements**
+   - Add ranged/thrown attack resolution and ammunition handling
+   - Improve combat feedback (damage/stamina/conditions log and UI cues)
+   - Wire camera/zoom into active combat rendering
 
-2. **Battle System**
-   - Create `BattleState` in application layer
-   - Implement turn order and initiative
-   - Port action system (attack, movement, etc.)
+2. **Scenario & Flow**
+   - Scenario generator or quick setup tool
+   - Deployment validation and preview UI
+   - Integrate scenario selection into front-end screens
 
-3. **Rendering**
-   - Port sprite masking and hex rendering
-   - Create camera/viewport system
-   - Port visual effects and animations
+3. **UI & Navigation**
+   - Build main menu, scenario selector, deployment screen, battle screen
+   - Hook existing services into UI components
 
-4. **UI Screens**
-   - Main menu
-   - Scenario selector
-   - Deployment screen
-   - Battle screen
-
-5. **Scenario System**
-   - Scenario repository
-   - Scenario loader service
-   - Deployment validation
+4. **Data & Save/Load**
+   - Character load/edit flow (currently export-only from GM Toolkit)
+   - Optional: persist battle/scenario configs for quick replay
 
 ## Running the Test
 
-```bash
-cd d:\_Projekt\_MAGUS_RPG\MAGUS_pygame
-python main.py
+```powershell
+cd d:\_Projekt\_MAGUS_RPG
+poetry run python MAGUS_pygame/main.py
 ```
 
 **Requirements:**

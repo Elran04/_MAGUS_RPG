@@ -7,6 +7,7 @@ M.A.G.U.S. szerepjáték rendszerhez készült Kalandmesteri eszköztár és já
 ### `Gamemaster_tools/`
 PySide6 alapú desktop alkalmazás kalandmesterek számára:
 - **Karakteralkotás**: Teljes körű karaktergenerátor wizard
+- **Karakterbetöltés**: Mentett karakterek megtekintése és törlése
 - **Képzettség szerkesztő**: Képzettségek kezelése és szerkesztése
 - **Felszerelés szerkesztő**: Fegyverek, páncélok, általános felszerelés kezelése
 - **Kaszt szerkesztő**: Karakterosztályok szerkesztése és kezelése
