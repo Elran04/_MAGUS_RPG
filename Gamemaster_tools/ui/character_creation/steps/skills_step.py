@@ -5,19 +5,14 @@ from typing import Any
 from config.paths import DATA_DIR
 from engine.race_manager import RaceManager
 from PySide6 import QtCore, QtWidgets
-from utils.log.logger import get_logger
-from utils.ui.themes import (
-    header_label_style,
-    info_label_style,
-    warning_label_style,
-)
-
 from ui.character_creation.services import (
     PlaceholderSkillManager,
     SkillDatabaseService,
     SkillPrerequisiteChecker,
 )
 from ui.character_creation.widgets.skills import SkillsTableRenderer
+from utils.log.logger import get_logger
+from utils.ui.themes import header_label_style, info_label_style, warning_label_style
 
 logger = get_logger(__name__)
 
@@ -59,9 +54,8 @@ class SkillsStepWidget(QtWidgets.QWidget):
         splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
 
         # Left panel: Attributes display
-        from utils.data.class_db_manager import ClassDBManager
-
         from ui.character_creation.widgets.common import AttributesDisplayWidget
+        from utils.data.class_db_manager import ClassDBManager
 
         self.attributes_widget = AttributesDisplayWidget(
             self.get_character_data,

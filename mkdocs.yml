@@ -43,6 +43,7 @@ nav:
   - Project:
     - Roadmap: PROJECT_ROADMAP.md
     - Changelog: CHANGELOG.md
+    - CI/CD Setup: CI_CD_SETUP.md
   - Archive:
     - Migration Guide: archive/MIGRATION.md
     - Quickstart (legacy): archive/QUICKSTART.md

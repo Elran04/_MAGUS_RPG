@@ -7,12 +7,7 @@ import random
 import sqlite3
 from typing import Any
 
-from config.paths import (
-    ARMOR_JSON,
-    CLASSES_DB,
-    GENERAL_EQUIPMENT_JSON,
-    WEAPONS_SHIELDS_JSON,
-)
+from config.paths import ARMOR_JSON, CLASSES_DB, GENERAL_EQUIPMENT_JSON, WEAPONS_SHIELDS_JSON
 from utils.data.json_io import load_json_safe
 from utils.log.logger import get_logger
 

@@ -9,7 +9,6 @@ import sqlite3
 from typing import Any
 
 from config.paths import SKILLS_DB
-
 from utils.log.logger import get_logger
 
 logger = get_logger(__name__)

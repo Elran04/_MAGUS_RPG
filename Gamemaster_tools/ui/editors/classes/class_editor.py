@@ -13,11 +13,10 @@ from PySide6 import QtCore, QtWidgets
 # Add grandparent directory to path (Gamemaster_tools)
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-from utils.data.class_db_manager import ClassDBManager
-
 from ui.editors.classes.class_editor_actions import ClassEditorActions
 from ui.editors.classes.class_editor_list import ClassListPanel
 from ui.editors.classes.class_editor_tabs import ClassEditorTabs
+from utils.data.class_db_manager import ClassDBManager
 
 
 class ClassEditorQt(QtWidgets.QDialog):

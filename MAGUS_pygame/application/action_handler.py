@@ -14,10 +14,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 
 from domain.entities import Unit
-from domain.mechanics import (
-    AttackAction,
-    MovementAction,
-)
+from domain.mechanics import AttackAction, MovementAction
 from domain.mechanics.actions import ActionResult
 from domain.mechanics.actions.facing_action import FacingAction
 from domain.mechanics.attack_resolution import apply_attack_result
@@ -35,7 +32,7 @@ class ActionHandler:
 
     # --- Movement ---
     def move_unit(
-        self: "ActionHandler",
+        self: ActionHandler,
         *,
         unit: Unit,
         dest: Position,
@@ -129,7 +126,7 @@ class ActionHandler:
 
     # --- Attack ---
     def attack(
-        self: "ActionHandler",
+        self: ActionHandler,
         *,
         attacker: Unit,
         defender: Unit,
@@ -151,7 +148,7 @@ class ActionHandler:
 
     # --- Facing ---
     def change_facing(
-        self: "ActionHandler",
+        self: ActionHandler,
         *,
         unit: Unit,
         new_facing: Facing,

@@ -16,13 +16,7 @@ from domain.mechanics.damage import (
     _get_attribute_value,
     calculate_final_damage,
 )
-from domain.value_objects import (
-    Attributes,
-    CombatStats,
-    Facing,
-    Position,
-    ResourcePool,
-)
+from domain.value_objects import Attributes, CombatStats, Facing, Position, ResourcePool
 
 # --- Fixtures ---
 

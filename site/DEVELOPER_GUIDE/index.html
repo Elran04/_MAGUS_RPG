@@ -931,6 +931,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CI_CD_SETUP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1425,12 +1453,18 @@
 <ul>
 <li>Python 3.13+</li>
 <li>Poetry</li>
+<li>Git</li>
 </ul>
 <div class="language-powershell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c"># From repo root</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">poetry</span> <span class="n">install</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">python</span> <span class="n">MAGUS_pygame</span><span class="p">/</span><span class="n">main</span><span class="p">.</span><span class="n">py</span>   <span class="c"># Run game demo</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">python</span> <span class="n">Gamemaster_tools</span><span class="p">/</span><span class="n">main</span><span class="p">.</span><span class="n">py</span>   <span class="c"># Run GM Toolkit</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">poetry</span> <span class="n">install</span> <span class="p">-</span><span class="n">-with</span> <span class="n">dev</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c"># Install pre-commit hooks (recommended)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">pre-commit</span> <span class="n">install</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">python</span> <span class="n">MAGUS_pygame</span><span class="p">/</span><span class="n">main</span><span class="p">.</span><span class="n">py</span>   <span class="c"># Run game demo</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">python</span> <span class="n">Gamemaster_tools</span><span class="p">/</span><span class="n">main</span><span class="p">.</span><span class="n">py</span>   <span class="c"># Run GM Toolkit</span>
 </span></code></pre></div>
+<p>Pre-commit hooks will automatically run black, ruff, mypy, and other checks before each commit.</p>
 <h2 id="project-structure-high-level">Project Structure (high level)<a class="headerlink" href="#project-structure-high-level" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>Gamemaster_tools/</code>: PySide6 editors (skills, classes, equipment, races) + Character Creator</li>
@@ -1447,23 +1481,32 @@
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c"># GM Toolkit</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">python</span> <span class="n">Gamemaster_tools</span><span class="p">/</span><span class="n">main</span><span class="p">.</span><span class="n">py</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>  <span class="c"># Character Creator: &quot;Karaktergenerálás&quot; button</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>  <span class="c"># Character Loader: &quot;Karakter betöltése&quot; button (browse, view, delete saved characters)</span>
 </span></code></pre></div>
 <h2 id="quick-tasks">Quick Tasks<a class="headerlink" href="#quick-tasks" title="Permanent link">&para;</a></h2>
-<div class="language-powershell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c"># Run tests (quiet)</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">pytest</span> <span class="n">-q</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c"># Type check</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">mypy</span> <span class="n">MAGUS_pygame</span><span class="p">/</span>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c"># Run tests</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">pytest</span>                      <span class="c"># All tests</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">pytest</span> <span class="n">-v</span>                   <span class="c"># Verbose output</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">pytest</span> <span class="n">-k</span> <span class="n">test_combat</span>       <span class="c"># Run specific test pattern</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">pytest</span> <span class="n">-m</span> <span class="n">smoke</span>             <span class="c"># Run tests with &#39;smoke&#39; marker</span>
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c"># Lint &amp; format check</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">ruff</span> <span class="n">check</span> <span class="p">.</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">black</span> <span class="p">-</span><span class="n">-check</span> <span class="p">.</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="c"># Build docs</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">mkdocs</span> <span class="n">build</span>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="c"># Serve docs locally</span>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">mkdocs</span> <span class="n">serve</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c"># Type checking</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">mypy</span> <span class="n">MAGUS_pygame</span><span class="p">/</span> <span class="n">Gamemaster_tools</span><span class="p">/</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="c"># Linting and formatting</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">ruff</span> <span class="n">check</span> <span class="p">.</span>                <span class="c"># Check for issues</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">ruff</span> <span class="n">check</span> <span class="p">-</span><span class="n">-fix</span> <span class="p">.</span>          <span class="c"># Auto-fix issues</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">black</span> <span class="p">.</span>                     <span class="c"># Format code</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">black</span> <span class="p">-</span><span class="n">-check</span> <span class="p">.</span>             <span class="c"># Check formatting without changes</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="c"># Pre-commit (runs all checks)</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">pre-commit</span> <span class="n">run</span> <span class="p">-</span><span class="n">-all-files</span>  <span class="c"># Run all hooks manually</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="c"># Build documentation</span>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">mkdocs</span> <span class="n">serve</span>                <span class="c"># Live preview at http://127.0.0.1:8000</span>
+</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">mkdocs</span> <span class="n">build</span>                <span class="c"># Static build to site/</span>
+</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="n">poetry</span> <span class="n">run</span> <span class="n">mkdocs</span> <span class="n">build</span> <span class="p">-</span><span class="n">-strict</span>       <span class="c"># Build with warnings as errors</span>
 </span></code></pre></div>
 <h2 id="scenarios-current-behavior">Scenarios (Current Behavior)<a class="headerlink" href="#scenarios-current-behavior" title="Permanent link">&para;</a></h2>
 <ul>

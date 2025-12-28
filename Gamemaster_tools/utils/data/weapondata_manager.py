@@ -2,7 +2,6 @@ import os
 import sqlite3
 
 from config.paths import SKILLS_DB, WEAPONS_SHIELDS_JSON
-
 from utils.data.json_io import load_json_safe, save_json
 from utils.log.logger import get_logger
 

@@ -8,10 +8,8 @@ Handles:
 
 from __future__ import annotations
 
-
-from typing import TYPE_CHECKING, Any
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any
 
 
 # Local result object for validation outcomes
@@ -19,20 +17,19 @@ from typing import Any, Optional
 class ValidationResult:
     success: bool
     message: str = ""
-    details: Optional[Any] = None
+    details: Any | None = None
 
-
-from .weapon_type_check import (
-    Slot,
-    WeaponType,
-    is_one_handed_weapon,
-    is_two_handed_weapon,
-    is_ranged_weapon,
-    is_shield,
-)
 
 from domain.mechanics.armor import ArmorPiece, ArmorSystem
 from logger.logger import get_logger
+
+from .weapon_type_check import (
+    Slot,
+    is_one_handed_weapon,
+    is_ranged_weapon,
+    is_shield,
+    is_two_handed_weapon,
+)
 
 if TYPE_CHECKING:
     from infrastructure.repositories import EquipmentRepository
@@ -143,7 +140,7 @@ class EquipmentValidationService:
     - Provide human-readable validation messages
     """
 
-    def __init__(self, equipment_repo: "EquipmentRepository"):
+    def __init__(self, equipment_repo: EquipmentRepository):
         """Initialize equipment validation service.
 
         Args:

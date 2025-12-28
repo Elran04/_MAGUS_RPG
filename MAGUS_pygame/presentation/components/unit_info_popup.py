@@ -5,7 +5,7 @@ Shows detailed unit stats when right-clicking on a unit using new domain entitie
 """
 
 import pygame
-from config import HEIGHT, HUMANOID_SILHOUETTE, UI_ACTIVE, UI_BORDER, UI_INACTIVE, UI_TEXT, WIDTH
+from config import HEIGHT, UI_ACTIVE, UI_BORDER, UI_INACTIVE, UI_TEXT, WIDTH
 from domain.entities import Unit
 from domain.mechanics.weapon_wielding import get_wielding_info
 from logger.logger import get_logger

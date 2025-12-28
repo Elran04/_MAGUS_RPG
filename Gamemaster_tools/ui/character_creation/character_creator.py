@@ -7,12 +7,11 @@ from PySide6 import QtWidgets
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from core.character_model import calculate_combat_stats, calculate_skill_points
+from ui.character_creation.steps.skills_step import SkillsStepWidget
 from utils.data.character_storage import save_character
 from utils.data.class_db_manager import ClassDBManager
 from utils.log.logger import get_logger
 from utils.placeholder_manager import PlaceholderManager
-
-from ui.character_creation.steps.skills_step import SkillsStepWidget
 
 logger = get_logger(__name__)
 

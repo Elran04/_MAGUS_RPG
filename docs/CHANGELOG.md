@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `docs/PROJECT_STATUS.md` - current capabilities and recent changes snapshot
 - `docs/archive/` - organized historical documentation
 - **CharacterLoaderQt**: UI for browsing, viewing, and deleting saved character files; integrates existing SummaryStepWidget for read-only display
+- **CI/CD Pipeline**: GitHub Actions workflow for automated testing, linting, type checking, and documentation builds on push/PR (Windows + Ubuntu)
+- **Pre-commit Hooks**: Automatic code quality checks (black, ruff, mypy, trailing whitespace, JSON validation) before commits
+- **pytest.ini**: Centralized test configuration with markers (smoke, integration, unit, slow) and coverage support
+- **docs/CI_CD_SETUP.md**: Complete guide for CI/CD workflows and pre-commit hook usage
 
 ### Changed
 - Renamed `ScenarioService` methods for clarity: `can_advance_from_team_a` → `has_team_a_units`, `can_finish` → `has_team_b_units`

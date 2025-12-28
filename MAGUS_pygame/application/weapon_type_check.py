@@ -1,6 +1,6 @@
 """Weapon type and slot constants, and utility functions for weapon type checks."""
 
-from enum import Enum, auto
+from enum import Enum
 from typing import Any
 
 

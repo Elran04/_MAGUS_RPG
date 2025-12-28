@@ -151,7 +151,7 @@ class HitzoneResolver:
     def resolve(cls, rng: random.Random | None = None) -> str:
         r = rng or random
         items = list(cls.HITZONE_WEIGHTS.items())
-        parts, weights = zip(*items)
+        parts, weights = zip(*items, strict=False)
         total = sum(weights)
         roll = r.randint(1, total)
         acc = 0

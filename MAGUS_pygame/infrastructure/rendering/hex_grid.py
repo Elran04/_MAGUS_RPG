@@ -14,15 +14,15 @@ from config import (
     ENEMY_ZONE_TINT,
     HEIGHT,
     HEX_BORDER,
+)
+from config import HEX_COLOR as HEX_COLOR_OUTLINE
+from config import (
     HEX_SIZE,
     HIGHLIGHT_BORDER_WIDTH,
     HIGHLIGHT_COLOR,
     HOVER_TINT,
     REACHABLE_TINT,
     WIDTH,
-)
-from config import (
-    HEX_COLOR as HEX_COLOR_OUTLINE,
 )
 
 # Grid origin offset (can be modified by camera)

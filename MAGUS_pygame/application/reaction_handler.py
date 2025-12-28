@@ -16,10 +16,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 
 from domain.entities import Unit
-from domain.mechanics import (
-    OpportunityAttackReaction,
-    apply_attack_result,
-)
+from domain.mechanics import OpportunityAttackReaction, apply_attack_result
 from domain.mechanics.reactions import ReactionResult
 from logger.logger import get_logger
 
@@ -57,7 +54,7 @@ class ReactionHandler:
         self.budget.reset_for_units(units)
 
     def handle_opportunity_attacks(
-        self: "ReactionHandler",
+        self: ReactionHandler,
         *,
         movers_path: list[tuple[int, int]],
         intersects_zoc: bool,

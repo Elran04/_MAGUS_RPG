@@ -1,11 +1,6 @@
 """Tests for stamina subsystem."""
 
-from domain.mechanics import (
-    DEFAULT_COMBAT_MODIFIERS,
-    CombatModifiers,
-    Stamina,
-    StaminaState,
-)
+from domain.mechanics import DEFAULT_COMBAT_MODIFIERS, CombatModifiers, Stamina, StaminaState
 
 
 class TestInitialization:

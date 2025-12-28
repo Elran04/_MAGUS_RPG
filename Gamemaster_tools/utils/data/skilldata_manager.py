@@ -3,7 +3,6 @@ import re
 import sqlite3
 
 from config.paths import SKILLS_DB, SKILLS_DESCRIPTIONS_DIR
-
 from utils.log.logger import get_logger
 
 logger = get_logger(__name__)

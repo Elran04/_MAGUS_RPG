@@ -4,6 +4,7 @@ __pycache__/
 *.pyd
 venv/
 env/
+.venv/
 .others
 .backups
 project_folderstructure_scanner.py
@@ -13,6 +14,8 @@ documents/
 old_system/
 # Poetry
 poetry.lock
+dist/
+build/
 
 # Logs
 logs/
@@ -33,3 +36,15 @@ logs/
 *.db
 *.sqlite
 *.sqlite3
+
+# Test coverage
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+
+# MkDocs
+site/
+
+# GitHub Actions
+.github/

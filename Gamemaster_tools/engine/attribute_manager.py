@@ -8,9 +8,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from utils.data.class_db_manager import ClassDBManager
-
 from engine.race_manager import RaceManager
+from utils.data.class_db_manager import ClassDBManager
 
 # Initialize race manager
 _data_dir = Path(__file__).resolve().parent.parent / "data"

@@ -12,14 +12,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pygame
-
+from application.equipment_validation_service import Slot, ValidationResult
 from application.weapon_type_check import (
     is_one_handed_weapon,
-    is_two_handed_weapon,
     is_ranged_weapon,
     is_shield,
+    is_two_handed_weapon,
 )
-from application.equipment_validation_service import ValidationResult, Slot
 
 if TYPE_CHECKING:
     from application.game_context import GameContext

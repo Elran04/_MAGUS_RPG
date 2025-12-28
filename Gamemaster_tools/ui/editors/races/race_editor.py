@@ -14,11 +14,10 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 
 from config.paths import DATA_DIR
 from engine.race_manager import RaceManager
-from utils.log.logger import get_logger
-
 from ui.editors.races.race_editor_actions import RaceEditorActions
 from ui.editors.races.race_editor_list import RaceListPanel
 from ui.editors.races.race_editor_tabs import RaceEditorTabs
+from utils.log.logger import get_logger
 
 logger = get_logger(__name__)
 

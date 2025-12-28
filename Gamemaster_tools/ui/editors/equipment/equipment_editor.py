@@ -8,7 +8,6 @@ import sys
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMainWindow, QTabWidget, QVBoxLayout, QWidget
-
 from ui.editors.equipment.armor_editor import ArmorEditorQt
 from ui.editors.equipment.general_equipment_editor import GeneralEquipmentEditorQt
 from ui.editors.equipment.weapons_and_shields_editor import WeaponsAndShieldsEditor

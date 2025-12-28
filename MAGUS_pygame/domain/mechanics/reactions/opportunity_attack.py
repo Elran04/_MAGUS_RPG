@@ -13,12 +13,8 @@ import random
 from dataclasses import dataclass
 
 from domain.entities import Unit, Weapon
-from domain.mechanics.attack_resolution import (
-    AttackResult as CoreAttackResult,
-)
-from domain.mechanics.attack_resolution import (
-    resolve_attack,
-)
+from domain.mechanics.attack_resolution import AttackResult as CoreAttackResult
+from domain.mechanics.attack_resolution import resolve_attack
 
 from .base import Reaction, ReactionCategory, ReactionResult
 

@@ -8,15 +8,10 @@ from collections.abc import Callable
 from typing import Any
 
 from PySide6 import QtCore, QtWidgets
-from utils.log.logger import get_logger
-
 from ui.character_creation.services.equipment_loader import EquipmentLoader
 from ui.character_creation.services.equipment_service import EquipmentService
-from ui.character_creation.widgets.equipment import (
-    CurrencyWidget,
-    InventoryPanel,
-    ShopPanel,
-)
+from ui.character_creation.widgets.equipment import CurrencyWidget, InventoryPanel, ShopPanel
+from utils.log.logger import get_logger
 
 logger = get_logger(__name__)
 

@@ -154,7 +154,7 @@ class BattleRenderer:
             pygame.draw.lines(self.screen, PATH_LINE_COLOR, False, pixel_path, PATH_LINE_WIDTH)
 
         # Draw dots at each path node, highlighting zone overlaps
-        for i, (hex_pos, (px, py)) in enumerate(zip(path_coords, pixel_path)):
+        for i, (hex_pos, (px, py)) in enumerate(zip(path_coords, pixel_path, strict=False)):
             if i == 0:  # Skip starting position
                 continue
 

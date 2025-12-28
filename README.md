@@ -2,7 +2,15 @@
 
 M.A.G.U.S. szerepjáték rendszerhez készült Kalandmesteri eszköztár és játékmotor.
 
-## 📋 Projekt Struktúra
+## � Development Infrastructure
+
+- **CI/CD**: Automated testing and quality checks via GitHub Actions (Windows + Ubuntu)
+- **Pre-commit Hooks**: Black, Ruff, MyPy run automatically before commits
+- **Testing**: 115+ tests covering combat mechanics, equipment, stamina, scenarios
+- **Type Safety**: MyPy type checking with Pydantic models
+- **Documentation**: MkDocs Material site with architecture diagrams and guides
+
+## �📋 Projekt Struktúra
 
 ### `Gamemaster_tools/`
 PySide6 alapú desktop alkalmazás kalandmesterek számára:

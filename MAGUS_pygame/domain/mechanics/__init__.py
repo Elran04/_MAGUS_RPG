@@ -14,18 +14,8 @@ Modules:
  - reactions: Event-triggered mechanics (phase 2: opportunity attack)
 """
 
-from .actions import (
-    ActionCategory,
-    ActionCost,
-    ActionResult,
-    AttackAction,
-    MovementAction,
-)
-from .armor import (
-    ArmorPiece,
-    ArmorSystem,
-    HitzoneResolver,
-)
+from .actions import ActionCategory, ActionCost, ActionResult, AttackAction, MovementAction
+from .armor import ArmorPiece, ArmorSystem, HitzoneResolver
 from .attack_resolution import (
     AttackOutcome,
     AttackResult,
@@ -41,24 +31,14 @@ from .critical import (
     get_critical_damage_multiplier,
     is_critical_hit,
 )
-from .damage import (
-    DamageContext,
-    DamageResult,
-    DamageService,
-    calculate_final_damage,
-)
+from .damage import DamageContext, DamageResult, DamageService, calculate_final_damage
 from .reach import (
     calculate_mandatory_ep_loss,
     can_attack_target,
     compute_reach_hexes,
     get_weapon_reach,
 )
-from .reactions import (
-    OpportunityAttackReaction,
-    Reaction,
-    ReactionCategory,
-    ReactionResult,
-)
+from .reactions import OpportunityAttackReaction, Reaction, ReactionCategory, ReactionResult
 from .stamina import (
     DEFAULT_COMBAT_MODIFIERS,
     THRESHOLDS,

@@ -376,7 +376,7 @@ class BattleService:
 
         return reachable
 
-    def compute_attackable_hexes(self: "BattleService", unit: Unit) -> set[tuple[int, int]]:
+    def compute_attackable_hexes(self: BattleService, unit: Unit) -> set[tuple[int, int]]:
         """Calculate hexes attackable by unit based on weapon reach and facing.
 
         Uses the domain reach mechanics to determine which hexes are in
@@ -391,7 +391,7 @@ class BattleService:
         result = compute_reach_hexes(unit, unit.weapon)
         return set(result)
 
-    def compute_enemy_zones(self: "BattleService", unit: Unit) -> set[tuple[int, int]]:
+    def compute_enemy_zones(self: BattleService, unit: Unit) -> set[tuple[int, int]]:
         """Calculate combined zone of control for all enemies of the given unit.
 
         Useful for visual warning when planning movement paths.

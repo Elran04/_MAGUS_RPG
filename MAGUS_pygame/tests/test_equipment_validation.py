@@ -1,6 +1,6 @@
-import pytest
-from application.equipment_validation_service import EquipmentValidationService, ValidationResult
 from types import SimpleNamespace
+
+from application.equipment_validation_service import EquipmentValidationService
 
 
 class DummyRepo:

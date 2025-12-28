@@ -8,13 +8,20 @@ This guide consolidates the essentials for working on the project.
 
 - Python 3.13+
 - Poetry
+- Git
 
 ```powershell
 # From repo root
-poetry install
+poetry install --with dev
+
+# Install pre-commit hooks (recommended)
+poetry run pre-commit install
+
 poetry run python MAGUS_pygame/main.py   # Run game demo
 poetry run python Gamemaster_tools/main.py   # Run GM Toolkit
 ```
+
+Pre-commit hooks will automatically run black, ruff, mypy, and other checks before each commit.
 
 ## Project Structure (high level)
 
@@ -41,21 +48,28 @@ poetry run python Gamemaster_tools/main.py
 ## Quick Tasks
 
 ```powershell
-# Run tests (quiet)
-poetry run pytest -q
+# Run tests
+poetry run pytest                      # All tests
+poetry run pytest -v                   # Verbose output
+poetry run pytest -k test_combat       # Run specific test pattern
+poetry run pytest -m smoke             # Run tests with 'smoke' marker
 
-# Type check
-poetry run mypy MAGUS_pygame/
+# Type checking
+poetry run mypy MAGUS_pygame/ Gamemaster_tools/
 
-# Lint & format check
-poetry run ruff check .
-poetry run black --check .
+# Linting and formatting
+poetry run ruff check .                # Check for issues
+poetry run ruff check --fix .          # Auto-fix issues
+poetry run black .                     # Format code
+poetry run black --check .             # Check formatting without changes
 
-# Build docs
-poetry run mkdocs build
+# Pre-commit (runs all checks)
+poetry run pre-commit run --all-files  # Run all hooks manually
 
-# Serve docs locally
-poetry run mkdocs serve
+# Build documentation
+poetry run mkdocs serve                # Live preview at http://127.0.0.1:8000
+poetry run mkdocs build                # Static build to site/
+poetry run mkdocs build --strict       # Build with warnings as errors
 ```
 
 ## Scenarios (Current Behavior)

@@ -9,10 +9,7 @@ Tests cover:
 """
 
 import pytest
-from domain.mechanics.armor import (
-    ArmorPiece,
-    ArmorSystem,
-)
+from domain.mechanics.armor import ArmorPiece, ArmorSystem
 
 # --- Fixtures ---
 

@@ -8,8 +8,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from typing import TYPE_CHECKING
-from logger.logger import get_logger
+
 import pygame
+from logger.logger import get_logger
 
 if TYPE_CHECKING:
     from application.game_context import GameContext
@@ -176,7 +177,7 @@ class InventoryPanel:
                     self.selected_slot = Slot(slot)
                 else:
                     self.selected_slot = slot
-            except Exception as e:
+            except Exception:
                 self.selected_slot = None
         else:
             self.selected_slot = None

@@ -4,7 +4,6 @@ from typing import Any
 
 from engine.currency_manager import CurrencyManager
 from PySide6 import QtCore, QtWidgets
-
 from ui.character_creation.services import EquipmentLoader, SkillDatabaseService
 from ui.character_creation.widgets.common import AttributesReadOnlyWidget
 

@@ -8,9 +8,6 @@ from collections.abc import Callable
 from typing import Any
 
 from PySide6 import QtCore, QtWidgets
-from utils.log.logger import get_logger
-from utils.ui.themes import header_label_style, info_label_style
-
 from ui.character_creation.dialogs.add_skill_dialog import AddSkillDialog
 from ui.character_creation.services import (
     PrerequisiteFormatter,
@@ -19,6 +16,8 @@ from ui.character_creation.services import (
     SkillSelectionManager,
 )
 from ui.character_creation.widgets.learning import LearningRow, LearningSkillsTableRenderer
+from utils.log.logger import get_logger
+from utils.ui.themes import header_label_style, info_label_style
 
 logger = get_logger(__name__)
 

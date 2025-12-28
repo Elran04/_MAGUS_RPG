@@ -1,6 +1,6 @@
 # Belharc (Close Quarters Combat)
 
-A belharc a teljes testközeli közelharc specializált formája, melyet csak külön képzéssel rendelkező karakterek képesek hatékonyan alkalmazni. A harcos ilyenkor az ellenfél védelmén belülre kerül, ahol a hosszú fegyverek és nehéz vértek hátrányba kerülnek. 
+A belharc a teljes testközeli közelharc specializált formája, melyet csak külön képzéssel rendelkező karakterek képesek hatékonyan alkalmazni. A harcos ilyenkor az ellenfél védelmén belülre kerül, ahol a hosszú fegyverek és nehéz vértek hátrányba kerülnek.
 
 ---
 
@@ -30,27 +30,27 @@ A tényleges belharc a következő körben kezdődik és addig tart, amíg:
 ---
 
 ## 🔁 Gyorsaságpróba menete
-Attól függ hogy kezdeményezés során ki volt az első. 
+Attól függ hogy kezdeményezés során ki volt az első.
 A. ***Első esetben az elszenvedő kezdeményez***
    1. **Elszenvedő dönthet**:
       - Megkísérli az elszakadást ellenfelétől, vagy eldobhatja fegyverét és akár egy rövidebbet vesz elő (teljes körös művelet)
       - Utóbbi esetben a belharc a következő körtől szűnhet meg(ha adottak a méretkategóriából adódó feltételek), viszont az adott kört a belharcos ki tudja használni teljes mértékben
       - Ha az elszakadást kísérli meg azt **gyorsaságpróbával** teheti meg
 
-   2. **Ha sikeres**: belharc azonnal megszűnik, az elszakadás sikeres és akár azonnal indíthat támadást még a belharcos ellen is. 
+   2. **Ha sikeres**: belharc azonnal megszűnik, az elszakadás sikeres és akár azonnal indíthat támadást még a belharcos ellen is.
 
    3. **Ha sikertelen**:
       - A belharcos **Gyorsaság értéke** megnövekszik azzal, **amennyivel az elszenvedő túldobta a célértékét**.
       - Ez a módosított érték lesz a belharcos próbájának alapja.
       - Ha az érték eléri vagy meghaladja a 20-at, a próba automatikusan sikeres, és a következő kör is belharcként folytatódik
       - Viszont ha a belharcos elvéti gyorsaság próbáját akkor a 2. pontban leírtak lépnek érvénybe
-   
+
 B. ***Második esetben belharcos kezdeményez***
    1. **Belharcos dönthet**:
       - Elszakad az ellenfelétől és azonnal végetér a belharc, az ellenfele viszont nem kísérelhet meg támadást ellene a körben
       - Végrehajtja támadását/támadásait majd **Gyorsaságpróbát** tehet hogy megakadályozza ellenfelének akciót
-  
-   2. **Ha sikeres**: Az elszenvedő nem cselekedhet a körben, valamint a következő kör is belharcként kezdődik. 
+
+   2. **Ha sikeres**: Az elszenvedő nem cselekedhet a körben, valamint a következő kör is belharcként kezdődik.
 
    3. **Ha sikertelen**:
       - Az elszenvedő **Gyorsaság értéke** megnövekszik azzal, **amennyivel az belharcos túldobott**.
@@ -59,7 +59,7 @@ B. ***Második esetben belharcos kezdeményez***
 
 **Példa**:
 
-- Elszenvedő Gyorsasága: 12  
+- Elszenvedő Gyorsasága: 12
 - D10 dobás: 7 → célérték: 2 → **5-tel túldobta**
 - Belharcos Gyorsasága: 15 → +5 → effektív 20 → **automatikus siker**
 
@@ -95,8 +95,8 @@ B. ***Második esetben belharcos kezdeményez***
 | **5**     | Lándzsa, alabárd |
 
 ## Megjegyzés a méretkategóriákhoz
-- Ha merev nehézvértben van a célpont a fegyverének méretkategóriája 2-vel nagyobbnak minősül 
-- Ha rugalmas nehézvértben van a célpont a fegyverének méretkategóriája 1-el nagyobbnak minősül 
+- Ha merev nehézvértben van a célpont a fegyverének méretkategóriája 2-vel nagyobbnak minősül
+- Ha rugalmas nehézvértben van a célpont a fegyverének méretkategóriája 1-el nagyobbnak minősül
 
 ---
 
@@ -105,8 +105,8 @@ B. ***Második esetben belharcos kezdeményez***
 Ha **mindkét karakter rendelkezik** Belharc képzettséggel:
 
 - Ha mindketten képzettek legalább 1. szinten és mindketten 1-es méretkategóriájú fegyverekkel harcolnak nehézvértezet nélkül akkor normál módon folyik a küzdelem, mindkét fél végezhet támadásokat egymás ellen a szokásos limitációk mellett.
-- Ha az egyik fél nehézvértet ölt vagy 1-estől nagyobb méretkategóriájú fegyvert használ, míg a másik fél tőrökkel felszerelve nehézvértezet nélkül kíván harcolni, akkor a szintek korlátai szerint alkalmazhatja a belharc technikáját. 
-- Tehát a belharc ellen teljes védelmet csak a páncélozatlan, tőrökkel, késekkel vagy puszta kézzel küzdő és belharcban legalább 1. szinten jártas karakter élvez minden más esetben elszenvedő oldalt találhatja magát. 
+- Ha az egyik fél nehézvértet ölt vagy 1-estől nagyobb méretkategóriájú fegyvert használ, míg a másik fél tőrökkel felszerelve nehézvértezet nélkül kíván harcolni, akkor a szintek korlátai szerint alkalmazhatja a belharc technikáját.
+- Tehát a belharc ellen teljes védelmet csak a páncélozatlan, tőrökkel, késekkel vagy puszta kézzel küzdő és belharcban legalább 1. szinten jártas karakter élvez minden más esetben elszenvedő oldalt találhatja magát.
 
 ---
 ## Belharc és a több ellenfél

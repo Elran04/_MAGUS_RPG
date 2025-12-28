@@ -16,4 +16,4 @@ Az ilyen tapasztalatokkal rendelkező karakter lehet hosszútávfutó harcos, so
 
 **4. fok:** Az ismétlés +2 értékkel történik, valamint a karakter szintenként 2 FP-t kap.
 
-**5. fok:** Az ismétlés +3 értékkel történik, valamint a karakter szintenként 3 FP-t kap. 
+**5. fok:** Az ismétlés +3 értékkel történik, valamint a karakter szintenként 3 FP-t kap.

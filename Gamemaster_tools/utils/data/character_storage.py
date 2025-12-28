@@ -2,7 +2,6 @@ import os
 from typing import Any, cast
 
 from config.paths import CHARACTERS_DIR
-
 from utils.data.json_io import load_json, save_json
 from utils.log.logger import get_logger
 

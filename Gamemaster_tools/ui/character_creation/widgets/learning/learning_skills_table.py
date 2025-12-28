@@ -7,9 +7,8 @@ Extends/reuses patterns from skills_table.py but without placeholder logic.
 from collections.abc import Callable
 
 from PySide6 import QtWidgets
-from utils.ui.themes import action_icon_button_style
-
 from ui.character_creation.widgets.learning.learning_row import LearningRow
+from utils.ui.themes import action_icon_button_style
 
 
 class LearningSkillsTableRenderer:
