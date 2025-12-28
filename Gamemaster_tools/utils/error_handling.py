@@ -10,7 +10,7 @@ Provides:
 from pathlib import Path
 from typing import Optional
 
-from logger.logger import get_logger
+from log.logger import get_logger
 from PySide6.QtWidgets import QMessageBox, QWidget
 
 logger = get_logger(__name__)

@@ -36,6 +36,7 @@ nav:
   - Getting Started:
     - Developer Guide: getting-started/DEVELOPER_GUIDE.md
     - CI/CD Setup: getting-started/CI_CD_SETUP.md
+    - Test Coverage & Error Handling: getting-started/TEST_COVERAGE_ERROR_HANDLING.md
   - Project:
     - Current Status: project/PROJECT_STATUS.md
     - Roadmap: project/PROJECT_ROADMAP.md

@@ -8,6 +8,7 @@ Provides:
 - Automatic logging of errors
 """
 
+import json
 from pathlib import Path
 from typing import Any, Optional, TypeVar
 

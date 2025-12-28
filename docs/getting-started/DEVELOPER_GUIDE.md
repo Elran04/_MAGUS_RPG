@@ -48,11 +48,15 @@ poetry run python Gamemaster_tools/main.py
 ## Quick Tasks
 
 ```powershell
-# Run tests
-poetry run pytest                      # All tests
+# Run tests (with coverage by default)
+poetry run pytest                      # All tests with coverage report
 poetry run pytest -v                   # Verbose output
 poetry run pytest -k test_combat       # Run specific test pattern
 poetry run pytest -m smoke             # Run tests with 'smoke' marker
+
+# View test coverage
+poetry run pytest --cov-report=html    # Generate HTML report
+# Open htmlcov/index.html in browser to see coverage
 
 # Type checking
 poetry run mypy MAGUS_pygame/ Gamemaster_tools/
@@ -65,6 +69,7 @@ poetry run black --check .             # Check formatting without changes
 
 # Pre-commit (runs all checks)
 poetry run pre-commit run --all-files  # Run all hooks manually
+poetry run pre-commit run --hook-stage manual --all-files  # Run linting only
 
 # Build documentation
 poetry run mkdocs serve                # Live preview at http://127.0.0.1:8000
