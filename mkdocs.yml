@@ -1,0 +1,87 @@
+site_name: MAGUS RPG Documentation
+site_description: Documentation for MAGUS RPG system - GM Tools and Pygame Combat Demo
+repo_url: https://github.com/Elran04/_MAGUS_RPG
+repo_name: Elran04/_MAGUS_RPG
+
+theme:
+  name: material
+  palette:
+    # Dark mode (default)
+    - scheme: slate
+      primary: deep purple
+      accent: purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    # Light mode
+    - scheme: default
+      primary: deep purple
+      accent: purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - content.code.annotate
+
+nav:
+  - Home: README.md
+  - Getting Started: DEVELOPER_GUIDE.md
+  - Current Status: PROJECT_STATUS.md
+  - Architecture: ARCHITECTURE.md
+  - Game Systems:
+    - Combat Mechanics: COMBAT_MECHANICS.md
+    - Equipment System: EQUIPMENT_SYSTEM.md
+    - Scenario Editor: SCENARIO_EDITOR.md
+  - Project:
+    - Roadmap: PROJECT_ROADMAP.md
+    - Changelog: CHANGELOG.md
+  - Archive:
+    - Migration Guide: archive/MIGRATION.md
+    - Quickstart (legacy): archive/QUICKSTART.md
+    - Implementation Summary: archive/IMPLEMENTATION_SUMMARY.md
+    - Combat Summary (legacy): archive/COMBAT_MECHANICS_SUMMARY.md
+    - Architectural Improvements: archive/ARCHITECTURAL_IMPROVEMENTS.md
+    - Equipment Milestone: archive/EQUIPMENT_IMPLEMENTATION_COMPLETE.md
+    - Scenario Refactoring: archive/SCENARIO_REFACTORING.md
+    - Damage Tests: archive/DAMAGE_TESTS.md
+    - Weapon Wielding: archive/WEAPON_WIELDING.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+      toc_depth: 3
+
+plugins:
+  - search:
+      lang: en
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Elran04/_MAGUS_RPG

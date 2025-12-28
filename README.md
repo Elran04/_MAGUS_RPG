@@ -18,7 +18,9 @@ Pygame alapú hexagonális rácsú körökre osztott harcrendszer:
 - Támadás, mozgás, roham akciók
 - Unit info popup-ok
 - Szenárió rendszer (JSON alapú pályák és induló pozíciók)
-- Egyszerű pályaszerkesztő (scenario editor)
+- Jelenleg a szenáriók JSON fájlok szerkesztésével készülnek; külön editor nincs (archivált)
+ 
+Megjegyzés: A Pygame modul jelenleg demo/prototípus a játékmenet mechanikákhoz; a végleges játék valószínűleg Godot-ban készül.
 
 ## 🚀 Telepítés és Használat
 
@@ -52,13 +54,8 @@ poetry run python Gamemaster_tools/main.py
 poetry run python MAGUS_pygame/main.py
 ```
 
-**Szenárió szerkesztő indítása:**
-```powershell
-poetry run python MAGUS_pygame/tools/map_editor.py
-```
-
-Alapértelmezett szenárió: `MAGUS_pygame/data/scenarios/default.json`.
-Egyedi mentés: `custom.json` a szerkesztőből.
+ Alapértelmezett szenárió: `MAGUS_pygame/data/scenarios/default.json`.
+ Saját szenáriók a `MAGUS_pygame/data/scenarios/` mappában.
 
 ## 🛠️ Fejlesztői Eszközök
 
@@ -123,7 +120,7 @@ A log fájlok automatikusan generálódnak a `logs/` mappában:
 
 ## 🔄 Verziókezelés
 
-A projekt Git verziókezelést használ. A főbb változások és tervek a `Project_Roadmap.md` fájlban találhatók.
+A projekt Git verziókezelést használ. A főbb változások és tervek a `docs/PROJECT_ROADMAP.md` fájlban találhatók.
 
 ## 👤 Szerző
 
@@ -136,3 +133,9 @@ A projekt Git verziókezelést használ. A főbb változások és tervek a `Proj
 ---
 
 **Megjegyzés**: Ez egy aktív fejlesztés alatt álló projekt.
+
+## 📚 Dokumentáció
+
+- Fejlesztői útmutató: `docs/DEVELOPER_GUIDE.md`
+- Aktuális állapot: `docs/PROJECT_STATUS.md`
+- Teljes dokumentáció index: `docs/README.md`

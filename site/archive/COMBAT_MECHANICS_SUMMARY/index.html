@@ -1,0 +1,1966 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for MAGUS RPG system - GM Tools and Pygame Combat Demo">
+      
+      
+      
+      
+        <link rel="prev" href="../IMPLEMENTATION_SUMMARY/">
+      
+      
+        <link rel="next" href="../ARCHITECTURAL_IMPROVEMENTS/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Combat Summary (legacy) - MAGUS RPG Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#magus-combat-mechanics-summary" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="MAGUS RPG Documentation" class="md-header__button md-logo" aria-label="MAGUS RPG Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            MAGUS RPG Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Combat Summary (legacy)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Elran04/_MAGUS_RPG" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Elran04/_MAGUS_RPG
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../DEVELOPER_GUIDE/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../PROJECT_STATUS/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Current Status
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../ARCHITECTURE/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../COMBAT_MECHANICS/" class="md-tabs__link">
+          
+  
+  
+  Game Systems
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../PROJECT_ROADMAP/" class="md-tabs__link">
+          
+  
+  
+  Project
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../MIGRATION/" class="md-tabs__link">
+          
+  
+  
+  Archive
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="MAGUS RPG Documentation" class="md-nav__button md-logo" aria-label="MAGUS RPG Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    MAGUS RPG Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Elran04/_MAGUS_RPG" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Elran04/_MAGUS_RPG
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../DEVELOPER_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../PROJECT_STATUS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Current Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Game Systems
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Game Systems
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../COMBAT_MECHANICS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Combat Mechanics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../EQUIPMENT_SYSTEM/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Equipment System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../SCENARIO_EDITOR/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scenario Editor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../PROJECT_ROADMAP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CHANGELOG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Archive
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Archive
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MIGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../QUICKSTART/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart (legacy)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../IMPLEMENTATION_SUMMARY/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Implementation Summary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Combat Summary (legacy)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Combat Summary (legacy)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#attack-outcomes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attack Outcomes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Attack Outcomes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-miss" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. MISS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-hit-normal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. HIT (Normal)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-blocked-parried" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. BLOCKED / PARRIED
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-critical-pure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. CRITICAL (Pure)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-overpower-pure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. OVERPOWER (Pure)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-critical_overpower-devastating-combo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. CRITICAL_OVERPOWER (Devastating Combo)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-dodge_attempt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. DODGE_ATTEMPT
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-mechanics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Mechanics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Key Mechanics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#damage-routing-decision-tree" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Damage Routing Decision Tree
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#critical-hit-thresholds-placeholder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critical Hit Thresholds (Placeholder)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#critical-damage-multipliers-placeholder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critical Damage Multipliers (Placeholder)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#armor-mechanics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Armor Mechanics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mandatory-ep-loss" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mandatory EP Loss
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-misconceptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Misconceptions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Misconceptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wrong-critical-hits-bypass-fp-and-deal-ep-damage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ❌ WRONG: "Critical hits bypass FP and deal EP damage"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wrong-critical-and-overpower-cant-happen-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ❌ WRONG: "Critical and overpower can't happen together"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wrong-overpower-degrades-armor-after-critical-ignores-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ❌ WRONG: "Overpower degrades armor after critical ignores it"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#correct-attack-flow-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ CORRECT: Attack Flow Order
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test Coverage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Files
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ARCHITECTURAL_IMPROVEMENTS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architectural Improvements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../EQUIPMENT_IMPLEMENTATION_COMPLETE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Equipment Milestone
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../SCENARIO_REFACTORING/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scenario Refactoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../DAMAGE_TESTS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Damage Tests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../WEAPON_WIELDING/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Weapon Wielding
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#attack-outcomes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attack Outcomes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Attack Outcomes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-miss" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. MISS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-hit-normal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. HIT (Normal)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-blocked-parried" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. BLOCKED / PARRIED
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-critical-pure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. CRITICAL (Pure)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-overpower-pure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. OVERPOWER (Pure)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-critical_overpower-devastating-combo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. CRITICAL_OVERPOWER (Devastating Combo)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-dodge_attempt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. DODGE_ATTEMPT
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-mechanics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Mechanics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Key Mechanics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#damage-routing-decision-tree" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Damage Routing Decision Tree
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#critical-hit-thresholds-placeholder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critical Hit Thresholds (Placeholder)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#critical-damage-multipliers-placeholder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critical Damage Multipliers (Placeholder)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#armor-mechanics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Armor Mechanics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mandatory-ep-loss" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mandatory EP Loss
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-misconceptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Misconceptions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Misconceptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wrong-critical-hits-bypass-fp-and-deal-ep-damage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ❌ WRONG: "Critical hits bypass FP and deal EP damage"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wrong-critical-and-overpower-cant-happen-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ❌ WRONG: "Critical and overpower can't happen together"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wrong-overpower-degrades-armor-after-critical-ignores-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ❌ WRONG: "Overpower degrades armor after critical ignores it"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#correct-attack-flow-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ CORRECT: Attack Flow Order
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test Coverage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Files
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="magus-combat-mechanics-summary">MAGUS Combat Mechanics Summary<a class="headerlink" href="#magus-combat-mechanics-summary" title="Permanent link">&para;</a></h1>
+<p>Note: This page is an overview. The canonical, detailed rules live in <code>COMBAT_MECHANICS.md</code>. When in doubt, defer to the detailed document.</p>
+<h2 id="attack-outcomes">Attack Outcomes<a class="headerlink" href="#attack-outcomes" title="Permanent link">&para;</a></h2>
+<h3 id="1-miss">1. MISS<a class="headerlink" href="#1-miss" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Condition</strong>: TÉ ≤ base_VÉ</li>
+<li><strong>Effect</strong>: No damage</li>
+<li><strong>Example</strong>: TÉ 65 ≤ VÉ 100 → MISS</li>
+</ul>
+<h3 id="2-hit-normal">2. HIT (Normal)<a class="headerlink" href="#2-hit-normal" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Condition</strong>: base_VÉ &lt; TÉ ≤ dodge_VÉ (and not critical)</li>
+<li><strong>Damage</strong>: Goes to <strong>FP</strong> (Fájdalom Pont - Pain Points)</li>
+<li><strong>Special</strong>: Mandatory EP loss based on weapon reach</li>
+<li>Reach 1: 6 FP → 1 EP</li>
+<li>Reach 2-3: 8 FP → 1 EP</li>
+<li>Reach 4+: 10 FP → 1 EP</li>
+<li><strong>Example</strong>: TÉ 105 &gt; VÉ 60, 10 FP + 1 EP (mandatory)</li>
+</ul>
+<h3 id="3-blocked-parried">3. BLOCKED / PARRIED<a class="headerlink" href="#3-blocked-parried" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Condition</strong>: TÉ falls in block/parry threshold ranges</li>
+<li>BLOCKED: base_VÉ &lt; TÉ ≤ block_VÉ (shield defense)</li>
+<li>PARRIED: block_VÉ &lt; TÉ ≤ parry_VÉ (weapon defense)</li>
+<li><strong>Damage</strong>: Converted to <strong>Stamina cost</strong> (FP drain)</li>
+<li><strong>Stamina Cost</strong>: Based on RAW incoming weapon damage (NO armor absorption)</li>
+<li>Higher damage weapons (e.g., warhammer) cost more stamina to block/parry</li>
+<li>Lower damage weapons (e.g., knife) cost less stamina to block/parry</li>
+<li>Modified by defender's blocking/parrying skill level</li>
+<li><strong>Armor does NOT reduce stamina cost</strong> - active defense negates armor benefit</li>
+<li><strong>Example</strong>: Blocking a 2d8+3 warhammer (damage 8) costs significantly more stamina than blocking a 1d4 knife (damage 2), regardless of armor worn</li>
+</ul>
+<h3 id="4-critical-pure">4. CRITICAL (Pure)<a class="headerlink" href="#4-critical-pure" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Condition</strong>: Attack roll ≥ critical threshold (based on weapon skill)</li>
+<li><strong>Damage</strong>: Amplified damage to <strong>FP</strong> (with mandatory EP loss)</li>
+<li><strong>Effects</strong>:</li>
+<li>Auto-hit (ignores VÉ)</li>
+<li>Damage multiplied (1.5x to 2.5x based on skill)</li>
+<li>Armor ignored (SFÉ not applied)</li>
+<li>Still applies mandatory EP loss</li>
+<li><strong>Example</strong>: Roll 97, skill 2 → TÉ 157 vs VÉ 110</li>
+<li>Outcome: CRITICAL</li>
+<li>Damage: 15.75 FP + 1 EP (mandatory)</li>
+<li>Critical does NOT route directly to EP — only FP is amplified; EP loss comes from reach rule.</li>
+</ul>
+<h3 id="5-overpower-pure">5. OVERPOWER (Pure)<a class="headerlink" href="#5-overpower-pure" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Condition</strong>: TÉ &gt; VÉ + 50 (threshold modifiable by skills)</li>
+<li><strong>Damage</strong>: Direct damage to <strong>EP</strong> (Életerő Pont - Life Force)</li>
+<li><strong>Effects</strong>:</li>
+<li>Bypasses FP entirely</li>
+<li>Degrades ALL armor pieces by 1 SFÉ permanently</li>
+<li>No mandatory EP loss (already direct EP damage)</li>
+<li><strong>Example</strong>: TÉ 148 &gt; VÉ 60 + 50</li>
+<li>Outcome: OVERPOWER</li>
+<li>Damage: 12 EP (direct)</li>
+</ul>
+<h3 id="6-critical_overpower-devastating-combo">6. CRITICAL_OVERPOWER (Devastating Combo)<a class="headerlink" href="#6-critical_overpower-devastating-combo" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Condition</strong>: Both critical AND overpower conditions met</li>
+<li><strong>Damage</strong>: Amplified damage to <strong>EP</strong></li>
+<li><strong>Effects</strong>:</li>
+<li>Critical: damage multiplied, armor ignored</li>
+<li>Overpower: damage goes to EP, armor degraded</li>
+<li><strong>This is the "one-shot" scenario</strong> - a devastating strike!</li>
+<li><strong>Example</strong>: Roll 96, TÉ 156 &gt; VÉ 60 + 50</li>
+<li>Outcome: CRITICAL_OVERPOWER</li>
+<li>Damage: 15.75 EP (multiplied, direct)</li>
+<li>Both is_critical and is_overpower flags are True</li>
+</ul>
+<h3 id="7-dodge_attempt">7. DODGE_ATTEMPT<a class="headerlink" href="#7-dodge_attempt" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Condition</strong>: parry_VÉ &lt; TÉ ≤ dodge_VÉ</li>
+<li><strong>Effect</strong>: Requires Gyorsaság (speed) check</li>
+<li><strong>Stamina Cost</strong>: Fixed base cost (6 points) modified by dodge skill</li>
+<li>Unlike block/parry, dodge cost is independent of incoming damage</li>
+<li>Represents physical exertion of evasive movement</li>
+<li>Stamina spent immediately, even if dodge check fails</li>
+<li><strong>Notes</strong>: Dodge success resolution TODO</li>
+</ul>
+<h2 id="key-mechanics">Key Mechanics<a class="headerlink" href="#key-mechanics" title="Permanent link">&para;</a></h2>
+<h3 id="damage-routing-decision-tree">Damage Routing Decision Tree<a class="headerlink" href="#damage-routing-decision-tree" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Is it OVERPOWER (TÉ &gt; VÉ + 50)?
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├─ YES → Degrade armor first
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│        Is it also CRITICAL?
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│        ├─ YES → CRITICAL_OVERPOWER → Damage to EP (multiplied, ignores armor)
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│        └─ NO  → OVERPOWER → Damage to EP
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>└─ NO → Is it CRITICAL?
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        ├─ YES → CRITICAL → Damage to FP (multiplied, ignores armor, + mandatory EP)
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        └─ NO  → Is it HIT/BLOCK/PARRY?
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>                 ├─ YES → Damage to FP (with armor, + mandatory EP)
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>                 └─ NO  → MISS → No damage
+</span></code></pre></div>
+<h3 id="critical-hit-thresholds-placeholder">Critical Hit Thresholds (Placeholder)<a class="headerlink" href="#critical-hit-thresholds-placeholder" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Weapon Skill Level</th>
+<th>Critical Threshold</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0-1</td>
+<td>99</td>
+</tr>
+<tr>
+<td>2-3</td>
+<td>95</td>
+</tr>
+<tr>
+<td>4-5</td>
+<td>90</td>
+</tr>
+</tbody>
+</table>
+<h3 id="critical-damage-multipliers-placeholder">Critical Damage Multipliers (Placeholder)<a class="headerlink" href="#critical-damage-multipliers-placeholder" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Weapon Skill Level</th>
+<th>Damage Multiplier</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0-1</td>
+<td>1.5x</td>
+</tr>
+<tr>
+<td>2-3</td>
+<td>1.75x</td>
+</tr>
+<tr>
+<td>4-5</td>
+<td>2.0x</td>
+</tr>
+<tr>
+<td>6+</td>
+<td>2.5x</td>
+</tr>
+</tbody>
+</table>
+<h3 id="armor-mechanics">Armor Mechanics<a class="headerlink" href="#armor-mechanics" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>SFÉ</strong> (Sebzés Felfogó Érték): Armor absorption value</li>
+<li><strong>Current SFÉ</strong>: Can be degraded by overpower strikes</li>
+<li><strong>Degradation</strong>: Each overpower reduces current_sfe by 1 permanently</li>
+<li><strong>Repair</strong>: Can restore current_sfe up to base sfe value</li>
+<li><strong>Broken</strong>: current_sfe = 0 means armor is broken (no protection)</li>
+<li><strong>Critical Ignores Armor</strong>: Critical hits ignore armor entirely (damage calculated as if armor_absorption = 0)</li>
+</ul>
+<h3 id="mandatory-ep-loss">Mandatory EP Loss<a class="headerlink" href="#mandatory-ep-loss" title="Permanent link">&para;</a></h3>
+<p>Even normal hits to FP cause some EP loss based on weapon reach:
+- <strong>Reach 1</strong> (unarmed, dagger): Every 6 FP → 1 EP
+- <strong>Reach 2-3</strong> (sword, mace): Every 8 FP → 1 EP
+- <strong>Reach 4+</strong> (two-handed, polearm): Every 10 FP → 1 EP</p>
+<p>This represents the physical trauma of being struck, even when armor/toughness absorbs most damage.</p>
+<h2 id="common-misconceptions">Common Misconceptions<a class="headerlink" href="#common-misconceptions" title="Permanent link">&para;</a></h2>
+<h3 id="wrong-critical-hits-bypass-fp-and-deal-ep-damage">❌ WRONG: "Critical hits bypass FP and deal EP damage"<a class="headerlink" href="#wrong-critical-hits-bypass-fp-and-deal-ep-damage" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Critical ALONE</strong>: Deals amplified damage to <strong>FP</strong> (not EP)</li>
+<li>Only when <strong>BOTH critical AND overpower</strong> occur does damage go to EP</li>
+</ul>
+<h3 id="wrong-critical-and-overpower-cant-happen-together">❌ WRONG: "Critical and overpower can't happen together"<a class="headerlink" href="#wrong-critical-and-overpower-cant-happen-together" title="Permanent link">&para;</a></h3>
+<ul>
+<li>They absolutely can! That's the CRITICAL_OVERPOWER outcome</li>
+<li>Both flags (is_critical, is_overpower) can be True simultaneously</li>
+</ul>
+<h3 id="wrong-overpower-degrades-armor-after-critical-ignores-it">❌ WRONG: "Overpower degrades armor after critical ignores it"<a class="headerlink" href="#wrong-overpower-degrades-armor-after-critical-ignores-it" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Armor degradation happens <strong>BEFORE</strong> critical ignores it</li>
+<li>This ensures overpower still has its armor-breaking effect</li>
+</ul>
+<h3 id="correct-attack-flow-order">✅ CORRECT: Attack Flow Order<a class="headerlink" href="#correct-attack-flow-order" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Check overpower (TÉ &gt; VÉ + 50)</li>
+<li><strong>If overpower</strong>: Degrade armor first</li>
+<li>Check critical (roll ≥ threshold)</li>
+<li>Determine outcome (CRITICAL_OVERPOWER if both)</li>
+<li>Calculate damage (multiply if critical, ignore armor if critical)</li>
+<li>Route damage:</li>
+<li>CRITICAL_OVERPOWER or OVERPOWER → EP</li>
+<li>CRITICAL, HIT, BLOCKED, PARRIED → FP</li>
+<li>MISS → No damage</li>
+</ol>
+<h2 id="test-coverage">Test Coverage<a class="headerlink" href="#test-coverage" title="Permanent link">&para;</a></h2>
+<p><strong>115 tests passing</strong> covering:
+- ✅ Armor creation, degradation, repair (29 tests)
+- ✅ Attack resolution all outcomes (25 tests)
+- ✅ Damage calculation with bonuses, multipliers, armor (28 tests)
+- ✅ Reach system and mandatory EP loss (28 tests)
+- ✅ Smoke tests for all scenarios (5 tests)</p>
+<h2 id="implementation-files">Implementation Files<a class="headerlink" href="#implementation-files" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>domain/mechanics/attack_resolution.py</code> - Main attack flow</li>
+<li><code>domain/mechanics/damage.py</code> - Damage calculation</li>
+<li><code>domain/mechanics/armor.py</code> - Armor entities and degradation</li>
+<li><code>domain/mechanics/critical.py</code> - Critical hit detection</li>
+<li><code>domain/mechanics/reach.py</code> - Weapon reach and mandatory EP</li>
+<li><code>tests/test_attack_resolution.py</code> - Comprehensive attack tests</li>
+<li><code>tests/test_combat_smoke.py</code> - End-to-end scenario tests</li>
+</ul>
+<hr />
+<p><em>Last updated: 2025-01-XX</em>
+<em>Status: Core mechanics complete, 115 tests passing</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Elran04/_MAGUS_RPG" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.tracking", "search.highlight", "search.suggest", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

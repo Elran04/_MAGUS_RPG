@@ -3,9 +3,9 @@ MAGUS RPG - Main entry point (New Clean Architecture).
 
 Complete game flow: Menu -> Scenario Selection -> Deployment -> Battle
 
-For architecture details, see ARCHITECTURE.md
-For porting guide, see MIGRATION.md
-For quick start, see QUICKSTART.md
+For architecture details, see docs/ARCHITECTURE.md
+For setup and run, see docs/DEVELOPER_GUIDE.md
+For porting legacy features, see docs/archive/MIGRATION.md
 """
 
 import multiprocessing
