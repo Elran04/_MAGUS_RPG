@@ -1,0 +1,30 @@
+[run]
+source = MAGUS_pygame, Gamemaster_tools
+omit =
+    */tests/*
+    */test_*.py
+    */__pycache__/*
+    */old_system/*
+    .venv/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
+    @abstract
+
+precision = 2
+skip_covered = False
+skip_empty = True
+
+[html]
+directory = htmlcov
+
+[json]
+output = coverage.json
+pretty_print = True
