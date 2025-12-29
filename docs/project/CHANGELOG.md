@@ -17,6 +17,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Pre-commit Hooks**: Automatic code quality checks (black, ruff, mypy, trailing whitespace, JSON validation) before commits
 - **pytest.ini**: Centralized test configuration with markers (smoke, integration, unit, slow) and coverage support
 - **docs/CI_CD_SETUP.md**: Complete guide for CI/CD workflows and pre-commit hook usage
+- **Centralized Test Structure**: Root `tests/` folder with `pygame/` (198 tests) and `gamemaster_tools/` (6 tests) subdirectories
+- **Root conftest.py**: Unified sys.path management for multi-package test execution with dynamic package priority
+- **docs/architecture/TESTING.md**: Complete guide to test structure, execution patterns, and namespace management
 
 ### Changed
 - Renamed `ScenarioService` methods for clarity: `can_advance_from_team_a` → `has_team_a_units`, `can_finish` → `has_team_b_units`
@@ -25,6 +28,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Moved legacy docs to `docs/archive/` (QUICKSTART, IMPLEMENTATION_SUMMARY, MIGRATION, etc.)
 - Updated all documentation paths to reflect new structure
 - Standardized naming: `Project_Roadmap.md` → `PROJECT_ROADMAP.md`
+- Restructured test suite from package-level folders to centralized root `tests/` folder with subdirectories
+- Test execution now uses root conftest.py with dynamic sys.path management instead of package-level conftest files
 
 ### Fixed
 - Equipment validation: restored missing return statements for valid cases
@@ -36,6 +41,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Duplicate method definitions in `UnitSetupService`
 - Debug logging from key application files
 - Outdated scenario editor command from README
+- Old package-level test directories (`MAGUS_pygame/tests/`, `Gamemaster_tools/tests/`)
+- Package-level conftest.py files (replaced by single root conftest.py)
+- Coverage cache files (.coverage, coverage.json, htmlcov/)
+- 217 __pycache__/ directories (~1280 .pyc files) to improve repository cleanliness
 
 ## [2025-12] - December 2025
 
