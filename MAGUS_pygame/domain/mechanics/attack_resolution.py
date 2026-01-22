@@ -392,6 +392,8 @@ def apply_attack_result(result: AttackResult, defender: Unit) -> None:
     Apply attack result damage to defender.
     Mutates defender's EP and FP.
 
+    FP exhaustion rule: When FP is 0, any FP damage goes to EP instead.
+
     Args:
         result: Attack result with damage values
         defender: Unit to apply damage to
@@ -400,14 +402,17 @@ def apply_attack_result(result: AttackResult, defender: Unit) -> None:
         return
 
     # Apply FP damage (includes block/parry stamina costs when present)
+    # spend_fatigue returns overflow that went to EP
+    fp_overflow = 0
     if result.damage_to_fp > 0:
-        defender.spend_fatigue(result.damage_to_fp)
+        fp_overflow += defender.spend_fatigue(result.damage_to_fp)
 
     # Apply additional stamina spend (e.g., dodge attempt costs)
     if result.stamina_spent_defender > 0:
-        defender.spend_fatigue(result.stamina_spent_defender)
+        fp_overflow += defender.spend_fatigue(result.stamina_spent_defender)
 
     # Apply EP damage (direct + mandatory)
+    # Note: FP overflow is already applied by spend_fatigue
     total_ep_damage = result.damage_to_ep + result.mandatory_ep_loss
     if total_ep_damage > 0:
         defender.take_damage(total_ep_damage)

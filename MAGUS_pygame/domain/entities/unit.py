@@ -92,21 +92,29 @@ class Unit:
         self.ep = ResourcePool(current=self.ep.current - actual_damage, maximum=self.ep.maximum)
         return actual_damage
 
-    def spend_fatigue(self, amount: int) -> bool:
+    def spend_fatigue(self, amount: int) -> int:
         """
-        Spend fatigue points.
+        Spend fatigue points. When FP is exhausted, overflow damage goes to EP.
 
         Args:
             amount: FP to spend
 
         Returns:
-            True if successfully spent, False if insufficient FP
+            Amount of overflow damage that went to EP (0 if FP was sufficient)
         """
-        if amount > self.fp.current:
-            return False
+        if amount <= 0:
+            return 0
 
-        self.fp = ResourcePool(current=self.fp.current - amount, maximum=self.fp.maximum)
-        return True
+        # Apply what we can to FP
+        fp_damage = min(amount, self.fp.current)
+        self.fp = ResourcePool(current=self.fp.current - fp_damage, maximum=self.fp.maximum)
+
+        # Any overflow goes to EP (FP exhaustion rule)
+        overflow = amount - fp_damage
+        if overflow > 0:
+            self.take_damage(overflow)
+
+        return overflow
 
     def restore_fp(self, amount: int) -> None:
         """Restore fatigue points (capped at maximum)."""

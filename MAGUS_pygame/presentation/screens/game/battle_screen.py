@@ -368,7 +368,7 @@ class BattleScreen:
         for unit in self.battle.units:
             if unit.position.q == q and unit.position.r == r:
                 if not self.unit_popup:
-                    self.unit_popup = UnitInfoPopup()
+                    self.unit_popup = UnitInfoPopup(context=self.context)
                 self.unit_popup.show(unit)
                 logger.debug(f"Opened info popup for {unit.name}")
                 return

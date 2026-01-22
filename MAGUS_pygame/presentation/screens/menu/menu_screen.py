@@ -145,6 +145,7 @@ class Menu:
         """
         return [
             MenuItem("New Game", action=lambda: self._start_new_game()),
+            MenuItem("Quick Combat", action=lambda: self._start_quick_combat()),
             MenuItem("Load Game", action=lambda: self._load_game()),
             MenuItem("Scenario Editor", action=lambda: self._open_scenario_editor()),
             MenuItem("Settings", action=lambda: self._open_settings()),
@@ -396,6 +397,11 @@ class Menu:
         """Start a new game."""
         self.last_action = "new_game"
         logger.info("New game requested")
+
+    def _start_quick_combat(self) -> None:
+        """Start quick combat with hardcoded units."""
+        self.last_action = "quick_combat"
+        logger.info("Quick combat requested")
 
     def _load_game(self) -> None:
         """Load a saved game."""

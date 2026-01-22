@@ -47,6 +47,7 @@ class BattleService:
     initiative_order: InitiativeOrder | None = None
     _rng_seed: int | None = None  # For deterministic testing if provided
     _rng: object | None = None  # random.Random when initiative enabled
+    equipment_repo: object | None = None  # EquipmentRepository for shield extraction
 
     turn_index: int = 0
     round: int = 1
@@ -221,6 +222,16 @@ class BattleService:
         if not can_attack_target(unit, defender.position, unit.weapon):
             return {"error": f"{defender.name} is not in attack range"}
 
+        # Extract defender's shield VE bonus from equipment
+        shield_ve = 0
+        if self.equipment_repo and defender.character_data:
+            equipment = defender.character_data.get("equipment", {})
+            off_hand_id = equipment.get("off_hand", "")
+            if off_hand_id:
+                shield_data = self.equipment_repo.find_weapon_by_id(off_hand_id)
+                if shield_data:
+                    shield_ve = shield_data.get("VE", 0)
+
         # AttackAction has fixed AP cost inside result.ap_spent
         # Separate rng_overrides if present in kwargs
         rng_overrides = None
@@ -230,6 +241,11 @@ class BattleService:
                 rng_overrides = candidate
             else:
                 rng_overrides = None
+
+        # Add shield_ve to kwargs if not already present
+        if "shield_ve" not in kwargs:
+            kwargs["shield_ve"] = shield_ve
+
         result = self.action_handler.attack(
             attacker=unit, defender=defender, rng_overrides=rng_overrides, **kwargs
         )

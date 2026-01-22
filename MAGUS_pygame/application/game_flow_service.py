@@ -169,7 +169,7 @@ def start_game(context, screen: pygame.Surface, clock: pygame.time.Clock) -> Non
     logger.info(f"Created {len(team_a_units)} Team A units and {len(team_b_units)} Team B units")
 
     # 4) Setup battle service with teams
-    battle_service = BattleService(units=units)
+    battle_service = BattleService(units=units, equipment_repo=context.equipment_repo)
     battle_service.set_teams(team_a_units, team_b_units)
     battle_service.start_battle()
 

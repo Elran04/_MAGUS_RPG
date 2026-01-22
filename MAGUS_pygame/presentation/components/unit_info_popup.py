@@ -80,9 +80,10 @@ class UnitInfoPopup:
     - Uses domain mechanics for calculations (wielding, stamina)
     """
 
-    def __init__(self):
+    def __init__(self, context=None):
         self.visible = False
         self.unit: Unit | None = None
+        self.context = context  # Game context for repository access
         self.popup_rect: pygame.Rect | None = None
         self.cached_wield_info = None  # Cache to avoid recalculating every frame
         self.current_tab = "stats"  # "stats", "equipment", "armor", "conditions"
@@ -250,17 +251,30 @@ class UnitInfoPopup:
         elif hasattr(self.unit, "equipment"):
             equipment = getattr(self.unit, "equipment", {})
 
-        def get_item_name(item_id):
+        def get_item_name(item_id, is_armor: bool = False):
             if not item_id:
                 return "(empty)"
-            # Try to get name from weapon or armor if possible
+
+            # Weapon already attached
             if (
-                self.unit.weapon
-                and hasattr(self.unit.weapon, "id")
-                and self.unit.weapon.id == item_id
+                not is_armor
+                and self.unit.weapon
+                and getattr(self.unit.weapon, "id", None) == item_id
             ):
                 return getattr(self.unit.weapon, "name", item_id)
-            # Fallback: just show the id
+
+            if self.context and hasattr(self.context, "equipment_repo"):
+                repo = self.context.equipment_repo
+                if is_armor:
+                    armor_data = repo.find_armor_by_id(item_id)
+                    if armor_data:
+                        return armor_data.get("name", item_id)
+                # Weapons/shields
+                weapon_data = repo.find_weapon_by_id(item_id)
+                if weapon_data:
+                    return weapon_data.get("name", item_id)
+
+            # Fallback
             return str(item_id)
 
         # Main hand
@@ -299,7 +313,7 @@ class UnitInfoPopup:
         y += 28
         if armor_list:
             for armor_id in armor_list:
-                armor_name = get_item_name(armor_id)
+                armor_name = get_item_name(armor_id, is_armor=True)
                 armor_text = self.style.small_font.render(f"- {armor_name}", True, UI_TEXT)
                 screen.blit(armor_text, (x_left + 30, y))
                 y += 20
@@ -404,29 +418,80 @@ class UnitInfoPopup:
         return y
 
     def _draw_combat_stats(self, screen: pygame.Surface, x: int, y: int) -> int:
-        """Draw combat statistics. Returns new y offset."""
+        """Draw combat statistics with breakdown. Returns new y offset."""
         # Header
         header = self.style.header_font.render("Combat Stats", True, self.style.color_header_combat)
         screen.blit(header, (x, y))
         y += 30
 
-        # Use domain entity's combat_stats directly
+        # Get base stats from unit
+        base_ke = self.unit.combat_stats.KE
+        base_te = self.unit.combat_stats.TE
+        base_ve = self.unit.combat_stats.VE
+        base_ce = self.unit.combat_stats.CE
+
+        # Get weapon modifiers if weapon equipped
+        weapon_ke = 0
+        weapon_te = 0
+        weapon_ve = 0
+
+        if self.unit.weapon:
+            weapon_ke = self.unit.weapon.ke_modifier
+            weapon_te = self.unit.weapon.te_modifier
+            weapon_ve = self.unit.weapon.ve_modifier
+
+        # Get shield modifiers if shield equipped
+        shield_ke = 0
+        shield_te = 0
+        shield_ve = 0
+
+        if self.context and hasattr(self.context, "equipment_repo"):
+            equipment = {}
+            if self.unit.character_data and "equipment" in self.unit.character_data:
+                equipment = self.unit.character_data["equipment"]
+
+            off_hand = equipment.get("off_hand", "")
+            if off_hand:
+                shield_data = self.context.equipment_repo.find_weapon_by_id(off_hand)
+                if shield_data:
+                    shield_ke = shield_data.get("KE", 0)
+                    shield_te = shield_data.get("TE", 0)
+                    shield_ve = shield_data.get("VE", 0)
+
+        # Calculate final values
+        final_ke = base_ke + weapon_ke + shield_ke
+        final_te = base_te + weapon_te + shield_te
+        final_ve = base_ve + weapon_ve + shield_ve
+        final_ce = base_ce  # CÉ not affected by weapon/shield
+
+        # Define stats with breakdown
         stats = [
-            ("KÉ", self.unit.combat_stats.KE),
-            ("TÉ", self.unit.combat_stats.TE),
-            ("VÉ", self.unit.combat_stats.VE),
-            ("CÉ", self.unit.combat_stats.CE),
+            ("KÉ", base_ke, weapon_ke, shield_ke, final_ke),
+            ("TÉ", base_te, weapon_te, shield_te, final_te),
+            ("VÉ", base_ve, weapon_ve, shield_ve, final_ve),
+            ("CÉ", base_ce, 0, 0, final_ce),
         ]
 
-        # Draw each stat
-        for i, (stat_name, value) in enumerate(stats):
+        # Draw each stat with breakdown
+        for i, (stat_name, base_val, weapon_val, shield_val, final_val) in enumerate(stats):
             stat_y = y + (i * self.style.stat_row_height)
 
-            # Draw stat name and value
-            stat_text = self.style.text_font.render(f"{stat_name}: {value}", True, (200, 200, 200))
-            screen.blit(stat_text, (x + 10, stat_y))
+            # Show breakdown: Base + Weapon + Shield = Final
+            if weapon_val != 0 and shield_val != 0:
+                breakdown = f"{stat_name}: {base_val} + {weapon_val} + {shield_val} = {final_val}"
+                color = (200, 220, 255)  # Blue tint when bonuses present
+            elif weapon_val != 0:
+                breakdown = f"{stat_name}: {base_val} + {weapon_val} = {final_val}"
+                color = (200, 220, 255)  # Blue tint when weapon bonus present
+            elif shield_val != 0:
+                breakdown = f"{stat_name}: {base_val} + {shield_val} = {final_val}"
+                color = (200, 220, 255)  # Blue tint when shield bonus present
+            else:
+                breakdown = f"{stat_name}: {base_val} = {final_val}"
+                color = (200, 200, 200)
 
-            # TODO: Show breakdown (base + weapon + wielding bonuses) when domain supports it
+            stat_text = self.style.text_font.render(breakdown, True, color)
+            screen.blit(stat_text, (x + 10, stat_y))
 
         y += self.style.stat_row_height * len(stats) + self.style.line_gap
         return y

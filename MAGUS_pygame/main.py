@@ -13,6 +13,7 @@ import multiprocessing
 import pygame
 from application.game_context import GameContext
 from application.game_flow_service import start_game
+from application.quick_combat_service import start_quick_combat
 from config import HEIGHT, WIDTH
 from logger.logger import get_logger
 from presentation.desktop.editor_tool_window import run_tool_window
@@ -75,6 +76,19 @@ def main() -> None:
                 game_state = "menu"
                 menu.open_main_menu()
                 logger.info("Returned to main menu")
+
+            elif action == "quick_combat":
+                logger.info("Starting quick combat")
+                menu.reset_action()
+                game_state = "playing"
+
+                # Start quick combat (runs until completion or quit)
+                start_quick_combat(context, screen, clock)
+
+                # Return to menu after quick combat ends
+                game_state = "menu"
+                menu.open_main_menu()
+                logger.info("Returned to main menu from quick combat")
 
             elif action == "load_game":
                 # TODO: Implement load game

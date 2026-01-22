@@ -113,12 +113,38 @@ class AttackAction(Action):
         )
 
         # Build a human-readable message (lightweight)
+        # Check if defender has FP to determine actual damage application
         outcome = core_result.outcome.value.replace("_", " ").title()
         msg = f"Attack: {outcome}. TE {core_result.all_te} vs VE {core_result.all_ve}."
         if core_result.hit and not core_result.requires_dodge_check:
             total_ep = core_result.damage_to_ep + core_result.mandatory_ep_loss
+
+            # Check FP exhaustion: if defender has 0 FP, FP damage becomes EP damage
+            defender_fp = defender.fp.current
+
+            # Distinguish between damage (HIT/CRITICAL) and stamina costs (BLOCKED/PARRIED)
+            from domain.mechanics.attack_resolution import AttackOutcome
+
+            is_defensive_action = core_result.outcome in (
+                AttackOutcome.BLOCKED,
+                AttackOutcome.PARRIED,
+            )
+
             if core_result.damage_to_fp > 0:
-                msg += f" FP {core_result.damage_to_fp}."
+                if defender_fp > 0:
+                    # Defender has FP - show FP damage or stamina cost
+                    actual_fp_dmg = min(core_result.damage_to_fp, defender_fp)
+                    fp_overflow = core_result.damage_to_fp - actual_fp_dmg
+                    if actual_fp_dmg > 0:
+                        # Use "Stamina" for defensive actions, "FP" for actual damage
+                        label = "Stamina" if is_defensive_action else "FP"
+                        msg += f" {label} {actual_fp_dmg}."
+                    if fp_overflow > 0:
+                        total_ep += fp_overflow  # Add overflow to EP damage display
+                else:
+                    # Defender has no FP - all FP damage becomes EP damage
+                    total_ep += core_result.damage_to_fp
+
             if total_ep > 0:
                 msg += f" EP {total_ep}."
 
