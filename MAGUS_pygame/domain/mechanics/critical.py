@@ -43,33 +43,31 @@ def get_critical_threshold_for_skill(skill_level: int) -> int:
 
     Higher skill = lower threshold = more frequent criticals.
 
+    Per weaponskill spec:
+    - Level 0: 0-10 critical failure, NO crits (threshold 101 = impossible)
+    - Level 1: 1-5 critical failure, 6+ proceed; NO crits (threshold 101)
+    - Level 2: Crits only on 100 (nat 100), critical failure on 1
+    - Level 3: No critical failures; crits only on 100
+    - Level 4: Crits at 96+ (5%)
+    - Level 5: Crits at 91+ (10%)
+    - Level 6+: Crits at 91+ (10%), special unique effect
+
     Args:
-        skill_level: Weapon skill level (0-5 typically)
+        skill_level: Weapon skill level (0-6+)
 
     Returns:
         Roll threshold (if roll >= threshold, it's critical)
     """
-    # TODO: This needs actual skill progression data
-    # Placeholder logic:
-    # Skill 0: 99+ (1% chance)
-    # Skill 1: 97+ (4% chance)
-    # Skill 2: 95+ (6% chance)
-    # Skill 3: 93+ (8% chance)
-    # Skill 4: 91+ (10% chance)
-    # Skill 5+: 90+ (11% chance)
-
-    if skill_level <= 0:
-        return 99
-    elif skill_level == 1:
-        return 97
+    if skill_level <= 1:
+        return 101  # No crits possible (level 0-1)
     elif skill_level == 2:
-        return 95
+        return 100  # Only nat 100 (1%)
     elif skill_level == 3:
-        return 93
+        return 100  # Only nat 100 (1%)
     elif skill_level == 4:
-        return 91
+        return 96  # 96-100 is critical (5%)
     else:  # 5+
-        return 90
+        return 91  # 91-100 is critical (10%)
 
 
 def get_critical_damage_multiplier(skill_level: int) -> float:
@@ -119,6 +117,32 @@ def is_critical_hit(
         threshold = get_critical_threshold_for_skill(weapon_skill_level)
 
     return attack_roll >= threshold
+
+
+def is_critical_failure(attack_roll: int, weapon_skill_level: int) -> bool:
+    """
+    Check if attack roll results in a critical failure (fumble).
+
+    Per weaponskill spec:
+    - Level 0: Rolls 1-10 are critical failures
+    - Level 1: Rolls 1-5 are critical failures
+    - Level 2: Roll 1 is critical failure
+    - Level 3+: No critical failures
+
+    Args:
+        attack_roll: Raw d100 attack roll
+        weapon_skill_level: Attacker's weapon skill level
+
+    Returns:
+        True if critical failure (attack is blocked/nullified)
+    """
+    if weapon_skill_level == 0:
+        return 1 <= attack_roll <= 10
+    elif weapon_skill_level == 1:
+        return 1 <= attack_roll <= 5
+    elif weapon_skill_level == 2:
+        return attack_roll == 1
+    return False  # Level 3+ no critical failures
 
 
 def apply_critical_effects(ctx: CriticalContext) -> dict:

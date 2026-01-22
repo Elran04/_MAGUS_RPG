@@ -7,7 +7,7 @@ import uuid
 from domain.entities import Unit, Weapon
 from domain.mechanics import Stamina
 from domain.mechanics.armor import ArmorPiece, ArmorSystem
-from domain.value_objects import Attributes, CombatStats, Facing, Position, ResourcePool
+from domain.value_objects import Attributes, CombatStats, Facing, Position, ResourcePool, Skills
 from infrastructure.repositories import CharacterRepository, EquipmentRepository
 from logger.logger import get_logger
 
@@ -24,6 +24,15 @@ class UnitFactory:
     - Loading weapon modifiers
     - Creating properly initialized Unit instances
     """
+
+    # Mapping of weapon category (Hungarian) to skill_id
+    CATEGORY_TO_SKILL_ID = {
+        "Hosszú kardok": "weaponskill_longswords",
+        "Rövidkardok": "weaponskill_shortswords",
+        "Íjak": "weaponskill_bows",
+        "Hosszúpajzsos fegyverek": "weaponskill_longhandled",
+        "Pajzs": "shieldskill",
+    }
 
     def __init__(self, character_repo: CharacterRepository, equipment_repo: EquipmentRepository):
         self.character_repo = character_repo
@@ -81,6 +90,18 @@ class UnitFactory:
             # Stamina derived from Állóképesség (endurance)
             stamina = Stamina.from_attribute(attributes.endurance)
 
+            # Skills parsed from character data + scenario overrides
+            base_skills_list = []
+            if isinstance(char_data.get("Képzettségek"), list):
+                base_skills_list = char_data.get("Képzettségek", [])
+            elif isinstance(char_data.get("skills"), list):
+                base_skills_list = char_data.get("skills", [])
+
+            overrides = char_data.get("skills_override")
+            overrides = overrides if isinstance(overrides, dict) else {}
+
+            skills = Skills.from_sources(base_skills_list, overrides)
+
             # --- Preserve scenario-injected equipment mapping if present ---
             if "equipment" not in char_data:
                 felszereles = char_data.get("Felszerelés", {})
@@ -111,6 +132,7 @@ class UnitFactory:
                 combat_stats=combat_stats,
                 attributes=attributes,
                 character_data=char_data,
+                skills=skills,
                 stamina=stamina,
             )
 
@@ -156,6 +178,9 @@ class UnitFactory:
 
     def _build_weapon_entity(self, weapon_data: dict) -> Weapon:
         """Construct a Weapon domain entity from raw data."""
+        category = weapon_data.get("category", "")
+        skill_id = self.CATEGORY_TO_SKILL_ID.get(category, "")
+
         return Weapon(
             id=weapon_data.get("id", ""),
             name=weapon_data.get("name", "Unknown"),
@@ -175,6 +200,8 @@ class UnitFactory:
             damage_bonus_attributes=weapon_data.get("damage_bonus_attributes", []) or [],
             can_disarm=weapon_data.get("can_disarm", False),
             can_break_weapon=weapon_data.get("can_break_weapon", False),
+            category=category,
+            skill_id=skill_id,
         )
 
     def _build_armor_system(self, char_data: dict) -> ArmorSystem:

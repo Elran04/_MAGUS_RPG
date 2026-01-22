@@ -247,17 +247,29 @@ helmet_2 = {"id": "open_helm", "layer": 1, "parts": {"sisak": 6}}
 - lábszárvédő (shin guard)
 - csizma (boots)
 
+## Recent Updates
+
+### Quick Combat Weapon Quickslots (2026-01-23)
+- Auto-equips up to 3 weapons in quick combat: main_hand, weapon_quick_1, weapon_quick_2
+- Quickslot weapons displayed in unit info popup (press 'I' in battle)
+- Data layer complete, infrastructure ready for switching
+
 ## Future Work
 
+### Next Priority
+1. **In-Battle Weapon Switching**
+   - Hotkeys (1/2) to switch between main_hand and quickslots during combat
+   - AP cost for weapon swapping
+   - Visual feedback for active weapon
+
 ### Pending Tasks
-1. **Enhanced Validation**
+2. **Enhanced Validation**
    - Class/race restrictions
    - Attribute requirements
    - Skill prerequisites
 
-3. **Quick Swap Battle Mechanics**
-   - In-battle weapon switching
-   - Quick access item usage
+3. **Quick Access Item Usage**
+   - Quick access item usage in battle
    - Cooldown tracking
 
 4. **Visual Enhancements**

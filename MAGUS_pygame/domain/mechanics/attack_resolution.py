@@ -20,15 +20,23 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from domain.entities import Unit, Weapon
 from domain.mechanics.armor import HitzoneResolver
-from domain.mechanics.critical import get_critical_damage_multiplier, is_critical_hit
+from domain.mechanics.critical import (
+    get_critical_damage_multiplier,
+    is_critical_failure,
+    is_critical_hit,
+)
 from domain.mechanics.damage import DamageContext, calculate_final_damage
 from domain.mechanics.reach import calculate_mandatory_ep_loss
+from domain.mechanics.skills import get_overpower_threshold_for_skill
 from domain.mechanics.stamina import Stamina
 
 
 class AttackOutcome(Enum):
     """Result of attack resolution before damage."""
 
+    CRITICAL_FAILURE = (
+        "critical_failure"  # Critical fumble (1-10 at level 0, 1-5 at level 1, 1 at level 2)
+    )
     MISS = "miss"  # all_TÉ <= base_VÉ
     BLOCKED = "blocked"  # base_VÉ < all_TÉ <= block_VÉ (shield)
     PARRIED = "parried"  # block_VÉ < all_TÉ <= parry_VÉ (weapon)
@@ -163,18 +171,23 @@ def calculate_defense_values(
 
 
 def calculate_attack_value(
-    attacker: Unit, attack_roll: int, weapon: Weapon | None = None, condition_modifier: int = 0
+    attacker: Unit,
+    attack_roll: int,
+    weapon: Weapon | None = None,
+    condition_modifier: int = 0,
+    skill_mod: int = 0,
 ) -> int:
     """
     Calculate final attack value (all_TÉ).
 
-    all_TÉ = base TÉ + weapon TÉ + d100 roll + conditions + stamina + injury
+    all_TÉ = base TÉ + weapon TÉ + d100 roll + conditions + stamina + injury + skill
 
     Args:
         attacker: Attacking unit
         attack_roll: d100 roll (1-100)
         weapon: Weapon used (defaults to attacker's weapon)
         condition_modifier: Conditions/status effects modifier
+        skill_mod: Weapon skill TÉ modifier
 
     Returns:
         Final attack value
@@ -202,7 +215,15 @@ def calculate_attack_value(
 
     weapon_te = weapon.te_modifier if weapon else 0
 
-    all_te = base_te + weapon_te + stamina_mod + injury_mod + attack_roll + condition_modifier
+    all_te = (
+        base_te
+        + weapon_te
+        + stamina_mod
+        + injury_mod
+        + attack_roll
+        + condition_modifier
+        + skill_mod
+    )
 
     return all_te
 
@@ -248,15 +269,65 @@ def resolve_attack(
 
     # Armor is sourced from defender.armor_system (if present)
 
+    # === Apply weapon skill modifiers ===
+    skill_ke_mod = 0
+    skill_te_mod = 0
+    skill_ve_mod = 0
+    skill_ce_mod = 0
+    skill_stamina_reduction = 0
+    skill_critical_override = None
+
+    if weapon_skill_level > 0 and hasattr(weapon, "skill_id") and weapon.skill_id:
+        # For now, all weapon skills use longswords modifiers; later: registry lookup
+        from domain.mechanics.skills import apply_weaponskill_modifiers
+
+        (
+            skill_ke_mod,
+            skill_te_mod,
+            skill_ve_mod,
+            skill_ce_mod,
+            skill_stamina_reduction,
+            skill_critical_override,
+        ) = apply_weaponskill_modifiers(attacker, attack_roll, weapon_skill_level)
+
+        # Apply skill overpower threshold shift
+        overpower_threshold = get_overpower_threshold_for_skill(
+            weapon_skill_level, overpower_threshold
+        )
+
+    # === Check for critical failure (levels 0-2) ===
+    is_fail = is_critical_failure(attack_roll, weapon_skill_level)
+    if is_fail:
+        # Critical failure: attack is immediately CRITICAL_FAILURE outcome, no damage, no hit
+        return AttackResult(
+            outcome=AttackOutcome.CRITICAL_FAILURE,
+            all_te=0,
+            all_ve=0,
+            attack_roll=attack_roll,
+            rolled_damage=0,
+            is_critical=False,
+            is_overpower=False,
+            hit=False,
+            damage_to_fp=0,
+            damage_to_ep=0,
+            armor_absorbed=0,
+            armor_degraded=False,
+            mandatory_ep_loss=0,
+            stamina_spent_attacker=0,
+            stamina_spent_defender=0,
+        )
+
     # Check for critical hit first (affects everything)
-    is_crit = is_critical_hit(attack_roll, weapon_skill_level)
+    is_crit = is_critical_hit(attack_roll, weapon_skill_level, skill_critical_override)
 
     # Unconscious attackers cannot land critical hits
     if hasattr(attacker, "stamina") and attacker.stamina and attacker.stamina.is_unconscious():
         is_crit = False
 
     # Calculate attack and defense values
-    all_te = calculate_attack_value(attacker, attack_roll, weapon, attacker_conditions)
+    all_te = calculate_attack_value(
+        attacker, attack_roll, weapon, attacker_conditions, skill_te_mod
+    )
     defense = calculate_defense_values(defender, shield_ve, dodge_modifier, defender_conditions)
 
     # Determine outcome
@@ -424,11 +495,12 @@ def resolve_attack(
 
     # Calculate attacker stamina cost (equal to AP cost of attack)
     # This will be spent by action_handler after the attack resolves
+    # Apply skill-based stamina cost reduction
     stamina_spent_attacker = 0
     if attacker.weapon:
-        stamina_spent_attacker = attacker.weapon.attack_time
+        stamina_spent_attacker = max(1, attacker.weapon.attack_time - skill_stamina_reduction)
     else:
-        stamina_spent_attacker = 5  # Default unarmed attack cost
+        stamina_spent_attacker = max(1, 5 - skill_stamina_reduction)  # Default unarmed attack cost
 
     return AttackResult(
         outcome=outcome,

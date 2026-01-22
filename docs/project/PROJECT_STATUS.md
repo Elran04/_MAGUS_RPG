@@ -1,4 +1,4 @@
-# Project Status — MAGUS RPG (as of 2026-01-22)
+# Project Status — MAGUS RPG (as of 2026-01-23)
 
 ## Overview
 
@@ -23,6 +23,7 @@ Two actively developed modules:
 ### Game Demo
 - **Combat Mechanics**: 
   - Attack resolution: melee, critical hits, overpower strikes, zone-based armor absorption
+  - Skills system: weaponskill modifiers (BASE + UNIQUE effects per weapon type); weaponskill_longswords (levels 0-6); critical thresholds and failure ranges
   - Stamina system: 5 fatigue states with progressive penalties; unconscious handling (zero combat values, turn skipped)
   - Injury conditions: 4 tiers with KÉ/TÉ/VÉ/CÉ penalties based on FP/EP damage
   - Defensive actions: block/parry/dodge with stamina costs; reactions (opportunity attacks)
@@ -42,7 +43,7 @@ Two actively developed modules:
 - **Models**: Pydantic models for races, dataclasses for combat entities
 
 ### Quality & Testing
-- **Tests**: 115+ tests covering combat mechanics, stamina, equipment validation, scenario service
+- **Tests**: 261 tests passing (skills, weaponskills, critical failures, combat mechanics, stamina, equipment validation, scenario service)
 - **Type Safety**: mypy configured; strict checking in progress
 - **Linting**: ruff + black for code quality
 - **Documentation**: MkDocs Material site (builds successfully), consolidated guides, archived legacy docs
@@ -50,6 +51,9 @@ Two actively developed modules:
 ## Recent Changes (December 2025)
 
 ## Recent Changes (January 2026)
+- **Skills System**: Skills VO integrated; weaponskill modifiers (BASE universal + weapon-specific UNIQUE effects); weaponskill_longswords fully implemented (levels 0-6)
+- **Critical Mechanics**: Corrected thresholds (level-dependent); failure ranges (0: 1-10, 1: 1-5, 2: 1 only, 3+: none); CRITICAL_FAILURE outcome; 11 tests fixed
+- **Weapon Quickslots**: Auto-equips 3 weapons in quick combat (main_hand + 2 quickslots); displayed in unit info popup; switching UI pending
 - **Stamina System**: 5 fatigue states (Friss → Kimerült) with progressive TÉ/VÉ penalties; unconscious at 0 stamina (zero combat values, turn skipped)
 - **Injury Conditions**: 4-tier system (Egészséges/Könnyű/Súlyos/Kritikus) based on FP/EP thresholds; penalties to KÉ/TÉ/VÉ/CÉ
 - **Zone-Based Armor**: Hit location resolution; SFÉ absorption by body part; block/parry stamina costs use raw damage
@@ -60,10 +64,10 @@ Two actively developed modules:
 ## Outstanding Work
 
 ### High Priority
-- **Unit Tests**: Expand coverage for stamina/injury/unconscious mechanics; attack resolution edge cases
-- **Skill System**: Weapon proficiency integration; dodge/block/parry skill modifiers; critical threshold adjustments
+- **In-Battle Weapon Switching**: Hotkeys (1/2) to switch between main_hand and quickslots; AP cost; visual feedback for active weapon
 - **Dodge Resolution**: Gyorsaság (speed) checks; partial damage on failed dodge; skill-based stamina cost reduction
 - **Stamina Recovery**: Turn-based regeneration; rest mechanics; exhaustion save implementation
+- **Additional Weaponskills**: Implement unique effects for shortswords, bows, longhandled weapons (BASE modifiers already universal)
 - **Camera Integration**: Wire existing camera module to game controls (pan/zoom)
 - **Combat Feedback**: Visual polish (damage numbers, condition icons, status effects)
 

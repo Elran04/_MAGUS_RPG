@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from .scenario_config import ScenarioConfig, UnitSetup
+from .skills import Skills
 
 
 @dataclass(frozen=True)

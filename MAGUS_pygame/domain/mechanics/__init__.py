@@ -29,6 +29,8 @@ from .critical import (
     CriticalContext,
     apply_critical_effects,
     get_critical_damage_multiplier,
+    get_critical_threshold_for_skill,
+    is_critical_failure,
     is_critical_hit,
 )
 from .damage import DamageContext, DamageResult, DamageService, calculate_final_damage
@@ -84,6 +86,8 @@ __all__ = [
     # Critical
     "CriticalContext",
     "is_critical_hit",
+    "is_critical_failure",
+    "get_critical_threshold_for_skill",
     "get_critical_damage_multiplier",
     "apply_critical_effects",
     # Attack Resolution

@@ -165,13 +165,13 @@ def test_critical():
         combat_stats=CombatStats(VE=60),
     )
 
-    # Roll 96, skill 2 → threshold 95 → CRITICAL
-    # TÉ: 50 + 10 + 96 = 156, VÉ: 60
-    # 156 > 60 + 50 → Also OVERPOWER (devastating combo!)
+    # Roll 100, skill 2 → threshold 100 (nat 100 only) → CRITICAL
+    # TÉ: 50 + 10 + 100 = 160, VÉ: 60
+    # 160 > 60 + 50 → Also OVERPOWER (devastating combo!)
     result = resolve_attack(
         attacker=attacker,
         defender=defender,
-        attack_roll=96,
+        attack_roll=100,
         base_damage_roll=6,
         weapon_skill_level=2,
     )
@@ -226,13 +226,13 @@ def test_critical_only():
         combat_stats=CombatStats(VE=110),  # High enough VÉ to prevent overpower
     )
 
-    # Roll 97, skill 2 → threshold 95 → CRITICAL
-    # TÉ: 50 + 10 + 97 = 157, VÉ: 110
-    # 157 NOT > 110 + 50 (160) → Only CRITICAL, not overpower
+    # Roll 100, skill 2 → threshold 100 (nat 100 only) → CRITICAL
+    # TÉ: 50 + 10 + 100 = 160, VÉ: 110
+    # 160 NOT > 110 + 50 (160) → Only CRITICAL, not overpower
     result = resolve_attack(
         attacker=attacker,
         defender=defender,
-        attack_roll=97,
+        attack_roll=100,
         base_damage_roll=6,
         weapon_skill_level=2,
     )

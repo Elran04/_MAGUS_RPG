@@ -59,5 +59,9 @@ class Weapon:
     can_disarm: bool = False
     can_break_weapon: bool = False
 
+    # Weapon classification for skill lookups
+    category: str = ""  # e.g., "Hosszú kardok"
+    skill_id: str = ""  # e.g., "weaponskill_longswords" (derived from category)
+
     def __str__(self) -> str:
         return f"{self.name} (KÉ+{self.ke_modifier} TÉ+{self.te_modifier} VÉ+{self.ve_modifier})"

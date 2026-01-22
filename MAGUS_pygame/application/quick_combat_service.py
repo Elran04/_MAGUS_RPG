@@ -151,6 +151,8 @@ def _auto_equip_from_inventory(char_data: dict, equipment_repo) -> None:
     equipment_slots = {
         "main_hand": "",
         "off_hand": "",
+        "weapon_quick_1": "",
+        "weapon_quick_2": "",
         "armor": [],
     }
 
@@ -189,6 +191,15 @@ def _auto_equip_from_inventory(char_data: dict, equipment_repo) -> None:
         equipment_slots["main_hand"] = weapons[0]
         logger.debug(f"Auto-equipped main_hand: {weapons[0]}")
 
+    # Equip additional weapons to quickslots
+    if len(weapons) > 1:
+        equipment_slots["weapon_quick_1"] = weapons[1]
+        logger.debug(f"Auto-equipped weapon_quick_1: {weapons[1]}")
+
+    if len(weapons) > 2:
+        equipment_slots["weapon_quick_2"] = weapons[2]
+        logger.debug(f"Auto-equipped weapon_quick_2: {weapons[2]}")
+
     # Equip first shield to off hand
     if shields:
         equipment_slots["off_hand"] = shields[0]
@@ -201,8 +212,15 @@ def _auto_equip_from_inventory(char_data: dict, equipment_repo) -> None:
 
     # Add equipment mapping to character data
     char_data["equipment"] = equipment_slots
+
+    # Count equipped weapons (including quickslots)
+    weapon_count = sum(
+        1 for slot in ["main_hand", "weapon_quick_1", "weapon_quick_2"] if equipment_slots[slot]
+    )
     logger.info(
-        f"Auto-equipped: weapon={equipment_slots['main_hand']}, shield={equipment_slots['off_hand']}, armor={len(armor_items)} pieces"
+        f"Auto-equipped: {weapon_count} weapon(s) (main={equipment_slots['main_hand']}, "
+        f"quick1={equipment_slots['weapon_quick_1']}, quick2={equipment_slots['weapon_quick_2']}), "
+        f"shield={equipment_slots['off_hand']}, armor={len(armor_items)} pieces"
     )
 
 

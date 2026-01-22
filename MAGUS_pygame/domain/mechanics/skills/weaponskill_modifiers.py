@@ -1,0 +1,267 @@
+"""
+Weapon skill modifiers registry for MAGUS combat.
+
+Each weapon skill defines how its levels modify attack resolution:
+- Stat bonuses/penalties (KÉ, TÉ, VÉ, CÉ)
+- Stamina cost reductions
+- Overpower threshold shifts
+- Critical/failure range overrides
+- Special effects (opportunity attacks, parries, etc.)
+
+Weaponskills are registered per skill_id and applied during attack resolution.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from domain.entities import Unit
+    from domain.mechanics.attack_resolution import AttackResult
+
+
+@dataclass(frozen=True)
+class WeaponskillModifiers:
+    """Stat and effect modifiers from a weapon skill at a given level."""
+
+    level: int
+    ke_mod: int = 0  # Initiative modifier
+    te_mod: int = 0  # Attack modifier
+    ve_mod: int = 0  # Defense modifier
+    ce_mod: int = 0  # Ranged attack modifier
+
+    stamina_cost_reduction: int = 0  # Reduces attack stamina spend
+    overpower_threshold_shift: int = 0  # Reduces overpower threshold (e.g., -10 at level 5)
+
+    critical_threshold_override: int | None = None  # Override critical roll threshold
+
+    # Special effects
+    has_opportunity_on_miss_parry: bool = False  # Level 3+: opportunity on miss/parry
+    opportunity_attacks_per_turn: int = 0  # Level 3: 1, Level 6: 3
+
+
+# ============================================================================
+# BASE WEAPONSKILL MODIFIERS (Universal for all weapon types)
+# ============================================================================
+
+BASE_WEAPONSKILL_MODIFIERS = {
+    0: WeaponskillModifiers(
+        level=0,
+        ke_mod=-10,
+        te_mod=-25,
+        ve_mod=-20,
+        ce_mod=-30,
+        stamina_cost_reduction=0,  # No reduction; attack AP cost is doubled (2x)
+        overpower_threshold_shift=0,
+        critical_threshold_override=101,  # No crits possible; critical failure 1-10
+    ),
+    1: WeaponskillModifiers(
+        level=1,
+        ke_mod=0,  # Negatives removed
+        te_mod=0,
+        ve_mod=0,
+        ce_mod=0,
+        stamina_cost_reduction=0,  # Still doubled AP cost (doubled stamina)
+        overpower_threshold_shift=0,
+        critical_threshold_override=101,  # No crits; critical failure 1-5
+    ),
+    2: WeaponskillModifiers(
+        level=2,
+        ke_mod=0,
+        te_mod=0,
+        ve_mod=0,
+        ce_mod=0,
+        stamina_cost_reduction=0,
+        overpower_threshold_shift=0,
+        critical_threshold_override=100,  # Only nat 100 (1%); critical failure on 1
+    ),
+    3: WeaponskillModifiers(
+        level=3,
+        ke_mod=0,
+        te_mod=0,
+        ve_mod=0,
+        ce_mod=0,
+        stamina_cost_reduction=1,  # Attack stamina cost reduced by 1
+        overpower_threshold_shift=0,
+        critical_threshold_override=100,  # Only nat 100; no critical failures
+        # Unique effects defined per weapon type
+    ),
+    4: WeaponskillModifiers(
+        level=4,
+        ke_mod=5,
+        te_mod=10,
+        ve_mod=10,
+        ce_mod=10,
+        stamina_cost_reduction=2,  # Attack stamina cost reduced by 2
+        overpower_threshold_shift=0,
+        critical_threshold_override=96,  # 96-100 critical (5%)
+    ),
+    5: WeaponskillModifiers(
+        level=5,
+        ke_mod=0,
+        te_mod=0,
+        ve_mod=0,
+        ce_mod=0,
+        stamina_cost_reduction=3,  # Attack stamina cost reduced by 3
+        overpower_threshold_shift=-10,  # Overpower threshold reduced by 10 (50 -> 40)
+        critical_threshold_override=91,  # 91-100 critical (10%)
+    ),
+    6: WeaponskillModifiers(
+        level=6,
+        ke_mod=0,
+        te_mod=0,
+        ve_mod=0,
+        ce_mod=0,
+        stamina_cost_reduction=3,
+        overpower_threshold_shift=-10,
+        critical_threshold_override=91,
+        # Unique effects defined per weapon type
+    ),
+}
+
+
+# ============================================================================
+# WEAPON-SPECIFIC UNIQUE EFFECTS (Only level 3 and 6)
+# ============================================================================
+
+WEAPONSKILL_UNIQUE_EFFECTS = {
+    "weaponskill_longswords": {
+        3: {
+            "has_opportunity_on_miss_parry": True,
+            "opportunity_attacks_per_turn": 1,
+        },
+        6: {
+            "has_opportunity_on_miss_parry": True,
+            "opportunity_attacks_per_turn": 3,
+        },
+    },
+    # Add other weapon types here:
+    # "weaponskill_shortswords": {
+    #     3: {"unique_effect": ...},
+    #     6: {"unique_effect": ...},
+    # },
+}
+
+
+def get_weaponskill_modifiers(
+    skill_level: int, weapon_skill_id: str = "weaponskill_longswords"
+) -> WeaponskillModifiers:
+    """Get modifier object for a weaponskill level.
+
+    Merges base modifiers with weapon-specific unique effects for levels 3 and 6.
+
+    Args:
+        skill_level: Skill level (0-6+)
+        weapon_skill_id: Weapon skill identifier (e.g., "weaponskill_longswords")
+
+    Returns:
+        WeaponskillModifiers for that level, or level 0 (unskilled) if out of range
+    """
+    import dataclasses
+
+    # Get base modifiers
+    base = BASE_WEAPONSKILL_MODIFIERS.get(skill_level, BASE_WEAPONSKILL_MODIFIERS[0])
+
+    # Check for weapon-specific unique effects
+    if weapon_skill_id in WEAPONSKILL_UNIQUE_EFFECTS:
+        unique_effects = WEAPONSKILL_UNIQUE_EFFECTS[weapon_skill_id].get(skill_level)
+        if unique_effects:
+            # Merge unique effects into base modifiers
+            return dataclasses.replace(base, **unique_effects)
+
+    return base
+
+
+def apply_weaponskill_modifiers(
+    attacker: Unit,
+    attack_roll: int,
+    weapon_skill_level: int,
+    weapon_skill_id: str = "weaponskill_longswords",
+) -> tuple[int, int, int, int, int, int | None]:
+    """Apply weaponskill modifiers to attack values.
+
+    Args:
+        attacker: Attacking unit
+        attack_roll: Raw d100 roll
+        weapon_skill_level: Skill level
+        weapon_skill_id: Weapon skill identifier
+
+    Returns:
+        Tuple of (ke_mod, te_mod, ve_mod, ce_mod, stamina_reduction, critical_threshold_override)
+    """
+    mods = get_weaponskill_modifiers(weapon_skill_level, weapon_skill_id)
+
+    return (
+        mods.ke_mod,
+        mods.te_mod,
+        mods.ve_mod,
+        mods.ce_mod,
+        mods.stamina_cost_reduction,
+        mods.critical_threshold_override,
+    )
+
+
+def get_overpower_threshold_for_skill(
+    weapon_skill_level: int,
+    base_threshold: int = 50,
+    weapon_skill_id: str = "weaponskill_longswords",
+) -> int:
+    """Calculate overpower threshold with skill modifiers.
+
+    Args:
+        weapon_skill_level: Skill level
+        base_threshold: Base threshold (default 50)
+        weapon_skill_id: Weapon skill identifier
+
+    Returns:
+        Adjusted overpower threshold
+    """
+    mods = get_weaponskill_modifiers(weapon_skill_level, weapon_skill_id)
+    return base_threshold + mods.overpower_threshold_shift  # Shift is usually negative
+
+
+# ============================================================================
+# OPPORTUNITY ATTACK ELIGIBILITY
+# ============================================================================
+
+
+def should_grant_skill_opportunity_attack(
+    weapon_skill_level: int, attack_outcome: str, weapon_skill_id: str = "weaponskill_longswords"
+) -> bool:
+    """Check if weaponskill grants opportunity attack for this outcome.
+
+    Level 3: Opportunity on MISS or PARRIED (weapon-specific)
+    Level 6: Same, but 3x per turn instead of 1x (weapon-specific)
+
+    Args:
+        weapon_skill_level: Skill level
+        attack_outcome: AttackOutcome name (e.g., "miss", "parried")
+        weapon_skill_id: Weapon skill identifier
+
+    Returns:
+        True if skill grants an opportunity attack
+    """
+    mods = get_weaponskill_modifiers(weapon_skill_level, weapon_skill_id)
+
+    if not mods.has_opportunity_on_miss_parry:
+        return False
+
+    # Only on MISS or PARRIED
+    return attack_outcome in ("miss", "parried")
+
+
+def get_opportunity_attack_limit(
+    weapon_skill_level: int, weapon_skill_id: str = "weaponskill_longswords"
+) -> int:
+    """Get number of skill-based opportunity attacks allowed.
+
+    Args:
+        weapon_skill_level: Skill level
+        weapon_skill_id: Weapon skill identifier
+
+    Returns:
+        Number of opportunity attacks (0, 1, or 3)
+    """
+    mods = get_weaponskill_modifiers(weapon_skill_level, weapon_skill_id)
+    return mods.opportunity_attacks_per_turn

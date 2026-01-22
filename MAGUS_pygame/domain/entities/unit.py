@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 import pygame
-from domain.value_objects import Attributes, CombatStats, Facing, Position, ResourcePool
+from domain.value_objects import Attributes, CombatStats, Facing, Position, ResourcePool, Skills
 
 if TYPE_CHECKING:
     from domain.mechanics.armor import ArmorSystem
@@ -50,6 +50,9 @@ class Unit:
     # Character reference (raw data, detailed stats, skills, equipment)
     character_data: dict | None = None
 
+    # Skills (rank/percent-based) parsed from character data and scenario overrides
+    skills: Skills = field(default_factory=Skills.empty)
+
     # Weapon (if wielded)
     weapon: Weapon | None = None
 
@@ -58,6 +61,10 @@ class Unit:
 
     # Stamina (Állóképesség-based endurance). Optional until initialized by factory.
     stamina: Stamina | None = None
+
+    # Opportunity attack counters (separate tracking for ZOC vs skill-based)
+    zoc_opportunity_attacks_remaining: int = 0  # From zone of control
+    skill_opportunity_attacks_remaining: int = 0  # From weapon skills (e.g., weaponskill level 3+)
 
     def is_alive(self) -> bool:
         """Check if unit is still alive."""

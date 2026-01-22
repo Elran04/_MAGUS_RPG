@@ -152,8 +152,9 @@ class TestUnconsciousDefender:
         result = resolve_attack(
             attacker=conscious_attacker,
             defender=unconscious_defender,
-            attack_roll=1,  # Even minimum roll hits
+            attack_roll=50,  # Avoid critical failure (level 1: 1-5 fail)
             base_damage_roll=5,
+            weapon_skill_level=1,  # Level 1: failures on 1-5
         )
         # With zero VÉ, even low TÉ should hit
         assert result.hit is True

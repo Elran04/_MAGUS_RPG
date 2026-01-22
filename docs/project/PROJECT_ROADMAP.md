@@ -4,6 +4,9 @@
 Two modules: GM Toolkit (PySide6) for data/editing and a Pygame combat demo for mechanics prototyping. Godot is the likely target for the final game, so the Pygame module is for mechanics validation.
 
 ## ✅ Recently Completed
+- **Skills System**: Skills VO with normalized lookup; weaponskill modifiers (BASE + UNIQUE effects); weaponskill_longswords (levels 0-6 with all effects); integrated with attack resolution and critical thresholds
+- **Critical Failure Mechanics**: Level-dependent failure ranges; corrected thresholds; distinct CRITICAL_FAILURE outcome; 11 tests fixed
+- **Quick Combat Weapon Quickslots**: Auto-equips 3 weapons (main + 2 quickslots); displayed in unit info popup; data layer complete
 - **Stamina/Fatigue System**: Complete with 5 states (Friss → Kimerült → Unconscious); progressive TÉ/VÉ penalties; action costs for attacks/block/parry/dodge
 - **Injury Condition System**: 4-tier tracking (Egészséges/Könnyű/Súlyos/Kritikus) based on FP/EP thresholds; penalties to all combat stats (KÉ/TÉ/VÉ/CÉ)
 - **Unconscious Mechanics**: Units at 0 stamina have zero combat values, cannot act, turns auto-skipped
@@ -14,8 +17,7 @@ Two modules: GM Toolkit (PySide6) for data/editing and a Pygame combat demo for 
 - Character Creator summary/export + **Character Loader UI** (browse/view/delete)
 
 ## 🎯 Current Focus (short-term)
-- **Unit Tests**: Comprehensive coverage for stamina/injury/unconscious mechanics, attack resolution edge cases
-- **Skill System Integration**: Weapon proficiency affects critical thresholds; dodge/block/parry skill modifiers
+- **In-Battle Weapon Switching**: Hotkeys (1/2) to switch between main_hand and quickslots; AP cost; visual feedback
 - **Dodge Resolution**: Speed checks (Gyorsaság próba); partial damage on failed dodge; skill-based cost reduction
 - **Stamina Recovery**: Turn-based or rest mechanics; regeneration rates; exhaustion saves
 - Character Creator: inline editing fields for saved characters
@@ -38,12 +40,12 @@ Two modules: GM Toolkit (PySide6) for data/editing and a Pygame combat demo for 
 - **Scenario Generator**: Random encounter creation; balanced team composition
 
 ## 📌 Status Snapshot
-- **Combat Systems**: Stamina (5 fatigue states + unconscious), injury (4-tier conditions), zone-based armor, enriched attack resolution
-- **Combat UI**: Real-time HUD (stamina/FP/EP bars), conditions tab (fatigue + injury), detailed combat messages (zone/SFÉ/damage)
+- **Combat Systems**: Stamina (5 fatigue states + unconscious), injury (4-tier conditions), zone-based armor, skills (weaponskill modifiers + critical failures), enriched attack resolution
+- **Combat UI**: Real-time HUD (stamina/FP/EP bars), conditions tab (fatigue + injury), detailed combat messages (zone/SFÉ/damage), unit info popup (equipment + quickslots)
 - **GM Toolkit**: Editors for skills/classes/equipment/races; 5-step character wizard; character loader (read-only + delete)
 - **Data Layer**: JSON + SQLite hybrid; managers operational; Pydantic models
-- **Tests**: 115+ tests (damage, attack resolution, stamina, scenario service); pytest/mypy/ruff configured
-- **Docs**: COMBAT_MECHANICS.md comprehensive; DEVELOPER_GUIDE current; MkDocs builds successfully
+- **Tests**: 261 tests passing (skills, weaponskills, critical failures, combat mechanics); pytest/mypy/ruff configured
+- **Docs**: COMBAT_MECHANICS.md comprehensive; DEVELOPER_GUIDE current; EQUIPMENT_SYSTEM.md updated; MkDocs builds successfully
 
 ## 📝 Tracking
 - CHANGELOG.md for notable changes

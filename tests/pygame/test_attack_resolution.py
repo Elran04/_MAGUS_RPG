@@ -193,6 +193,7 @@ class TestAttackOutcomes:
             defender,
             attack_roll=1,  # 50 + 10 + 1 = 61 > 60, still hits
             base_damage_roll=5,
+            weapon_skill_level=1,  # Avoid critical failure on low roll
         )
 
         # Actually, with base VÉ 60, TÉ 61 still hits
@@ -202,8 +203,9 @@ class TestAttackOutcomes:
         result = resolve_attack(
             attacker,
             defender,
-            attack_roll=5,  # 50 + 10 + 5 = 65 < 100
+            attack_roll=35,  # 50 + 10 + 35 = 95 < 100, avoids critical failure (level 1: 1-5 fail)
             base_damage_roll=5,
+            weapon_skill_level=1,  # Level 1: failures on 1-5
         )
 
         assert result.outcome == AttackOutcome.MISS
@@ -224,6 +226,7 @@ class TestAttackOutcomes:
             defender,
             attack_roll=45,
             base_damage_roll=7,
+            weapon_skill_level=1,  # Avoid critical failure on low roll
         )
 
         assert result.outcome == AttackOutcome.HIT
@@ -246,6 +249,7 @@ class TestAttackOutcomes:
             defender,
             attack_roll=88,
             base_damage_roll=9,
+            weapon_skill_level=1,  # Avoid critical failure on low roll
         )
 
         assert result.outcome == AttackOutcome.OVERPOWER
@@ -258,13 +262,13 @@ class TestAttackOutcomes:
         """Critical hit on high roll with skill."""
         attacker.weapon = basic_weapon
 
-        # Roll 96, skill 2 → threshold 95 → CRITICAL
-        # TÉ: 50 + 10 + 96 = 156, VÉ: 60
-        # 156 > 60 + 50 → Also OVERPOWER!
+        # Roll 100, skill 2 → threshold 100 → CRITICAL (only nat 100 at level 2)
+        # TÉ: 50 + 10 + 100 = 160, VÉ: 60
+        # 160 > 60 + 50 → Also OVERPOWER!
         result = resolve_attack(
             attacker,
             defender,
-            attack_roll=96,
+            attack_roll=100,
             base_damage_roll=6,
             weapon_skill_level=2,
         )
@@ -283,13 +287,13 @@ class TestAttackOutcomes:
         attacker.weapon = basic_weapon
         defender.combat_stats = CombatStats(VE=200)  # Impossible to hit normally
 
-        # Roll 97, skill 2 → CRITICAL (auto-hit despite high VÉ)
-        # TÉ: 50 + 10 + 97 = 157, VÉ: 200
-        # 157 NOT > 200 + 50 → Only CRITICAL, not overpower
+        # Roll 100, skill 2 → CRITICAL (auto-hit despite high VÉ)
+        # TÉ: 50 + 10 + 100 = 160, VÉ: 200
+        # 160 NOT > 200 + 50 → Only CRITICAL, not overpower
         result = resolve_attack(
             attacker,
             defender,
-            attack_roll=97,
+            attack_roll=100,
             base_damage_roll=8,
             weapon_skill_level=2,
         )
@@ -317,10 +321,10 @@ class TestCriticalOverpowerCombination:
         defender.weapon = basic_weapon
 
         # High roll for critical, and TÉ advantage for overpower
-        # Roll 97 (critical for skill 2)
-        # TÉ: 50 + 10 + 97 = 157
+        # Roll 100 (critical for skill 2, only nat 100)
+        # TÉ: 50 + 10 + 100 = 160
         # VÉ: 60 + 8 = 68
-        # 157 > 68 + 50 → Also OVERPOWER
+        # 160 > 68 + 50 → Also OVERPOWER
 
         # Force chest hit zone for deterministic degradation assertion
         monkeypatch.setattr(
@@ -331,7 +335,7 @@ class TestCriticalOverpowerCombination:
         result = resolve_attack(
             attacker,
             defender,
-            attack_roll=97,
+            attack_roll=100,
             base_damage_roll=10,
             weapon_skill_level=2,
         )
@@ -375,7 +379,7 @@ class TestCriticalOverpowerCombination:
         result = resolve_attack(
             attacker,
             defender,
-            attack_roll=97,  # Critical
+            attack_roll=100,  # Critical (nat 100 at level 2)
             base_damage_roll=10,
             weapon_skill_level=2,
         )
@@ -397,7 +401,7 @@ class TestCriticalOverpowerCombination:
         result = resolve_attack(
             attacker,
             defender,
-            attack_roll=96,
+            attack_roll=100,  # Critical (nat 100 at level 2)
             base_damage_roll=10,
             weapon_skill_level=2,
         )
@@ -413,12 +417,13 @@ class TestCriticalOverpowerCombination:
         attacker.attributes = Attributes(strength=20)
         defender.ep = ResourcePool(12, 15)  # Typical EP pool
 
+        # Use roll 91+ for level 4 (critical at 96+, 5% rate)
         result = resolve_attack(
             attacker,
             defender,
-            attack_roll=98,
+            attack_roll=96,
             base_damage_roll=12,
-            weapon_skill_level=3,  # 1.75x multiplier
+            weapon_skill_level=4,  # 2.0x multiplier
         )
 
         assert result.is_critical

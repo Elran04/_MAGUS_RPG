@@ -84,6 +84,8 @@ def _create_units_for_team(context, team_setups, team_label: str) -> list[Unit]:
                 )
                 continue
             char_data["equipment"] = setup.equipment.copy() if setup.equipment else {}
+            if setup.skills:
+                char_data["skills_override"] = setup.skills.copy()
 
             u = unit_factory.create_unit(
                 character_filename=setup.character_file,

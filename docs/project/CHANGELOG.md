@@ -7,12 +7,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **Skills System**: Skills VO for normalized skill lookup; weaponskill modifiers (BASE universal + weapon-specific UNIQUE effects); integrated with attack resolution
+- **Weaponskill_Longswords**: Full implementation (levels 0-6) with stat penalties/bonuses, stamina reduction, critical thresholds, overpower shifts, opportunity attacks (1x at level 3, 3x at level 6)
+- **Critical Failure Mechanics**: Level-dependent failure ranges (0: 1-10, 1: 1-5, 2: 1 only, 3+: none); distinct CRITICAL_FAILURE outcome in attack resolution
+- **Quick Combat Weapon Quickslots**: Auto-equips up to 3 weapons (main_hand, weapon_quick_1, weapon_quick_2); displayed in unit info popup
 - **Stamina/Fatigue System**: Physical endurance tied to Állóképesség; progressive combat penalties across 5 states; stamina costs for attacks and defensive actions
 - **Injury Condition System**: 4-tier condition tracking (Egészséges/Könnyű/Súlyos/Kritikus) based on FP/EP thresholds; penalties to all combat stats
 - **Unconscious Mechanics**: Units at 0 stamina have zero combat values, cannot act, and their turns are automatically skipped
 - **Zone-Based Armor Integration**: Hit zone resolution for real hits; SFÉ absorption by body location; block/parry use raw damage for stamina calculation
 - **Enriched Combat Messages**: Attack results display hit zone, SFÉ absorption, and rolled damage for successful hits; stamina costs shown for defensive actions
-- **Unit Tests**: Comprehensive test coverage for injury system (23 tests), unconscious mechanics (14 tests); all passing
+- **Unit Tests**: 261 tests passing (expanded from 115); coverage for skills, weaponskills, critical failures, injury system, unconscious mechanics
 - MkDocs Material documentation site with dark/light theme toggle
 - Comprehensive unit tests for `ScenarioService` (team limits, duplicates, validation)
 - `docs/DEVELOPER_GUIDE.md` - consolidated developer onboarding guide
@@ -28,6 +32,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **docs/architecture/TESTING.md**: Complete guide to test structure, execution patterns, and namespace management
 
 ### Changed
+- **Critical Thresholds**: Corrected to level-dependent values (0-1: 101 impossible, 2: 100 nat only, 3: 100, 4: 96, 5+: 91); aligned with MAGUS rulebook
+- **Weaponskill Architecture**: Refactored to BASE_WEAPONSKILL_MODIFIERS (universal levels 0-6) + WEAPONSKILL_UNIQUE_EFFECTS (weapon-specific levels 3 & 6 only)
+- **Weapon Metadata**: Added category (e.g., "Hosszú kardok") and skill_id (e.g., "weaponskill_longswords") fields to Weapon entity
 - **Damage Calculations**: Floor rounding for multiplied damage (no fractional HP loss); stamina and FP now fully independent systems
 - **Stamina Penalties**: Updated to realistic values (Friss 0/0, Felpezsdült -2/-1, Kifulladt -4/-3, Kifáradt -7/-5, Kimerült -10/-8)
 - **Combat Message Position**: Moved to bottom center above tooltip for better visibility
@@ -42,6 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Test execution now uses root conftest.py with dynamic sys.path management instead of package-level conftest files
 
 ### Fixed
+- **Critical Failure Tests**: Fixed 11 failing tests across 4 files after CRITICAL_FAILURE implementation (updated weapon_skill_level parameters, adjusted rolls to avoid failure ranges)
 - **Circular Import**: Resolved Stamina import issue in Unit entity using TYPE_CHECKING
 - **HUD Stamina Display**: Fixed to read unit.stamina instead of re-initializing every frame
 - **Zone Resolution**: Limited to real hits only; no zone calculation for blocked/parried/dodged attacks

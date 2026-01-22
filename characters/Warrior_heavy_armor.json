@@ -60,7 +60,7 @@
       "Szint": 2
     },
     {
-      "id": "weaponskill_shortswords",
+      "id": "weaponskill_longswords",
       "Szint": 2
     },
     {
@@ -129,7 +129,7 @@
       },
       {
         "category": "weapons_and_shields",
-        "id": "short_sword"
+        "id": "longsword"
       },
       {
         "category": "weapons_and_shields",

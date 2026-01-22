@@ -79,12 +79,13 @@ class TestBlockParryStamina:
         result = resolve_attack(
             attacker,
             defender,
-            attack_roll=5,  # TE: 10 + 10 + 5 = 25
+            attack_roll=30,  # TE: 10 + 10 + 30 = 50, avoid crit failure (level 1: 1-5 fail)
             base_damage_roll=5,
             shield_ve=5,  # modest shield bonus
             stamina_block={"skill_level": 0},
+            weapon_skill_level=1,  # Level 1: failures on 1-5
         )
-        # base_VE=55 -> block_ve=60; all_te=25 => MISS
+        # base_VE=55 -> block_ve=60; all_te=50 => MISS
         assert result.outcome == AttackOutcome.MISS
         # Adjust into block window: increase attack_roll to land between 56 and 60
         result = resolve_attack(
@@ -94,6 +95,7 @@ class TestBlockParryStamina:
             base_damage_roll=5,
             shield_ve=5,
             stamina_block={"skill_level": 0},
+            weapon_skill_level=1,  # Avoid critical failure on low roll
         )
         assert result.outcome == AttackOutcome.BLOCKED
         # Block/parry now spend stamina (not FP); no FP loss expected
