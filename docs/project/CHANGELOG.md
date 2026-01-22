@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Unconscious Mechanics**: Units at 0 stamina have zero combat values, cannot act, and their turns are automatically skipped
 - **Zone-Based Armor Integration**: Hit zone resolution for real hits; SFÉ absorption by body location; block/parry use raw damage for stamina calculation
 - **Enriched Combat Messages**: Attack results display hit zone, SFÉ absorption, and rolled damage for successful hits; stamina costs shown for defensive actions
+- **Unit Tests**: Comprehensive test coverage for injury system (23 tests), unconscious mechanics (14 tests); all passing
 - MkDocs Material documentation site with dark/light theme toggle
 - Comprehensive unit tests for `ScenarioService` (team limits, duplicates, validation)
 - `docs/DEVELOPER_GUIDE.md` - consolidated developer onboarding guide

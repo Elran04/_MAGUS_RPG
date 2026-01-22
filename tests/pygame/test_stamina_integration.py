@@ -1,8 +1,8 @@
 """Integration tests for stamina costs inside attack resolution and regeneration/fatigue hooks."""
 
 import pytest
-from domain.entities import Unit, Weapon
-from domain.mechanics import (
+from MAGUS_pygame.domain.entities import Unit, Weapon
+from MAGUS_pygame.domain.mechanics import (
     AttackOutcome,
     Stamina,
     StaminaState,
@@ -10,7 +10,7 @@ from domain.mechanics import (
     create_fatigue_condition,
     resolve_attack,
 )
-from domain.value_objects import Attributes, CombatStats, Position, ResourcePool
+from MAGUS_pygame.domain.value_objects import Attributes, CombatStats, Position, ResourcePool
 
 # --- Fixtures ---
 
@@ -96,11 +96,12 @@ class TestBlockParryStamina:
             stamina_block={"skill_level": 0},
         )
         assert result.outcome == AttackOutcome.BLOCKED
-        # Need to apply result to modify defender FP
+        # Block/parry now spend stamina (not FP); no FP loss expected
         apply_attack_result(result, defender)
         apply_fp_loss = start_fp - defender.fp.current
-        assert apply_fp_loss == result.damage_to_fp
-        assert result.damage_to_fp > 0
+        assert result.damage_to_fp == 0
+        assert apply_fp_loss == 0
+        assert result.stamina_spent_defender > 0
 
     def test_parry_stamina_cost(self, attacker, defender):
         attacker.combat_stats = CombatStats(TE=15)
@@ -114,10 +115,11 @@ class TestBlockParryStamina:
             stamina_parry={"skill_level": 0},
         )
         assert result.outcome == AttackOutcome.PARRIED
-        # Apply to mutate defender
+        # Parry spends stamina, not FP
         apply_attack_result(result, defender)
-        assert result.damage_to_fp > 0
-        assert defender.fp.current < start_fp
+        assert result.damage_to_fp == 0
+        assert defender.fp.current == start_fp
+        assert result.stamina_spent_defender > 0
 
 
 class TestDodgeStamina:
@@ -141,7 +143,8 @@ class TestDodgeStamina:
         # Must apply to mutate defender FP
         apply_attack_result(result, defender)
         assert result.stamina_spent_defender > 0
-        assert defender.fp.current == start_fp - result.stamina_spent_defender
+        # FP should remain unchanged; stamina cost is tracked in result
+        assert defender.fp.current == start_fp
 
 
 class TestRegeneration:

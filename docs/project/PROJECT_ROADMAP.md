@@ -4,40 +4,46 @@
 Two modules: GM Toolkit (PySide6) for data/editing and a Pygame combat demo for mechanics prototyping. Godot is the likely target for the final game, so the Pygame module is for mechanics validation.
 
 ## ✅ Recently Completed
-- ScenarioService refactor (clear naming: has_team_a_units / has_team_b_units) + focused tests (team limits, duplicates, update/remove, build_config)
-- UnitSetupService cleanup (removed duplicate methods)
-- Equipment validation fixes + tests (returns, slot mismatches)
-- Combat docs merged into a single `COMBAT_MECHANICS.md` with Quick Reference; legacy docs archived
-- Documentation consolidation: DEVELOPER_GUIDE, PROJECT_STATUS, nav cleanup, CHANGELOG.md
-- Character Creator summary/export (SummaryStepWidget + JSON save in `character_storage.save_character`) in daily use
-- Stamina system fully wired (domain `Stamina`, combat hooks, `tests/test_stamina*.py`)
-- **Character Loader UI** (browse/view saved characters, delete, refresh; read-only summary display)
+- **Stamina/Fatigue System**: Complete with 5 states (Friss → Kimerült → Unconscious); progressive TÉ/VÉ penalties; action costs for attacks/block/parry/dodge
+- **Injury Condition System**: 4-tier tracking (Egészséges/Könnyű/Súlyos/Kritikus) based on FP/EP thresholds; penalties to all combat stats (KÉ/TÉ/VÉ/CÉ)
+- **Unconscious Mechanics**: Units at 0 stamina have zero combat values, cannot act, turns auto-skipped
+- **Zone-Based Armor Integration**: Hit zone resolution for real hits; SFÉ absorption by body location; block/parry use raw damage
+- **Combat UI Enhancements**: HUD shows real-time stamina; conditions tab displays fatigue/injury states; enriched combat messages with zone/SFÉ/damage details
+- ScenarioService refactor + focused tests; Equipment validation fixes
+- Combat docs merged into `COMBAT_MECHANICS.md` with Quick Reference
+- Character Creator summary/export + **Character Loader UI** (browse/view/delete)
 
 ## 🎯 Current Focus (short-term)
-- Character Creator: ✅ Summary/export complete; 🟡 **Character Loader (read-only view + delete)** now live; next: inline editing fields
-- Combat UX: stamina/condition tuning + better feedback (icons/log text); ranged/thrown support remains
-- Docs platform: keep publishing cadence and update docs when new features land
-- Versioning: start semantic version tags; keep CHANGELOG up to date alongside doc site updates
+- **Unit Tests**: Comprehensive coverage for stamina/injury/unconscious mechanics, attack resolution edge cases
+- **Skill System Integration**: Weapon proficiency affects critical thresholds; dodge/block/parry skill modifiers
+- **Dodge Resolution**: Speed checks (Gyorsaság próba); partial damage on failed dodge; skill-based cost reduction
+- **Stamina Recovery**: Turn-based or rest mechanics; regeneration rates; exhaustion saves
+- Character Creator: inline editing fields for saved characters
+- Combat UX: visual feedback improvements (icons, damage numbers, condition indicators)
 
 ## 🔭 Backlog / Future
-- AI and encounter generation
-- Adventure-mode framework (travel, events, persistence)
-- Skill-driven combat depth (parry/dodge mastery, block cost tuning, hit localization, conditions)
-- Dual-wielding and two-handed bonuses; item templates for GM Toolkit
-- Game balance config (constants/game_balance.py), settings.json for runtime prefs
+- **Shield as Separate Equipment**: Distinct from weapons; active block mechanics; VE bonus management
+- **Advanced Combat**: Dual-wielding penalties/bonuses; two-handed weapon bonuses; charge mechanics; combat maneuvers
+- **Ranged Combat**: Attack resolution for bows/crossbows; ammunition tracking; range penalties
+- **AI and Encounter Generation**: Procedural combat scenarios; enemy behavior trees
+- **Adventure-Mode Framework**: Travel, events, persistence beyond combat
+- **Item Templates**: Procedural equipment generation for GM Toolkit
+- **Game Balance Config**: Centralized constants/settings for tuning
 
 ## 🚧 Next Milestones (near-term)
-- Combat demo: integrate existing camera module (panning/zoom), add map scaling controls, scenario generator, ranged/aoe, combat log polish
-- Character system: wrap load/edit UI, origin/birthplace integration, XP/level progression wiring (CombatStats) when ready
-- Assets: expand tiles/ui/maps placeholders; plan replacement pipeline
+- **Combat Mechanics Polish**: Unit tests at 90%+ coverage; dodge resolution; stamina recovery; skill system hooks
+- **Shield System**: Separate equipment entity; block cost reduction; VE calculation overhaul
+- **Combat Demo UX**: Camera integration (pan/zoom); damage numbers; condition icons; combat log enhancements
+- **Character System**: Load/edit UI completion; origin/birthplace integration; XP/level progression
+- **Scenario Generator**: Random encounter creation; balanced team composition
 
 ## 📌 Status Snapshot
-- GM Toolkit: editors for skills/classes/equipment/races; dark-mode UI; currency/shop/inventory; 5-step character wizard with working summary/export
-- Data layer: JSON + SQLite hybrid; managers for races/classes/skills/equipment; Pydantic models in place
-- Combat demo: melee functional; initiative/turn queue; armor layering; stamina hooks active; tests for damage/attack resolution (~115+)
-- Services: ScenarioService and UnitSetupService clean; equipment validation verified by tests
-- Docs: DEVELOPER_GUIDE + COMBAT_MECHANICS up to date; MkDocs build succeeds (warning: CHANGELOG missing from nav)
-- Tests/Quality: pytest, mypy, ruff/black configured; ScenarioService tests cover team limits/duplicates/validation
+- **Combat Systems**: Stamina (5 fatigue states + unconscious), injury (4-tier conditions), zone-based armor, enriched attack resolution
+- **Combat UI**: Real-time HUD (stamina/FP/EP bars), conditions tab (fatigue + injury), detailed combat messages (zone/SFÉ/damage)
+- **GM Toolkit**: Editors for skills/classes/equipment/races; 5-step character wizard; character loader (read-only + delete)
+- **Data Layer**: JSON + SQLite hybrid; managers operational; Pydantic models
+- **Tests**: 115+ tests (damage, attack resolution, stamina, scenario service); pytest/mypy/ruff configured
+- **Docs**: COMBAT_MECHANICS.md comprehensive; DEVELOPER_GUIDE current; MkDocs builds successfully
 
 ## 📝 Tracking
 - CHANGELOG.md for notable changes

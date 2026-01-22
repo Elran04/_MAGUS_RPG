@@ -198,7 +198,7 @@ all_VÉ = dodge_VÉ (or parry_VÉ if no dodge skill)
 
 **Attack Value:**
 ```python
-all_TÉ = base TÉ + weapon TÉ + d100 roll + conditions
+all_TÉ = base TÉ + weapon TÉ + d100 roll + conditions + stamina_mod + injury_mod
 ```
 
 **Attack Outcomes:**

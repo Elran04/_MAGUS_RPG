@@ -1,4 +1,4 @@
-# Project Status — MAGUS RPG (as of 2025-12-28)
+# Project Status — MAGUS RPG (as of 2026-01-22)
 
 ## Overview
 
@@ -21,16 +21,20 @@ Two actively developed modules:
 - **UI/UX**: Dark mode, responsive layouts, currency widgets, validation feedback
 
 ### Game Demo
-- **Combat**: Melee attacks, damage calculation, armor absorption, critical hits, overpower strikes
-  - Shield bonuses properly applied to defender VE
-  - FP exhaustion handling (overflow converts to EP)
-  - Defensive action costs shown as "Stamina" vs "FP" damage
-- **Quick Combat**: Test mode bypassing menus (Goblin vs Warrior, forest clearing)
-- **Stamina System**: Fully integrated (`domain/mechanics/Stamina`), affects block/parry/dodge costs, combat modifiers based on fatigue states
-- **Initiative**: Turn queue with charge mechanics
-- **Hex Grid**: Coordinate system, reach patterns, distance calculation
-- **Scenario Loading**: JSON-based scenarios with spawn zones, team size enforcement, obstacle support
-- **Camera**: Infrastructure present (`infrastructure/rendering/camera.py`) but not yet fully integrated into gameplay
+- **Combat Mechanics**: 
+  - Attack resolution: melee, critical hits, overpower strikes, zone-based armor absorption
+  - Stamina system: 5 fatigue states with progressive penalties; unconscious handling (zero combat values, turn skipped)
+  - Injury conditions: 4 tiers with KÉ/TÉ/VÉ/CÉ penalties based on FP/EP damage
+  - Defensive actions: block/parry/dodge with stamina costs; reactions (opportunity attacks)
+- **Combat UI**:
+  - HUD: Real-time stamina/FP/EP bars, action points, round counter
+  - Unit Info Popup: Stats, equipment, conditions tab (fatigue + injury states)
+  - Combat messages: Enriched with hit zone, SFÉ absorption, rolled damage
+- **Quick Combat**: Test mode bypassing menus (Goblin vs Warrior)
+- **Initiative**: Turn queue with charge mechanics; KÉ-based ordering
+- **Hex Grid**: Coordinate system, reach patterns, movement/attack highlighting
+- **Scenario Loading**: JSON-based with spawn zones, team size enforcement, obstacles
+- **Camera**: Infrastructure present but not yet wired to controls
 
 ### Data Layer
 - **Hybrid Storage**: JSON (races, equipment, characters) + SQLite (skills, classes, combat stats)
@@ -45,18 +49,23 @@ Two actively developed modules:
 
 ## Recent Changes (December 2025)
 
-## Recent Changes (December 2025 - January 2026)
-- **Quick Combat**: Added rapid test mode (`quick_combat_service.py`) with hardcoded Goblin vs Warrior battle
-- **Combat Fixes**: Shield VE now correctly applied in attack resolution; FP exhaustion converts overflow to EP; defensive actions show "Stamina" cost vs "FP" damage
-- **Equipment Integration**: Auto-equip system for quick combat; shield extraction from equipment for VE calculation
+## Recent Changes (January 2026)
+- **Stamina System**: 5 fatigue states (Friss → Kimerült) with progressive TÉ/VÉ penalties; unconscious at 0 stamina (zero combat values, turn skipped)
+- **Injury Conditions**: 4-tier system (Egészséges/Könnyű/Súlyos/Kritikus) based on FP/EP thresholds; penalties to KÉ/TÉ/VÉ/CÉ
+- **Zone-Based Armor**: Hit location resolution; SFÉ absorption by body part; block/parry stamina costs use raw damage
+- **Combat UI**: HUD shows real-time stamina; conditions tab displays fatigue/injury; combat messages enriched with zone/SFÉ/damage details
+- **Quick Combat**: Rapid test mode for mechanics validation
+- **Equipment Integration**: Auto-equip system; shield VE extraction
 
 ## Outstanding Work
 
 ### High Priority
-- **Character Load/Edit UI**: No UI exists to open/edit saved `characters/*.json` files (only export works)
-- **Camera Integration**: Camera module exists but not wired into game controls (panning/zoom)
-- **Ranged Combat**: Detection logic present, but no ranged attack resolution or ammunition tracking
-- **Combat Feedback**: Minimal visual feedback for stamina drain, conditions, damage numbers
+- **Unit Tests**: Expand coverage for stamina/injury/unconscious mechanics; attack resolution edge cases
+- **Skill System**: Weapon proficiency integration; dodge/block/parry skill modifiers; critical threshold adjustments
+- **Dodge Resolution**: Gyorsaság (speed) checks; partial damage on failed dodge; skill-based stamina cost reduction
+- **Stamina Recovery**: Turn-based regeneration; rest mechanics; exhaustion save implementation
+- **Camera Integration**: Wire existing camera module to game controls (pan/zoom)
+- **Combat Feedback**: Visual polish (damage numbers, condition icons, status effects)
 
 ### Medium Priority
 - **Scenario Generator**: No random encounter/combat setup tool
