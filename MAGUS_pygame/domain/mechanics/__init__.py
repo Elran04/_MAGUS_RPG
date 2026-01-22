@@ -9,7 +9,7 @@ Modules:
 - attack_resolution: Complete attack flow from roll to damage application
 - weapon_wielding: Variable weapon wielding modes and bonuses
 - stamina: Stamina resource, thresholds, and combat penalties
-- actions: Player-initiated action abstractions (phase 1: attack, movement)
+- injury: Injury conditions with combat penalties
  - actions: Player-initiated action abstractions (phase 1: attack, movement)
  - reactions: Event-triggered mechanics (phase 2: opportunity attack)
 """
@@ -32,6 +32,13 @@ from .critical import (
     is_critical_hit,
 )
 from .damage import DamageContext, DamageResult, DamageService, calculate_final_damage
+from .injury import (
+    INJURY_MODIFIERS,
+    InjuryCondition,
+    InjuryModifiers,
+    calculate_injury_condition,
+    get_injury_modifiers,
+)
 from .reach import (
     calculate_mandatory_ep_loss,
     can_attack_target,
@@ -104,6 +111,12 @@ __all__ = [
     "THRESHOLDS",
     "FatigueCondition",
     "create_fatigue_condition",
+    # Injury
+    "InjuryCondition",
+    "InjuryModifiers",
+    "INJURY_MODIFIERS",
+    "calculate_injury_condition",
+    "get_injury_modifiers",
     # Actions
     "ActionCategory",
     "ActionCost",

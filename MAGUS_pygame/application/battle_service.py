@@ -142,8 +142,12 @@ class BattleService:
                 self.refresh_initiative_for_new_round()
                 self._init_ap()
                 self.action_handler.start_turn(self.units)
-            # Skip dead units
-            if self.units[self.turn_index].is_alive():
+            # Skip dead or unconscious units
+            u = self.units[self.turn_index]
+            if u.is_alive():
+                if hasattr(u, "stamina") and u.stamina and u.stamina.is_unconscious():
+                    # Skip unconscious unit's turn
+                    continue
                 break
         else:
             # All units are dead
@@ -190,6 +194,9 @@ class BattleService:
         potential_reactors: Iterable[Unit] | None = None,
     ) -> dict[str, object]:
         unit = self.current_unit()
+        # Prevent actions for unconscious units
+        if hasattr(unit, "stamina") and unit.stamina and unit.stamina.is_unconscious():
+            return {"error": "Unit is unconscious and cannot act"}
         summary = self.action_handler.move_unit(
             unit=unit,
             dest=dest,
@@ -221,6 +228,10 @@ class BattleService:
 
         if not can_attack_target(unit, defender.position, unit.weapon):
             return {"error": f"{defender.name} is not in attack range"}
+
+        # Prevent actions for unconscious units
+        if hasattr(unit, "stamina") and unit.stamina and unit.stamina.is_unconscious():
+            return {"error": "Unit is unconscious and cannot act"}
 
         # Extract defender's shield VE bonus from equipment
         shield_ve = 0
@@ -361,6 +372,9 @@ class BattleService:
             Set of (q, r) hex coordinates the unit can reach
         """
 
+        # Unconscious units cannot move
+        if hasattr(unit, "stamina") and unit.stamina and unit.stamina.is_unconscious():
+            return set()
         ap_available = self.remaining_ap(unit)
         max_distance = ap_available // AP_COST_MOVEMENT
 
@@ -404,6 +418,9 @@ class BattleService:
         Returns:
             Set of (q, r) hex coordinates the unit can attack
         """
+        # Unconscious units cannot attack
+        if hasattr(unit, "stamina") and unit.stamina and unit.stamina.is_unconscious():
+            return set()
         result = compute_reach_hexes(unit, unit.weapon)
         return set(result)
 

@@ -227,11 +227,11 @@ class BattleRenderer:
         )
         self.screen.blit(text, (10, 10))
 
-        # Draw combat message if present
+        # Draw combat message if present (bottom middle, above tooltip)
         if combat_message:
             message_font = pygame.font.SysFont(None, 36)
             message_text = message_font.render(combat_message, True, (255, 220, 0))
-            message_rect = message_text.get_rect(center=(WIDTH // 2, 60))
+            message_rect = message_text.get_rect(midbottom=(WIDTH // 2, HEIGHT - 60))
 
             # Semi-transparent background for message
             padding = 10

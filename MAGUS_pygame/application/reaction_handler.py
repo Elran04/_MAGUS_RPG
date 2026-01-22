@@ -127,6 +127,13 @@ class ReactionHandler:
             attack_result = result.data.get("attack_result")
             if attack_result is not None:
                 apply_attack_result(attack_result, mover)
+                # Spend stamina for attacker and defender (mover) similar to ActionHandler
+                if hasattr(reactor, "stamina") and reactor.stamina:
+                    if attack_result.stamina_spent_attacker > 0:
+                        reactor.stamina.spend_action_points(attack_result.stamina_spent_attacker)
+                if hasattr(mover, "stamina") and mover.stamina:
+                    if attack_result.stamina_spent_defender > 0:
+                        mover.stamina.spend_action_points(attack_result.stamina_spent_defender)
 
             # Consume budget after a fired reaction
             self.budget.consume(reactor)

@@ -68,6 +68,7 @@ class AttackResult:
         all_te: Final attack value (base TÉ + roll + modifiers)
         all_ve: Final defense value used
         attack_roll: Raw d100 roll
+        rolled_damage: Raw weapon damage roll before modifiers/armor
         is_critical: Whether attack was a critical hit
         is_overpower: Whether attack was an overpower strike
         hit: Whether attack successfully hit (deals damage)
@@ -77,12 +78,15 @@ class AttackResult:
         armor_degraded: Whether armor was degraded
         mandatory_ep_loss: EP loss from reach rules
         requires_dodge_check: Whether defender needs speed check
+        hit_zone: Resolved hit zone string (if any)
+        zone_sfe: SFÉ value (armor absorption) for that hit zone
     """
 
     outcome: AttackOutcome
     all_te: int
     all_ve: int
     attack_roll: int
+    rolled_damage: int = 0
 
     is_critical: bool = False
     is_overpower: bool = False
@@ -96,12 +100,12 @@ class AttackResult:
 
     requires_dodge_check: bool = False
     dodge_success: bool | None = None
-    # Stamina integration
-    stamina_spent_defender: int = (
-        0  # Additional stamina cost not represented by damage_to_fp (e.g., dodge attempt)
-    )
+    # Stamina integration (independent from FP damage)
+    stamina_spent_attacker: int = 0  # Stamina cost for attacker (e.g., attack AP cost)
+    stamina_spent_defender: int = 0  # Stamina cost for defender (block, parry, dodge)
     # New armor integration
     hit_zone: str | None = None
+    zone_sfe: int = 0
 
 
 def calculate_defense_values(
@@ -119,8 +123,24 @@ def calculate_defense_values(
     Returns:
         DefenseValues with all thresholds
     """
-    # Base VÉ from character + conditions
-    base_ve = defender.combat_stats.VE + condition_modifier
+    # Unconscious defenders have zero defense values
+    if hasattr(defender, "stamina") and defender.stamina and defender.stamina.is_unconscious():
+        return DefenseValues(base_ve=0, block_ve=0, parry_ve=0, dodge_ve=0, all_ve=0)
+    # Base VÉ from character + conditions + stamina penalties + injury penalties
+    stamina_mod = 0
+    if hasattr(defender, "stamina") and defender.stamina:
+        stamina_mod = defender.stamina.get_combat_modifiers().ve_mod
+
+    injury_mod = 0
+    if hasattr(defender, "fp") and hasattr(defender, "ep"):
+        from .injury import calculate_injury_condition, get_injury_modifiers
+
+        injury_cond = calculate_injury_condition(
+            defender.fp.current, defender.fp.maximum, defender.ep.current, defender.ep.maximum
+        )
+        injury_mod = get_injury_modifiers(injury_cond).ve_mod
+
+    base_ve = defender.combat_stats.VE + condition_modifier + stamina_mod + injury_mod
 
     # Block VÉ: base + shield (if equipped)
     block_ve = base_ve + shield_ve
@@ -148,7 +168,7 @@ def calculate_attack_value(
     """
     Calculate final attack value (all_TÉ).
 
-    all_TÉ = base TÉ + weapon TÉ + d100 roll + conditions
+    all_TÉ = base TÉ + weapon TÉ + d100 roll + conditions + stamina + injury
 
     Args:
         attacker: Attacking unit
@@ -162,10 +182,27 @@ def calculate_attack_value(
     if weapon is None:
         weapon = attacker.weapon
 
+    # Unconscious attackers cannot attack; force attack value to 0
+    if hasattr(attacker, "stamina") and attacker.stamina and attacker.stamina.is_unconscious():
+        return 0
+
     base_te = attacker.combat_stats.TE
+    stamina_mod = 0
+    if hasattr(attacker, "stamina") and attacker.stamina:
+        stamina_mod = attacker.stamina.get_combat_modifiers().te_mod
+
+    injury_mod = 0
+    if hasattr(attacker, "fp") and hasattr(attacker, "ep"):
+        from .injury import calculate_injury_condition, get_injury_modifiers
+
+        injury_cond = calculate_injury_condition(
+            attacker.fp.current, attacker.fp.maximum, attacker.ep.current, attacker.ep.maximum
+        )
+        injury_mod = get_injury_modifiers(injury_cond).te_mod
+
     weapon_te = weapon.te_modifier if weapon else 0
 
-    all_te = base_te + weapon_te + attack_roll + condition_modifier
+    all_te = base_te + weapon_te + stamina_mod + injury_mod + attack_roll + condition_modifier
 
     return all_te
 
@@ -214,6 +251,10 @@ def resolve_attack(
     # Check for critical hit first (affects everything)
     is_crit = is_critical_hit(attack_roll, weapon_skill_level)
 
+    # Unconscious attackers cannot land critical hits
+    if hasattr(attacker, "stamina") and attacker.stamina and attacker.stamina.is_unconscious():
+        is_crit = False
+
     # Calculate attack and defense values
     all_te = calculate_attack_value(attacker, attack_roll, weapon, attacker_conditions)
     defense = calculate_defense_values(defender, shield_ve, dodge_modifier, defender_conditions)
@@ -258,14 +299,18 @@ def resolve_attack(
         # Dodge always costs stamina even if it would fail; apply immediately as an action cost
         # Placeholder base cost aligned with "action points" concept
         DODGE_STAMINA_BASE_COST = 6
-        # Compute stamina using temporary Stamina adapter over FP pool
-        temp_sta = Stamina(
-            max_stamina=defender.fp.maximum,
-            current_stamina=defender.fp.current,
-            attribute_ref=(
-                defender.attributes.endurance if hasattr(defender.attributes, "endurance") else 10
-            ),
-        )
+        # Compute stamina cost using defender's stamina pool snapshot
+        if hasattr(defender, "stamina") and defender.stamina:
+            temp_sta = Stamina(
+                max_stamina=defender.stamina.max_stamina,
+                current_stamina=defender.stamina.current_stamina,
+                attribute_ref=defender.stamina.attribute_ref,
+            )
+        else:
+            # Fallback: derive temporary stamina from endurance
+            temp_sta = Stamina.from_attribute(
+                getattr(defender.attributes, "endurance", 10), start_full=False
+            )
         stamina_spent_defender = temp_sta.apply_cost(
             DODGE_STAMINA_BASE_COST, stamina_dodge or {"min_cost": 1}
         )
@@ -287,8 +332,15 @@ def resolve_attack(
 
     if hit and not requires_dodge:  # Don't calculate damage until dodge resolved
         # Determine armor absorption
-        # Resolve hit zone (main part); used for layered armor systems
-        resolved_zone: str | None = HitzoneResolver.resolve()
+        # Resolve hit zone only for real hits (not block/parry)
+        resolved_zone: str | None = None
+        if outcome in (
+            AttackOutcome.HIT,
+            AttackOutcome.CRITICAL,
+            AttackOutcome.OVERPOWER,
+            AttackOutcome.CRITICAL_OVERPOWER,
+        ):
+            resolved_zone = HitzoneResolver.resolve()
 
         armor_sfe = 0
         # Prefer defender's ArmorSystem if available
@@ -324,20 +376,22 @@ def resolve_attack(
             )
             base_fp_cost = damage_no_armor.final_damage
 
-            temp_sta = Stamina(
-                max_stamina=defender.fp.maximum,
-                current_stamina=defender.fp.current,
-                attribute_ref=(
-                    defender.attributes.endurance
-                    if hasattr(defender.attributes, "endurance")
-                    else 10
-                ),
-            )
+            # Compute stamina cost using defender's stamina pool snapshot
+            if hasattr(defender, "stamina") and defender.stamina:
+                temp_sta = Stamina(
+                    max_stamina=defender.stamina.max_stamina,
+                    current_stamina=defender.stamina.current_stamina,
+                    attribute_ref=defender.stamina.attribute_ref,
+                )
+            else:
+                temp_sta = Stamina.from_attribute(
+                    getattr(defender.attributes, "endurance", 10), start_full=False
+                )
             if outcome == AttackOutcome.BLOCKED:
                 spent = temp_sta.apply_cost(base_fp_cost, stamina_block or {})
             else:
                 spent = temp_sta.apply_cost(base_fp_cost, stamina_parry or {})
-            damage_to_fp = spent
+            stamina_spent_defender = spent  # Stamina cost, not FP damage
             armor_absorbed = 0  # No armor absorption during block/parry
 
         elif outcome == AttackOutcome.CRITICAL_OVERPOWER:
@@ -368,11 +422,20 @@ def resolve_attack(
             # Calculate mandatory EP loss from reach rules
             mandatory_ep = calculate_mandatory_ep_loss(weapon, damage_to_fp)
 
+    # Calculate attacker stamina cost (equal to AP cost of attack)
+    # This will be spent by action_handler after the attack resolves
+    stamina_spent_attacker = 0
+    if attacker.weapon:
+        stamina_spent_attacker = attacker.weapon.attack_time
+    else:
+        stamina_spent_attacker = 5  # Default unarmed attack cost
+
     return AttackResult(
         outcome=outcome,
         all_te=all_te,
         all_ve=defense.all_ve,
         attack_roll=attack_roll,
+        rolled_damage=base_damage_roll,
         is_critical=is_crit,
         is_overpower=is_overpower_strike,
         hit=hit,
@@ -382,15 +445,43 @@ def resolve_attack(
         armor_degraded=armor_degraded,
         mandatory_ep_loss=mandatory_ep,
         requires_dodge_check=requires_dodge,
+        stamina_spent_attacker=stamina_spent_attacker,
         stamina_spent_defender=stamina_spent_defender,
-        hit_zone=resolved_zone if (hit and not requires_dodge) else None,
+        hit_zone=(
+            resolved_zone
+            if (
+                outcome
+                in (
+                    AttackOutcome.HIT,
+                    AttackOutcome.CRITICAL,
+                    AttackOutcome.OVERPOWER,
+                    AttackOutcome.CRITICAL_OVERPOWER,
+                )
+            )
+            else None
+        ),
+        zone_sfe=(
+            armor_sfe
+            if (
+                outcome
+                in (
+                    AttackOutcome.HIT,
+                    AttackOutcome.CRITICAL,
+                    AttackOutcome.OVERPOWER,
+                    AttackOutcome.CRITICAL_OVERPOWER,
+                )
+            )
+            else 0
+        ),
     )
 
 
 def apply_attack_result(result: AttackResult, defender: Unit) -> None:
     """
     Apply attack result damage to defender.
-    Mutates defender's EP and FP.
+    Mutates defender's EP and FP only (not stamina).
+
+    Stamina costs are handled separately by the application layer.
 
     FP exhaustion rule: When FP is 0, any FP damage goes to EP instead.
 
@@ -401,15 +492,11 @@ def apply_attack_result(result: AttackResult, defender: Unit) -> None:
     if not result.hit:
         return
 
-    # Apply FP damage (includes block/parry stamina costs when present)
+    # Apply FP damage only
     # spend_fatigue returns overflow that went to EP
     fp_overflow = 0
     if result.damage_to_fp > 0:
         fp_overflow += defender.spend_fatigue(result.damage_to_fp)
-
-    # Apply additional stamina spend (e.g., dodge attempt costs)
-    if result.stamina_spent_defender > 0:
-        fp_overflow += defender.spend_fatigue(result.stamina_spent_defender)
 
     # Apply EP damage (direct + mandatory)
     # Note: FP overflow is already applied by spend_fatigue

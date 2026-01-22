@@ -116,6 +116,21 @@ class AttackAction(Action):
         # Check if defender has FP to determine actual damage application
         outcome = core_result.outcome.value.replace("_", " ").title()
         msg = f"Attack: {outcome}. TE {core_result.all_te} vs VE {core_result.all_ve}."
+        # Add zone/SFÉ/rolled damage info for real hits (not block/parry/dodge)
+        if core_result.hit and not core_result.requires_dodge_check:
+            from domain.mechanics.attack_resolution import AttackOutcome
+
+            if (
+                core_result.outcome
+                in (
+                    AttackOutcome.HIT,
+                    AttackOutcome.CRITICAL,
+                    AttackOutcome.OVERPOWER,
+                    AttackOutcome.CRITICAL_OVERPOWER,
+                )
+                and core_result.hit_zone
+            ):
+                msg += f" Zone {core_result.hit_zone} | SFÉ {core_result.zone_sfe} | Rolled {core_result.rolled_damage}."
         if core_result.hit and not core_result.requires_dodge_check:
             total_ep = core_result.damage_to_ep + core_result.mandatory_ep_loss
 
@@ -130,15 +145,18 @@ class AttackAction(Action):
                 AttackOutcome.PARRIED,
             )
 
-            if core_result.damage_to_fp > 0:
+            # For defensive actions, show stamina cost
+            if is_defensive_action and core_result.stamina_spent_defender > 0:
+                msg += f" Stamina {core_result.stamina_spent_defender}."
+
+            # For normal hits, show FP damage
+            elif core_result.damage_to_fp > 0:
                 if defender_fp > 0:
-                    # Defender has FP - show FP damage or stamina cost
+                    # Defender has FP - show FP damage
                     actual_fp_dmg = min(core_result.damage_to_fp, defender_fp)
                     fp_overflow = core_result.damage_to_fp - actual_fp_dmg
                     if actual_fp_dmg > 0:
-                        # Use "Stamina" for defensive actions, "FP" for actual damage
-                        label = "Stamina" if is_defensive_action else "FP"
-                        msg += f" {label} {actual_fp_dmg}."
+                        msg += f" FP {actual_fp_dmg}."
                     if fp_overflow > 0:
                         total_ep += fp_overflow  # Add overflow to EP damage display
                 else:

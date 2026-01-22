@@ -22,6 +22,10 @@ Two actively developed modules:
 
 ### Game Demo
 - **Combat**: Melee attacks, damage calculation, armor absorption, critical hits, overpower strikes
+  - Shield bonuses properly applied to defender VE
+  - FP exhaustion handling (overflow converts to EP)
+  - Defensive action costs shown as "Stamina" vs "FP" damage
+- **Quick Combat**: Test mode bypassing menus (Goblin vs Warrior, forest clearing)
 - **Stamina System**: Fully integrated (`domain/mechanics/Stamina`), affects block/parry/dodge costs, combat modifiers based on fatigue states
 - **Initiative**: Turn queue with charge mechanics
 - **Hex Grid**: Coordinate system, reach patterns, distance calculation
@@ -41,13 +45,10 @@ Two actively developed modules:
 
 ## Recent Changes (December 2025)
 
-- **ScenarioService**: Refactored method names for clarity (`has_team_a_units`, `has_team_b_units`); added comprehensive tests for team limits, duplicates, validation
-- **UnitSetupService**: Cleaned up duplicate method definitions
-- **Equipment Validation**: Fixed missing returns, added slot mismatch tests
-- **Documentation**: Merged combat docs, created DEVELOPER_GUIDE, archived legacy files, fixed MkDocs build, standardized naming
-- **Character Creator**: Summary step finalized with working JSON export via `character_storage.save_character`
-- **Stamina**: Full implementation with combat hooks, fatigue states, regeneration, extensive tests
-- **Character Loader**: New UI to browse saved characters, view summary, delete; integrates existing SummaryStepWidget for read-only display
+## Recent Changes (December 2025 - January 2026)
+- **Quick Combat**: Added rapid test mode (`quick_combat_service.py`) with hardcoded Goblin vs Warrior battle
+- **Combat Fixes**: Shield VE now correctly applied in attack resolution; FP exhaustion converts overflow to EP; defensive actions show "Stamina" cost vs "FP" damage
+- **Equipment Integration**: Auto-equip system for quick combat; shield extraction from equipment for VE calculation
 
 ## Outstanding Work
 

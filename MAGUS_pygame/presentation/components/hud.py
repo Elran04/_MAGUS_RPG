@@ -6,7 +6,6 @@ Shows character stats, health, stamina, and active effects using new domain enti
 
 import pygame
 from domain.entities import Unit
-from domain.mechanics import Stamina
 from logger.logger import get_logger
 
 logger = get_logger(__name__)
@@ -157,11 +156,8 @@ class HUD:
 
         # Stamina bar (independent system based on Állóképesség/Endurance)
         # See domain/mechanics/stamina.py for details
-        if hasattr(unit.attributes, "endurance"):
-            stamina = Stamina.from_attribute(unit.attributes.endurance)
-            # TODO: Unit needs to track current stamina as separate attribute
-            # For now using max as placeholder until stamina tracking is implemented
-            stamina.current_stamina = stamina.max_stamina
+        if hasattr(unit, "stamina") and unit.stamina:
+            stamina = unit.stamina
             percentage, state = stamina.get_state()
 
             self._draw_bar(

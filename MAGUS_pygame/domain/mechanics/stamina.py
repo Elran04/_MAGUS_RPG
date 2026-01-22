@@ -57,13 +57,14 @@ class CombatModifiers:
     ve_mod: int = 0
 
 
-# Default mapping for derived combat penalties per stamina state (placeholder values)
+# Default mapping for derived combat penalties per stamina state
+# Fatigue hurts offense more than defense; scales progressively
 DEFAULT_COMBAT_MODIFIERS: dict[StaminaState, CombatModifiers] = {
-    StaminaState.FRISS: CombatModifiers(0, 0),
-    StaminaState.FELPEZSDULT: CombatModifiers(-1, -1),
-    StaminaState.KIFULLADT: CombatModifiers(-2, -2),
-    StaminaState.KIFARADT: CombatModifiers(-4, -4),
-    StaminaState.KIMERULT: CombatModifiers(-6, -6),
+    StaminaState.FRISS: CombatModifiers(0, 0),  # Fresh
+    StaminaState.FELPEZSDULT: CombatModifiers(-2, -1),  # Slightly tired
+    StaminaState.KIFULLADT: CombatModifiers(-4, -3),  # Tired
+    StaminaState.KIFARADT: CombatModifiers(-7, -5),  # Very tired
+    StaminaState.KIMERULT: CombatModifiers(-10, -8),  # Exhausted
 }
 
 

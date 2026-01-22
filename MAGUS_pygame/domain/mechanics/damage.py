@@ -82,9 +82,9 @@ def calculate_final_damage(
     attr_bonus = _calculate_attribute_bonus(attacker, weapon)
     modified = base_damage + attr_bonus
 
-    # Apply multiplier (e.g., charge)
+    # Apply multiplier (e.g., charge, critical)
     charge_mult = max(1, ctx.charge_multiplier)
-    multiplied = modified * charge_mult
+    multiplied = int(modified * charge_mult)
 
     # Armor absorption (flat)
     absorbed = min(multiplied, max(0, ctx.armor_absorption))

@@ -12,6 +12,7 @@ from domain.value_objects import Attributes, CombatStats, Facing, Position, Reso
 
 if TYPE_CHECKING:
     from domain.mechanics.armor import ArmorSystem
+    from domain.mechanics.stamina import Stamina
 
     from .weapon import Weapon
 
@@ -54,6 +55,9 @@ class Unit:
 
     # Armor system (layered); optional until equipped during loadout
     armor_system: ArmorSystem | None = None
+
+    # Stamina (Állóképesség-based endurance). Optional until initialized by factory.
+    stamina: Stamina | None = None
 
     def is_alive(self) -> bool:
         """Check if unit is still alive."""

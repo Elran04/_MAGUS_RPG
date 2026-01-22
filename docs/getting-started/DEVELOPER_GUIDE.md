@@ -38,6 +38,10 @@ Pre-commit hooks will automatically run black, ruff, mypy, and other checks befo
 ```powershell
 # Game Demo
 poetry run python MAGUS_pygame/main.py
+  # Main Menu options:
+  #   - New Game: Full scenario selection and deployment flow
+  #   - Quick Combat: Instant test battle (Goblin vs Warrior, hardcoded)
+  #   - Load Game: (placeholder)
 
 # GM Toolkit
 poetry run python Gamemaster_tools/main.py

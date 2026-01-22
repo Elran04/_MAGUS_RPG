@@ -346,6 +346,32 @@ class UnitInfoPopup:
         y = self._draw_conditions(screen, x_left, y)
         return y
 
+    def _get_stamina_condition(self) -> tuple[str, int, int]:
+        """Return (state_label, te_mod, ve_mod) from unit stamina, or defaults."""
+        if hasattr(self.unit, "stamina") and self.unit.stamina:
+            # Show explicit Unconscious state when stamina is 0
+            if self.unit.stamina.is_unconscious():
+                return ("Unconscious", 0, 0)
+            _, state = self.unit.stamina.get_state()
+            mods = self.unit.stamina.get_combat_modifiers()
+            return state.value, mods.te_mod, mods.ve_mod
+        return ("None", 0, 0)
+
+    def _get_injury_condition(self) -> tuple[str, int, int, int, int]:
+        """Return (injury_label, ke_mod, te_mod, ve_mod, ce_mod) or defaults."""
+        if hasattr(self.unit, "fp") and hasattr(self.unit, "ep"):
+            from domain.mechanics.injury import calculate_injury_condition, get_injury_modifiers
+
+            injury = calculate_injury_condition(
+                self.unit.fp.current,
+                self.unit.fp.maximum,
+                self.unit.ep.current,
+                self.unit.ep.maximum,
+            )
+            mods = get_injury_modifiers(injury)
+            return injury.value, mods.ke_mod, mods.te_mod, mods.ve_mod, mods.ce_mod
+        return ("None", 0, 0, 0, 0)
+
     def _draw_health_section(self, screen: pygame.Surface, x: int, y: int) -> int:
         """Draw FP/ÉP section. Returns new y offset."""
         # Header
@@ -458,40 +484,59 @@ class UnitInfoPopup:
                     shield_te = shield_data.get("TE", 0)
                     shield_ve = shield_data.get("VE", 0)
 
+        # Condition modifiers (stamina + injury penalties)
+        _, stamina_te, stamina_ve = self._get_stamina_condition()
+        _, injury_ke, injury_te, injury_ve, injury_ce = self._get_injury_condition()
+
+        cond_ke = injury_ke
+        cond_te = stamina_te + injury_te
+        cond_ve = stamina_ve + injury_ve
+        cond_ce = injury_ce
+
         # Calculate final values
-        final_ke = base_ke + weapon_ke + shield_ke
-        final_te = base_te + weapon_te + shield_te
-        final_ve = base_ve + weapon_ve + shield_ve
-        final_ce = base_ce  # CÉ not affected by weapon/shield
+        final_ke = base_ke + weapon_ke + shield_ke + cond_ke
+        final_te = base_te + weapon_te + shield_te + cond_te
+        final_ve = base_ve + weapon_ve + shield_ve + cond_ve
+        final_ce = base_ce + cond_ce
 
         # Define stats with breakdown
         stats = [
-            ("KÉ", base_ke, weapon_ke, shield_ke, final_ke),
-            ("TÉ", base_te, weapon_te, shield_te, final_te),
-            ("VÉ", base_ve, weapon_ve, shield_ve, final_ve),
-            ("CÉ", base_ce, 0, 0, final_ce),
+            ("KÉ", base_ke, weapon_ke, shield_ke, cond_ke, final_ke),
+            ("TÉ", base_te, weapon_te, shield_te, cond_te, final_te),
+            ("VÉ", base_ve, weapon_ve, shield_ve, cond_ve, final_ve),
+            ("CÉ", base_ce, 0, 0, cond_ce, final_ce),
         ]
 
         # Draw each stat with breakdown
-        for i, (stat_name, base_val, weapon_val, shield_val, final_val) in enumerate(stats):
+        for i, (stat_name, base_val, weapon_val, shield_val, cond_val, final_val) in enumerate(
+            stats
+        ):
             stat_y = y + (i * self.style.stat_row_height)
 
-            # Show breakdown: Base + Weapon + Shield = Final
-            if weapon_val != 0 and shield_val != 0:
-                breakdown = f"{stat_name}: {base_val} + {weapon_val} + {shield_val} = {final_val}"
-                color = (200, 220, 255)  # Blue tint when bonuses present
-            elif weapon_val != 0:
-                breakdown = f"{stat_name}: {base_val} + {weapon_val} = {final_val}"
-                color = (200, 220, 255)  # Blue tint when weapon bonus present
-            elif shield_val != 0:
-                breakdown = f"{stat_name}: {base_val} + {shield_val} = {final_val}"
-                color = (200, 220, 255)  # Blue tint when shield bonus present
-            else:
-                breakdown = f"{stat_name}: {base_val} = {final_val}"
-                color = (200, 200, 200)
+            # Build prefix parts
+            prefix_parts = [f"{stat_name}: {base_val}"]
+            if weapon_val != 0:
+                prefix_parts.append(f"+ {weapon_val}")
+            if shield_val != 0:
+                prefix_parts.append(f"+ {shield_val}")
+            prefix = " ".join(prefix_parts)
 
-            stat_text = self.style.text_font.render(breakdown, True, color)
-            screen.blit(stat_text, (x + 10, stat_y))
+            base_color = (200, 220, 255) if (weapon_val or shield_val) else (200, 200, 200)
+            prefix_surface = self.style.text_font.render(prefix, True, base_color)
+            screen.blit(prefix_surface, (x + 10, stat_y))
+            offset_x = x + 10 + prefix_surface.get_width()
+
+            # Condition modifier in red (if any)
+            if cond_val != 0:
+                cond_surface = self.style.text_font.render(
+                    f" - {abs(cond_val)}", True, (220, 80, 80)
+                )
+                screen.blit(cond_surface, (offset_x + 4, stat_y))
+                offset_x += cond_surface.get_width() + 4
+
+            # Final value
+            final_surface = self.style.text_font.render(f" = {final_val}", True, (220, 220, 220))
+            screen.blit(final_surface, (offset_x + 8, stat_y))
 
         y += self.style.stat_row_height * len(stats) + self.style.line_gap
         return y
@@ -618,7 +663,7 @@ class UnitInfoPopup:
         return y + 5
 
     def _draw_conditions(self, screen: pygame.Surface, x: int, y: int) -> int:
-        """Draw status conditions (placeholder). Returns new y offset."""
+        """Draw status conditions including fatigue state and injury."""
         # Header
         header = self.style.header_font.render(
             "Conditions", True, self.style.color_header_conditions
@@ -626,11 +671,40 @@ class UnitInfoPopup:
         screen.blit(header, (x, y))
         y += 30
 
-        # Placeholder for future conditions system
-        # TODO: Add condition system (stunned, bleeding, poisoned, etc.)
-        no_conditions = self.style.text_font.render("None", True, (150, 150, 150))
-        screen.blit(no_conditions, (x + 10, y))
-        y += 25
+        state_label, stamina_te, stamina_ve = self._get_stamina_condition()
+        injury_label, injury_ke, injury_te, injury_ve, injury_ce = self._get_injury_condition()
+
+        # Fatigue status line
+        fatigue_text = self.style.text_font.render(f"Fatigue: {state_label}", True, (200, 200, 200))
+        screen.blit(fatigue_text, (x + 10, y))
+        y += 22
+
+        # Injury status line
+        injury_text = self.style.text_font.render(f"Injury: {injury_label}", True, (200, 200, 200))
+        screen.blit(injury_text, (x + 10, y))
+        y += 22
+
+        # Combined modifiers summary
+        mod_parts = []
+        total_ke = injury_ke
+        total_te = stamina_te + injury_te
+        total_ve = stamina_ve + injury_ve
+        total_ce = injury_ce
+
+        if total_ke != 0:
+            mod_parts.append(f"KÉ {total_ke}")
+        if total_te != 0:
+            mod_parts.append(f"TÉ {total_te}")
+        if total_ve != 0:
+            mod_parts.append(f"VÉ {total_ve}")
+        if total_ce != 0:
+            mod_parts.append(f"CÉ {total_ce}")
+
+        mods_str = ", ".join(mod_parts) if mod_parts else "No penalties"
+        mods_color = (220, 80, 80) if mod_parts else (150, 150, 150)
+        mods_text = self.style.small_font.render(mods_str, True, mods_color)
+        screen.blit(mods_text, (x + 30, y))
+        y += 20
 
         return y
 

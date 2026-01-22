@@ -3,6 +3,7 @@
 Start here: [Developer Guide](getting-started/DEVELOPER_GUIDE.md)
 
 Current snapshot: [Project Status](project/PROJECT_STATUS.md)
+**Quick test:** Run `MAGUS_pygame/main.py` → "Quick Combat" for instant battle
 
 ## Topic References
 

@@ -140,14 +140,56 @@ Skill 5: 90+ (11% chance) - 2.5x damage
 
 ---
 
-### 5. Attack Resolution (`attack_resolution.py`) ✅
+### 5. Stamina System (`stamina.py`) ✅
 **Status:** Complete
 
-Complete attack flow integrating all systems.
+- Physical/mental endurance tied to Állóképesség (Endurance attribute)
+- Base stamina = Állóképesség × 10
+- Fatigue states with progressive combat penalties
+- Action point costs and stamina recovery
+
+**Fatigue States (by stamina %):**
+```
+Friss (Fresh)      80-100%: no penalties
+Felpezsdült        60-79%:  -2 TÉ, -1 VÉ
+Kifulladt (Tired)  40-59%:  -4 TÉ, -3 VÉ
+Kifáradt           20-39%:  -7 TÉ, -5 VÉ
+Kimerült (Exhausted) 0-19%: -10 TÉ, -8 VÉ
+Unconscious        0%:      All combat values = 0, turn skipped
+```
+
+**Stamina Costs:**
+- Attack: weapon attack_time (AP cost)
+- Block/Parry: raw incoming damage (before armor)
+- Dodge: 6 AP base cost
+
+---
+
+### 6. Injury System (`injury.py`) ✅
+**Status:** Complete
+
+- Condition tiers based on FP/EP damage thresholds
+- Progressive penalties affecting all combat stats
+- Mutually exclusive (strongest condition applies)
+
+**Injury Conditions (Priority Order):**
+```
+1. Kritikus sérülés (Critical)  EP ≤ 75% of max:  -15 KÉ, -25 TÉ, -25 VÉ, -15 CÉ
+2. Súlyos sérülés (Serious)     EP < max (any):   -10 KÉ, -20 TÉ, -20 VÉ, -10 CÉ
+3. Könnyű sérülés (Light)       FP ≤ 75% of max:   -5 KÉ, -10 TÉ, -10 VÉ,  -5 CÉ
+4. Egészséges (Healthy)         Otherwise:         no penalties
+```
+
+---
+
+### 7. Attack Resolution (`attack_resolution.py`) ✅
+**Status:** Complete
+
+Complete attack flow integrating all systems including stamina, injury, and unconscious handling.
 
 **Defense Value Calculation:**
 ```python
-base_VÉ = character VÉ ± conditions
+base_VÉ = character VÉ ± conditions ± stamina ± injury
 block_VÉ = base_VÉ + shield VÉ
 parry_VÉ = base_VÉ + weapon VÉ + shield VÉ
 dodge_VÉ = parry_VÉ + dodge skill modifier
@@ -164,14 +206,15 @@ all_TÉ = base TÉ + weapon TÉ + d100 roll + conditions
    - No damage
 
 2. **BLOCKED**: `base_VÉ < all_TÉ <= block_VÉ`
-   - Damage to FP (stamina)
+   - Stamina cost = raw incoming damage (before armor)
    - Reduced by shield skill (TODO)
 
 3. **PARRIED**: `block_VÉ < all_TÉ <= parry_VÉ`
-   - Damage to FP (stamina)
+   - Stamina cost = raw incoming damage (before armor)
    - Reduced by parry skill (TODO)
 
 4. **DODGE_ATTEMPT**: `parry_VÉ < all_TÉ <= dodge_VÉ`
+   - Stamina cost: 6 AP (fixed base)
    - Requires speed check (Gyorsaság próba)
    - Success = no damage
    - Failure = reduced damage (based on dodge skill)
@@ -289,10 +332,9 @@ When both occur:
    - Partial damage on failed dodge
    - Dodge skill level effects
 
-5. **Stamina System:**
-   - Block/parry damage to stamina instead of FP
-   - Stamina regeneration
-   - Exhaustion effects
+5. **Stamina Recovery:**
+   - End-of-combat regeneration
+   - Rest/action-based recovery rates
 
 6. **Equipment Repository Extensions:**
    - Load shields from equipment data
@@ -369,7 +411,9 @@ domain/mechanics/
 ├── reach.py                 # ✅ Weapon reach & mandatory EP
 ├── armor.py                 # ✅ Armor entities & degradation
 ├── critical.py              # ✅ Critical hit detection
-└── attack_resolution.py     # ✅ Complete attack flow
+├── stamina.py               # ✅ Stamina/fatigue system
+├── injury.py                # ✅ Injury condition system
+└── attack_resolution.py     # ✅ Complete attack flow with conditions
 ```
 
 ---

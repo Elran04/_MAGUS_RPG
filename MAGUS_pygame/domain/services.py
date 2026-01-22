@@ -5,6 +5,7 @@ Unit Factory - Creates Unit entities from character data.
 import uuid
 
 from domain.entities import Unit, Weapon
+from domain.mechanics import Stamina
 from domain.mechanics.armor import ArmorPiece, ArmorSystem
 from domain.value_objects import Attributes, CombatStats, Facing, Position, ResourcePool
 from infrastructure.repositories import CharacterRepository, EquipmentRepository
@@ -77,6 +78,9 @@ class UnitFactory:
             fp = ResourcePool(current=fp_max, maximum=fp_max)
             ep = ResourcePool(current=ep_max, maximum=ep_max)
 
+            # Stamina derived from Állóképesség (endurance)
+            stamina = Stamina.from_attribute(attributes.endurance)
+
             # --- Preserve scenario-injected equipment mapping if present ---
             if "equipment" not in char_data:
                 felszereles = char_data.get("Felszerelés", {})
@@ -107,6 +111,7 @@ class UnitFactory:
                 combat_stats=combat_stats,
                 attributes=attributes,
                 character_data=char_data,
+                stamina=stamina,
             )
 
             # Load weapon if equipped
