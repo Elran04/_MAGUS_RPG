@@ -3,7 +3,9 @@ Configuration constants for the MAGUS pygame game.
 """
 
 # --- WINDOW CONFIG ---
-WIDTH = 1024
+SIDEBAR_WIDTH = 250  # Left action panel width
+PLAY_AREA_WIDTH = 1024  # Original play area (battle grid)
+WIDTH = SIDEBAR_WIDTH + PLAY_AREA_WIDTH  # Total window width: 1274
 HEIGHT = 768
 
 # --- HEX GRID CONFIG ---

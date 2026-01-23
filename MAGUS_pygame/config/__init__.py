@@ -30,7 +30,9 @@ from config.config import (
     PATH_LINE_WIDTH,
     PATH_ZONE_OVERLAP_COLOR,
     PATH_ZONE_OVERLAP_RADIUS,
+    PLAY_AREA_WIDTH,
     REACHABLE_TINT,
+    SIDEBAR_WIDTH,
     UI_ACTIVE,
     UI_BG,
     UI_BORDER,
@@ -68,6 +70,8 @@ __all__ = [
     # Display & Grid Configuration
     "WIDTH",
     "HEIGHT",
+    "SIDEBAR_WIDTH",
+    "PLAY_AREA_WIDTH",
     "HEX_SIZE",
     # Colors
     "BG_COLOR",

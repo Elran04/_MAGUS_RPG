@@ -140,6 +140,7 @@ MAGUS_pygame/
 - UI screens beyond test screen (scenario selector, deployment, battle HUD)
 - Combat feedback polish (logs, icons, condition/stamina visuals)
 
+
 ### 📋 TODO (Next Steps)
 1. **Battle/Combat Enhancements**
    - Add ranged/thrown attack resolution and ammunition handling

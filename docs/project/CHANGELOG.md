@@ -7,6 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **Battle Screen Refactoring**: Split 786-line BattleScreen into lightweight coordinator pattern with three specialized classes:
+  - **BattleInputHandler** (64 lines): Mouse/keyboard translation, hex hover tracking
+  - **BattleActionExecutor** (208 lines): Combat action execution, message display, battle service integration
+  - **BattleRenderCoordinator** (202 lines): Rendering coordination, HUD, overlays, controls display
+  - Result: 47% line reduction (786 → 418 lines), improved maintainability and testability
+  - All game functions verified working: movement, attack, rotation, inspection, turn ending
 - **Skills System**: Skills VO for normalized skill lookup; weaponskill modifiers (BASE universal + weapon-specific UNIQUE effects); integrated with attack resolution
 - **Weaponskill_Longswords**: Full implementation (levels 0-6) with stat penalties/bonuses, stamina reduction, critical thresholds, overpower shifts, opportunity attacks (1x at level 3, 3x at level 6)
 - **Critical Failure Mechanics**: Level-dependent failure ranges (0: 1-10, 1: 1-5, 2: 1 only, 3+: none); distinct CRITICAL_FAILURE outcome in attack resolution

@@ -45,6 +45,7 @@ class BattleRenderer:
         screen: pygame.Surface,
         grid_bounds: tuple[int, int, int, int],
         background: pygame.Surface | None = None,
+        x_offset: int = 0,
     ):
         """Initialize the battle renderer.
 
@@ -52,16 +53,18 @@ class BattleRenderer:
             screen: Main pygame display surface
             grid_bounds: (MIN_Q, MAX_Q, MIN_R, MAX_R) hex grid boundaries
             background: Optional background image
+            x_offset: Horizontal offset for rendering (e.g., for left sidebar)
         """
         self.screen = screen
         self.grid_bounds = grid_bounds
         self.background = background
+        self.x_offset = x_offset
 
         # Fonts
         self.overlay_font = pygame.font.SysFont(None, 20)
         self.hud_font = pygame.font.SysFont(None, 32)
 
-        logger.info(f"BattleRenderer initialized with bounds {grid_bounds}")
+        logger.info(f"BattleRenderer initialized with bounds {grid_bounds}, offset={x_offset}")
 
     def set_background(self, background: pygame.Surface | None) -> None:
         """Set or update the background image.

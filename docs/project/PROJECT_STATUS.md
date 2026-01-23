@@ -51,6 +51,12 @@ Two actively developed modules:
 ## Recent Changes (December 2025)
 
 ## Recent Changes (January 2026)
+- **Battle Screen Refactoring**: Split 786-line BattleScreen into three lightweight coordinators (47% reduction to 418 lines):
+  - **BattleInputHandler**: Mouse/keyboard translation, hex hover tracking (64 lines)
+  - **BattleActionExecutor**: Combat action execution, message display (208 lines)
+  - **BattleRenderCoordinator**: Rendering coordination, UI overlays (202 lines)
+  - Result: Improved code maintainability, better separation of concerns, easier to test and extend
+  - All game functions verified: movement, attack, rotation, inspection, turn ending
 - **Skills System**: Skills VO integrated; weaponskill modifiers (BASE universal + weapon-specific UNIQUE effects); weaponskill_longswords fully implemented (levels 0-6)
 - **Critical Mechanics**: Corrected thresholds (level-dependent); failure ranges (0: 1-10, 1: 1-5, 2: 1 only, 3+: none); CRITICAL_FAILURE outcome; 11 tests fixed
 - **Weapon Quickslots**: Auto-equips 3 weapons in quick combat (main_hand + 2 quickslots); displayed in unit info popup; switching UI pending
