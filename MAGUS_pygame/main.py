@@ -9,6 +9,7 @@ For porting legacy features, see docs/archive/MIGRATION.md
 """
 
 import multiprocessing
+import threading
 
 import pygame
 from application.game_context import GameContext
@@ -35,13 +36,25 @@ def main() -> None:
     pygame.display.set_caption("MAGUS RPG")
     clock = pygame.time.Clock()
 
-    # Initialize application context
-    context = GameContext()
+    # Menu shows a loading hint; allow interaction while backend boots
+    menu = Menu(WIDTH, HEIGHT)
+    menu.set_loading(True, "Initializing... you can pick a mode")
+
+    context: GameContext | None = None
+    context_ready = threading.Event()
+
+    def init_context() -> None:
+        nonlocal context
+        context = GameContext()
+        context_ready.set()
+
+    context_thread = threading.Thread(target=init_context, daemon=True)
+    context_thread.start()
 
     # Main game loop
     running = True
     game_state = "menu"  # menu, playing, scenario_editor, quit
-    menu = Menu(WIDTH, HEIGHT)
+    pending_action: str | None = None
     scenario_editor: ScenarioEditorScreen | None = None
     tool_window_process = None
     tool_window_quit_event = None
@@ -58,12 +71,39 @@ def main() -> None:
                 else:
                     menu.handle_event(event)
 
+            if context_ready.is_set() and menu.is_loading:
+                # Backend ready; remove loading hint
+                menu.set_loading(False)
+
             # Draw menu
             menu.draw(screen)
             pygame.display.flip()
 
             # Check for menu actions (only if menu is still open)
             action = menu.get_last_action()
+            ready = context_ready.is_set()
+
+            # If user selects before ready, queue it and keep loading hint
+            if action and not ready:
+                pending_action = action
+                menu.reset_action()
+                menu.set_loading(True, "Finishing setup, please wait...")
+                action = None
+
+            # Release queued action once context is ready
+            if pending_action and ready:
+                action = pending_action
+                pending_action = None
+                menu.set_loading(False)
+
+            # No context yet; skip until ready
+            if action and not ready:
+                continue
+
+            # Safety check
+            if action and context is None:
+                logger.error("Menu action received but context not ready")
+                continue
             if action == "new_game":
                 logger.info("Starting new game")
                 menu.reset_action()
@@ -164,7 +204,12 @@ def main() -> None:
 
     # Cleanup
     logger.info("Shutting down...")
-    context.shutdown()
+    if not context_ready.is_set():
+        context_ready.wait(timeout=2.0)
+    if context:
+        context.shutdown()
+    if context_thread.is_alive():
+        context_thread.join(timeout=1.0)
     pygame.quit()
     logger.info("Application closed")
 

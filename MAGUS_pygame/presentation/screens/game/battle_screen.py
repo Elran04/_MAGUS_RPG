@@ -18,6 +18,7 @@ from presentation.components.action_panel import ActionPanel
 from presentation.components.hud import HUD
 from presentation.components.pause_menu import PauseMenu
 from presentation.components.unit_info_popup import UnitInfoPopup
+from presentation.components.weapon_switch_popup import WeaponSwitchPopup
 from presentation.screens.game.battle_action_executor import BattleActionExecutor
 from presentation.screens.game.battle_input_handler import BattleInputHandler
 from presentation.screens.game.battle_render_coordinator import BattleRenderCoordinator
@@ -76,6 +77,7 @@ class BattleScreen:
         self.selected_unit: Unit | None = None
         self.movement_path: list[Position] | None = None
         self.unit_popup: UnitInfoPopup | None = None
+        self.weapon_switch_popup: WeaponSwitchPopup | None = None
 
         # Create play area surface (to the right of sidebar)
         self.play_surface = pygame.Surface((PLAY_AREA_WIDTH, screen_height))
@@ -124,8 +126,10 @@ class BattleScreen:
             key: Pygame key constant
         """
         if key == pygame.K_ESCAPE:
-            # Priority: Popup > Action mode > Pause menu toggle
-            if self.unit_popup and self.unit_popup.visible:
+            # Priority: Weapon switch popup > Unit popup > Action mode > Pause menu toggle
+            if self.weapon_switch_popup and self.weapon_switch_popup.visible:
+                self.weapon_switch_popup.hide()
+            elif self.unit_popup and self.unit_popup.visible:
                 self.unit_popup.hide()
             elif self.action_mode != ActionMode.IDLE:
                 self._cancel_action()
@@ -143,6 +147,8 @@ class BattleScreen:
             self._enter_move_mode()
         elif key == pygame.K_a:
             self._enter_attack_mode()
+        elif key == pygame.K_w:
+            self._open_weapon_switch_popup()
         elif key == pygame.K_i:
             self._enter_inspect_mode()
         elif key == pygame.K_q:
@@ -220,6 +226,22 @@ class BattleScreen:
                 self.unit_popup.hide()
                 return
 
+        # Handle weapon switch popup clicks
+        if self.weapon_switch_popup and self.weapon_switch_popup.visible:
+            action, new_main, new_off = self.weapon_switch_popup.handle_click(*mouse_pos)
+            if action == "cancel":
+                self.weapon_switch_popup.hide()
+                return
+            elif action == "apply":
+                self._apply_weapon_switch(new_main, new_off)
+                return
+            # Check if click outside popup
+            if self.weapon_switch_popup.is_click_outside(*mouse_pos):
+                self.weapon_switch_popup.hide()
+                return
+            # If no action, click was inside popup but not on buttons
+            return
+
         # Handle play area clicks
         if not self.input_handler.is_click_in_play_area(mouse_pos):
             return
@@ -276,6 +298,8 @@ class BattleScreen:
             self._enter_move_mode()
         elif action == "attack":
             self._enter_attack_mode()
+        elif action == "switch_weapon":
+            self._open_weapon_switch_popup()
         elif action == "inspect":
             self._enter_inspect_mode()
         elif action == "rotate_ccw":
@@ -383,8 +407,43 @@ class BattleScreen:
         )
         if unit:
             if not self.unit_popup:
-                self.unit_popup = UnitInfoPopup()
+                self.unit_popup = UnitInfoPopup(context=self.context)
             self.unit_popup.show(unit)
+
+    def _open_weapon_switch_popup(self) -> None:
+        """Open weapon switch popup for current unit."""
+        if self.battle.is_victory():
+            return
+
+        current = self.battle.current_unit
+        if not current:
+            self.action_executor.show_message("No active unit")
+            return
+
+        if not self.weapon_switch_popup:
+            self.weapon_switch_popup = WeaponSwitchPopup(context=self.context)
+
+        self.weapon_switch_popup.show(current)
+
+    def _apply_weapon_switch(self, new_main_hand: str | None, new_off_hand: str | None) -> None:
+        """Apply weapon switch selection.
+
+        Args:
+            new_main_hand: New main hand weapon ID
+            new_off_hand: New off hand weapon ID
+        """
+        current = self.battle.current_unit
+        if not current:
+            self.action_executor.show_message("No active unit")
+            return
+
+        # Execute the weapon switch
+        result = self.action_executor.execute_weapon_switch(current, new_main_hand, new_off_hand)
+
+        if "error" not in result:
+            self.weapon_switch_popup.hide()
+            self._check_victory()
+        # If error, message is already shown by action_executor
 
     def _check_victory(self) -> None:
         """Check for victory and handle it."""
@@ -451,6 +510,7 @@ class BattleScreen:
             hovered_hex=self.input_handler.hovered_hex,
             combat_message=self.action_executor.combat_message,
             unit_popup=self.unit_popup,
+            weapon_switch_popup=self.weapon_switch_popup,
             victory_action=self.action,
         )
 

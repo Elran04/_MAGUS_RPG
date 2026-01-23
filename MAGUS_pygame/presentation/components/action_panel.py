@@ -141,6 +141,7 @@ class ActionPanel:
         actions = [
             ("Move", "M"),
             ("Attack", "A"),
+            ("Switch Weapon", "W"),
             ("Inspect", "I"),
             ("Rotate CCW", "Q"),
             ("Rotate CW", "E"),

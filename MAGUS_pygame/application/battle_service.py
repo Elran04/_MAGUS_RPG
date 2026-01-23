@@ -295,6 +295,108 @@ class BattleService:
             summary["error"] = "Insufficient AP after rotation"
         return summary
 
+    def switch_weapon(
+        self, unit: Unit, new_main_hand: str | None, new_off_hand: str | None
+    ) -> dict[str, object]:
+        """Switch the active weapons for a unit.
+
+        Weapon switching costs 5 AP. Swaps weapons between main_hand/off_hand
+        and the quickslot weapons (weapon_quick_1, weapon_quick_2).
+
+        Args:
+            unit: Unit switching weapons
+            new_main_hand: New main hand weapon ID (from equipment or quickslot)
+            new_off_hand: New off hand weapon ID (from equipment or quickslot)
+
+        Returns:
+            Dict with success, message, ap_spent, or error
+        """
+        logger = get_logger(__name__)
+
+        # Delegate to ActionHandler
+        summary = self.action_handler.switch_weapon(
+            unit=unit,
+            new_main_hand=new_main_hand,
+            new_off_hand=new_off_hand,
+            ap_available=self.remaining_ap(unit),
+            apply_switch=True,
+        )
+
+        # Handle AP spending
+        if "error" not in summary:
+            ap_spent = summary.get("ap_spent", 5)
+            if not self.spend_ap(unit, ap_spent):
+                # Rollback on AP spend failure
+                equipment = unit.character_data["equipment"]
+                old_main = summary.get("action_result").data.get("old_main_hand", "")
+                old_off = summary.get("action_result").data.get("old_off_hand", "")
+                equipment["main_hand"] = old_main
+                equipment["off_hand"] = old_off
+                return {"error": f"Failed to spend {ap_spent} AP"}
+
+            # Reload unit's weapon object from new main_hand equipment
+            # This ensures reach, combat stats, and all weapon-dependent calculations use updated weapon
+            if self.equipment_repo:
+                equipment = unit.character_data["equipment"]
+                new_main_id = equipment.get("main_hand", "")
+                if new_main_id:
+                    weapon_data = self.equipment_repo.find_weapon_by_id(new_main_id)
+                    if weapon_data:
+                        # Build weapon entity and update unit
+                        unit.weapon = self._build_weapon_entity(weapon_data)
+                        logger.debug(f"{unit.name} equipped {new_main_id}")
+                else:
+                    unit.weapon = None
+                    logger.debug(f"{unit.name} unequipped main hand weapon")
+
+        return summary
+
+    def _build_weapon_entity(self, weapon_data: dict) -> object:
+        """Build a Weapon entity from raw weapon data.
+
+        Args:
+            weapon_data: Raw weapon dict from repository
+
+        Returns:
+            Weapon domain entity
+        """
+        from domain.entities import Weapon
+
+        CATEGORY_TO_SKILL_ID = {
+            "swords": "sword_skill",
+            "axes": "axe_skill",
+            "maces": "mace_skill",
+            "spears": "spear_skill",
+            "bows": "bow_skill",
+            "crossbows": "crossbow_skill",
+        }
+
+        category = weapon_data.get("category", "")
+        skill_id = CATEGORY_TO_SKILL_ID.get(category, "")
+
+        return Weapon(
+            id=weapon_data.get("id", ""),
+            name=weapon_data.get("name", "Unknown"),
+            ke_modifier=weapon_data.get("KE", 0),
+            te_modifier=weapon_data.get("TE", 0),
+            ve_modifier=weapon_data.get("VE", 0),
+            damage_dice=weapon_data.get("damage", "1d6"),
+            damage_min=weapon_data.get("damage_min", 1),
+            damage_max=weapon_data.get("damage_max", 6),
+            armor_penetration=weapon_data.get("armor_penetration", 0),
+            attack_time=weapon_data.get("attack_time", 5),
+            size_category=weapon_data.get("size_category", 1),
+            wield_mode=weapon_data.get("wield_mode", "one_handed"),
+            strength_required=weapon_data.get("strength_required", 0),
+            dexterity_required=weapon_data.get("dexterity_required", 0),
+            damage_types=weapon_data.get("damage_types", []) or [],
+            damage_bonus_attributes=weapon_data.get("damage_bonus_attributes", []) or [],
+            can_disarm=weapon_data.get("can_disarm", False),
+            can_break_weapon=weapon_data.get("can_break_weapon", False),
+            category=category,
+            skill_id=skill_id,
+        )
+
     def set_teams(self, team_a: Iterable[Unit], team_b: Iterable[Unit]) -> None:
         self.team_a_ids = [u.id for u in team_a]
         self.team_b_ids = [u.id for u in team_b]

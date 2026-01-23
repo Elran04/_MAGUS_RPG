@@ -68,6 +68,10 @@ class Menu:
         self.screen_height = screen_height
         self.state = MenuState.MAIN_MENU
 
+        # Prevent interaction while dependencies are still booting
+        self.is_loading = False
+        self.loading_message = "Loading..."
+
         # Track last selected action (for application layer to handle)
         self.last_action: str | None = None
 
@@ -198,6 +202,8 @@ class Menu:
         Args:
             event: Pygame event
         """
+        if self.state == MenuState.CLOSED:
+            return
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
                 self._move_selection(-1)
@@ -315,6 +321,12 @@ class Menu:
         title_rect = title_surface.get_rect(center=(self.screen_width // 2, 100))
         surface.blit(title_surface, title_rect)
 
+        if self.is_loading:
+            # Show loading hint but keep menu usable
+            loading_surface = self.font_menu.render(self.loading_message, True, self.color_title)
+            loading_rect = loading_surface.get_rect(center=(self.screen_width // 2, 170))
+            surface.blit(loading_surface, loading_rect)
+
         # Draw menu items
         items = self.get_current_items()
         start_y = self.screen_height // 2 - (len(items) * 50) // 2
@@ -368,6 +380,12 @@ class Menu:
         """Close the menu."""
         self.state = MenuState.CLOSED
         logger.info("Closed menu")
+
+    def set_loading(self, is_loading: bool, message: str | None = None) -> None:
+        """Toggle loading mode to block input until ready."""
+        self.is_loading = is_loading
+        if message:
+            self.loading_message = message
 
     def reset_action(self) -> None:
         """Reset the last action."""

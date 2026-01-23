@@ -82,16 +82,31 @@ class EquipmentValidationService:
         if slot_enum in [Slot.MAIN_HAND, Slot.WEAPON_QUICK_1, Slot.WEAPON_QUICK_2]:
             if not is_weapon:
                 return ValidationResult(False, "Not a weapon")
+
+            is_variable = wield_mode.lower() in ["variable", "változó", "valtozo", "1h/2h"]
+
             # Main hand: weapons only
             if slot_enum == Slot.MAIN_HAND:
+                # Variable weapons may be forced to 1h when off-hand is occupied
+                if is_variable and selected_wield_mode == "one_handed":
+                    result = self.can_wield_variable_one_handed(unit, item_id, weapon)
+                    if not result.success:
+                        return result
+                    return ValidationResult(True, "OK")
+
                 is_1h = is_one_handed_weapon(weapon) if weapon else False
                 is_2h = is_two_handed_weapon(weapon) if weapon else False
                 is_ranged = is_ranged_weapon(weapon) if weapon else False
+
+                # Variable weapons are allowed even if helper tags them two-handed; rely on selected_wield_mode upstream
+                if is_variable:
+                    return ValidationResult(True, "OK")
+
                 is_valid_weapon = is_1h or is_2h or is_ranged
                 if not is_valid_weapon:
                     return ValidationResult(False, "Not a weapon")
-                else:
-                    return ValidationResult(True, "OK")
+                return ValidationResult(True, "OK")
+
             # Quick slots: weapons or shields allowed
             elif slot_enum in [Slot.WEAPON_QUICK_1, Slot.WEAPON_QUICK_2]:
                 is_1h = is_one_handed_weapon(weapon) if weapon else False
@@ -101,18 +116,7 @@ class EquipmentValidationService:
                 is_valid_weapon = is_1h or is_2h or is_ranged
                 if not (is_valid_weapon or is_shield_item):
                     return ValidationResult(False, "Not a weapon or shield")
-                else:
-                    return ValidationResult(True, "OK")
-            # If variable, check selected wield mode
-        if wield_mode in ["variable", "változó"] and selected_wield_mode:
-            if selected_wield_mode == "one_handed":
-                result = self.can_wield_variable_one_handed(unit, item_id, weapon)
-                if not result.success:
-                    return result
                 return ValidationResult(True, "OK")
-            elif selected_wield_mode == "two_handed":
-                return ValidationResult(True, "OK")
-            return ValidationResult(True, "OK")
         # Off-hand slot
         if slot_enum == Slot.OFF_HAND:
             if not is_weapon:

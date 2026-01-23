@@ -4,6 +4,7 @@
 Two modules: GM Toolkit (PySide6) for data/editing and a Pygame combat demo for mechanics prototyping. Godot is the likely target for the final game, so the Pygame module is for mechanics validation.
 
 ## ✅ Recently Completed
+- **Menu Initialization UX**: GameContext loads on a background thread; menu stays interactive with queued selections and a loading hint for Quick Combat/New Game
 - **Skills System**: Skills VO with normalized lookup; weaponskill modifiers (BASE + UNIQUE effects); weaponskill_longswords (levels 0-6 with all effects); integrated with attack resolution and critical thresholds
 - **Critical Failure Mechanics**: Level-dependent failure ranges; corrected thresholds; distinct CRITICAL_FAILURE outcome; 11 tests fixed
 - **Quick Combat Weapon Quickslots**: Auto-equips 3 weapons (main + 2 quickslots); displayed in unit info popup; data layer complete

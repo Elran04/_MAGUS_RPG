@@ -51,6 +51,8 @@ Two actively developed modules:
 ## Recent Changes (December 2025)
 
 ## Recent Changes (January 2026)
+- **Menu Initialization UX**: GameContext now builds on a background thread; menu stays clickable with a loading hint, and selections queue until initialization finishes (faster Quick Combat entry)
+- **Weapon Switch Popup Polish**: Variable 1h/2h display fixed, validation passes selected wield mode, and guards block ranged/two-handed pairings with occupied off-hand; unit info popup now shows item names via shared context
 - **Battle Screen Refactoring**: Split 786-line BattleScreen into three lightweight coordinators (47% reduction to 418 lines):
   - **BattleInputHandler**: Mouse/keyboard translation, hex hover tracking (64 lines)
   - **BattleActionExecutor**: Combat action execution, message display (208 lines)

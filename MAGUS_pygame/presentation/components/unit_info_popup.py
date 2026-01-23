@@ -118,10 +118,29 @@ class UnitInfoPopup:
             return
 
         weapon = self.unit.weapon
-        # Check if weapon can be wielded variably
-        if hasattr(weapon, "wield_mode") and getattr(weapon, "wield_mode", None) == "Változó":
-            self.cached_wield_info = get_wielding_info(self.unit, weapon)
-        else:
+
+        # Only get wielding info if weapon has wield_mode attribute
+        # (not all weapons have variable wielding modes)
+        if not hasattr(weapon, "wield_mode"):
+            self.cached_wield_info = None
+            return
+
+        wield_mode = getattr(weapon, "wield_mode", None)
+        if not wield_mode:
+            self.cached_wield_info = None
+            return
+
+        # Get wielding info for weapons with wielding modes
+        try:
+            self.cached_wield_info = get_wielding_info(
+                self.unit,
+                weapon,
+                wield_mode,
+                strength_req=getattr(weapon, "strength_required", 0),
+                dex_req=getattr(weapon, "dexterity_required", 0),
+            )
+        except Exception:
+            # If wielding info fails, just skip it
             self.cached_wield_info = None
 
     def handle_click(self, mx: int, my: int) -> bool:
@@ -255,7 +274,25 @@ class UnitInfoPopup:
             if not item_id:
                 return "(empty)"
 
-            # Weapon already attached
+            # Try repository first (works for all items including main_hand, off_hand, quickslots)
+            if self.context and hasattr(self.context, "equipment_repo"):
+                repo = self.context.equipment_repo
+                if repo:
+                    try:
+                        if is_armor:
+                            armor_data = repo.find_armor_by_id(item_id)
+                            if armor_data and isinstance(armor_data, dict):
+                                return armor_data.get("name", item_id)
+                        else:
+                            # Weapons/shields
+                            weapon_data = repo.find_weapon_by_id(item_id)
+                            if weapon_data and isinstance(weapon_data, dict):
+                                return weapon_data.get("name", item_id)
+                    except Exception:
+                        # Repository lookup failed, use fallback
+                        pass
+
+            # Fallback: check if it's the main hand weapon object
             if (
                 not is_armor
                 and self.unit.weapon
@@ -263,18 +300,7 @@ class UnitInfoPopup:
             ):
                 return getattr(self.unit.weapon, "name", item_id)
 
-            if self.context and hasattr(self.context, "equipment_repo"):
-                repo = self.context.equipment_repo
-                if is_armor:
-                    armor_data = repo.find_armor_by_id(item_id)
-                    if armor_data:
-                        return armor_data.get("name", item_id)
-                # Weapons/shields
-                weapon_data = repo.find_weapon_by_id(item_id)
-                if weapon_data:
-                    return weapon_data.get("name", item_id)
-
-            # Fallback
+            # Last resort: return ID as string
             return str(item_id)
 
         # Main hand
@@ -291,7 +317,7 @@ class UnitInfoPopup:
         screen.blit(off_hand_text, (x_left + 10, y))
         y += 28
 
-        # Quick weapons
+        # Quick weapons (all 4 slots)
         quick1 = equipment.get("weapon_quick_1", "")
         quick1_name = get_item_name(quick1)
         quick1_text = self.style.text_font.render(f"Quick Weapon 1: {quick1_name}", True, UI_TEXT)
@@ -302,6 +328,18 @@ class UnitInfoPopup:
         quick2_name = get_item_name(quick2)
         quick2_text = self.style.text_font.render(f"Quick Weapon 2: {quick2_name}", True, UI_TEXT)
         screen.blit(quick2_text, (x_left + 10, y))
+        y += 24
+
+        quick3 = equipment.get("weapon_quick_3", "")
+        quick3_name = get_item_name(quick3)
+        quick3_text = self.style.text_font.render(f"Quick Weapon 3: {quick3_name}", True, UI_TEXT)
+        screen.blit(quick3_text, (x_left + 10, y))
+        y += 24
+
+        quick4 = equipment.get("weapon_quick_4", "")
+        quick4_name = get_item_name(quick4)
+        quick4_text = self.style.text_font.render(f"Quick Weapon 4: {quick4_name}", True, UI_TEXT)
+        screen.blit(quick4_text, (x_left + 10, y))
         y += 24
 
         # Armor pieces

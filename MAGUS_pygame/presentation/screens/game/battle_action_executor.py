@@ -155,6 +155,38 @@ class BattleActionExecutor:
 
         return result
 
+    def execute_weapon_switch(
+        self, unit: Unit, new_main_hand: str | None, new_off_hand: str | None
+    ) -> dict:
+        """Execute weapon switch action.
+
+        Args:
+            unit: Unit switching weapons
+            new_main_hand: New main hand weapon ID
+            new_off_hand: New off hand weapon ID
+
+        Returns:
+            Summary dict with results
+        """
+        logger.info(f"{unit.name} switching weapons: main={new_main_hand}, off={new_off_hand}")
+
+        # Call battle service to perform the switch
+        result = self.battle.switch_weapon(
+            unit=unit, new_main_hand=new_main_hand, new_off_hand=new_off_hand
+        )
+
+        if "error" in result:
+            self.show_message(f"Weapon switch failed: {result['error']}")
+            logger.warning(f"Weapon switch failed: {result['error']}")
+            return result
+
+        # Format success message
+        ap_spent = result.get("ap_spent", 5)
+        self.show_message(f"Weapons switched (AP: -{ap_spent})")
+        logger.info(f"{unit.name} switched weapons successfully")
+
+        return result
+
     def end_turn(self) -> None:
         """End current unit's turn."""
         self.battle.end_turn()

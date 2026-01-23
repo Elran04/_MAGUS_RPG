@@ -14,6 +14,7 @@ from presentation.components.action_panel import ActionPanel
 from presentation.components.hud import HUD
 from presentation.components.pause_menu import PauseMenu
 from presentation.components.unit_info_popup import UnitInfoPopup
+from presentation.components.weapon_switch_popup import WeaponSwitchPopup
 
 logger = get_logger(__name__)
 
@@ -57,7 +58,8 @@ class BattleRenderCoordinator:
         hovered_hex: tuple[int, int] | None,
         combat_message: str | None,
         unit_popup: UnitInfoPopup | None,
-        victory_action: str | None,
+        victory_action: str | None = None,
+        weapon_switch_popup: WeaponSwitchPopup | None = None,
     ) -> None:
         """Draw complete battle scene.
 
@@ -132,6 +134,10 @@ class BattleRenderCoordinator:
         # Draw unit info popup if open
         if unit_popup:
             unit_popup.draw(surface)
+
+        # Draw weapon switch popup if open
+        if weapon_switch_popup:
+            weapon_switch_popup.draw(surface)
 
         # Draw controls help (minimalist)
         self._draw_controls(surface)

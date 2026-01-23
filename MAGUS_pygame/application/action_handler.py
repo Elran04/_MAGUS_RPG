@@ -17,6 +17,7 @@ from domain.entities import Unit
 from domain.mechanics import AttackAction, MovementAction
 from domain.mechanics.actions import ActionResult
 from domain.mechanics.actions.facing_action import FacingAction
+from domain.mechanics.actions.switch_weapon_action import SwitchWeaponAction
 from domain.mechanics.attack_resolution import apply_attack_result
 from domain.value_objects import Facing, Position
 
@@ -190,5 +191,53 @@ class ActionHandler:
         # Apply rotation if requested
         if apply_rotation and result.success:
             unit.rotate_to(new_facing)
+
+        return {"action_result": result, "ap_spent": result.ap_spent}
+
+    # --- Weapon Switch ---
+    def switch_weapon(
+        self: ActionHandler,
+        *,
+        unit: Unit,
+        new_main_hand: str | None,
+        new_off_hand: str | None,
+        ap_available: int = 0,
+        apply_switch: bool = True,
+    ) -> dict[str, object]:
+        """Execute weapon switch. Returns a summary dict.
+
+        The summary includes: action_result, ap_spent.
+
+        Args:
+            unit: Unit switching weapons
+            new_main_hand: New main hand weapon ID
+            new_off_hand: New off hand weapon ID
+            ap_available: Available action points
+            apply_switch: If True, apply equipment changes to unit
+
+        Returns:
+            Dict with action_result and ap_spent, or error
+        """
+        action = SwitchWeaponAction()
+        ok, msg = action.can_execute(
+            unit=unit,
+            new_main_hand=new_main_hand,
+            new_off_hand=new_off_hand,
+            ap_available=ap_available,
+        )
+        if not ok:
+            return {"error": msg}
+
+        result = action.execute(
+            unit=unit,
+            new_main_hand=new_main_hand,
+            new_off_hand=new_off_hand,
+        )
+
+        # Apply equipment changes if requested
+        if apply_switch and result.success:
+            equipment = unit.character_data["equipment"]
+            equipment["main_hand"] = new_main_hand or ""
+            equipment["off_hand"] = new_off_hand or ""
 
         return {"action_result": result, "ap_spent": result.ap_spent}
