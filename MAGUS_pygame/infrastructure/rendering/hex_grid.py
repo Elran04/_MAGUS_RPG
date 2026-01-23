@@ -249,6 +249,7 @@ def draw_grid(
     charge_targets: set[tuple[int, int]] | None = None,
     enemy_zone_hexes: set[tuple[int, int]] | None = None,
     highlight_hex: tuple[int, int] | None = None,
+    active_unit_hex: tuple[int, int] | None = None,
 ) -> None:
     """Draw the hex grid and any sprites at their positions.
 
@@ -262,6 +263,7 @@ def draw_grid(
         charge_targets: set of (q, r) valid for charge attacks (enemy positions)
         enemy_zone_hexes: set of (q, r) in enemy's zone of control
         highlight_hex: (q, r) hex to draw as hovered
+        active_unit_hex: (q, r) hex of the active unit (bright highlight)
     """
     margin = HEX_SIZE * 2
     # Draw semi-transparent overlays onto a separate surface for correct alpha blending
@@ -279,20 +281,25 @@ def draw_grid(
                 points = _hex_points((px, py), HEX_SIZE)
 
                 # Accumulate semi-transparent fills (order matters - later = on top)
-                # 1. Base ranges (movement/charge area)
+                # 1. Active unit hex (bright highlight, under most other highlights)
+                if active_unit_hex is not None and (q, r) == active_unit_hex:
+                    pygame.draw.polygon(
+                        overlay_surface, (100, 255, 150, 80), points, 0
+                    )  # Bright green
+                # 2. Base ranges (movement/charge area)
                 if reachable_hexes and (q, r) in reachable_hexes:
                     pygame.draw.polygon(overlay_surface, REACHABLE_TINT, points, 0)
                 if charge_area_hexes and (q, r) in charge_area_hexes:
                     pygame.draw.polygon(overlay_surface, CHARGE_AREA_TINT, points, 0)
-                # 2. Attack ranges
+                # 3. Attack ranges
                 if attackable_hexes and (q, r) in attackable_hexes:
                     pygame.draw.polygon(overlay_surface, ATTACKABLE_TINT, points, 0)
                 if charge_targets and (q, r) in charge_targets:
                     pygame.draw.polygon(overlay_surface, CHARGE_TINT, points, 0)
-                # 3. Enemy zone (rendered on top so it's visible as warning)
+                # 4. Enemy zone (rendered on top so it's visible as warning)
                 if enemy_zone_hexes and (q, r) in enemy_zone_hexes:
                     pygame.draw.polygon(overlay_surface, ENEMY_ZONE_TINT, points, 0)
-                # 4. Hover highlight (always on top)
+                # 5. Hover highlight (always on top)
                 if highlight_hex is not None and (q, r) == highlight_hex:
                     pygame.draw.polygon(overlay_surface, HOVER_TINT, points, 0)
 

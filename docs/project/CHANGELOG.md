@@ -7,11 +7,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **Presentation Layer Message Formatting**: Attack result messages now formatted in presentation layer (battle_action_executor.py) instead of domain layer for proper separation of concerns
+- **Color-Coded ÉP Damage Display**: Visual feedback for ÉP damage sources using color tags:
+  - Purple: Mandatory EP loss from weapon size rule (e.g., dagger 6 FP = 1 ÉP)
+  - White: FP overflow when FP exhausted
+  - Red: Overpower strike direct ÉP damage
+- **Enhanced Combat Messages**: 
+  - Multi-line format (up to 3 lines) with proper spacing
+  - Shows attack roll value in TÉ: `TÉ 68 (50)` where 50 is d100 roll
+  - Pre-armor damage display for transparency
+  - Breakdown of damage types (FP/ÉP) with source indication
 - **Battle Screen Refactoring**: Split 786-line BattleScreen into lightweight coordinator pattern with three specialized classes:
   - **BattleInputHandler** (64 lines): Mouse/keyboard translation, hex hover tracking
-  - **BattleActionExecutor** (208 lines): Combat action execution, message display, battle service integration
+  - **BattleActionExecutor** (249 lines): Combat action execution, message display with color parsing
   - **BattleRenderCoordinator** (202 lines): Rendering coordination, HUD, overlays, controls display
-  - Result: 47% line reduction (786 → 418 lines), improved maintainability and testability
+  - Result: 47% line reduction (786 → 430 lines), improved maintainability and testability
   - All game functions verified working: movement, attack, rotation, inspection, turn ending
 - **Skills System**: Skills VO for normalized skill lookup; weaponskill modifiers (BASE universal + weapon-specific UNIQUE effects); integrated with attack resolution
 - **Weaponskill_Longswords**: Full implementation (levels 0-6) with stat penalties/bonuses, stamina reduction, critical thresholds, overpower shifts, opportunity attacks (1x at level 3, 3x at level 6)
@@ -38,6 +48,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **docs/architecture/TESTING.md**: Complete guide to test structure, execution patterns, and namespace management
 
 ### Changed
+- **Message Architecture**: Moved attack result message formatting from domain layer (attack_action.py) to presentation layer (battle_action_executor.py) for proper separation of concerns
+- **Critical Failure Display**: Now shows actual TÉ and VÉ values instead of 0 vs 0 for better player feedback
+- **Combat Log Layout**: Fixed separator line positioning with static spacing (90px) to accommodate 3-line messages
+- **Attack Execution Flow**: battle_screen.py now delegates to battle_action_executor.execute_attack() instead of calling battle_service directly
 - **Critical Thresholds**: Corrected to level-dependent values (0-1: 101 impossible, 2: 100 nat only, 3: 100, 4: 96, 5+: 91); aligned with MAGUS rulebook
 - **Weaponskill Architecture**: Refactored to BASE_WEAPONSKILL_MODIFIERS (universal levels 0-6) + WEAPONSKILL_UNIQUE_EFFECTS (weapon-specific levels 3 & 6 only)
 - **Weapon Metadata**: Added category (e.g., "Hosszú kardok") and skill_id (e.g., "weaponskill_longswords") fields to Weapon entity
@@ -55,6 +69,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Test execution now uses root conftest.py with dynamic sys.path management instead of package-level conftest files
 
 ### Fixed
+- **AP Validation Bug**: Added AP check to validate_attack_target() to prevent attacks without sufficient AP
+- **Unconscious Unit Turn Skipping**: Fixed end_turn() loop logic that incorrectly triggered battle_active=False when encountering unconscious units, causing false draw conditions
+- **Battle Service Method Naming**: Fixed battle_action_executor calling non-existent attack_unit() instead of attack_current_unit()
+- **Mandatory EP Loss Calculation**: Verified rule correctly applies to post-armor damage (damage_to_fp) not pre-armor damage
+- **Color Tag Parsing**: Added support for <white>, <purple>, <red> tags in action_panel combat message rendering
 - **Critical Failure Tests**: Fixed 11 failing tests across 4 files after CRITICAL_FAILURE implementation (updated weapon_skill_level parameters, adjusted rolls to avoid failure ranges)
 - **Circular Import**: Resolved Stamina import issue in Unit entity using TYPE_CHECKING
 - **HUD Stamina Display**: Fixed to read unit.stamina instead of re-initializing every frame

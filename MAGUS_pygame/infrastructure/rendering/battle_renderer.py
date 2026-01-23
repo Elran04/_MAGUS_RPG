@@ -90,6 +90,7 @@ class BattleRenderer:
         charge_targets: set[tuple[int, int]] | None = None,
         enemy_zone_hexes: set[tuple[int, int]] | None = None,
         highlight_hex: tuple[int, int] | None = None,
+        active_unit_hex: tuple[int, int] | None = None,
     ) -> None:
         """Draw the hex grid with units and highlights.
 
@@ -101,6 +102,7 @@ class BattleRenderer:
             charge_targets: Set of (q, r) hexes with charge targets
             enemy_zone_hexes: Set of (q, r) hexes in enemy zones
             highlight_hex: Single (q, r) hex to highlight (hover)
+            active_unit_hex: Single (q, r) hex of active unit (bright highlight)
         """
         # Build sprite positions dict from units
         sprite_positions = {
@@ -124,17 +126,19 @@ class BattleRenderer:
             charge_targets=charge_targets,
             enemy_zone_hexes=enemy_zone_hexes,
             highlight_hex=highlight_hex,
+            active_unit_hex=active_unit_hex,
         )
 
-    def draw_units(self, units: list[Unit]) -> None:
+    def draw_units(self, units: list[Unit], active_unit: Unit | None = None) -> None:
         """Draw unit overlays (name, HP bars, facing).
 
         Args:
             units: List of units to draw overlays for
+            active_unit: Currently active unit to highlight
         """
         for unit in units:
             if unit.is_alive():  # Only draw living units
-                draw_unit_overlays(self.screen, unit, self.overlay_font)
+                draw_unit_overlays(self.screen, unit, self.overlay_font, active_unit)
 
     def draw_movement_path(self, path: list[Position], enemy_zone: set[tuple[int, int]]) -> None:
         """Draw the movement path with danger highlights.
@@ -217,38 +221,10 @@ class BattleRenderer:
             round_num: Current round number
             active_unit: Currently active unit
             action_mode: Current action mode (Move, Attack, etc.)
-            combat_message: Optional combat message to display
+            combat_message: Optional combat message (now displayed in action panel)
         """
-        if not active_unit:
-            return
-
-        # Show round and active unit info
-        text = self.hud_font.render(
-            f"Round {round_num} | Active: {active_unit.name} | {action_mode}",
-            True,
-            (255, 255, 255),
-        )
-        self.screen.blit(text, (10, 10))
-
-        # Draw combat message if present (bottom middle, above tooltip)
-        if combat_message:
-            message_font = pygame.font.SysFont(None, 36)
-            message_text = message_font.render(combat_message, True, (255, 220, 0))
-            message_rect = message_text.get_rect(midbottom=(WIDTH // 2, HEIGHT - 60))
-
-            # Semi-transparent background for message
-            padding = 10
-            bg_rect = pygame.Rect(
-                message_rect.x - padding,
-                message_rect.y - padding,
-                message_rect.width + 2 * padding,
-                message_rect.height + 2 * padding,
-            )
-            bg_surface = pygame.Surface((bg_rect.width, bg_rect.height), pygame.SRCALPHA)
-            bg_surface.fill((0, 0, 0, 180))
-            self.screen.blit(bg_surface, bg_rect)
-
-            self.screen.blit(message_text, message_rect)
+        # Combat message is now drawn in action panel, this method is kept for compatibility
+        pass
 
     def render_scene(
         self,
@@ -282,12 +258,18 @@ class BattleRenderer:
         # Clear screen
         self.clear()
 
+        # Calculate active unit hex
+        active_unit_hex = None
+        if active_unit:
+            active_unit_hex = (active_unit.position.q, active_unit.position.r)
+
         # Draw grid with highlights
         self.draw_grid(
             units,
             reachable_hexes=reachable_hexes,
             attackable_hexes=attackable_hexes,
             highlight_hex=highlight_hex,
+            active_unit_hex=active_unit_hex,
         )
 
         # Draw movement path if provided
@@ -295,7 +277,7 @@ class BattleRenderer:
             self.draw_movement_path(movement_path, enemy_zone)
 
         # Draw unit overlays
-        self.draw_units(units)
+        self.draw_units(units, active_unit)
 
         # Draw HUD
         self.draw_hud(round_num, active_unit, action_mode, combat_message)

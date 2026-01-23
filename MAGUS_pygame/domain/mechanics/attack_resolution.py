@@ -299,10 +299,16 @@ def resolve_attack(
     is_fail = is_critical_failure(attack_roll, weapon_skill_level)
     if is_fail:
         # Critical failure: attack is immediately CRITICAL_FAILURE outcome, no damage, no hit
+        # Still show actual TÉ and VÉ values for player feedback
+        all_te = calculate_attack_value(
+            attacker, attack_roll, weapon, attacker_conditions, weapon_skill_level
+        )
+        defense = calculate_defense_values(defender, shield_ve, dodge_modifier, defender_conditions)
+
         return AttackResult(
             outcome=AttackOutcome.CRITICAL_FAILURE,
-            all_te=0,
-            all_ve=0,
+            all_te=all_te,
+            all_ve=defense.all_ve,
             attack_roll=attack_roll,
             rolled_damage=0,
             is_critical=False,

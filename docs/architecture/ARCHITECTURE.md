@@ -160,6 +160,48 @@ MAGUS_pygame/
    - Character load/edit flow (currently export-only from GM Toolkit)
    - Optional: persist battle/scenario configs for quick replay
 
+## Battle Screen Architecture
+
+### Overview
+The battle screen follows a coordinator pattern, separating concerns across multiple specialized components:
+
+### Core Components
+
+**BattleScreen** (505 lines) - Main presentation coordinator
+- Manages game loop, input handling, rendering
+- Delegates actions to specialized coordinators
+- Handles UI state and screen transitions
+- No direct combat logic - delegates to BattleService
+
+**BattleActionExecutor** (249 lines) - Action coordination and message formatting
+- Executes player actions: attack, move, rotation, facing changes
+- **Message Formatting**: Converts domain data (AttackResult) into player-friendly multi-line messages with color coding
+- Validates actions before execution
+- Provides user feedback through ActionPanel
+- Maintains separation: domain returns data, presentation formats it
+
+**UnitPositionManager** (108 lines) - Grid position management
+- Character placement and retrieval from hex grid
+- Position validation
+- Spatial queries (get unit at position)
+
+**FacingChangeManager** (85 lines) - Unit facing coordination
+- Validates facing direction changes
+- Updates character state
+- Integrates with BattleService
+
+**BattleService** (543 lines) - Domain service (Application Layer)
+- Pure business logic: combat resolution, movement validation, turn management
+- Returns pure data structures (AttackResult, MoveResult)
+- No UI concerns or message formatting
+- Called by presentation layer coordinators
+
+**ActionPanel** (434 lines) - UI component
+- Renders action buttons and combat log
+- **Color Tag Parsing**: Parses XML-like color tags and renders multi-colored text
+- Displays formatted messages from BattleActionExecutor
+- Fixed layout: combat log at 90px from bottom, 60px space for 3-line messages
+
 ## Running the Test
 
 ```powershell
@@ -187,22 +229,59 @@ The old system is preserved in `old_system/` for reference. Features will be inc
 4. **Phase 4**: UI screens
 5. **Phase 5**: Advanced features (magic, skills, etc.)
 
+## Message Display Architecture
+
+### Color Tag System
+The presentation layer uses a custom color tag system for enhanced combat feedback:
+
+**Tag Format:**
+- `<purple>text</purple>`: Mandatory ÉP loss from weapon size rule (200, 100, 255)
+- `<white>text</white>`: ÉP damage from FP overflow (255, 255, 255)
+- `<red>text</red>`: Direct ÉP damage from overpower attacks (255, 100, 100)
+- Default: Yellow (255, 220, 100) for normal text
+
+**Message Flow:**
+1. **Domain Layer** (`BattleService`): Returns pure data structure (AttackResult)
+   - Contains all combat data: rolls, damage, armor, outcomes
+   - No message formatting or UI concerns
+2. **Presentation Layer** (`BattleActionExecutor`): Formats multi-line messages
+   - Converts AttackResult to player-friendly format
+   - Applies color tags based on damage source
+   - Creates 3-line structured messages:
+     ```
+     TÉ {all_te} ({attack_roll}) vs VÉ {all_ve} | {Outcome}
+     {Zone} (SFÉ:{armor}) | DMG: {pre_armor_damage}
+     FP: {fp_damage} | ÉP: <color>{ep_damage}</color>
+     ```
+3. **UI Layer** (`ActionPanel`): Parses tags and renders colored text
+   - Splits message by color tags using regex
+   - Calculates proper centering for multi-segment text
+   - Renders each segment with appropriate color
+
+**Benefits:**
+- Clear separation: Domain handles logic, Presentation handles formatting, UI handles rendering
+- Extensible: Easy to add new color tags or message formats
+- Testable: Each layer can be tested independently
+
 ## Benefits of New Architecture
 
 ### Testability
 - Domain logic can be tested without pygame
 - Repositories can be mocked
 - Clear interfaces for dependency injection
+- Message formatting isolated from combat logic
 
 ### Maintainability
 - Clear separation of concerns
 - Easy to find and modify code
 - Reduced coupling between modules
+- UI changes don't affect domain logic
 
 ### Extensibility
 - Easy to add new features
 - Can swap implementations (e.g., different renderers)
 - Plugin architecture possible
+- Message formats can evolve without touching domain
 
 ### Performance
 - Built-in caching in repositories

@@ -103,7 +103,9 @@ def draw_facing_indicator(screen: pygame.Surface, unit: Unit, px: int, py: int) 
     pygame.draw.polygon(screen, (200, 200, 50), points, width=2)  # Darker outline
 
 
-def draw_unit_overlays(screen: pygame.Surface, unit: Unit, font: pygame.font.Font) -> None:
+def draw_unit_overlays(
+    screen: pygame.Surface, unit: Unit, font: pygame.font.Font, active_unit: Unit | None = None
+) -> None:
     """
     Draw the unit's name and FP/ÉP bars near the sprite.
 
@@ -117,6 +119,7 @@ def draw_unit_overlays(screen: pygame.Surface, unit: Unit, font: pygame.font.Fon
         screen: pygame surface to draw on
         unit: Unit entity to render overlays for
         font: pygame font for text rendering
+        active_unit: Currently active unit (for reference, hex highlighted separately)
     """
     px, py = hex_to_pixel(unit.position.q, unit.position.r)
 

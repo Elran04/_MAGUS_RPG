@@ -108,6 +108,22 @@ class ActionPanel:
         self.font_title = pygame.font.Font(None, 28)
         self.font_button = pygame.font.Font(None, 24)
         self.font_small = pygame.font.Font(None, 18)
+        self.font_stat = pygame.font.Font(None, 16)
+
+        # Current unit stats
+        self.current_unit_name: str | None = None
+        self.current_ap = 0
+        self.current_ep = 0
+        self.current_fp = 0
+        self.current_stamina = 0
+        self.max_ep = 100
+        self.max_fp = 100
+        self.max_stamina = 100
+        self.current_round = 1
+
+        # Combat log
+        self.combat_message: str | None = None
+        self.combat_message_timer = 0
 
         # Buttons
         self.buttons: list[ActionButton] = []
@@ -120,7 +136,7 @@ class ActionPanel:
         padding = 15
         button_width = self.width - 2 * padding
         button_height = 50
-        start_y = 80  # Leave space for title
+        start_y = 130  # Leave space for stats section (round + name + 4 bars)
 
         actions = [
             ("Move", "M"),
@@ -152,6 +168,57 @@ class ActionPanel:
         for button in self.buttons:
             button.active = button.label == target_label
 
+    def set_unit_stats(
+        self,
+        unit_name: str,
+        ap: int,
+        ep: int,
+        fp: int,
+        stamina: int = 0,
+        max_ep: int = 100,
+        max_fp: int = 100,
+        max_stamina: int = 100,
+        round_num: int = 1,
+    ) -> None:
+        """Set current unit stats for display.
+
+        Args:
+            unit_name: Unit name
+            ap: Action points remaining
+            ep: Endurance (physical) current
+            fp: Fatigue (stamina) current
+            stamina: Stamina current
+            max_ep: Maximum EP value
+            max_fp: Maximum FP value
+            max_stamina: Maximum stamina value
+            round_num: Current round number
+        """
+        self.current_unit_name = unit_name
+        self.current_ap = ap
+        self.current_ep = ep
+        self.current_fp = fp
+        self.current_stamina = stamina
+        self.max_ep = max_ep
+        self.max_fp = max_fp
+        self.max_stamina = max_stamina
+        self.current_round = round_num
+
+    def set_combat_message(self, message: str | None) -> None:
+        """Set combat message to display.
+
+        Args:
+            message: Combat message text or None to clear
+        """
+        self.combat_message = message
+        self.combat_message_timer = 180 if message else 0  # 3 seconds at 60fps
+
+    def update_combat_message(self) -> None:
+        """Update combat message timer."""
+        if self.combat_message_timer > 0:
+            self.combat_message_timer -= 1
+            if self.combat_message_timer <= 0:
+                self.combat_message = None
+
     def handle_mouse_motion(self, mouse_pos: tuple[int, int]) -> None:
         """Update button hover states.
 
@@ -181,6 +248,65 @@ class ActionPanel:
 
         return None
 
+    def _draw_colored_text(self, text: str, center_x: int, y: int, font: pygame.font.Font) -> None:
+        """Draw text with color tag support.
+
+        Supports tags: <white>text</white>, <purple>text</purple>, <red>text</red>
+        Default color is yellow (255, 220, 100).
+
+        Args:
+            text: Text with optional color tags
+            center_x: Center x coordinate
+            y: Y coordinate
+            font: Font to use
+        """
+        import re
+
+        # Color definitions
+        colors = {
+            "white": (255, 255, 255),
+            "purple": (200, 100, 255),
+            "red": (255, 100, 100),
+        }
+        default_color = (255, 220, 100)
+
+        # Parse color tags and render segments
+        x_offset = 0
+        segments = re.split(r"(<white>.*?</white>|<purple>.*?</purple>|<red>.*?</red>)", text)
+
+        # Calculate total width first to center properly
+        total_width = 0
+        for segment in segments:
+            if segment:
+                temp_text = re.sub(r"<[^>]+>|</[^>]+>", "", segment)
+                seg_width = font.size(temp_text)[0]
+                total_width += seg_width
+
+        start_x = center_x - total_width // 2
+        current_x = start_x
+
+        # Draw each segment
+        for segment in segments:
+            if not segment:
+                continue
+
+            # Check for color tags
+            color = default_color
+            clean_text = segment
+            for color_name, color_val in colors.items():
+                tag_pattern = f"<{color_name}>(.*?)</{color_name}>"
+                match = re.search(tag_pattern, segment)
+                if match:
+                    color = color_val
+                    clean_text = match.group(1)
+                    break
+
+            # Render segment
+            seg_surface = font.render(clean_text, True, color)
+            seg_rect = seg_surface.get_rect(topleft=(current_x, y))
+            self.surface.blit(seg_surface, seg_rect)
+            current_x += seg_rect.width
+
     def draw(self, screen: pygame.Surface) -> None:
         """Draw the action panel.
 
@@ -199,20 +325,121 @@ class ActionPanel:
             2,
         )
 
-        # Draw title
-        title = self.font_title.render("Actions", True, UI_TEXT)
-        title_rect = title.get_rect(centerx=self.width // 2, top=20)
-        self.surface.blit(title, title_rect)
+        # Draw unit stats (top)
+        self._draw_unit_stats()
 
         # Draw buttons
         for button in self.buttons:
             button.draw(self.surface, self.font_button)
 
+        # Draw separator before combat log (static position with space for 3 lines)
+        log_y = self.height - 90  # 30 for help + 60 for 3 lines (3*18 + padding)
+        separator_y = log_y - 5
+        pygame.draw.line(
+            self.surface, (80, 80, 90), (10, separator_y), (self.width - 10, separator_y), 1
+        )
+
+        # Draw combat message if present
+        if self.combat_message:
+            msg_lines = self.combat_message.split("\n")
+            msg_y = log_y
+            for line in msg_lines:
+                self._draw_colored_text(line, self.width // 2, msg_y, self.font_small)
+                msg_y += 18
+
+        # Draw separator before help text
+        help_y = self.height - 30
+        separator_y = help_y - 10
+        pygame.draw.line(
+            self.surface, (80, 80, 90), (10, separator_y), (self.width - 10, separator_y), 1
+        )
+
         # Draw help text at bottom
-        help_y = self.height - 60
-        help_text = self.font_small.render("ESC - Cancel/Quit", True, (150, 150, 160))
+        help_text = self.font_small.render("ESC - Menu", True, (150, 150, 160))
         help_rect = help_text.get_rect(centerx=self.width // 2, top=help_y)
         self.surface.blit(help_text, help_rect)
 
         # Blit panel to main screen (at left edge)
         screen.blit(self.surface, (0, 0))
+
+    def _draw_unit_stats(self) -> None:
+        """Draw current unit stats at top of panel."""
+        x = 10
+        y = 5
+        line_height = 18
+
+        # Round number
+        round_surf = self.font_small.render(f"Round {self.current_round}", True, (200, 200, 100))
+        self.surface.blit(round_surf, (x, y))
+
+        y += line_height + 2
+
+        # Unit name and active indicator
+        if self.current_unit_name:
+            name_surf = self.font_small.render(self.current_unit_name[:22], True, (100, 200, 255))
+            self.surface.blit(name_surf, (x, y))
+            # Active indicator
+            active_surf = self.font_stat.render("<<", True, (100, 255, 100))
+            self.surface.blit(active_surf, (self.width - 20, y + 2))
+
+            y += line_height + 2
+
+            # Draw compact bars for stats
+            bar_width = 150
+            bar_height = 8
+            grey = (160, 160, 160)
+
+            # AP - just number, no bar
+            ap_text = self.font_stat.render(f"AP: {self.current_ap}", True, grey)
+            self.surface.blit(ap_text, (x, y))
+
+            y += line_height
+
+            # FP - yellow bar, grey label
+            fp_label = self.font_stat.render("FP", True, grey)
+            self.surface.blit(fp_label, (x, y))
+            pygame.draw.rect(self.surface, (60, 60, 60), (x + 30, y + 2, bar_width, bar_height))
+            if self.current_fp > 0 and self.max_fp > 0:
+                fp_fill = int((self.current_fp / self.max_fp) * bar_width)
+                pygame.draw.rect(
+                    self.surface, (200, 200, 100), (x + 30, y + 2, fp_fill, bar_height)
+                )
+            # Display value text
+            fp_text = self.font_stat.render(f"{self.current_fp}/{self.max_fp}", True, grey)
+            self.surface.blit(fp_text, (x + 190, y))
+
+            y += line_height
+
+            # ÉP - red bar, grey label
+            ep_label = self.font_stat.render("ÉP", True, grey)
+            self.surface.blit(ep_label, (x, y))
+            pygame.draw.rect(self.surface, (60, 60, 60), (x + 30, y + 2, bar_width, bar_height))
+            if self.current_ep > 0 and self.max_ep > 0:
+                ep_fill = int((self.current_ep / self.max_ep) * bar_width)
+                pygame.draw.rect(
+                    self.surface, (200, 100, 100), (x + 30, y + 2, ep_fill, bar_height)
+                )
+            # Display value text
+            ep_text = self.font_stat.render(f"{self.current_ep}/{self.max_ep}", True, grey)
+            self.surface.blit(ep_text, (x + 190, y))
+
+            y += line_height
+
+            # Stamina - green bar, grey label
+            stamina_label = self.font_stat.render("STA", True, grey)
+            self.surface.blit(stamina_label, (x, y))
+            pygame.draw.rect(self.surface, (60, 60, 60), (x + 30, y + 2, bar_width, bar_height))
+            if self.current_stamina > 0 and self.max_stamina > 0:
+                stamina_fill = int((self.current_stamina / self.max_stamina) * bar_width)
+                pygame.draw.rect(
+                    self.surface, (150, 200, 100), (x + 30, y + 2, stamina_fill, bar_height)
+                )
+            # Display value text
+            stamina_text = self.font_stat.render(
+                f"{self.current_stamina}/{self.max_stamina}", True, grey
+            )
+            self.surface.blit(stamina_text, (x + 190, y))
+
+            # Draw separator line after stats
+            y += line_height + 5
+            pygame.draw.line(self.surface, (80, 80, 90), (10, y), (self.width - 10, y), 1)

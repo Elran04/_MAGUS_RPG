@@ -36,16 +36,14 @@ class BattleActionExecutor:
         Returns:
             Summary dict with move results
         """
-        current = self.battle.current_unit()
+        current = self.battle.current_unit
         summary = self.battle.move_current_unit(dest=dest, potential_reactors=potential_reactors)
 
         if "error" in summary:
             self.show_message(f"Move failed: {summary['error']}")
-            logger.warning(f"Move failed: {summary['error']}")
         else:
             ap_spent = summary.get("ap_spent", 0)
             self.show_message(f"Moved (AP: -{ap_spent})")
-            logger.info(f"{current.name} moved to {dest} (AP spent: {ap_spent})")
 
         return summary
 
@@ -56,7 +54,7 @@ class BattleActionExecutor:
 
         Args:
             target_pos: Target hex position
-            attacker: Attacking unit
+            attacker: Attacking unit (not used - battle service uses current_unit)
             defender: Defending unit (if any)
 
         Returns:
@@ -66,24 +64,34 @@ class BattleActionExecutor:
             self.show_message("No target at that hex")
             return None
 
-        # Execute attack
-        summary = self.battle.attack_unit(attacker, defender)
+        # Execute attack (uses current_unit from battle service)
+        summary = self.battle.attack_current_unit(defender=defender)
 
         if "error" in summary:
             self.show_message(f"Attack failed: {summary['error']}")
             logger.warning(f"Attack failed: {summary['error']}")
             return None
 
-        # Build detailed message
-        result = summary.get("result")
-        if result:
-            msg_parts = [f"Result: {result.outcome.value.title()}"]
-            msg_parts.append(f"Hit: {result.hit}")
-            msg_parts.append(f"EP: -{result.damage_to_ep}")
-            msg_parts.append(f"FP: -{result.damage_to_fp}")
-            self.show_message(" | ".join(msg_parts))
+        # Format attack result message in presentation layer
+        action_result = summary.get("action_result")
+        if not action_result:
+            logger.warning("No action_result in attack summary")
+            return None
 
-        ap_spent = summary.get("ap_spent", 0)
+        # Get attack result data from action_result
+        attack_res = None
+        if hasattr(action_result, "data") and action_result.data:
+            attack_res = action_result.data.get("attack_result")
+
+        if attack_res:
+            msg = self._format_attack_result_message(attack_res)
+            self.show_message(msg)
+        else:
+            logger.warning(
+                f"No attack_result in action_result data. Data: {action_result.data if hasattr(action_result, 'data') else 'N/A'}"
+            )
+
+        ap_spent = getattr(action_result, "ap_spent", 0) if action_result else 0
         logger.info(f"{attacker.name} attacked {defender.name} (AP spent: {ap_spent})")
 
         return summary
@@ -112,13 +120,9 @@ class BattleActionExecutor:
 
         if "error" in result:
             self.show_message(result["error"])
-            logger.warning(f"Rotation failed: {result['error']}")
         else:
             ap_spent = result.get("ap_spent", 0)
             self.show_message(f"Rotated {direction_name} (AP: -{ap_spent})")
-            logger.info(
-                f"{unit.name} rotated {direction_name} to facing {new_facing_dir} (AP spent: {ap_spent})"
-            )
 
         return result
 
@@ -145,24 +149,98 @@ class BattleActionExecutor:
 
         if "error" in result:
             self.show_message(result["error"])
-            logger.warning(f"Facing change failed: {result['error']}")
         else:
             ap_spent = result.get("ap_spent", 0)
             self.show_message(f"Rotated to face hex (AP: -{ap_spent})")
-            logger.info(f"{unit.name} rotated to facing {facing_dir} (AP spent: {ap_spent})")
 
         return result
 
     def end_turn(self) -> None:
         """End current unit's turn."""
-        current = self.battle.current_unit()
-        if current:
-            logger.info(f"Ending turn for {current.name}")
-            self.battle.end_turn()
-            # Show new active unit's name
-            next_unit = self.battle.current_unit()
-            if next_unit:
-                self.show_message(f"{next_unit.name}'s turn")
+        self.battle.end_turn()
+        # Show new active unit's name
+        next_unit = self.battle.current_unit
+        if next_unit:
+            self.show_message(f"{next_unit.name}'s turn")
+
+    def _format_attack_result_message(self, attack_result) -> str:
+        """Format attack result into a multi-line user-friendly message.
+
+        Args:
+            attack_result: AttackResult from domain layer
+
+        Returns:
+            Formatted message string with multiple lines
+        """
+        from domain.mechanics.attack_resolution import AttackOutcome
+
+        # Line 1: TÉ vs VÉ | Result (show roll value in TÉ)
+        outcome_str = attack_result.outcome.value.replace("_", " ").title()
+        line1 = f"TÉ {attack_result.all_te} ({attack_result.attack_roll}) vs VÉ {attack_result.all_ve} | {outcome_str}"
+
+        line2 = ""
+        line3 = ""
+
+        # Add details based on outcome type
+        if attack_result.outcome in (AttackOutcome.BLOCKED, AttackOutcome.PARRIED):
+            # For blocks/parries: only show stamina cost on line 3
+            if attack_result.stamina_spent_defender > 0:
+                line3 = f"Stamina: {attack_result.stamina_spent_defender}"
+        elif attack_result.outcome in (
+            AttackOutcome.HIT,
+            AttackOutcome.CRITICAL,
+            AttackOutcome.OVERPOWER,
+            AttackOutcome.CRITICAL_OVERPOWER,
+        ):
+            # Line 2: Zone and pre-armor damage value
+            # Pre-armor damage = final damage + what armor blocked (includes all modifiers/bonuses)
+            pre_armor_damage = attack_result.damage_to_fp + attack_result.armor_absorbed
+
+            if attack_result.hit_zone:
+                line2 = f"{attack_result.hit_zone} (SFÉ:{attack_result.zone_sfe}) | DMG: {pre_armor_damage}"
+            else:
+                line2 = f"DMG: {pre_armor_damage}"
+
+            # Line 3: Damage deductions (final damage after armor)
+            damage_parts = []
+            if attack_result.damage_to_fp > 0:
+                damage_parts.append(f"FP: {attack_result.damage_to_fp}")
+
+            # Show ÉP damage with color coding based on source
+            # White: overflow/direct, Purple: weapon size rule, Red: overpower
+            direct_ep = attack_result.damage_to_ep  # Direct ÉP damage
+            mandatory_ep = attack_result.mandatory_ep_loss  # From weapon size rule
+            total_ep = direct_ep + mandatory_ep
+
+            if total_ep > 0:
+                # Check if this is from overpower (damage_to_ep is high from overpower rule)
+                is_overpower_ep = attack_result.is_overpower and direct_ep > 0
+
+                if mandatory_ep > 0 and direct_ep > 0:
+                    # Both rules apply: show with color tags
+                    ep_str = f"ÉP: {total_ep} (<purple>{mandatory_ep}</purple> + <white>{direct_ep}</white>)"
+                    damage_parts.append(ep_str)
+                elif mandatory_ep > 0:
+                    # Only weapon size rule applies - purple
+                    damage_parts.append(f"ÉP: <purple>{mandatory_ep}</purple>")
+                elif is_overpower_ep:
+                    # Overpower damage - red
+                    damage_parts.append(f"ÉP: <red>{direct_ep}</red>")
+                else:
+                    # Overflow damage - white
+                    damage_parts.append(f"ÉP: <white>{direct_ep}</white>")
+
+            if damage_parts:
+                line3 = " | ".join(damage_parts)
+
+        # Combine lines, filtering out empty ones
+        msg_lines = [line1]
+        if line2:
+            msg_lines.append(line2)
+        if line3:
+            msg_lines.append(line3)
+
+        return "\n".join(msg_lines)
 
     def show_message(self, message: str) -> None:
         """Show combat message to player.

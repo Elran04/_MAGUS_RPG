@@ -37,16 +37,14 @@ class BattleRenderCoordinator:
             screen_height: Screen height in pixels
             renderer: Battle renderer for game area
             action_panel: Action panel sidebar
-            hud: HUD component
+            hud: HUD component (deprecated, kept for compatibility)
             pause_menu: Pause menu overlay
         """
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.renderer = renderer
         self.action_panel = action_panel
-        self.hud = hud
         self.pause_menu = pause_menu
-        self.font_normal = pygame.font.Font(None, 28)
         self.font_victory = pygame.font.Font(None, 72)
 
     def draw_battle_scene(
@@ -78,7 +76,7 @@ class BattleRenderCoordinator:
         self.renderer.clear()
 
         # Get current unit
-        current_unit = battle.current_unit() if not battle.is_victory() else None
+        current_unit = battle.current_unit if not battle.is_victory() else None
 
         # Compute highlights based on action mode
         reachable_hexes: set[tuple[int, int]] | None = None
@@ -107,28 +105,35 @@ class BattleRenderCoordinator:
 
         # Draw action panel (left sidebar)
         self.action_panel.set_active_mode(action_mode)
+        # Update unit stats in panel
+        if current_unit:
+            ap_remaining = battle.remaining_ap(current_unit)
+            stamina_current = current_unit.stamina.current_stamina if current_unit.stamina else 0
+            stamina_max = current_unit.stamina.max_stamina if current_unit.stamina else 100
+            self.action_panel.set_unit_stats(
+                current_unit.name,
+                ap_remaining,
+                current_unit.ep.current,
+                current_unit.fp.current,
+                stamina_current,
+                current_unit.ep.maximum,
+                current_unit.fp.maximum,
+                stamina_max,
+                battle.round,
+            )
+
+        # Update combat message
+        self.action_panel.set_combat_message(combat_message)
         self.action_panel.draw(surface)
 
         # Blit play area surface to main screen (offset by sidebar width)
         surface.blit(play_surface, (SIDEBAR_WIDTH, 0))
 
-        # Draw HUD overlay on play area
-        if current_unit:
-            ap_remaining = battle.remaining_ap(current_unit)
-            hud_surface = pygame.Surface((PLAY_AREA_WIDTH, self.screen_height), pygame.SRCALPHA)
-            self.hud.draw(
-                surface=hud_surface,
-                unit=current_unit,
-                round_num=battle.round,
-                action_points=ap_remaining,
-            )
-            surface.blit(hud_surface, (SIDEBAR_WIDTH, 0))
-
         # Draw unit info popup if open
         if unit_popup:
             unit_popup.draw(surface)
 
-        # Draw controls help
+        # Draw controls help (minimalist)
         self._draw_controls(surface)
 
         # Draw victory screen if battle ended
@@ -139,28 +144,19 @@ class BattleRenderCoordinator:
         self.pause_menu.draw(surface)
 
     def _draw_controls(self, surface: pygame.Surface) -> None:
-        """Draw control hints at bottom of play area.
+        """Draw minimal control hints.
 
         Args:
             surface: Main screen surface to draw on
         """
-        controls = [
-            "Click Adjacent: Face",
-            "Right Click: Inspect",
-            "Space: End Turn",
-            "ESC: Menu",
-        ]
+        hints = ["Right-Click: Inspect", "Space: End Turn"]
 
-        y = self.screen_height - 30
-        x = SIDEBAR_WIDTH + 10  # Offset by sidebar width
+        y = self.screen_height - 25
+        x = SIDEBAR_WIDTH + 10
 
-        text = " | ".join(controls)
-        text_surf = self.font_normal.render(text, True, (200, 200, 200))
-
-        # Semi-transparent background
-        bg = pygame.Surface((text_surf.get_width() + 20, 35), pygame.SRCALPHA)
-        bg.fill((0, 0, 0, 150))
-        surface.blit(bg, (x - 10, y - 5))
+        text = " | ".join(hints)
+        hint_font = pygame.font.Font(None, 20)
+        text_surf = hint_font.render(text, True, (150, 150, 160))
 
         surface.blit(text_surf, (x, y))
 

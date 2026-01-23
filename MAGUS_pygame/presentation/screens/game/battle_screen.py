@@ -157,8 +157,27 @@ class BattleScreen:
 
         if not self.pause_menu.visible:
             hovered = self.input_handler.update_hovered_hex(mouse_pos)
-            if hovered and self.action_mode == ActionMode.MOVE:
-                self._update_movement_path_preview(*hovered)
+            if hovered:
+                # Auto-switch action mode based on what's hovered
+                hovered_unit = self.battle.get_unit_at_hex(*hovered)
+                current_unit = self.battle.current_unit
+                if (
+                    hovered_unit
+                    and current_unit
+                    and self.battle.is_enemy(current_unit, hovered_unit)
+                ):
+                    # Hovering over enemy unit -> Attack mode
+                    if self.action_mode != ActionMode.ATTACK:
+                        self.action_mode = ActionMode.ATTACK
+                else:
+                    # Hovering over empty tile or friendly unit -> Move mode
+                    if self.action_mode != ActionMode.MOVE:
+                        self.action_mode = ActionMode.MOVE
+
+                if self.action_mode == ActionMode.MOVE:
+                    self._update_movement_path_preview(*hovered)
+                else:
+                    self.movement_path = None
             else:
                 self.movement_path = None
 
@@ -217,19 +236,22 @@ class BattleScreen:
             return
 
         q, r = hovered_hex
-        current = self.battle.current_unit()
+        current = self.battle.current_unit
+        target_pos = Position(q, r)
 
         if self.action_mode == ActionMode.MOVE:
-            if current and (q, r) in self.battle.compute_reachable_hexes(current):
-                self._execute_move(Position(q, r))
+            is_valid, error_msg = self.battle.validate_move_target(current, target_pos)
+            if is_valid:
+                self._execute_move(target_pos)
             else:
-                self.action_executor.show_message("Hex not in movement range")
+                self.action_executor.show_message(error_msg)
 
         elif self.action_mode == ActionMode.ATTACK:
-            if current and (q, r) in self.battle.compute_attackable_hexes(current):
-                self._execute_attack(Position(q, r))
+            is_valid, error_msg = self.battle.validate_attack_target(current, target_pos)
+            if is_valid:
+                self._execute_attack(target_pos)
             else:
-                self.action_executor.show_message("Hex not in attack range")
+                self.action_executor.show_message(error_msg)
 
         elif self.action_mode == ActionMode.INSPECT or self.action_mode == ActionMode.IDLE:
             # Try facing change if adjacent, otherwise inspect hex
@@ -268,58 +290,43 @@ class BattleScreen:
         if self.battle.is_victory():
             return
 
-        current = self.battle.current_unit()
-        if not current.is_alive():
-            self.action_executor.show_message("Current unit cannot act")
-            return
-
-        if self.battle.remaining_ap(current) < 1:
-            self.action_executor.show_message("Insufficient AP to move")
+        current = self.battle.current_unit
+        can_move, error_msg = self.battle.can_move(current)
+        if not can_move:
+            self.action_executor.show_message(error_msg)
             return
 
         self.action_mode = ActionMode.MOVE
         self.selected_unit = current
-        logger.debug(f"Entered MOVE mode for {current.name}")
 
     def _enter_attack_mode(self) -> None:
         """Enter attack mode."""
         if self.battle.is_victory():
             return
 
-        current = self.battle.current_unit()
-        if not current.is_alive():
-            self.action_executor.show_message("Current unit cannot act")
-            return
-
-        if not current.weapon:
-            self.action_executor.show_message("No weapon equipped")
-            return
-
-        attack_ap = current.weapon.attack_time
-        if self.battle.remaining_ap(current) < attack_ap:
-            self.action_executor.show_message(f"Insufficient AP to attack (need {attack_ap})")
+        current = self.battle.current_unit
+        can_attack, error_msg = self.battle.can_attack(current)
+        if not can_attack:
+            self.action_executor.show_message(error_msg)
             return
 
         self.action_mode = ActionMode.ATTACK
         self.selected_unit = current
-        logger.debug(f"Entered ATTACK mode for {current.name}")
 
     def _enter_inspect_mode(self) -> None:
         """Enter inspect mode."""
         self.action_mode = ActionMode.INSPECT
         self.selected_unit = None
-        logger.debug("Entered INSPECT mode")
 
     def _cancel_action(self) -> None:
         """Cancel current action and return to idle."""
         self.action_mode = ActionMode.IDLE
         self.selected_unit = None
         self.movement_path = None
-        logger.debug("Cancelled action, returned to IDLE")
 
     def _execute_move(self, dest: Position) -> None:
         """Execute movement to destination."""
-        current = self.battle.current_unit()
+        current = self.battle.current_unit
         enemies = self.battle.get_enemies(current)
 
         summary = self.action_executor.execute_move(dest, enemies)
@@ -329,38 +336,37 @@ class BattleScreen:
         if oa_results:
             self._show_opportunity_attack_results(oa_results)
 
-        self._cancel_action()
+        # Only cancel move mode if movement failed or no more AP to move
+        if "error" in summary:
+            self._cancel_action()
+        else:
+            remaining_ap = self.battle.remaining_ap(current)
+            if remaining_ap < 1:
+                self._cancel_action()
+
         self._check_victory()
 
     def _execute_attack(self, target_pos: Position) -> None:
         """Execute attack on target position."""
-        current = self.battle.current_unit()
+        current = self.battle.current_unit
         target = self.battle.get_unit_at_position(target_pos)
 
-        if not target:
-            self.action_executor.show_message("No target at selected hex")
-            return
+        # Execute attack through action executor (which handles messaging)
+        self.action_executor.execute_attack(target_pos, current, target)
 
-        if not target.is_alive():
-            self.action_executor.show_message("Target is already defeated")
-            return
+        # Only cancel attack mode if no more AP
+        if current and current.weapon:
+            remaining_ap = self.battle.remaining_ap(current)
+            if remaining_ap < 1:
+                self._cancel_action()
+        else:
+            self._cancel_action()
 
-        # Execute attack
-        result = self.battle.attack_current_unit(defender=target)
-
-        if "error" not in result:
-            action_result = result.get("action_result")
-            if action_result and hasattr(action_result, "data") and action_result.data:
-                attack_res = action_result.data.get("attack_result")
-                if attack_res:
-                    self._show_attack_result(attack_res)
-
-        self._cancel_action()
         self._check_victory()
 
     def _rotate_current_unit(self, direction: int) -> None:
         """Rotate current unit."""
-        current = self.battle.current_unit()
+        current = self.battle.current_unit
         if current:
             self.action_executor.execute_rotation(direction, current)
             self._check_victory()
@@ -387,26 +393,23 @@ class BattleScreen:
             if winner == "team_a":
                 self.action = "battle_victory_team_a"
                 self.action_executor.show_message("Team A Victorious!")
-                logger.info("Battle ended: Team A victory")
             elif winner == "team_b":
                 self.action = "battle_victory_team_b"
                 self.action_executor.show_message("Team B Victorious!")
-                logger.info("Battle ended: Team B victory")
             else:
                 self.action = "battle_draw"
                 self.action_executor.show_message("Battle ended in a draw")
-                logger.info("Battle ended: Draw")
 
     def _show_attack_result(self, attack_result) -> None:
         """Show attack result details."""
-        msg = f"Result: {attack_result.outcome.value.title()} | Hit: {attack_result.hit} | EP: -{attack_result.damage_to_ep} | FP: -{attack_result.damage_to_fp}"
-        if attack_result.is_critical:
-            msg += " | Critical!"
-        if attack_result.is_overpower:
-            msg += " | Overpower!"
-        if attack_result.requires_dodge_check:
-            msg += " | Dodge check required!"
-        self.action_executor.show_message(msg)
+        # The message is already properly formatted in attack_action.py
+        # This is used by opportunity attacks which have their result from domain
+        # Just show the core outcome for opportunity attacks
+        if attack_result.outcome:
+            msg = f"{attack_result.outcome.value.replace('_', ' ').title()}"
+            if attack_result.requires_dodge_check:
+                msg += " | Dodge check required!"
+            self.action_executor.show_message(msg)
 
     def _show_opportunity_attack_results(self, oa_results) -> None:
         """Show opportunity attack feedback."""
@@ -423,11 +426,14 @@ class BattleScreen:
 
     def update(self, delta_time: float = 1 / 60) -> None:
         """Update battle state (timers, etc)."""
-        # Update message timer in action_executor
+        # Update message timer in action_executor and sync with action_panel
         if self.action_executor.combat_message_timer > 0:
             self.action_executor.combat_message_timer -= 1
             if self.action_executor.combat_message_timer <= 0:
                 self.action_executor.combat_message = None
+
+        # Update combat message in action panel
+        self.action_panel.update_combat_message()
 
         # Check for auto-victory if not already detected
         if not self.action and self.battle.is_victory():
@@ -471,7 +477,7 @@ class BattleScreen:
         Args:
             dest_q, dest_r: Destination hex coordinates
         """
-        current = self.battle.current_unit()
+        current = self.battle.current_unit
         if not current:
             self.movement_path = None
             return
