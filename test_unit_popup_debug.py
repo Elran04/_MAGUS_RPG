@@ -2,7 +2,8 @@
 """Debug script to test unit popup item name lookup."""
 
 import sys
-sys.path.insert(0, '/d:/_Projekt/_MAGUS_RPG')
+
+sys.path.insert(0, "/d:/_Projekt/_MAGUS_RPG")
 
 from MAGUS_pygame.data.equipment_repository import EquipmentRepository
 

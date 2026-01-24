@@ -18,4 +18,3 @@ tools_path = str(root / "Gamemaster_tools")
 sys.path = [p for p in sys.path if p not in (magus_path, tools_path)]
 sys.path.insert(0, tools_path)
 sys.path.insert(1, magus_path)
-

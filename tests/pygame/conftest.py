@@ -19,5 +19,3 @@ sys.path = [p for p in sys.path if p not in (magus_path, tools_path)]
 # Add MAGUS_pygame first for pygame tests
 sys.path.insert(0, magus_path)
 sys.path.insert(1, tools_path)
-
-

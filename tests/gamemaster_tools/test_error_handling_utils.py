@@ -1,5 +1,3 @@
-import json
-from pathlib import Path
 
 from utils import error_handling as eh
 

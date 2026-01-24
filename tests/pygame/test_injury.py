@@ -1,9 +1,7 @@
 """Unit tests for injury condition system."""
 
-import pytest
 from MAGUS_pygame.domain.mechanics.injury import (
     InjuryCondition,
-    InjuryModifiers,
     calculate_injury_condition,
     get_injury_modifiers,
 )
@@ -14,23 +12,31 @@ class TestInjuryConditionCalculation:
 
     def test_healthy_full_resources(self):
         """No injury when FP and EP are above 75%."""
-        condition = calculate_injury_condition(current_fp=100, max_fp=100, current_ep=100, max_ep=100)
+        condition = calculate_injury_condition(
+            current_fp=100, max_fp=100, current_ep=100, max_ep=100
+        )
         assert condition == InjuryCondition.NONE
 
     def test_healthy_at_76_percent(self):
         """No injury at exactly 76% FP/EP."""
-        condition = calculate_injury_condition(current_fp=100, max_fp=100, current_ep=100, max_ep=100)
+        condition = calculate_injury_condition(
+            current_fp=100, max_fp=100, current_ep=100, max_ep=100
+        )
         assert condition == InjuryCondition.NONE
 
     def test_light_injury_fp_threshold(self):
         """Light injury when FP drops to 75% (rounded down)."""
         # 75% of 100 = 75, so current_fp=75 should trigger light
-        condition = calculate_injury_condition(current_fp=75, max_fp=100, current_ep=100, max_ep=100)
+        condition = calculate_injury_condition(
+            current_fp=75, max_fp=100, current_ep=100, max_ep=100
+        )
         assert condition == InjuryCondition.LIGHT
 
     def test_light_injury_fp_below_threshold(self):
         """Light injury when FP below 75%."""
-        condition = calculate_injury_condition(current_fp=60, max_fp=100, current_ep=100, max_ep=100)
+        condition = calculate_injury_condition(
+            current_fp=60, max_fp=100, current_ep=100, max_ep=100
+        )
         assert condition == InjuryCondition.LIGHT
 
     def test_serious_injury_any_ep_damage(self):
@@ -40,18 +46,24 @@ class TestInjuryConditionCalculation:
 
     def test_serious_injury_ep_below_max(self):
         """Serious injury when EP < max."""
-        condition = calculate_injury_condition(current_fp=100, max_fp=100, current_ep=80, max_ep=100)
+        condition = calculate_injury_condition(
+            current_fp=100, max_fp=100, current_ep=80, max_ep=100
+        )
         assert condition == InjuryCondition.SERIOUS
 
     def test_critical_injury_ep_at_75_percent(self):
         """Critical injury when EP at exactly 75%."""
         # 75% of 100 = 75
-        condition = calculate_injury_condition(current_fp=100, max_fp=100, current_ep=75, max_ep=100)
+        condition = calculate_injury_condition(
+            current_fp=100, max_fp=100, current_ep=75, max_ep=100
+        )
         assert condition == InjuryCondition.CRITICAL
 
     def test_critical_injury_ep_below_75_percent(self):
         """Critical injury when EP below 75%."""
-        condition = calculate_injury_condition(current_fp=100, max_fp=100, current_ep=50, max_ep=100)
+        condition = calculate_injury_condition(
+            current_fp=100, max_fp=100, current_ep=50, max_ep=100
+        )
         assert condition == InjuryCondition.CRITICAL
 
     def test_critical_overrides_all(self):

@@ -29,18 +29,20 @@ def pytest_configure(config):
     root = Path(__file__).parent
     magus_path = str(root / "MAGUS_pygame")
     tools_path = str(root / "Gamemaster_tools")
-    
+
     # Clean up any existing conflicting paths
     sys.path = [p for p in sys.path if p not in (magus_path, tools_path)]
-    
+
     # Check command line arguments to determine which test suite is target
     args = sys.argv[1:] if len(sys.argv) > 1 else []
     args_str = " ".join(args)
-    
+
     # Detect which test paths are being run
     has_gamemaster = "gamemaster_tools" in args_str
-    has_pygame = "pygame" in args_str or ("tests" in args_str and "gamemaster_tools" not in args_str)
-    
+    has_pygame = "pygame" in args_str or (
+        "tests" in args_str and "gamemaster_tools" not in args_str
+    )
+
     # If both are being run, pygame runs first so it should be prioritized
     if has_pygame:
         sys.path.insert(0, magus_path)
@@ -52,9 +54,3 @@ def pytest_configure(config):
         # Fallback: pygame first
         sys.path.insert(0, magus_path)
         sys.path.insert(1, tools_path)
-
-
-
-
-
-

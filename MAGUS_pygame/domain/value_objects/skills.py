@@ -8,7 +8,6 @@ merged from character data plus scenario overrides.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict
 
 
 def _norm(skill_id: str | None) -> str:
@@ -20,11 +19,11 @@ def _norm(skill_id: str | None) -> str:
 class Skills:
     """Immutable skills container with rank/percent lookups."""
 
-    _ranks: Dict[str, int]
-    _percents: Dict[str, int]
+    _ranks: dict[str, int]
+    _percents: dict[str, int]
 
     @staticmethod
-    def empty() -> "Skills":
+    def empty() -> Skills:
         """Return an empty skills container."""
         return Skills({}, {})
 
@@ -32,14 +31,14 @@ class Skills:
     def from_sources(
         character_skills: list[dict] | None = None,
         overrides: dict[str, int] | None = None,
-    ) -> "Skills":
+    ) -> Skills:
         """Build skills from character list plus optional override mapping.
 
         character_skills: list of dicts with keys {"id", "Szint"} or {"id", "%"}
         overrides: mapping skill_id -> rank (used for scenario overrides)
         """
-        ranks: Dict[str, int] = {}
-        percents: Dict[str, int] = {}
+        ranks: dict[str, int] = {}
+        percents: dict[str, int] = {}
 
         # Parse base character skill entries
         for entry in character_skills or []:

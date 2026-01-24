@@ -10,7 +10,7 @@ Provides:
 
 import json
 from pathlib import Path
-from typing import Any, Optional, TypeVar
+from typing import TypeVar
 
 from logger.logger import get_logger
 
@@ -22,7 +22,7 @@ T = TypeVar("T")
 class ValidationError(Exception):
     """Raised when data validation fails."""
 
-    def __init__(self, message: str, context: Optional[dict] = None):
+    def __init__(self, message: str, context: dict | None = None):
         self.message = message
         self.context = context or {}
         super().__init__(self.message)
@@ -37,9 +37,7 @@ class ValidationError(Exception):
 class DataLoadError(Exception):
     """Raised when data file loading fails."""
 
-    def __init__(
-        self, file_path: Path | str, reason: str, original_error: Optional[Exception] = None
-    ):
+    def __init__(self, file_path: Path | str, reason: str, original_error: Exception | None = None):
         self.file_path = file_path
         self.reason = reason
         self.original_error = original_error
@@ -75,7 +73,7 @@ def safe_json_load(file_path: Path | str, description: str = "data") -> dict | N
         return None
 
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
         logger.debug(f"Loaded {description} from {file_path.name}")
         return data
@@ -83,7 +81,7 @@ def safe_json_load(file_path: Path | str, description: str = "data") -> dict | N
         msg = f"Invalid JSON format (line {e.lineno}, col {e.colno}): {e.msg}"
         logger.error(f"{msg} in {file_path}")
         raise DataLoadError(file_path, msg, e) from e
-    except (IOError, OSError) as e:
+    except OSError as e:
         msg = f"File I/O error: {e.strerror}"
         logger.error(f"{msg} for {file_path}")
         raise DataLoadError(file_path, msg, e) from e

@@ -6,7 +6,7 @@ Manages drawing of all battle screen components.
 
 import pygame
 from application.battle_service import BattleService
-from config import PLAY_AREA_WIDTH, SIDEBAR_WIDTH
+from config import SIDEBAR_WIDTH
 from domain.value_objects import Position
 from infrastructure.rendering.battle_renderer import BattleRenderer
 from logger.logger import get_logger

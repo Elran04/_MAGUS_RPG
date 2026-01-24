@@ -1,4 +1,3 @@
-import pytest
 
 from application.reaction_handler import ReactionBudget, ReactionHandler
 from domain.entities import Unit
@@ -32,7 +31,7 @@ class TestReactionBudget:
         assert budget.remaining["u1"] == 0
 
         assert budget.consume(u1) is False  # exhausted
-        assert budget.consume(u2) is True   # independent counter
+        assert budget.consume(u2) is True  # independent counter
 
 
 def test_handle_opportunity_no_intersection(monkeypatch):

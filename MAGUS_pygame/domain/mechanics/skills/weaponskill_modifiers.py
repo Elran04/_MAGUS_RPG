@@ -18,7 +18,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from domain.entities import Unit
-    from domain.mechanics.attack_resolution import AttackResult
 
 
 @dataclass(frozen=True)

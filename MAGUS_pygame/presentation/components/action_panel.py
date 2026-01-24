@@ -5,7 +5,7 @@ Left sidebar with action buttons for combat controls.
 """
 
 import pygame
-from config import SIDEBAR_WIDTH, UI_ACTIVE, UI_BG, UI_BORDER, UI_INACTIVE, UI_TEXT
+from config import UI_ACTIVE, UI_BG, UI_BORDER, UI_INACTIVE, UI_TEXT
 from logger.logger import get_logger
 
 logger = get_logger(__name__)

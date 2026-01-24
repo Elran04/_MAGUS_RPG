@@ -171,7 +171,7 @@ class InventoryPanel:
         """Set the currently selected equipment slot for highlighting. Enforce Slot enum strictly."""
         if slot is not None:
             try:
-                from application.weapon_type_check import Slot
+                from domain.value_objects.weapon_type_check import Slot
 
                 if not isinstance(slot, Slot):
                     self.selected_slot = Slot(slot)
@@ -240,7 +240,7 @@ class InventoryPanel:
 
         # Always use Slot enum for slot, fail if not possible
         try:
-            from application.weapon_type_check import Slot
+            from domain.value_objects.weapon_type_check import Slot
 
             slot_enum = Slot(slot) if not isinstance(slot, Slot) else slot
         except Exception as e:
@@ -384,7 +384,7 @@ class InventoryPanel:
             slot_for_eligibility = selected_slot
             if category == CATEGORY_WEAPONS and selected_slot is None:
                 try:
-                    from application.weapon_type_check import Slot
+                    from domain.value_objects.weapon_type_check import Slot
 
                     slot_for_eligibility = Slot.MAIN_HAND
                 except Exception:

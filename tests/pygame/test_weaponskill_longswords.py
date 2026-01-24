@@ -10,10 +10,10 @@ Tests verify that each skill level applies correct:
 """
 
 import pytest
+
 from MAGUS_pygame.domain.entities import Unit, Weapon
 from MAGUS_pygame.domain.mechanics import (
     AttackOutcome,
-    apply_attack_result,
     resolve_attack,
 )
 from MAGUS_pygame.domain.mechanics.critical import is_critical_failure
@@ -22,7 +22,12 @@ from MAGUS_pygame.domain.mechanics.skills import (
     get_weaponskill_modifiers,
     should_grant_skill_opportunity_attack,
 )
-from MAGUS_pygame.domain.value_objects import Attributes, CombatStats, Position, ResourcePool, Skills
+from MAGUS_pygame.domain.value_objects import (
+    Attributes,
+    CombatStats,
+    Position,
+    ResourcePool,
+)
 
 
 @pytest.fixture

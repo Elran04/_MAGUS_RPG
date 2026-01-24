@@ -60,9 +60,7 @@ def get_critical_threshold_for_skill(skill_level: int) -> int:
     """
     if skill_level <= 1:
         return 101  # No crits possible (level 0-1)
-    elif skill_level == 2:
-        return 100  # Only nat 100 (1%)
-    elif skill_level == 3:
+    elif skill_level == 2 or skill_level == 3:
         return 100  # Only nat 100 (1%)
     elif skill_level == 4:
         return 96  # 96-100 is critical (5%)

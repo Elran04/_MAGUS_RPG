@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 
+import pytest
 from application.game_flow_service import _create_units_for_team, _units_from_config
 from domain.value_objects.scenario_config import ScenarioConfig, UnitSetup
 
@@ -65,14 +66,11 @@ def make_setup(deployed: bool = True, off_hand: str | None = None) -> UnitSetup:
     )
 
 
-def test_skips_undeployed_units(monkeypatch):
+def test_skips_undeployed_units():
     repo = DummyRepo({"hero.json": {"name": "Hero"}})
     factory = DummyFactory(DummyUnit())
     sprites = DummySpriteRepo("sprite")
     context = SimpleNamespace(character_repo=repo, unit_factory=factory, sprite_repo=sprites)
-
-    messages = []
-    monkeypatch.setattr("application.game_flow_service.handle_error", lambda msg, user_facing=True: messages.append(msg))
 
     result = _create_units_for_team(context, (make_setup(deployed=False),), "Team A")
 
@@ -80,26 +78,23 @@ def test_skips_undeployed_units(monkeypatch):
     assert repo.calls == []
     assert factory.calls == []
     assert sprites.calls == []
-    assert messages == []
+    # No errors and no calls when unit not deployed
 
 
-def test_missing_character_triggers_error(monkeypatch):
+def test_missing_character_raises(monkeypatch):
     repo = DummyRepo({})
     factory = DummyFactory(DummyUnit())
     sprites = DummySpriteRepo("sprite")
     context = SimpleNamespace(character_repo=repo, unit_factory=factory, sprite_repo=sprites)
 
-    messages = []
-    monkeypatch.setattr("application.game_flow_service.handle_error", lambda msg, user_facing=True: messages.append(msg))
+    with pytest.raises(RuntimeError) as exc:
+        _create_units_for_team(context, (make_setup(deployed=True),), "Team A")
 
-    result = _create_units_for_team(context, (make_setup(deployed=True),), "Team A")
-
-    assert result == []
     assert repo.calls == ["hero.json"]
-    assert "not found" in messages[0].lower()
+    assert "not found" in str(exc.value).lower()
 
 
-def test_variable_wield_sets_state_and_loads_sprite(monkeypatch):
+def test_variable_wield_sets_state_and_loads_sprite():
     weapon = VariableWeapon()
     unit = DummyUnit(weapon=weapon, name="Hero")
 
@@ -108,16 +103,12 @@ def test_variable_wield_sets_state_and_loads_sprite(monkeypatch):
     sprites = DummySpriteRepo("sprite")
     context = SimpleNamespace(character_repo=repo, unit_factory=factory, sprite_repo=sprites)
 
-    messages = []
-    monkeypatch.setattr("application.game_flow_service.handle_error", lambda msg, user_facing=True: messages.append(msg))
-
     setup = make_setup(deployed=True, off_hand="dagger")
     result = _create_units_for_team(context, (setup,), "Team A")
 
     assert result == [unit]
     assert weapon.calls == [(True, True)]
     assert unit.sprite == "sprite"
-    assert messages == []
 
 
 def test_units_from_config_uses_helper(monkeypatch):

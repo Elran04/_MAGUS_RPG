@@ -21,15 +21,14 @@ class ValidationResult:
 
 
 from domain.mechanics.armor import ArmorPiece, ArmorSystem
-from logger.logger import get_logger
-
-from .weapon_type_check import (
+from domain.value_objects.weapon_type_check import (
     Slot,
     is_one_handed_weapon,
     is_ranged_weapon,
     is_shield,
     is_two_handed_weapon,
 )
+from logger.logger import get_logger
 
 if TYPE_CHECKING:
     from infrastructure.repositories import EquipmentRepository

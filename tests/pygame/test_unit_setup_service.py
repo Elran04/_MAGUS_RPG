@@ -1,4 +1,3 @@
-import pytest
 
 from application.unit_setup_service import UnitSetupService
 

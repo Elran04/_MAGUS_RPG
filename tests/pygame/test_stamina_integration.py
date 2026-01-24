@@ -1,6 +1,7 @@
 """Integration tests for stamina costs inside attack resolution and regeneration/fatigue hooks."""
 
 import pytest
+
 from MAGUS_pygame.domain.entities import Unit, Weapon
 from MAGUS_pygame.domain.mechanics import (
     AttackOutcome,

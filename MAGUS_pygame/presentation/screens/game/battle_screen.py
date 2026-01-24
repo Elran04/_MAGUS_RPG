@@ -84,6 +84,10 @@ class BattleScreen:
 
         # Rendering (renderer draws to play area surface)
         grid_bounds = get_grid_bounds()
+        # Ensure background fits the play area; keep presentation-side scaling here
+        if background and background.get_size() != (PLAY_AREA_WIDTH, screen_height):
+            background = pygame.transform.smoothscale(background, (PLAY_AREA_WIDTH, screen_height))
+
         self.renderer = BattleRenderer(
             screen=self.play_surface,
             grid_bounds=grid_bounds,

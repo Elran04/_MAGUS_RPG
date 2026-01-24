@@ -11,7 +11,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from domain.entities import Unit
-from domain.value_objects import Position
 
 from .base import Action, ActionCategory, ActionCost, ActionResult
 

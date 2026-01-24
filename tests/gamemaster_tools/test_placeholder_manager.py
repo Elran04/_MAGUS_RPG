@@ -1,7 +1,5 @@
 import sqlite3
 
-import pytest
-
 from utils.placeholder_manager import PlaceholderManager
 
 

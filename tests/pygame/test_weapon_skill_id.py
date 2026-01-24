@@ -29,9 +29,7 @@ def factory(character_repo, equipment_repo):
 
 def test_longsword_maps_to_weaponskill_longswords():
     """Test that 'Hosszú kardok' category maps to 'weaponskill_longswords'."""
-    assert (
-        UnitFactory.CATEGORY_TO_SKILL_ID.get("Hosszú kardok") == "weaponskill_longswords"
-    )
+    assert UnitFactory.CATEGORY_TO_SKILL_ID.get("Hosszú kardok") == "weaponskill_longswords"
 
 
 def test_build_weapon_entity_populates_skill_id(factory):
@@ -59,7 +57,7 @@ def test_build_weapon_entity_populates_skill_id(factory):
 
 def test_warri_longsword_has_skill_id(factory, character_repo, equipment_repo):
     """Test that creating Warri unit equips first weapon with correct structure.
-    
+
     Warri has knife first, then longsword. Verify knife gets category/skill_id
     correctly, and manually verify longsword would too.
     """
@@ -79,18 +77,17 @@ def test_warri_longsword_has_skill_id(factory, character_repo, equipment_repo):
     # Verify knife has the category/skill_id structure populated
     assert unit.weapon.category is not None
     assert unit.weapon.skill_id is not None
-    
+
     # Also verify that longsword in equipment repo has the right category
     longsword_data = equipment_repo.find_weapon_by_id("longsword")
     assert longsword_data is not None
     assert longsword_data.get("category") == "Hosszú kardok"
-    
+
     # Build weapon from longsword data to verify skill_id would be correct
     longsword = factory._build_weapon_entity(longsword_data)
     assert longsword.id == "longsword"
     assert longsword.category == "Hosszú kardok"
     assert longsword.skill_id == "weaponskill_longswords"
-
 
 
 def test_unknown_category_results_in_empty_skill_id(factory):
@@ -118,4 +115,3 @@ def test_missing_category_results_in_empty_skill_id(factory):
 
     assert weapon.category == ""
     assert weapon.skill_id == ""
-

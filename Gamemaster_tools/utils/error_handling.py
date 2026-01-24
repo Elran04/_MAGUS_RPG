@@ -8,7 +8,6 @@ Provides:
 """
 
 from pathlib import Path
-from typing import Optional
 
 from PySide6.QtWidgets import QMessageBox, QWidget
 from utils.log.logger import get_logger
@@ -17,10 +16,10 @@ logger = get_logger(__name__)
 
 
 def show_error_dialog(
-    parent: Optional[QWidget],
+    parent: QWidget | None,
     title: str,
     message: str,
-    details: Optional[str] = None,
+    details: str | None = None,
 ) -> None:
     """
     Show an error dialog to the user.
@@ -47,7 +46,7 @@ def show_error_dialog(
 
 
 def show_warning_dialog(
-    parent: Optional[QWidget],
+    parent: QWidget | None,
     title: str,
     message: str,
 ) -> None:
@@ -62,9 +61,9 @@ def show_warning_dialog(
 
 def safe_load_json_file(
     file_path: Path | str,
-    parent: Optional[QWidget] = None,
+    parent: QWidget | None = None,
     description: str = "data",
-) -> Optional[dict]:
+) -> dict | None:
     """
     Safely load a JSON file with user error handling.
 
@@ -87,7 +86,7 @@ def safe_load_json_file(
         return None
 
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
         return data
     except json.JSONDecodeError as e:
@@ -98,7 +97,7 @@ def safe_load_json_file(
             f"File: {file_path}\nError: {e.msg} at line {e.lineno}, column {e.colno}",
         )
         return None
-    except (IOError, OSError) as e:
+    except OSError as e:
         show_error_dialog(
             parent,
             "File Read Error",
@@ -119,7 +118,7 @@ def safe_load_json_file(
 def safe_save_json_file(
     file_path: Path | str,
     data: dict,
-    parent: Optional[QWidget] = None,
+    parent: QWidget | None = None,
     description: str = "data",
 ) -> bool:
     """
@@ -146,7 +145,7 @@ def safe_save_json_file(
             json.dump(data, f, indent=2, ensure_ascii=False)
         logger.debug(f"Saved {description} to {file_path.name}")
         return True
-    except (IOError, OSError) as e:
+    except OSError as e:
         show_error_dialog(
             parent,
             "Save Failed",
@@ -164,7 +163,7 @@ def safe_save_json_file(
         return False
 
 
-def wrap_with_error_handling(func, parent: Optional[QWidget] = None):
+def wrap_with_error_handling(func, parent: QWidget | None = None):
     """
     Decorator to wrap a function with error handling.
 

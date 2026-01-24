@@ -12,8 +12,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pygame
-from application.equipment_validation_service import Slot, ValidationResult
-from application.weapon_type_check import (
+from application.equipment_validation_service import ValidationResult
+from domain.value_objects.weapon_type_check import (
+    Slot,
     is_one_handed_weapon,
     is_ranged_weapon,
     is_shield,

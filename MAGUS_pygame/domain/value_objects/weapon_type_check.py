@@ -1,4 +1,8 @@
-"""Weapon type and slot constants, and utility functions for weapon type checks."""
+"""Weapon type and slot constants, and utility functions for weapon type checks.
+
+This module belongs in domain/value_objects because it defines domain concepts
+(weapon types, slots) and provides value object classification logic.
+"""
 
 from enum import Enum
 from typing import Any

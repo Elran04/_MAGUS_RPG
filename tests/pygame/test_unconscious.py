@@ -1,6 +1,7 @@
 """Unit tests for unconscious mechanics in combat."""
 
 import pytest
+
 from MAGUS_pygame.domain.entities import Unit, Weapon
 from MAGUS_pygame.domain.mechanics.attack_resolution import (
     AttackOutcome,
@@ -158,7 +159,11 @@ class TestUnconsciousDefender:
         )
         # With zero VÉ, even low TÉ should hit
         assert result.hit is True
-        assert result.outcome in (AttackOutcome.HIT, AttackOutcome.CRITICAL, AttackOutcome.OVERPOWER)
+        assert result.outcome in (
+            AttackOutcome.HIT,
+            AttackOutcome.CRITICAL,
+            AttackOutcome.OVERPOWER,
+        )
 
     def test_unconscious_defender_takes_full_damage(self, conscious_attacker, unconscious_defender):
         """Unconscious defenders cannot block/parry/dodge."""
@@ -223,7 +228,7 @@ class TestUnconsciousWithInjury:
         """Unconscious state sets combat values to zero regardless of injury."""
         # Give attacker critical injury (low EP) by damaging
         unconscious_attacker.take_damage(10)  # Reduce EP
-        
+
         # But unconscious overrides everything
         attack_value = calculate_attack_value(
             attacker=unconscious_attacker,
@@ -236,7 +241,7 @@ class TestUnconsciousWithInjury:
         """Unconscious defender has zero VÉ regardless of injury penalties."""
         # Give defender injury (shouldn't matter) by damaging
         unconscious_defender.spend_fatigue(15)  # Reduce FP
-        
+
         defense = calculate_defense_values(unconscious_defender)
         assert defense.all_ve == 0  # Unconscious forces zero
 
@@ -254,7 +259,7 @@ class TestRecoveryFromUnconscious:
 
         # Recover stamina
         unconscious_attacker.stamina.recover(10)
-        
+
         # Now can attack
         attack_value_after = calculate_attack_value(
             attacker=unconscious_attacker, attack_roll=50, weapon=unconscious_attacker.weapon
@@ -269,7 +274,7 @@ class TestRecoveryFromUnconscious:
 
         # Recover stamina
         unconscious_defender.stamina.recover(10)
-        
+
         # Defense restored
         defense_after = calculate_defense_values(unconscious_defender)
         assert defense_after.all_ve > 0

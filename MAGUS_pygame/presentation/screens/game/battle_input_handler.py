@@ -4,7 +4,6 @@ Input handling for battle screen.
 Processes keyboard and mouse events, translating them into game actions.
 """
 
-import pygame
 from config import SIDEBAR_WIDTH
 from infrastructure.rendering.hex_grid import get_grid_bounds, pixel_to_hex
 from logger.logger import get_logger

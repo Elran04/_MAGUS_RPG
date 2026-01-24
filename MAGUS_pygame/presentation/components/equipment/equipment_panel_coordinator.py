@@ -159,7 +159,7 @@ class EquipmentPanelCoordinator:
         # Equip the item with validation
         # Always use Slot enum for selected_slot, fail if not possible
         try:
-            from application.weapon_type_check import Slot
+            from domain.value_objects.weapon_type_check import Slot
 
             slot_enum = (
                 Slot(selected_slot) if not isinstance(selected_slot, Slot) else selected_slot

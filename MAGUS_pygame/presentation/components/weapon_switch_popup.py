@@ -5,14 +5,14 @@ Displays equipped weapons and quickslot weapons, allowing player to swap between
 """
 
 import pygame
-from application.weapon_type_check import (
+from config import HEIGHT, UI_ACTIVE, UI_BORDER, UI_INACTIVE, UI_TEXT, WIDTH
+from domain.entities import Unit
+from domain.value_objects.weapon_type_check import (
     is_one_handed_weapon,
     is_ranged_weapon,
     is_shield,
     is_two_handed_weapon,
 )
-from config import HEIGHT, UI_ACTIVE, UI_BORDER, UI_INACTIVE, UI_TEXT, WIDTH
-from domain.entities import Unit
 from logger.logger import get_logger
 
 logger = get_logger(__name__)
