@@ -479,13 +479,9 @@ class BattleScreen:
         oa_count = len(oa_results)
         self.action_executor.show_message(f"Movement triggered {oa_count} opportunity attack(s)!")
         for rr in oa_results:
+            # rr.message already contains the full formatted attack details with newlines
             if hasattr(rr, "message"):
                 self.action_executor.show_message(rr.message)
-            attack_result = None
-            if hasattr(rr, "data") and rr.data:
-                attack_result = rr.data.get("attack_result")
-            if attack_result:
-                self._show_attack_result(attack_result)
 
     def update(self, delta_time: float = 1 / 60) -> None:
         """Update battle state (timers, etc)."""

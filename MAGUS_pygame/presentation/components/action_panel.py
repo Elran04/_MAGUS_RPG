@@ -211,7 +211,7 @@ class ActionPanel:
             message: Combat message text or None to clear
         """
         self.combat_message = message
-        self.combat_message_timer = 180 if message else 0  # 3 seconds at 60fps
+        self.combat_message_timer = 600 if message else 0  # 5 seconds at 60fps
 
     def update_combat_message(self) -> None:
         """Update combat message timer."""
@@ -333,8 +333,8 @@ class ActionPanel:
         for button in self.buttons:
             button.draw(self.surface, self.font_button)
 
-        # Draw separator before combat log (static position with space for 3 lines)
-        log_y = self.height - 90  # 30 for help + 60 for 3 lines (3*18 + padding)
+        # Draw separator before combat log (static position with space for 4 lines)
+        log_y = self.height - 108  # 30 for help + 78 for 4 lines (4*18 + padding)
         separator_y = log_y - 5
         pygame.draw.line(
             self.surface, (80, 80, 90), (10, separator_y), (self.width - 10, separator_y), 1

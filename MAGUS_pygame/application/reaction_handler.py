@@ -77,8 +77,15 @@ class ReactionHandler:
             f"OpportunityAttack: intersects_zoc={intersects_zoc}, intersection_index={intersection_index}, path={movers_path}"
         )
 
-        if not intersects_zoc or intersection_index is None:
-            logger.info("No intersection with ZoC; no opportunity attacks possible.")
+        # Note: we intentionally do not early-return on intersects_zoc here because
+        # disengaging (starting inside ZoC and moving out) should still trigger OA.
+        # Per-reactor checks below compute their own intersection index.
+
+        # Lazily import to avoid cycles
+        from domain.mechanics.reach import compute_reach_hexes
+
+        if not movers_path or len(movers_path) < 2:
+            logger.info("Path too short for opportunity attack evaluation.")
             return results
 
         for reactor in potential_reactors:
@@ -92,16 +99,30 @@ class ReactionHandler:
                 logger.info(f"Reactor {reactor.name} has no remaining reactions this turn.")
                 continue
 
+            # Compute this reactor's zone and first intersection index (including disengage)
+            reactor_zone = compute_reach_hexes(reactor, reactor.weapon)
+            start_in_zone = movers_path[0] in reactor_zone
+            first_idx: int | None = None
+            for i, hex_pos in enumerate(movers_path):
+                if i == 0:
+                    continue  # skip start hex for enter/within checks
+                if hex_pos in reactor_zone:
+                    first_idx = i
+                    break
+            if first_idx is None and start_in_zone and len(movers_path) > 1:
+                # Disengage: started in zone, leaving on first step
+                first_idx = 1
+
             reaction = OpportunityAttackReaction()
             should, reason = reaction.should_trigger(
                 path=movers_path,
-                intersects_zoc=intersects_zoc,
-                intersection_index=intersection_index,
+                intersects_zoc=first_idx is not None,
+                intersection_index=first_idx,
                 attacker=reactor,
                 mover=mover,
             )
             logger.info(f"should_trigger={should} reason={reason}")
-            if not should:
+            if not should or first_idx is None:
                 continue
 
             rkwargs = {}
@@ -112,12 +133,12 @@ class ReactionHandler:
                     rkwargs["base_damage_roll"] = rng_overrides["base_damage_roll"]
 
             logger.info(
-                f"Triggering opportunity attack from {reactor.name} on {mover.name} at intersection {intersection_index}"
+                f"Triggering opportunity attack from {reactor.name} on {mover.name} at intersection {first_idx}"
             )
             result = reaction.execute(
                 attacker=reactor,
                 mover=mover,
-                intersection_index=intersection_index,
+                intersection_index=first_idx,
                 path=movers_path,
                 shield_ve=mover_shield_ve,
                 dodge_modifier=mover_dodge_mod,

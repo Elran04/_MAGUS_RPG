@@ -54,7 +54,14 @@ def bfs_path(
 def path_intersects_zone(
     path: list[tuple[int, int]], zone: set[tuple[int, int]]
 ) -> tuple[bool, int | None]:
-    """Check if path (excluding start) enters any zone hex. Returns (bool, index)."""
+    """Check if path (excluding start) passes through any zone hex. Returns (bool, first_index).
+
+    Triggers on:
+    - Entering zone from outside
+    - Moving while already inside zone
+    Does NOT trigger on:
+    - Starting position (even if in zone)
+    """
     for i, hex_pos in enumerate(path):
         if i > 0 and hex_pos in zone:
             return True, i
