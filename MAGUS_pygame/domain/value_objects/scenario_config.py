@@ -131,6 +131,8 @@ class ScenarioConfig:
         team_b: List of unit setups for team B (typically enemy team)
         team_a_deploy_zone: Optional set of (q, r) tuples defining valid deployment hexes for team A
         team_b_deploy_zone: Optional set of (q, r) tuples defining valid deployment hexes for team B
+        blocked_hexes: Set of (q, r) tuples that are impassable (terrain, obstacles, etc.)
+        spawn_zones: Dict mapping team_id ('team_a', 'team_b') to set of (q, r) tuples for initial unit placement
     """
 
     map_name: str = "default"
@@ -139,6 +141,8 @@ class ScenarioConfig:
     team_b: tuple[UnitSetup, ...] = field(default_factory=tuple)
     team_a_deploy_zone: frozenset[tuple[int, int]] | None = None
     team_b_deploy_zone: frozenset[tuple[int, int]] | None = None
+    blocked_hexes: frozenset[tuple[int, int]] = field(default_factory=frozenset)
+    spawn_zones: dict[str, frozenset[tuple[int, int]]] = field(default_factory=dict)
 
     def is_valid(self) -> bool:
         """Check if configuration is valid for starting a game.

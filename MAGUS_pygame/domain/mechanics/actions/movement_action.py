@@ -93,6 +93,9 @@ class MovementAction(Action):
             return (False, "Unit is required")
         if start is None or dest is None:
             return (False, "Start and destination are required")
+        blocked_set = set(blocked or [])
+        if (dest.q, dest.r) in blocked_set:
+            return (False, "Destination is blocked")
         # Quick AP feasibility (minimum 1 hex -> at least ap_per_hex unless same hex)
         if (start.q, start.r) != (dest.q, dest.r) and ap_available < self.ap_per_hex:
             return (False, "Not enough AP to move at least 1 hex")

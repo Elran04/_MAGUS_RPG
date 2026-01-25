@@ -48,6 +48,9 @@ class BattleService:
     _rng_seed: int | None = None  # For deterministic testing if provided
     _rng: object | None = None  # random.Random when initiative enabled
     equipment_repo: object | None = None  # EquipmentRepository for shield extraction
+    blocked_hexes: frozenset[tuple[int, int]] | None = (
+        None  # Scenario obstacles that restrict movement
+    )
 
     turn_index: int = 0
     round: int = 1

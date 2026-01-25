@@ -99,6 +99,7 @@ class BattleRenderCoordinator:
             action_mode=action_mode,
             movement_path=movement_path,
             enemy_zone=enemy_zones,
+            blocked_hexes=battle.blocked_hexes if hasattr(battle, "blocked_hexes") else None,
             reachable_hexes=reachable_hexes,
             attackable_hexes=attackable_hexes,
             highlight_hex=hovered_hex,

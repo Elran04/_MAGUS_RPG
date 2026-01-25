@@ -44,8 +44,19 @@ class HexGridEditor:
         if not scenario_data:
             return
 
-        # Use game's grid bounds to fill screen properly
+        # Use the game grid bounds, but limit to the play area's usable grid that battle draws.
+        # Battle renders to the play surface (PLAY_AREA_WIDTH x screen_height) with the same
+        # hex_size and center offset, so we reuse get_grid_bounds but then clamp to the
+        # play area's dimensions to avoid showing hexes the battle view will never render.
+        from config import HEIGHT, PLAY_AREA_WIDTH
+
         min_q, max_q, min_r, max_r = get_grid_bounds()
+        screen_w, screen_h = surface.get_size()
+
+        # Adjust bounds so that only hexes that would appear inside the battle play area
+        # are drawn in the editor. This keeps coordinates consistent between editor and battle.
+        # We filter by pixel position against PLAY_AREA_WIDTH rather than full window width.
+        max_play_x = PLAY_AREA_WIDTH
 
         # Extract zone data
         team_a_zones = set(
@@ -57,7 +68,6 @@ class HexGridEditor:
         obstacles = set((o["q"], o["r"]) for o in scenario_data.get("obstacles", []))
 
         # Create overlay surface for transparent zone colors
-        screen_w, screen_h = surface.get_size()
         overlay = pygame.Surface((screen_w, screen_h), pygame.SRCALPHA)
 
         # Draw hexes
@@ -67,8 +77,10 @@ class HexGridEditor:
             for r in range(min_r, max_r + 1):
                 cx, cy = hex_to_pixel(q, r)
 
-                # Skip if off-screen
-                if not (-margin < cx < screen_w + margin and -margin < cy < screen_h + margin):
+                # Skip if outside play area width or off-screen vertically
+                if cx < -margin or cx > max_play_x + margin:
+                    continue
+                if cy < -margin or cy > screen_h + margin:
                     continue
 
                 # Draw hex border using game's method

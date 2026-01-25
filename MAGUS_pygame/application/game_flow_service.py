@@ -79,7 +79,11 @@ def _units_from_config(context, config: ScenarioConfig) -> tuple[list[Unit], lis
 
 
 def coordinate_game_flow(
-    context, scenario_screen, deployment_screen, battle_screen, screen_loop_func
+    context,
+    scenario_screen,
+    deployment_screen_factory,
+    battle_screen,
+    screen_loop_func,
 ) -> str:
     """Coordinate complete game flow: Scenario -> Deployment -> Battle.
 
@@ -88,7 +92,7 @@ def coordinate_game_flow(
     Args:
         context: Game context with repositories and factories
         scenario_screen: ScenarioScreen instance (created by presentation)
-        deployment_screen: DeploymentScreen instance or None
+        deployment_screen_factory: Callable[[ScenarioConfig], object] that returns a DeploymentScreen
         battle_screen: BattleScreen instance or None
         screen_loop_func: Function(screen_obj, cancel_action) -> result that runs screen loop
 
@@ -110,8 +114,10 @@ def coordinate_game_flow(
     )
 
     # 2) Deployment
-    if not deployment_screen:
-        raise ValueError("DeploymentScreen required for game flow")
+    if not deployment_screen_factory:
+        raise ValueError("DeploymentScreen factory required for game flow")
+
+    deployment_screen = deployment_screen_factory(scenario_config)
 
     logger.info("Starting deployment phase")
     result = screen_loop_func(deployment_screen, cancel_action="deployment_cancelled")
@@ -138,7 +144,11 @@ def coordinate_game_flow(
     # 4) Setup battle service with teams
     from application.battle_service import BattleService
 
-    battle_service = BattleService(units=units, equipment_repo=context.equipment_repo)
+    battle_service = BattleService(
+        units=units,
+        equipment_repo=context.equipment_repo,
+        blocked_hexes=scenario_config.blocked_hexes,
+    )
     battle_service.set_teams(team_a_units, team_b_units)
     battle_service.start_battle()
 

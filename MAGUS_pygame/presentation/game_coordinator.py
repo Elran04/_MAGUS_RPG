@@ -6,7 +6,6 @@ orchestration point, coordinating screens and delegating to application services
 """
 
 import multiprocessing
-import threading
 from typing import TYPE_CHECKING
 
 import pygame
@@ -14,6 +13,7 @@ from application.game_context import GameContext
 from application.game_flow_service import coordinate_game_flow
 from application.quick_combat_service import prepare_quick_combat_battle
 from config import HEIGHT, WIDTH
+from infrastructure.events.event_bus import EditorEventBus
 from logger.logger import get_logger
 from presentation.screens.editor.scenario_editor_screen import ScenarioEditorScreen
 from presentation.screens.game.battle_screen import BattleScreen
@@ -59,11 +59,11 @@ def run_screen_loop(screen_obj, cancel_action: str | None = None, update_method=
 
         # Check if screen has finished
         action = screen_obj.get_action()
-        if action in ("back", "cancel"):
-            return cancel_action or action
-        if action in ("quit", "completed"):
-            return action
-        if action and cancel_action and action == cancel_action:
+        if action:
+            # Treat any non-empty action as an exit signal so screens can return
+            # custom outcomes like battle_cancelled or battle_victory_team_a.
+            if cancel_action and action == cancel_action:
+                return action
             return action
 
     return "quit"
@@ -84,9 +84,10 @@ class GameCoordinator:
         self.menu: Menu | None = None
         self.scenario_editor: ScenarioEditorScreen | None = None
         self.tool_window_process: multiprocessing.Process | None = None
-        self.tool_window_quit_event: threading.Event | None = None
+        self.tool_window_quit_event: multiprocessing.Event | None = None
         self.ui_to_game_queue = None
         self.game_to_ui_queue = None
+        self.editor_event_bus: EditorEventBus | None = None
         self.pending_action: str | None = None
 
     def run(self) -> None:
@@ -151,12 +152,15 @@ class GameCoordinator:
         elif action == "scenario_editor":
             logger.info("Opening Scenario Editor")
             pygame.event.clear()
+            self._ensure_tool_window()
             self.scenario_editor = ScenarioEditorScreen(WIDTH, HEIGHT, self.context)
+            if self.editor_event_bus:
+                self.scenario_editor.set_event_bus(self.editor_event_bus)
             self.game_state = "scenario_editor"
 
         elif action == "tool_window":
             logger.info("Opening Tool Window")
-            self._launch_tool_window()
+            self._ensure_tool_window()
 
         elif action == "quit":
             logger.info("Quit selected from menu")
@@ -189,18 +193,22 @@ class GameCoordinator:
             self.game_state = "menu"
             self.menu = Menu(WIDTH, HEIGHT)
             self.menu.open_main_menu()
+            self._shutdown_tool_window()
 
     def _run_new_game(self) -> None:
         """Run the full game flow: Scenario -> Deployment -> Battle."""
         try:
             # Create screens
             scenario_screen = ScenarioScreen(WIDTH, HEIGHT, self.context)
-            deployment_screen = DeploymentScreen(WIDTH, HEIGHT, self.context, scenario_screen)
             battle_screen = BattleScreen(WIDTH, HEIGHT, None, self.context)
 
-            # Run game flow (application layer)
+            # Run game flow (application layer); create deployment screen after scenario selected
             result = coordinate_game_flow(
-                self.context, scenario_screen, deployment_screen, battle_screen, run_screen_loop
+                self.context,
+                scenario_screen,
+                lambda config: DeploymentScreen(WIDTH, HEIGHT, config, self.context),
+                battle_screen,
+                run_screen_loop,
             )
 
             logger.info(f"Game flow completed: {result}")
@@ -225,7 +233,9 @@ class GameCoordinator:
             from application.battle_service import BattleService
 
             battle_service = BattleService(
-                units=team_a_units + team_b_units, equipment_repo=self.context.equipment_repo
+                units=team_a_units + team_b_units,
+                equipment_repo=self.context.equipment_repo,
+                blocked_hexes=config.get("blocked_hexes"),
             )
             battle_service.set_teams(team_a_units, team_b_units)
             battle_service.start_battle()
@@ -239,17 +249,22 @@ class GameCoordinator:
         except Exception as e:
             logger.error(f"Error during quick combat: {e}", exc_info=True)
 
-    def _launch_tool_window(self) -> None:
-        """Launch the PySide6 tool window in a separate process."""
+    def _ensure_tool_window(self) -> None:
+        """Start the PySide6 tool window if it is not already running."""
         from presentation.desktop.editor_tool_window import run_tool_window
 
         if self.tool_window_process and self.tool_window_process.is_alive():
+            # Ensure game-side bus exists if process is already up
+            if not self.editor_event_bus and self.ui_to_game_queue and self.game_to_ui_queue:
+                self.editor_event_bus = EditorEventBus(self.ui_to_game_queue, self.game_to_ui_queue)
             logger.info("Tool window already running")
             return
 
-        self.tool_window_quit_event = threading.Event()
+        # Use multiprocessing.Event so it is picklable on Windows spawn start method
+        self.tool_window_quit_event = multiprocessing.Event()
         self.ui_to_game_queue = multiprocessing.Queue()
         self.game_to_ui_queue = multiprocessing.Queue()
+        self.editor_event_bus = EditorEventBus(self.ui_to_game_queue, self.game_to_ui_queue)
 
         self.tool_window_process = multiprocessing.Process(
             target=run_tool_window,
@@ -258,3 +273,19 @@ class GameCoordinator:
         )
         self.tool_window_process.start()
         logger.info("Tool window launched in separate process")
+
+    def _shutdown_tool_window(self) -> None:
+        """Signal the tool window to close and clean up resources."""
+        if self.tool_window_quit_event:
+            self.tool_window_quit_event.set()
+
+        if self.tool_window_process:
+            self.tool_window_process.join(timeout=1.0)
+            if self.tool_window_process.is_alive():
+                logger.warning("Tool window did not exit cleanly")
+
+        self.tool_window_process = None
+        self.tool_window_quit_event = None
+        self.editor_event_bus = None
+        self.ui_to_game_queue = None
+        self.game_to_ui_queue = None

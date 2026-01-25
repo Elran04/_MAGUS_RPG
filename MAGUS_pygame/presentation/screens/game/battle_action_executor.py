@@ -37,7 +37,11 @@ class BattleActionExecutor:
             Summary dict with move results
         """
         current = self.battle.current_unit
-        summary = self.battle.move_current_unit(dest=dest, potential_reactors=potential_reactors)
+        summary = self.battle.move_current_unit(
+            dest=dest,
+            potential_reactors=potential_reactors,
+            blocked=self.battle.blocked_hexes,
+        )
 
         if "error" in summary:
             self.show_message(f"Move failed: {summary['error']}")

@@ -243,6 +243,7 @@ def draw_grid(
     min_r: int,
     max_r: int,
     sprite_positions: dict[tuple[int, int], pygame.Surface] | None = None,
+    blocked_hexes: set[tuple[int, int]] | None = None,
     reachable_hexes: set[tuple[int, int]] | None = None,
     attackable_hexes: set[tuple[int, int]] | None = None,
     charge_area_hexes: set[tuple[int, int]] | None = None,
@@ -299,7 +300,10 @@ def draw_grid(
                 # 4. Enemy zone (rendered on top so it's visible as warning)
                 if enemy_zone_hexes and (q, r) in enemy_zone_hexes:
                     pygame.draw.polygon(overlay_surface, ENEMY_ZONE_TINT, points, 0)
-                # 5. Hover highlight (always on top)
+                # 5. Blocked hexes (rendered late to override range tints)
+                if blocked_hexes and (q, r) in blocked_hexes:
+                    pygame.draw.polygon(overlay_surface, (60, 60, 60, 200), points, 0)
+                # 6. Hover highlight (always on top)
                 if highlight_hex is not None and (q, r) == highlight_hex:
                     pygame.draw.polygon(overlay_surface, HOVER_TINT, points, 0)
 

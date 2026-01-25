@@ -81,6 +81,9 @@ class ActionHandler:
             blocked=blocked,
         )
 
+        if not ares.success:
+            return {"error": ares.message or "Movement failed"}
+
         path = ares.data.get("path", [])
         intersects = ares.data.get("intersects_zoc", False)
         ix = ares.data.get("intersection_index")

@@ -84,6 +84,7 @@ class BattleRenderer:
     def draw_grid(
         self,
         units: list[Unit],
+        blocked_hexes: set[tuple[int, int]] | None = None,
         reachable_hexes: set[tuple[int, int]] | None = None,
         attackable_hexes: set[tuple[int, int]] | None = None,
         charge_area_hexes: set[tuple[int, int]] | None = None,
@@ -120,6 +121,7 @@ class BattleRenderer:
             MIN_R,
             MAX_R,
             sprite_positions,
+            blocked_hexes=blocked_hexes,
             reachable_hexes=reachable_hexes,
             attackable_hexes=attackable_hexes,
             charge_area_hexes=charge_area_hexes,
@@ -234,6 +236,7 @@ class BattleRenderer:
         action_mode: str = "Normal",
         movement_path: list[Position] | None = None,
         enemy_zone: set[tuple[int, int]] | None = None,
+        blocked_hexes: set[tuple[int, int]] | None = None,
         reachable_hexes: set[tuple[int, int]] | None = None,
         attackable_hexes: set[tuple[int, int]] | None = None,
         highlight_hex: tuple[int, int] | None = None,
@@ -266,6 +269,7 @@ class BattleRenderer:
         # Draw grid with highlights
         self.draw_grid(
             units,
+            blocked_hexes=blocked_hexes,
             reachable_hexes=reachable_hexes,
             attackable_hexes=attackable_hexes,
             highlight_hex=highlight_hex,

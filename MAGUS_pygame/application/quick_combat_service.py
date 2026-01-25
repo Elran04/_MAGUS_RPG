@@ -19,6 +19,9 @@ logger = get_logger(__name__)
 QUICK_COMBAT_CONFIG = {
     "scenario_name": "Forest Clearing",
     "background_file": "grass_bg.jpg",
+    "map_name": "forest_clearing",
+    "blocked_hexes": frozenset(),  # populated from scenario file if available
+    "spawn_zones": {},  # populated from scenario file if available
     "team_a": [
         {
             "character_file": "Goblin_warrior.json",
@@ -38,12 +41,50 @@ QUICK_COMBAT_CONFIG = {
 }
 
 
+def _scenario_metadata(scenario_repo, map_name: str) -> dict:
+    """Load scenario metadata via repository; fallback to defaults on failure."""
+    data = None
+    if scenario_repo:
+        data = scenario_repo.load_scenario(map_name)
+
+    if not data:
+        logger.warning("Scenario '%s' not found or invalid; using defaults", map_name)
+        return {
+            "scenario_name": QUICK_COMBAT_CONFIG["scenario_name"],
+            "background_file": QUICK_COMBAT_CONFIG["background_file"],
+            "blocked_hexes": QUICK_COMBAT_CONFIG.get("blocked_hexes", frozenset()),
+            "spawn_zones": QUICK_COMBAT_CONFIG.get("spawn_zones", {}),
+        }
+
+    obstacles = data.get("obstacles", [])
+    blocked = frozenset(
+        (item.get("q"), item.get("r"))
+        for item in obstacles
+        if isinstance(item, dict) and item.get("type") == "blocked"
+    )
+
+    spawn_zones = data.get("spawn_zones", {})
+    spawn_zones_converted: dict[str, frozenset[tuple[int, int]]] = {}
+    for team, coords in spawn_zones.items():
+        if isinstance(coords, list):
+            spawn_zones_converted[team] = frozenset(
+                (c.get("q"), c.get("r")) for c in coords if isinstance(c, dict)
+            )
+
+    return {
+        "scenario_name": data.get("name", QUICK_COMBAT_CONFIG["scenario_name"]),
+        "background_file": data.get("background", QUICK_COMBAT_CONFIG["background_file"]),
+        "blocked_hexes": blocked,
+        "spawn_zones": spawn_zones_converted,
+    }
+
+
 def prepare_quick_combat_battle(context) -> tuple[list[Unit], list[Unit], dict]:
     """
     Prepare quick combat battle units and configuration.
 
     Returns:
-        Tuple of (team_a_units, team_b_units, config_dict)
+        Tuple of (team_a_units, team_b_units, config_dict with scenario metadata)
 
     Raises:
         RuntimeError on preparation failure
@@ -55,11 +96,49 @@ def prepare_quick_combat_battle(context) -> tuple[list[Unit], list[Unit], dict]:
     logger.info("Team B: Human Warrior (Heavy Armor)")
     logger.info("=" * 60)
 
+    # Load scenario metadata (blocked/spawn zones, background) via repo
+    scenario_meta = _scenario_metadata(
+        getattr(context, "scenario_repo", None), QUICK_COMBAT_CONFIG["map_name"]
+    )
+
+    blocked = scenario_meta.get("blocked_hexes", frozenset())
+    spawn_zones = scenario_meta.get("spawn_zones", {})
+
+    logger.info(
+        "Quick combat scenario '%s': blocked=%d, spawn_zones=%s",
+        QUICK_COMBAT_CONFIG["map_name"],
+        len(blocked),
+        {k: len(v) for k, v in spawn_zones.items()},
+    )
+
+    def _apply_spawn_zones(team_cfg: list[dict], team_key: str) -> list[dict]:
+        """Assign spawn positions from scenario spawn zones if available and not blocked."""
+        zones = list(spawn_zones.get(team_key, [])) if spawn_zones else []
+        out: list[dict] = []
+        idx = 0
+        for cfg in team_cfg:
+            if idx < len(zones):
+                candidate = zones[idx]
+                idx += 1
+                if candidate not in blocked:
+                    cfg = {**cfg, "position": candidate}
+                else:
+                    logger.warning(
+                        "Spawn hex %s for %s is blocked; keeping default position",
+                        candidate,
+                        team_key,
+                    )
+            out.append(cfg)
+        return out
+
+    team_a_cfg = _apply_spawn_zones(QUICK_COMBAT_CONFIG["team_a"], "team_a")
+    team_b_cfg = _apply_spawn_zones(QUICK_COMBAT_CONFIG["team_b"], "team_b")
+
     # Create Team A units
-    team_a_units = _create_team_units(context, QUICK_COMBAT_CONFIG["team_a"], "Team A")
+    team_a_units = _create_team_units(context, team_a_cfg, "Team A")
 
     # Create Team B units
-    team_b_units = _create_team_units(context, QUICK_COMBAT_CONFIG["team_b"], "Team B")
+    team_b_units = _create_team_units(context, team_b_cfg, "Team B")
 
     # Combine all units
     all_units: list[Unit] = team_a_units + team_b_units
@@ -71,27 +150,31 @@ def prepare_quick_combat_battle(context) -> tuple[list[Unit], list[Unit], dict]:
         f"Quick combat units created: {len(team_a_units)} Team A, {len(team_b_units)} Team B"
     )
 
-    return team_a_units, team_b_units, QUICK_COMBAT_CONFIG
+    # Return config with scenario metadata (loaded from file when available)
+    config = {
+        "scenario_name": scenario_meta["scenario_name"],
+        "background_file": scenario_meta["background_file"],
+        "map_name": QUICK_COMBAT_CONFIG["map_name"],
+        "blocked_hexes": blocked,
+        "spawn_zones": spawn_zones,
+    }
+
+    return team_a_units, team_b_units, config
 
 
 def _auto_equip_from_inventory(char_data: dict, equipment_repo) -> None:
-    """
-    Auto-equip items from character's inventory to appropriate slots.
+    """Auto-equip items from character inventory to slots.
 
-    Modifies char_data in-place to add an 'equipment' mapping.
-
-    Args:
-        char_data: Character data dictionary
-        equipment_repo: Equipment repository for item lookups
+    Modifies ``char_data`` in-place by setting an ``equipment`` mapping.
+    If no items are present, the function exits without error.
     """
     felszereles = char_data.get("Felszerelés", {})
     items = felszereles.get("items", []) if isinstance(felszereles, dict) else []
 
     if not items:
-        logger.warning("No items to auto-equip")
+        logger.debug("No items to auto-equip")
         return
 
-    # Create equipment slots mapping
     equipment_slots = {
         "main_hand": "",
         "off_hand": "",
@@ -100,10 +183,9 @@ def _auto_equip_from_inventory(char_data: dict, equipment_repo) -> None:
         "armor": [],
     }
 
-    # Categorize items
-    weapons = []
-    shields = []
-    armor_items = []
+    weapons: list[str] = []
+    shields: list[str] = []
+    armor_items: list[str] = []
 
     for item in items:
         if not isinstance(item, dict):
@@ -116,13 +198,10 @@ def _auto_equip_from_inventory(char_data: dict, equipment_repo) -> None:
             continue
 
         if category == "weapons_and_shields":
-            # Check if it's a shield
             weapon_data = equipment_repo.find_weapon_by_id(item_id)
             if weapon_data:
-                # Simple heuristic: shields have "shield" in the ID or name
-                is_shield = (
-                    "shield" in item_id.lower() or "shield" in weapon_data.get("name", "").lower()
-                )
+                name = weapon_data.get("name", "")
+                is_shield = "shield" in item_id.lower() or "shield" in name.lower()
                 if is_shield:
                     shields.append(item_id)
                 else:
@@ -130,41 +209,39 @@ def _auto_equip_from_inventory(char_data: dict, equipment_repo) -> None:
         elif category == "armor":
             armor_items.append(item_id)
 
-    # Equip first weapon to main hand
     if weapons:
         equipment_slots["main_hand"] = weapons[0]
-        logger.debug(f"Auto-equipped main_hand: {weapons[0]}")
+        logger.debug("Auto-equipped main_hand: %s", weapons[0])
 
-    # Equip additional weapons to quickslots
     if len(weapons) > 1:
         equipment_slots["weapon_quick_1"] = weapons[1]
-        logger.debug(f"Auto-equipped weapon_quick_1: {weapons[1]}")
+        logger.debug("Auto-equipped weapon_quick_1: %s", weapons[1])
 
     if len(weapons) > 2:
         equipment_slots["weapon_quick_2"] = weapons[2]
-        logger.debug(f"Auto-equipped weapon_quick_2: {weapons[2]}")
+        logger.debug("Auto-equipped weapon_quick_2: %s", weapons[2])
 
-    # Equip first shield to off hand
     if shields:
         equipment_slots["off_hand"] = shields[0]
-        logger.debug(f"Auto-equipped off_hand (shield): {shields[0]}")
+        logger.debug("Auto-equipped off_hand (shield): %s", shields[0])
 
-    # Equip all armor
     equipment_slots["armor"] = armor_items
     if armor_items:
-        logger.debug(f"Auto-equipped {len(armor_items)} armor pieces: {armor_items}")
+        logger.debug("Auto-equipped %d armor pieces: %s", len(armor_items), armor_items)
 
-    # Add equipment mapping to character data
     char_data["equipment"] = equipment_slots
 
-    # Count equipped weapons (including quickslots)
     weapon_count = sum(
         1 for slot in ["main_hand", "weapon_quick_1", "weapon_quick_2"] if equipment_slots[slot]
     )
     logger.info(
-        f"Auto-equipped: {weapon_count} weapon(s) (main={equipment_slots['main_hand']}, "
-        f"quick1={equipment_slots['weapon_quick_1']}, quick2={equipment_slots['weapon_quick_2']}), "
-        f"shield={equipment_slots['off_hand']}, armor={len(armor_items)} pieces"
+        "Auto-equipped: %d weapon(s) (main=%s, quick1=%s, quick2=%s), shield=%s, armor=%d pieces",
+        weapon_count,
+        equipment_slots["main_hand"],
+        equipment_slots["weapon_quick_1"],
+        equipment_slots["weapon_quick_2"],
+        equipment_slots["off_hand"],
+        len(armor_items),
     )
 
 

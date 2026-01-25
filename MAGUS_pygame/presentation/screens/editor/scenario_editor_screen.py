@@ -18,6 +18,7 @@ from enum import Enum
 
 import pygame
 from application.game_context import GameContext
+from config import PLAY_AREA_WIDTH, SIDEBAR_WIDTH
 from infrastructure.events.editor_events import (
     EV_CLOSE,
     EV_LOAD,
@@ -72,6 +73,7 @@ class ScenarioEditorScreen:
         self.modified = False
         self.available_scenarios: list[str] = []
         self.background_cache: pygame.Surface | None = None
+        self.play_surface = pygame.Surface((PLAY_AREA_WIDTH, screen_height))
 
         # Components
         self.load_dialog: ScenarioListDialog | None = None
@@ -211,9 +213,9 @@ class ScenarioEditorScreen:
             bg_path = BACKGROUND_SPRITES_DIR / background_name
             if bg_path.exists():
                 bg_surface = pygame.image.load(str(bg_path)).convert()
-                # Scale to screen size
+                # Scale to match battle play area size so what you edit matches what you play
                 self.background_cache = pygame.transform.scale(
-                    bg_surface, (self.screen_width, self.screen_height)
+                    bg_surface, (PLAY_AREA_WIDTH, self.screen_height)
                 )
                 logger.debug(f"Loaded background: {background_name}")
             else:
@@ -228,14 +230,17 @@ class ScenarioEditorScreen:
         if not self.scenario_data or not self.scenario_name:
             return
 
-        # Generate filename from scenario name: "Forest Clearing" -> "forest_clearing"
-        scenario_display_name = self.scenario_data.get("name", self.scenario_name)
-        filename = scenario_display_name.lower().replace(" ", "_")
-        # Remove special characters, keep only alphanumeric and underscores
-        filename = "".join(c for c in filename if c.isalnum() or c == "_")
+        # Keep saving to the original filename to ensure quick combat picks up edits.
+        # Only generate a new filename if this scenario somehow lacks one (should only
+        # happen for brand-new scenarios created without a stem set).
+        filename = self.scenario_name
+        if not filename:
+            scenario_display_name = self.scenario_data.get("name", "new_scenario")
+            filename = scenario_display_name.lower().replace(" ", "_")
+            filename = "".join(c for c in filename if c.isalnum() or c == "_")
+            self.scenario_name = filename
 
-        # Update internal scenario_name to match
-        self.scenario_name = filename
+        scenario_display_name = self.scenario_data.get("name", filename)
 
         if self.context.scenario_repo.save_scenario(filename, self.scenario_data):
             self.modified = False
@@ -318,8 +323,11 @@ class ScenarioEditorScreen:
     def _handle_click(self, pos: tuple[int, int]) -> None:
         """Handle mouse click."""
         if self.mode == EditorMode.EDITING:
-            # Hex grid click anywhere (no in-editor panel)
-            q, r = pixel_to_hex(pos[0], pos[1])
+            # Enforce sidebar offset so clicks line up with battle play area
+            if pos[0] < SIDEBAR_WIDTH:
+                return
+            play_pos = (pos[0] - SIDEBAR_WIDTH, pos[1])
+            q, r = pixel_to_hex(play_pos[0], play_pos[1])
             if self.scenario_data:
                 min_q, max_q, min_r, max_r = get_grid_bounds()
                 if min_q <= q <= max_q and min_r <= r <= max_r:
@@ -428,6 +436,10 @@ class ScenarioEditorScreen:
         """Draw the editor screen."""
         surface.fill(self.color_bg)
 
+        # Always paint sidebar to mirror battle layout
+        surface.fill(self.color_bg)
+        pygame.draw.rect(surface, (0, 0, 0), (0, 0, SIDEBAR_WIDTH, self.screen_height))
+
         if self.mode == EditorMode.LOAD_DIALOG:
             # Dim screen and draw dialog
             if self.load_dialog:
@@ -440,6 +452,9 @@ class ScenarioEditorScreen:
 
     def _draw_editor(self, surface: pygame.Surface) -> None:
         """Draw main editor interface."""
+        # Prepare play surface (matches battle play area)
+        self.play_surface.fill(self.color_bg)
+
         if not self.scenario_data:
             # Empty state: guide to use external tool
             title = self.font_large.render("Scenario Editor", True, self.color_highlight)
@@ -456,7 +471,7 @@ class ScenarioEditorScreen:
 
         # Draw cached background
         if self.background_cache:
-            surface.blit(self.background_cache, (0, 0))
+            self.play_surface.blit(self.background_cache, (0, 0))
 
         # Minimal HUD
         title_text = self.scenario_data.get("name", "Scenario")
@@ -489,7 +504,10 @@ class ScenarioEditorScreen:
         surface.blit(inst, inst.get_rect(center=(self.screen_width // 2, self.screen_height - 20)))
 
         # Hex grid component
-        self.hex_grid.draw(surface, self.scenario_data)
+        self.hex_grid.draw(self.play_surface, self.scenario_data)
+
+        # Blit play area into position to match battle layout
+        surface.blit(self.play_surface, (SIDEBAR_WIDTH, 0))
 
     # Legacy button drawing removed
 
