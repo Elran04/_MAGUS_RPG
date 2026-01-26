@@ -23,6 +23,7 @@ Two actively developed modules:
 ### Game Demo
 - **Combat Mechanics**: 
   - Attack resolution: melee, critical hits, overpower strikes, zone-based armor absorption
+  - Special attacks: Charge (move up to 5 hexes + attack with +20 TÉ, -25 VÉ, 2x damage; 10 AP, 20 STA)
   - Skills system: weaponskill modifiers (BASE + UNIQUE effects per weapon type); weaponskill_longswords (levels 0-6); critical thresholds and failure ranges
   - Stamina system: 5 fatigue states with progressive penalties; unconscious handling (zero combat values, turn skipped)
   - Injury conditions: 4 tiers with KÉ/TÉ/VÉ/CÉ penalties based on FP/EP damage
@@ -51,6 +52,7 @@ Two actively developed modules:
 ## Recent Changes (December 2025)
 
 ## Recent Changes (January 2026)
+- **Charge Special Attack**: Fully implemented charge mechanics with movement pathfinding, combat modifiers (+20 TÉ, -25 VÉ, 2x damage), UI dropdown, and charge-specific attackable zone highlighting; minimum 5 hex distance, costs 10 AP + 20 STA
 - **Menu Initialization UX**: GameContext now builds on a background thread; menu stays clickable with a loading hint, and selections queue until initialization finishes (faster Quick Combat entry)
 - **Weapon Switch Popup Polish**: Variable 1h/2h display fixed, validation passes selected wield mode, and guards block ranged/two-handed pairings with occupied off-hand; unit info popup now shows item names via shared context
 - **Battle Screen Refactoring**: Split 786-line BattleScreen into three lightweight coordinators (47% reduction to 418 lines):

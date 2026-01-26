@@ -4,6 +4,8 @@
 Two modules: GM Toolkit (PySide6) for data/editing and a Pygame combat demo for mechanics prototyping. Godot is the likely target for the final game, so the Pygame module is for mechanics validation.
 
 ## ✅ Recently Completed
+- **Charge Special Attack**: Complete implementation with movement pathfinding, combat modifiers (+20 TÉ, -25 VÉ, 2x damage), UI dropdown, and visual feedback; minimum 5 hex distance, costs 10 AP + 20 STA
+- **Weapon Switching System**: Popup-based weapon switching (hotkey 'W' or button); swap between main_hand and quickslots; 5 AP cost; validation for wield modes and weapon compatibility
 - **Menu Initialization UX**: GameContext loads on a background thread; menu stays interactive with queued selections and a loading hint for Quick Combat/New Game
 - **Skills System**: Skills VO with normalized lookup; weaponskill modifiers (BASE + UNIQUE effects); weaponskill_longswords (levels 0-6 with all effects); integrated with attack resolution and critical thresholds
 - **Critical Failure Mechanics**: Level-dependent failure ranges; corrected thresholds; distinct CRITICAL_FAILURE outcome; 11 tests fixed
@@ -18,7 +20,7 @@ Two modules: GM Toolkit (PySide6) for data/editing and a Pygame combat demo for 
 - Character Creator summary/export + **Character Loader UI** (browse/view/delete)
 
 ## 🎯 Current Focus (short-term)
-- **In-Battle Weapon Switching**: Hotkeys (1/2) to switch between main_hand and quickslots; AP cost; visual feedback
+- **Combat Skills Implementation**: Ongoing development of combat-related skills system integration and mechanics
 - **Dodge Resolution**: Speed checks (Gyorsaság próba); partial damage on failed dodge; skill-based cost reduction
 - **Stamina Recovery**: Turn-based or rest mechanics; regeneration rates; exhaustion saves
 - Character Creator: inline editing fields for saved characters
@@ -26,7 +28,7 @@ Two modules: GM Toolkit (PySide6) for data/editing and a Pygame combat demo for 
 
 ## 🔭 Backlog / Future
 - **Shield as Separate Equipment**: Distinct from weapons; active block mechanics; VE bonus management
-- **Advanced Combat**: Dual-wielding penalties/bonuses; two-handed weapon bonuses; charge mechanics; combat maneuvers
+- **Advanced Combat**: Dual-wielding penalties/bonuses; two-handed weapon bonuses; additional special attacks; combat maneuvers
 - **Ranged Combat**: Attack resolution for bows/crossbows; ammunition tracking; range penalties
 - **AI and Encounter Generation**: Procedural combat scenarios; enemy behavior trees
 - **Adventure-Mode Framework**: Travel, events, persistence beyond combat

@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **Charge Special Attack**: Complete implementation of charge mechanics (move up to 5 hexes + melee attack)
+  - Domain action: ChargeAction with movement pathfinding, facing adjustment, and attack resolution
+  - Combat modifiers: +20 TÉ for attack, -25 VÉ penalty, 2x damage multiplier
+  - Cost: 10 AP, 20 Stamina; minimum distance 5 hexes, maximum range 5 hexes + weapon reach
+  - UI: ActionPanel dropdown for special attacks with visual highlighting when active
+  - Validation: charge-specific attackable zone visualization (movement + reach combined)
+  - Execution pipeline: integrated with BattleService, ActionHandler, and BattleActionExecutor
 - **Presentation Layer Message Formatting**: Attack result messages now formatted in presentation layer (battle_action_executor.py) instead of domain layer for proper separation of concerns
 - **Color-Coded ÉP Damage Display**: Visual feedback for ÉP damage sources using color tags:
   - Purple: Mandatory EP loss from weapon size rule (e.g., dagger 6 FP = 1 ÉP)

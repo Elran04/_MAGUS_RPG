@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from domain.entities import Unit, Weapon
 from domain.mechanics.attack_resolution import AttackResult as CoreAttackResult
 from domain.mechanics.attack_resolution import resolve_attack
+from domain.mechanics.skills import get_weaponskill_modifiers
 
 from .base import Action, ActionCategory, ActionCost, ActionResult
 
@@ -80,8 +81,22 @@ class AttackAction(Action):
         # Determine weapon to use (passed explicitly or from attacker)
         wpn = weapon or attacker.weapon
 
+        # Pull AP multiplier from weaponskill modifiers (unskilled doubles, skilled 1x)
+        skill_id = (
+            wpn.skill_id
+            if wpn is not None and hasattr(wpn, "skill_id") and wpn.skill_id
+            else "weaponskill_longswords"
+        )
+        skill_mods = get_weaponskill_modifiers(weapon_skill_level, skill_id)
+
         # Get AP cost from weapon's attack_time (or default for unarmed)
-        actual_ap_cost = wpn.attack_time if wpn is not None else self.ap_cost
+        base_ap_cost = wpn.attack_time if wpn is not None else self.ap_cost
+        # Apply skill modifier: >= 1 multiplies, < 1 adds flat (scaled by 100)
+        if skill_mods.attack_ap_multiplier >= 1:
+            actual_ap_cost = max(1, base_ap_cost * skill_mods.attack_ap_multiplier)
+        else:
+            # 0.02 = add 2, 0.01 = add 1, etc.
+            actual_ap_cost = max(1, int(base_ap_cost + (skill_mods.attack_ap_multiplier * 100)))
 
         # Default random rolls if not provided (still pure wrt game state)
         if attack_roll is None:

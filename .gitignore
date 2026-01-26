@@ -49,3 +49,6 @@ site/
 
 # GitHub Actions
 .github/
+
+#text extractor subproject
+Text_extractor/

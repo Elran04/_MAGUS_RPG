@@ -100,6 +100,38 @@ class BattleActionExecutor:
 
         return summary
 
+    def execute_charge(
+        self, target_pos: Position, attacker: Unit, defender: Unit | None
+    ) -> dict | None:
+        """Execute charge special attack on target position."""
+        if not defender:
+            self.show_message("No target at that hex")
+            return None
+
+        summary = self.battle.charge_current_unit(defender=defender)
+
+        if "error" in summary:
+            self.show_message(f"Charge failed: {summary['error']}")
+            logger.warning(f"Charge failed: {summary['error']}")
+            return None
+
+        action_result = summary.get("action_result")
+        if action_result:
+            # Prefer formatted attack message if available
+            attack_res = (
+                action_result.data.get("attack_result") if hasattr(action_result, "data") else None
+            )
+            if attack_res:
+                msg = self._format_attack_result_message(attack_res)
+                self.show_message(msg)
+            else:
+                self.show_message(action_result.message)
+
+        ap_spent = getattr(action_result, "ap_spent", 0) if action_result else 0
+        logger.info(f"{attacker.name} charged {defender.name} (AP spent: {ap_spent})")
+
+        return summary
+
     def execute_rotation(self, direction: int, unit: Unit) -> dict:
         """Execute unit rotation.
 

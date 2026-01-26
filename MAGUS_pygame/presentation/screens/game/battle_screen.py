@@ -78,6 +78,9 @@ class BattleScreen:
         self.movement_path: list[Position] | None = None
         self.unit_popup: UnitInfoPopup | None = None
         self.weapon_switch_popup: WeaponSwitchPopup | None = None
+        self._active_special_attack: str | None = (
+            None  # Name of active special attack (e.g., "charge")
+        )
 
         # Create play area surface (to the right of sidebar)
         self.play_surface = pygame.Surface((PLAY_AREA_WIDTH, screen_height))
@@ -168,21 +171,22 @@ class BattleScreen:
         if not self.pause_menu.visible:
             hovered = self.input_handler.update_hovered_hex(mouse_pos)
             if hovered:
-                # Auto-switch action mode based on what's hovered
-                hovered_unit = self.battle.get_unit_at_hex(*hovered)
-                current_unit = self.battle.current_unit
-                if (
-                    hovered_unit
-                    and current_unit
-                    and self.battle.is_enemy(current_unit, hovered_unit)
-                ):
-                    # Hovering over enemy unit -> Attack mode
-                    if self.action_mode != ActionMode.ATTACK:
-                        self.action_mode = ActionMode.ATTACK
-                else:
-                    # Hovering over empty tile or friendly unit -> Move mode
-                    if self.action_mode != ActionMode.MOVE:
-                        self.action_mode = ActionMode.MOVE
+                # Auto-switch action mode based on what's hovered (disabled during special attacks)
+                if self._active_special_attack is None:
+                    hovered_unit = self.battle.get_unit_at_hex(*hovered)
+                    current_unit = self.battle.current_unit
+                    if (
+                        hovered_unit
+                        and current_unit
+                        and self.battle.is_enemy(current_unit, hovered_unit)
+                    ):
+                        # Hovering over enemy unit -> Attack mode
+                        if self.action_mode != ActionMode.ATTACK:
+                            self.action_mode = ActionMode.ATTACK
+                    else:
+                        # Hovering over empty tile or friendly unit -> Move mode
+                        if self.action_mode != ActionMode.MOVE:
+                            self.action_mode = ActionMode.MOVE
 
                 if self.action_mode == ActionMode.MOVE:
                     self._update_movement_path_preview(*hovered)
@@ -273,11 +277,20 @@ class BattleScreen:
                 self.action_executor.show_message(error_msg)
 
         elif self.action_mode == ActionMode.ATTACK:
-            is_valid, error_msg = self.battle.validate_attack_target(current, target_pos)
-            if is_valid:
-                self._execute_attack(target_pos)
+            if self._active_special_attack == "charge":
+                is_valid, error_msg = self.battle.validate_charge_target(current, target_pos)
+                if is_valid:
+                    self._execute_charge(target_pos)
+                else:
+                    self.action_executor.show_message(error_msg)
+                # Exit special mode after an attempt
+                self._active_special_attack = None
             else:
-                self.action_executor.show_message(error_msg)
+                is_valid, error_msg = self.battle.validate_attack_target(current, target_pos)
+                if is_valid:
+                    self._execute_attack(target_pos)
+                else:
+                    self.action_executor.show_message(error_msg)
 
         elif self.action_mode == ActionMode.INSPECT or self.action_mode == ActionMode.IDLE:
             # Try facing change if adjacent, otherwise inspect hex
@@ -296,12 +309,21 @@ class BattleScreen:
         """Handle action button click from the action panel.
 
         Args:
-            action: Action name (e.g., "move", "attack", "end_turn")
+            action: Action name (e.g., "move", "attack", "end_turn", "special_attack_charge")
         """
+        # Clear special mode if switching away
+        if not action.startswith("special"):
+            self._active_special_attack = None
+
         if action == "move":
             self._enter_move_mode()
         elif action == "attack":
             self._enter_attack_mode()
+        elif action == "special":
+            # Toggle special attacks dropdown (handled in action_panel)
+            pass
+        elif action == "special_attack_charge":
+            self._enter_charge_mode()
         elif action == "switch_weapon":
             self._open_weapon_switch_popup()
         elif action == "inspect":
@@ -318,6 +340,8 @@ class BattleScreen:
         if self.battle.is_victory():
             return
 
+        self._active_special_attack = None
+
         current = self.battle.current_unit
         can_move, error_msg = self.battle.can_move(current)
         if not can_move:
@@ -332,6 +356,8 @@ class BattleScreen:
         if self.battle.is_victory():
             return
 
+        self._active_special_attack = None
+
         current = self.battle.current_unit
         can_attack, error_msg = self.battle.can_attack(current)
         if not can_attack:
@@ -341,16 +367,40 @@ class BattleScreen:
         self.action_mode = ActionMode.ATTACK
         self.selected_unit = current
 
+    def _enter_charge_mode(self) -> None:
+        """Enter charge special attack mode."""
+        if self.battle.is_victory():
+            return
+
+        current = self.battle.current_unit
+        if not current:
+            self.action_executor.show_message("No active unit")
+            return
+
+        # Check if unit can perform charge (simplified; detail validation done during targeting)
+        can_attack, error_msg = self.battle.can_attack(current)
+        if not can_attack:
+            self.action_executor.show_message("Cannot charge: " + error_msg)
+            return
+
+        self.action_mode = ActionMode.ATTACK  # Reuse attack mode for targeting
+        self.selected_unit = current
+        # Mark that this is a charge action (application layer detail)
+        self._active_special_attack = "charge"
+        self.action_executor.show_message("Select target for charge (min 5 hexes away)")
+
     def _enter_inspect_mode(self) -> None:
         """Enter inspect mode."""
         self.action_mode = ActionMode.INSPECT
         self.selected_unit = None
+        self._active_special_attack = None
 
     def _cancel_action(self) -> None:
         """Cancel current action and return to idle."""
         self.action_mode = ActionMode.IDLE
         self.selected_unit = None
         self.movement_path = None
+        self._active_special_attack = None
 
     def _execute_move(self, dest: Position) -> None:
         """Execute movement to destination."""
@@ -392,8 +442,26 @@ class BattleScreen:
 
         self._check_victory()
 
+    def _execute_charge(self, target_pos: Position) -> None:
+        """Execute charge special attack on target position."""
+        current = self.battle.current_unit
+        target = self.battle.get_unit_at_position(target_pos)
+
+        self.action_executor.execute_charge(target_pos, current, target)
+
+        # Cancel action if no AP left
+        if current and current.weapon:
+            remaining_ap = self.battle.remaining_ap(current)
+            if remaining_ap < 1:
+                self._cancel_action()
+        else:
+            self._cancel_action()
+
+        self._check_victory()
+
     def _rotate_current_unit(self, direction: int) -> None:
         """Rotate current unit."""
+        self._active_special_attack = None
         current = self.battle.current_unit
         if current:
             self.action_executor.execute_rotation(direction, current)
@@ -418,6 +486,8 @@ class BattleScreen:
         """Open weapon switch popup for current unit."""
         if self.battle.is_victory():
             return
+
+        self._active_special_attack = None
 
         current = self.battle.current_unit
         if not current:
@@ -506,6 +576,7 @@ class BattleScreen:
             play_surface=self.play_surface,
             battle=self.battle,
             action_mode=self.action_mode,
+            active_special_attack=self._active_special_attack,
             movement_path=self.movement_path,
             hovered_hex=self.input_handler.hovered_hex,
             combat_message=self.action_executor.combat_message,

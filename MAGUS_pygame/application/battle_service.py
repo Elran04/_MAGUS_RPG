@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from config import AP_COST_MOVEMENT
 from domain.entities import Unit
 from domain.mechanics.actions.movement_action import NEIGHBORS
+from domain.mechanics.actions.special.charge_action import ChargeAction
 from domain.mechanics.initiation import (
     InitiativeOrder,
     calculate_initiative,
@@ -281,6 +282,51 @@ class BattleService:
             return {"error": "Insufficient AP after attack", "action_result": result}
         return {"action_result": result}
 
+    def charge_current_unit(self, defender: Unit, **kwargs: object) -> dict[str, object]:
+        """Execute charge special attack with the current unit."""
+        unit = self.current_unit
+
+        if not unit.weapon:
+            return {"error": "No weapon equipped"}
+
+        # Prepare blocked hexes: other units + scenario obstacles
+        blocked = {(u.position.q, u.position.r) for u in self.units if u.id != unit.id}
+        if self.blocked_hexes:
+            blocked |= set(self.blocked_hexes)
+
+        # Enemy zones for optional reaction handling
+        enemy_zones = self.compute_enemy_zones(unit)
+
+        # Extract defender's shield VE bonus
+        shield_ve = 0
+        if self.equipment_repo and defender.character_data:
+            equipment = defender.character_data.get("equipment", {})
+            off_hand_id = equipment.get("off_hand", "")
+            if off_hand_id:
+                shield_data = self.equipment_repo.find_weapon_by_id(off_hand_id)
+                if shield_data:
+                    shield_ve = shield_data.get("VE", 0)
+
+        summary = self.action_handler.charge_attack(
+            attacker=unit,
+            defender=defender,
+            ap_available=self.remaining_ap(unit),
+            blocked=blocked,
+            enemy_zones=enemy_zones,
+            shield_ve=shield_ve,
+            **kwargs,
+        )
+
+        if "error" in summary:
+            return summary
+
+        action_result = summary.get("action_result")
+        ap_spent = self._extract_ap_cost(getattr(action_result, "ap_spent", 0))
+        if action_result and action_result.success:
+            if not self.spend_ap(unit, ap_spent):
+                return {"error": "Insufficient AP after charge", "action_result": action_result}
+        return summary
+
     def rotate_current_unit(self, new_facing: Facing) -> dict[str, object]:
         """Rotate current unit to face a new direction.
 
@@ -539,6 +585,34 @@ class BattleService:
         if not target.is_alive():
             return False, "Target is already defeated"
         return True, ""
+
+    def validate_charge_target(self, unit: Unit, target_pos: Position) -> tuple[bool, str]:
+        """Check if target hex is valid for a charge special attack."""
+        if not unit or not unit.weapon:
+            return False, "No weapon equipped"
+
+        # Need enough AP for charge (10 AP)
+        if self.remaining_ap(unit) < ChargeAction().cost.ap:
+            return False, "Insufficient AP to charge"
+
+        target = self.get_unit_at_position(target_pos)
+        if not target:
+            return False, "No target at selected hex"
+        if not target.is_alive():
+            return False, "Target is already defeated"
+
+        blocked = {(u.position.q, u.position.r) for u in self.units if u.id != unit.id}
+        if self.blocked_hexes:
+            blocked |= set(self.blocked_hexes)
+
+        ok, msg = ChargeAction().can_execute(
+            attacker=unit,
+            target=target,
+            ap_available=self.remaining_ap(unit),
+            blocked=blocked,
+            weapon=unit.weapon,
+        )
+        return ok, msg
 
     # --- Helper methods for UI highlighting ---
     def compute_reachable_hexes(self, unit: Unit) -> set[tuple[int, int]]:

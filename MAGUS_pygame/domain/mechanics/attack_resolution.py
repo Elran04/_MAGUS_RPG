@@ -13,12 +13,14 @@ Handles complete attack flow:
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from domain.entities import Unit, Weapon
+
 from domain.mechanics.armor import HitzoneResolver
 from domain.mechanics.critical import (
     get_critical_damage_multiplier,
@@ -274,29 +276,41 @@ def resolve_attack(
     skill_te_mod = 0
     skill_ve_mod = 0
     skill_ce_mod = 0
-    skill_stamina_reduction = 0
+    skill_stamina_cost_modifier = 0
     skill_critical_override = None
+    skill_critical_failure_max = None
+    _skill_attack_ap_multiplier = 1
 
-    if weapon_skill_level > 0 and hasattr(weapon, "skill_id") and weapon.skill_id:
-        # For now, all weapon skills use longswords modifiers; later: registry lookup
-        from domain.mechanics.skills import apply_weaponskill_modifiers
+    # For now, all weapon skills use longswords modifiers; later: registry lookup
+    from domain.mechanics.skills import apply_weaponskill_modifiers
 
-        (
-            skill_ke_mod,
-            skill_te_mod,
-            skill_ve_mod,
-            skill_ce_mod,
-            skill_stamina_reduction,
-            skill_critical_override,
-        ) = apply_weaponskill_modifiers(attacker, attack_roll, weapon_skill_level)
+    skill_id = (
+        weapon.skill_id
+        if weapon is not None and hasattr(weapon, "skill_id") and weapon.skill_id
+        else "weaponskill_longswords"
+    )
 
-        # Apply skill overpower threshold shift
-        overpower_threshold = get_overpower_threshold_for_skill(
-            weapon_skill_level, overpower_threshold
-        )
+    (
+        skill_ke_mod,
+        skill_te_mod,
+        skill_ve_mod,
+        skill_ce_mod,
+        skill_stamina_cost_modifier,
+        skill_critical_override,
+        skill_critical_failure_max,
+        _skill_attack_ap_multiplier,
+    ) = apply_weaponskill_modifiers(attacker, attack_roll, weapon_skill_level, skill_id)
+
+    # Apply skill overpower threshold shift
+    overpower_threshold = get_overpower_threshold_for_skill(
+        weapon_skill_level, overpower_threshold, skill_id
+    )
 
     # === Check for critical failure (levels 0-2) ===
-    is_fail = is_critical_failure(attack_roll, weapon_skill_level)
+    if skill_critical_failure_max is not None:
+        is_fail = 1 <= attack_roll <= skill_critical_failure_max
+    else:
+        is_fail = is_critical_failure(attack_roll, weapon_skill_level)
     if is_fail:
         # Critical failure: attack is immediately CRITICAL_FAILURE outcome, no damage, no hit
         # Still show actual TÉ and VÉ values for player feedback
@@ -499,14 +513,13 @@ def resolve_attack(
             # Calculate mandatory EP loss from reach rules
             mandatory_ep = calculate_mandatory_ep_loss(weapon, damage_to_fp)
 
-    # Calculate attacker stamina cost (equal to AP cost of attack)
-    # This will be spent by action_handler after the attack resolves
-    # Apply skill-based stamina cost reduction
-    stamina_spent_attacker = 0
-    if attacker.weapon:
-        stamina_spent_attacker = max(1, attacker.weapon.attack_time - skill_stamina_reduction)
+    # Calculate attacker stamina cost (mirrors AP cost) using skill modifier
+    base_attack_time = weapon.attack_time if weapon else 5
+    if skill_stamina_cost_modifier >= 1:
+        modified_cost = base_attack_time * skill_stamina_cost_modifier
     else:
-        stamina_spent_attacker = max(1, 5 - skill_stamina_reduction)  # Default unarmed attack cost
+        modified_cost = base_attack_time + skill_stamina_cost_modifier
+    stamina_spent_attacker = max(1, int(math.ceil(modified_cost)))
 
     return AttackResult(
         outcome=outcome,

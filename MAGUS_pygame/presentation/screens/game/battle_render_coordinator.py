@@ -4,10 +4,13 @@ Rendering coordination for battle screen.
 Manages drawing of all battle screen components.
 """
 
+from types import SimpleNamespace
+
 import pygame
 from application.battle_service import BattleService
 from config import SIDEBAR_WIDTH
-from domain.value_objects import Position
+from domain.mechanics.reach import compute_reach_hexes, get_weapon_reach
+from domain.value_objects import Facing, Position
 from infrastructure.rendering.battle_renderer import BattleRenderer
 from logger.logger import get_logger
 from presentation.components.action_panel import ActionPanel
@@ -48,12 +51,84 @@ class BattleRenderCoordinator:
         self.pause_menu = pause_menu
         self.font_victory = pygame.font.Font(None, 72)
 
+    @staticmethod
+    def _hex_distance(a: tuple[int, int], b: tuple[int, int]) -> int:
+        """Hex distance on axial coordinates."""
+        aq, ar = a
+        bq, br = b
+        return (abs(aq - bq) + abs(ar - br) + abs((aq + ar) - (bq + br))) // 2
+
+    def _compute_charge_attackable_hexes(
+        self, unit, battle: BattleService, max_steps: int = 5
+    ) -> set[tuple[int, int]]:
+        """Compute attackable hexes for charge (move up to 5, then attack within reach)."""
+        # Require enough AP for charge (10 AP)
+        remaining_ap = battle.remaining_ap(unit)
+        if remaining_ap < 10:
+            return set()
+        if unit.weapon is None:
+            return set()
+
+        start = (unit.position.q, unit.position.r)
+
+        # Block other units' positions
+        blocked = {(u.position.q, u.position.r) for u in battle.units if u.id != unit.id}
+        if getattr(battle, "blocked_hexes", None):
+            blocked.update(battle.blocked_hexes)
+
+        # BFS to get reachable landing hexes within max_steps
+        neighbors = ((1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1))
+        from collections import deque
+
+        queue = deque([(start, 0)])
+        visited = {start}
+        landings: set[tuple[int, int]] = set()
+        while queue:
+            (q, r), dist = queue.popleft()
+            if 0 < dist <= max_steps:
+                landings.add((q, r))
+            if dist < max_steps:
+                for dq, dr in neighbors:
+                    nxt = (q + dq, r + dr)
+                    if nxt in visited or nxt in blocked:
+                        continue
+                    visited.add(nxt)
+                    queue.append((nxt, dist + 1))
+
+        # If no landing, nothing to attack
+        if not landings:
+            return set()
+
+        forward_reach = max(1, (get_weapon_reach(unit.weapon) + 1) // 2)
+        charge_targets: set[tuple[int, int]] = set()
+
+        for landing in landings:
+            # For each possible facing, gather reach hexes
+            for facing_dir in range(6):
+                temp_unit = SimpleNamespace(
+                    position=Position(q=landing[0], r=landing[1]),
+                    facing=Facing(facing_dir),
+                    weapon=unit.weapon,
+                )
+                reach_hexes = compute_reach_hexes(temp_unit, unit.weapon)
+                for hx in reach_hexes:
+                    # Enforce min distance 5 from start and limit by forward reach + move range heuristic
+                    if self._hex_distance(start, hx) >= 5:
+                        charge_targets.add(hx)
+
+        # Optional cap: remove any target farther than move+forward reach from start
+        max_range = max_steps + forward_reach
+        charge_targets = {hx for hx in charge_targets if self._hex_distance(start, hx) <= max_range}
+
+        return charge_targets
+
     def draw_battle_scene(
         self,
         surface: pygame.Surface,
         play_surface: pygame.Surface,
         battle: BattleService,
         action_mode: str,
+        active_special_attack: str | None,
         movement_path: list[Position] | None,
         hovered_hex: tuple[int, int] | None,
         combat_message: str | None,
@@ -89,7 +164,10 @@ class BattleRenderCoordinator:
             reachable_hexes = battle.compute_reachable_hexes(current_unit)
             enemy_zones = battle.compute_enemy_zones(current_unit)
         elif action_mode == "attack" and current_unit:
-            attackable_hexes = battle.compute_attackable_hexes(current_unit)
+            if active_special_attack == "charge":
+                attackable_hexes = self._compute_charge_attackable_hexes(current_unit, battle)
+            else:
+                attackable_hexes = battle.compute_attackable_hexes(current_unit)
 
         # Render scene to play area surface
         self.renderer.render_scene(
@@ -107,7 +185,7 @@ class BattleRenderCoordinator:
         )
 
         # Draw action panel (left sidebar)
-        self.action_panel.set_active_mode(action_mode)
+        self.action_panel.set_active_mode(action_mode, active_special_attack is not None)
         # Update unit stats in panel
         if current_unit:
             ap_remaining = battle.remaining_ap(current_unit)

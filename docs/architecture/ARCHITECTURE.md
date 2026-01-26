@@ -167,14 +167,14 @@ The battle screen follows a coordinator pattern, separating concerns across mult
 
 ### Core Components
 
-**BattleScreen** (505 lines) - Main presentation coordinator
+**BattleScreen** (~500 lines) - Main presentation coordinator
 - Manages game loop, input handling, rendering
 - Delegates actions to specialized coordinators
-- Handles UI state and screen transitions
+- Handles UI state and screen transitions (including special attack modes)
 - No direct combat logic - delegates to BattleService
 
-**BattleActionExecutor** (249 lines) - Action coordination and message formatting
-- Executes player actions: attack, move, rotation, facing changes
+**BattleActionExecutor** (~250 lines) - Action coordination and message formatting
+- Executes player actions: attack, move, rotation, facing changes, special attacks (charge)
 - **Message Formatting**: Converts domain data (AttackResult) into player-friendly multi-line messages with color coding
 - Validates actions before execution
 - Provides user feedback through ActionPanel
@@ -196,10 +196,11 @@ The battle screen follows a coordinator pattern, separating concerns across mult
 - No UI concerns or message formatting
 - Called by presentation layer coordinators
 
-**ActionPanel** (434 lines) - UI component
-- Renders action buttons and combat log
+**ActionPanel** (~440 lines) - UI component
+- Renders action buttons, special attack dropdown, and combat log
 - **Color Tag Parsing**: Parses XML-like color tags and renders multi-colored text
 - Displays formatted messages from BattleActionExecutor
+- Visual feedback for active special attacks
 - Fixed layout: combat log at 90px from bottom, 60px space for 3-line messages
 
 ## Running the Test

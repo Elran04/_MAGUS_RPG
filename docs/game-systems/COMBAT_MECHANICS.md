@@ -37,6 +37,48 @@ Is it OVERPOWER (TÉ > VÉ + 50)?
 
 ---
 
+## Special Attacks
+
+### Charge Attack ✅
+**Status:** Complete
+
+A powerful special attack that combines movement and a melee strike in a single action.
+
+**Rules:**
+- **Cost:** 10 AP, 20 Stamina (fixed)
+- **Range:** Minimum 5 hexes from target (cannot charge closer); maximum range = 5 hexes movement + weapon forward reach
+- **Movement:** Up to 5 hexes of unobstructed movement toward target
+- **Landing:** Must land within weapon reach of target after movement
+- **Facing:** Automatically adjusted to face target from landing position
+
+**Combat Modifiers:**
+- **Attacker TÉ:** +20 (applies only to this attack)
+- **Attacker VÉ:** -25 (penalty persists through the round)
+- **Damage Dealt:** 2x multiplier on final damage
+- **Damage Received:** 2x multiplier on opportunity attacks during charge movement
+
+**Interruption:**
+- If opportunity attack succeeds (at least HIT) during movement, charge attack is cancelled
+- Movement stops at interruption point; charge stamina cost still applies
+
+**Examples:**
+```
+Scenario: Warrior with longsword (size 3, reach ~2 hexes forward)
+Target: Goblin 7 hexes away
+
+1. Charge validation: 7 hexes ≥ 5 (minimum) ✓, 7 ≤ 5+2 (max) ✗
+   → Need to be within 7 hexes for this weapon
+
+Scenario: Same warrior, goblin 6 hexes away
+1. Charge validation: 6 ≥ 5 ✓, 6 ≤ 7 ✓
+2. Path computed: 4 hexes movement + 2 hexes reach
+3. Attack rolls: TÉ 75 + 20 (charge) = 95 vs VÉ 45
+4. Hit! Damage: 8 × 2 (charge) = 16 damage
+5. Warrior VÉ reduced by 25 for rest of round
+```
+
+---
+
 ## Detailed Mechanics
 Complete implementation of MAGUS RPG combat system with all core mechanics and examples.
 
