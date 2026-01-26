@@ -22,6 +22,16 @@ if TYPE_CHECKING:
     from domain.entities import Unit, Weapon
 
 from domain.mechanics.armor import HitzoneResolver
+from domain.mechanics.attack_angle import (
+    AttackAngle,
+    get_attack_angle,
+    is_attack_from_back,
+    is_attack_from_back_left,
+    is_attack_from_back_right,
+    is_attack_from_front,
+    is_attack_from_front_left,
+    is_attack_from_front_right,
+)
 from domain.mechanics.critical import (
     get_critical_damage_multiplier,
     is_critical_failure,
@@ -119,7 +129,11 @@ class AttackResult:
 
 
 def calculate_defense_values(
-    defender: Unit, shield_ve: int = 0, dodge_modifier: int = 0, condition_modifier: int = 0
+    defender: Unit,
+    shield_ve: int = 0,
+    dodge_modifier: int = 0,
+    condition_modifier: int = 0,
+    attack_angle: AttackAngle | None = None,
 ) -> DefenseValues:
     """
     Calculate all defense threshold values for a unit.
@@ -129,6 +143,7 @@ def calculate_defense_values(
         shield_ve: VÉ bonus from equipped shield (if any)
         dodge_modifier: Dodge skill modifier
         condition_modifier: Conditions/status effects modifier
+        attack_angle: Angle of incoming attack for directional VÉ restrictions
 
     Returns:
         DefenseValues with all thresholds
@@ -152,14 +167,32 @@ def calculate_defense_values(
 
     base_ve = defender.combat_stats.VE + condition_modifier + stamina_mod + injury_mod
 
-    # Block VÉ: base + shield (if equipped)
-    block_ve = base_ve + shield_ve
+    # === Apply directional VÉ restrictions ===
+    # Shield VÉ only applies to attacks from FRONT (angle 0)
+    effective_shield_ve = 0
+    if shield_ve > 0 and attack_angle is not None:
+        if attack_angle == AttackAngle.FRONT:
+            effective_shield_ve = shield_ve
+        # Otherwise shield_ve is 0 for non-front attacks
+    elif shield_ve > 0:
+        # If no attack_angle provided, assume shield applies (backward compatibility)
+        effective_shield_ve = shield_ve
 
-    # Parry VÉ: base + weapon VÉ (+ shield if applicable)
+    # Block VÉ: base + shield (if equipped and from front)
+    block_ve = base_ve + effective_shield_ve
+
+    # Parry VÉ: base + weapon VÉ (only applies to FRONT, FRONT_RIGHT, FRONT_LEFT)
+    # Weapon VÉ only applies to attacks from FRONT (0), FRONT_RIGHT (1), FRONT_LEFT (5)
     weapon_ve = 0
-    if defender.weapon:
+    if defender.weapon and attack_angle is not None:
+        if attack_angle in (AttackAngle.FRONT, AttackAngle.FRONT_RIGHT, AttackAngle.FRONT_LEFT):
+            weapon_ve = defender.weapon.ve_modifier
+        # Otherwise weapon_ve is 0 for side/back attacks
+    elif defender.weapon:
+        # If no attack_angle provided, assume weapon applies (backward compatibility)
         weapon_ve = defender.weapon.ve_modifier
-    parry_ve = base_ve + weapon_ve + shield_ve
+
+    parry_ve = base_ve + weapon_ve + effective_shield_ve
 
     # Dodge VÉ: parry + dodge skill modifier
     dodge_ve = parry_ve + dodge_modifier
@@ -236,7 +269,7 @@ def resolve_attack(
     attack_roll: int,
     base_damage_roll: int,
     weapon: Weapon | None = None,
-    weapon_skill_level: int = 0,
+    weapon_skill_level: int = 2,
     shield_ve: int = 0,
     dodge_modifier: int = 0,
     attacker_conditions: int = 0,
@@ -306,6 +339,9 @@ def resolve_attack(
         weapon_skill_level, overpower_threshold, skill_id
     )
 
+    # === Calculate attack angle for directional modifiers (needed early for defense) ===
+    attack_angle = get_attack_angle(attacker, defender)
+
     # === Check for critical failure (levels 0-2) ===
     if skill_critical_failure_max is not None:
         is_fail = 1 <= attack_roll <= skill_critical_failure_max
@@ -317,7 +353,9 @@ def resolve_attack(
         all_te = calculate_attack_value(
             attacker, attack_roll, weapon, attacker_conditions, weapon_skill_level
         )
-        defense = calculate_defense_values(defender, shield_ve, dodge_modifier, defender_conditions)
+        defense = calculate_defense_values(
+            defender, shield_ve, dodge_modifier, defender_conditions, attack_angle
+        )
 
         return AttackResult(
             outcome=AttackOutcome.CRITICAL_FAILURE,
@@ -348,7 +386,24 @@ def resolve_attack(
     all_te = calculate_attack_value(
         attacker, attack_roll, weapon, attacker_conditions, skill_te_mod
     )
-    defense = calculate_defense_values(defender, shield_ve, dodge_modifier, defender_conditions)
+
+    # === Apply directional attack bonuses ===
+    # Back attack: +10 TÉ
+    # Side/diagonal attacks (back-left, back-right, front-left, front-right): +5 TÉ
+    directional_te_bonus = 0
+    if is_attack_from_back(attacker, defender):
+        directional_te_bonus = 10
+    elif is_attack_from_back_left(attacker, defender) or is_attack_from_back_right(
+        attacker, defender
+    ) or is_attack_from_front_left(attacker, defender) or is_attack_from_front_right(
+        attacker, defender
+    ):
+        directional_te_bonus = 5
+
+    all_te += directional_te_bonus
+    defense = calculate_defense_values(
+        defender, shield_ve, dodge_modifier, defender_conditions, attack_angle
+    )
 
     # Determine outcome
     outcome = AttackOutcome.MISS

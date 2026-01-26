@@ -238,6 +238,8 @@ class GameCoordinator:
                 blocked_hexes=config.get("blocked_hexes"),
             )
             battle_service.set_teams(team_a_units, team_b_units)
+            # Enable initiative so turn order is rolled and refreshed each round
+            battle_service.enable_initiative()
             battle_service.start_battle()
 
             battle_screen = BattleScreen(WIDTH, HEIGHT, battle_service, self.context, background)

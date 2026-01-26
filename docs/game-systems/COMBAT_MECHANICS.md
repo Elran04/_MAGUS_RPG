@@ -205,6 +205,16 @@ Unconscious        0%:      All combat values = 0, turn skipped
 - Block/Parry: raw incoming damage (before armor)
 - Dodge: 6 AP base cost
 
+**AP Cost Modifiers (Weaponskill Level):**
+- Level 0 (Unskilled): 2x weapon attack_time (doubled)
+- Level 1 (Basic): weapon attack_time + 2
+- Level 2+: weapon attack_time (no modifier)
+
+**Example:** Longsword with attack_time 5:
+- Unskilled (level 0): 10 AP
+- Basic (level 1): 7 AP
+- Skilled (level 2+): 5 AP
+
 ---
 
 ### 6. Injury System (`injury.py`) ✅
@@ -228,6 +238,13 @@ Unconscious        0%:      All combat values = 0, turn skipped
 **Status:** Complete
 
 Complete attack flow integrating all systems including stamina, injury, and unconscious handling.
+
+**Atomic Transaction Model:**
+- Attack resolution computes all effects (damage, stamina costs) without mutating state
+- AP sufficiency is verified before any effects are applied
+- Effects (FP/EP damage, stamina deductions) are applied atomically only after AP is successfully spent
+- If AP is insufficient, no effects occur and stamina is not deducted
+- This ensures consistent game state and prevents partial execution
 
 **Defense Value Calculation:**
 ```python

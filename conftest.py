@@ -33,15 +33,18 @@ def pytest_configure(config):
     # Clean up any existing conflicting paths
     sys.path = [p for p in sys.path if p not in (magus_path, tools_path)]
 
-    # Check command line arguments to determine which test suite is target
-    args = sys.argv[1:] if len(sys.argv) > 1 else []
-    args_str = " ".join(args)
+    # Use pytest invocation args (more reliable with IDE/VSCode runners)
+    args = [str(a) for a in getattr(config, "args", sys.argv[1:])]
 
-    # Detect which test paths are being run
-    has_gamemaster = "gamemaster_tools" in args_str
-    has_pygame = "pygame" in args_str or (
-        "tests" in args_str and "gamemaster_tools" not in args_str
-    )
+    def _contains_token(arg: str, token: str) -> bool:
+        return token in arg.replace("\\", "/")
+
+    has_gamemaster = any(_contains_token(a, "gamemaster_tools") for a in args)
+    has_pygame = any(_contains_token(a, "pygame") for a in args)
+
+    # If args are empty (e.g., IDE discovery) fall back to defaults
+    if not args:
+        has_pygame = True
 
     # If both are being run, pygame runs first so it should be prioritized
     if has_pygame:

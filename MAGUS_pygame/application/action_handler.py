@@ -144,23 +144,8 @@ class ActionHandler:
             return ActionResult(success=False, message=msg)
 
         ares = act.execute(attacker=attacker, defender=defender, **(rng_overrides or {}), **kwargs)
-
-        # Get the attack result for stamina and damage application
-        attack_result = ares.data["attack_result"]
-
-        # Apply FP/EP damage to defender
-        apply_attack_result(attack_result, defender)
-
-        # Spend attacker stamina (independent from FP damage)
-        if hasattr(attacker, "stamina") and attacker.stamina:
-            if attack_result.stamina_spent_attacker > 0:
-                attacker.stamina.spend_action_points(attack_result.stamina_spent_attacker)
-
-        # Spend defender stamina (block/parry/dodge costs)
-        if hasattr(defender, "stamina") and defender.stamina:
-            if attack_result.stamina_spent_defender > 0:
-                defender.stamina.spend_action_points(attack_result.stamina_spent_defender)
-
+        # Do not mutate game state here. Effects (damage/stamina) are applied
+        # by BattleService only after AP spending succeeds to ensure atomicity.
         return ares
 
     def charge_attack(

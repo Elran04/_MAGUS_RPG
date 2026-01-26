@@ -224,8 +224,8 @@ class TestAttackResolutionWithSkills:
             base_damage_roll=5,
             weapon_skill_level=4,
         )
-        # base_TE: 50 + weapon(10) + roll(50) + skill(+10) = 120
-        assert result.all_te == 120
+        # base_TE: 50 + weapon(10) + roll(50) + skill(+10) + directional(+5 front-right) = 125
+        assert result.all_te == 125
 
         # Stamina reduced by 2: 5-2=3
         assert result.stamina_spent_attacker == 3

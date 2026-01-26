@@ -150,6 +150,8 @@ def coordinate_game_flow(
         blocked_hexes=scenario_config.blocked_hexes,
     )
     battle_service.set_teams(team_a_units, team_b_units)
+    # Enable initiative so turn order is rolled and refreshed each round
+    battle_service.enable_initiative()
     battle_service.start_battle()
 
     logger.info("Battle started!")

@@ -5,6 +5,7 @@ repos:
       - id: black
         language_version: python3.13
         args: ['--line-length=100']
+        stages: [manual]  # Run manually; avoid auto-format on first commits
         files: '^(MAGUS_pygame|Gamemaster_tools)/.*\.py$'
 
   - repo: https://github.com/astral-sh/ruff-pre-commit

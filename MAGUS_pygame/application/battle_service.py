@@ -21,6 +21,7 @@ from config import AP_COST_MOVEMENT
 from domain.entities import Unit
 from domain.mechanics.actions.movement_action import NEIGHBORS
 from domain.mechanics.actions.special.charge_action import ChargeAction
+from domain.mechanics.attack_resolution import apply_attack_result
 from domain.mechanics.initiation import (
     InitiativeOrder,
     calculate_initiative,
@@ -136,13 +137,13 @@ class BattleService:
         """Convert AP cost from various types to int.
 
         Args:
-            ap_obj: AP cost (int, str, or other)
+            ap_obj: AP cost (int, str, float, or other)
 
         Returns:
             AP cost as int, or 0 if unable to parse
         """
-        if isinstance(ap_obj, int):
-            return ap_obj
+        if isinstance(ap_obj, (int, float)):
+            return int(ap_obj)
         elif isinstance(ap_obj, str):
             try:
                 return int(ap_obj)
@@ -274,12 +275,52 @@ class BattleService:
         if "shield_ve" not in kwargs:
             kwargs["shield_ve"] = shield_ve
 
+        # Determine correct weapon skill level for AP cost and other effects
+        weapon_skill_level = 0
+        if getattr(unit, "weapon", None) is not None:
+            skill_id = getattr(unit.weapon, "skill_id", "") or ""
+            if skill_id and getattr(unit, "skills", None):
+                try:
+                    weapon_skill_level = unit.skills.get_rank(skill_id, 0)
+                except Exception:
+                    weapon_skill_level = 0
+
         result = self.action_handler.attack(
-            attacker=unit, defender=defender, rng_overrides=rng_overrides, **kwargs
+            attacker=unit,
+            defender=defender,
+            rng_overrides=rng_overrides,
+            weapon_skill_level=weapon_skill_level,
+            **kwargs,
         )
+
+        # If action failed, bubble up without applying effects
+        if not getattr(result, "success", False):
+            return {"action_result": result}
+
+        # Extract AP cost and ensure we can spend before applying any effects
         ap_spent = self._extract_ap_cost(getattr(result, "ap_spent", 0))
-        if result.success and not self.spend_ap(unit, ap_spent):
+        if not self.spend_ap(unit, ap_spent):
             return {"error": "Insufficient AP after attack", "action_result": result}
+
+        # Apply effects only after AP was successfully spent (atomic behavior)
+        attack_result = None
+        if hasattr(result, "data") and result.data:
+            attack_result = result.data.get("attack_result")
+
+        if attack_result is not None:
+            # Apply FP/EP damage to defender
+            apply_attack_result(attack_result, defender)
+
+            # Spend attacker stamina
+            if hasattr(unit, "stamina") and unit.stamina:
+                if getattr(attack_result, "stamina_spent_attacker", 0) > 0:
+                    unit.stamina.spend_action_points(attack_result.stamina_spent_attacker)
+
+            # Spend defender stamina (block/parry/dodge)
+            if hasattr(defender, "stamina") and defender.stamina:
+                if getattr(attack_result, "stamina_spent_defender", 0) > 0:
+                    defender.stamina.spend_action_points(attack_result.stamina_spent_defender)
+
         return {"action_result": result}
 
     def charge_current_unit(self, defender: Unit, **kwargs: object) -> dict[str, object]:
@@ -410,18 +451,11 @@ class BattleService:
             Weapon domain entity
         """
         from domain.entities import Weapon
+        from domain.services import UnitFactory
 
-        CATEGORY_TO_SKILL_ID = {
-            "swords": "sword_skill",
-            "axes": "axe_skill",
-            "maces": "mace_skill",
-            "spears": "spear_skill",
-            "bows": "bow_skill",
-            "crossbows": "crossbow_skill",
-        }
-
+        # Use the same category mapping as UnitFactory to ensure consistency
         category = weapon_data.get("category", "")
-        skill_id = CATEGORY_TO_SKILL_ID.get(category, "")
+        skill_id = UnitFactory.CATEGORY_TO_SKILL_ID.get(category, "")
 
         return Weapon(
             id=weapon_data.get("id", ""),

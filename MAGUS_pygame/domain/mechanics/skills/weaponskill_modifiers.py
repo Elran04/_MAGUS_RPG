@@ -46,6 +46,13 @@ class WeaponskillModifiers:
     has_opportunity_on_miss_parry: bool = False  # Level 3+: opportunity on miss/parry
     opportunity_attacks_per_turn: int = 0  # Level 3: 1, Level 6: 3
 
+    @property
+    def stamina_cost_reduction(self) -> int:
+        """Alias for tests: positive reduction amount derived from stamina_cost_modifier."""
+        if self.stamina_cost_modifier >= 0:
+            return 0
+        return int(abs(self.stamina_cost_modifier))
+
 
 # ============================================================================
 # BASE WEAPONSKILL MODIFIERS (Universal for all weapon types)

@@ -28,10 +28,14 @@ class UnitFactory:
     # Mapping of weapon category (Hungarian) to skill_id
     CATEGORY_TO_SKILL_ID = {
         "Hosszú kardok": "weaponskill_longswords",
+        # Support both spellings with/without space
         "Rövidkardok": "weaponskill_shortswords",
+        "Rövid kardok": "weaponskill_shortswords",
         "Íjak": "weaponskill_bows",
         "Hosszúpajzsos fegyverek": "weaponskill_longhandled",
         "Pajzs": "shieldskill",
+        # Daggers
+        "Tőrök": "weaponskill_daggers",
     }
 
     def __init__(self, character_repo: CharacterRepository, equipment_repo: EquipmentRepository):
