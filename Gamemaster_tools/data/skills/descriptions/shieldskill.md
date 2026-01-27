@@ -43,6 +43,7 @@ Sikeres blokkolás esetén a támadó k3 (1–3) staminát veszít
 4. szint – Megszokott uralom
 
 A pajzs használata hatékonyabbá és kevésbé költségessé válik.
+A pajzsok MGT-je innentől nem vonódik le a karakter harcértékeiből.
 Pajzscsapás AP költsége: 3 AP Stamina költség: 3 stamina
 
 Blokkolás esetén:
