@@ -23,9 +23,9 @@ Example:
 from dataclasses import dataclass, field
 from typing import Any
 
-from MAGUS_pygame.domain.entities.unit import Unit
-from MAGUS_pygame.domain.value_objects import Attributes
-from MAGUS_pygame.domain.value_objects.weapon_type_check import is_shield
+from domain.entities.unit import Unit
+from domain.value_objects import Attributes
+from domain.value_objects.weapon_type_check import is_shield
 
 
 @dataclass

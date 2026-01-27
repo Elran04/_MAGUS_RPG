@@ -1,7 +1,7 @@
 """Presentation layer components."""
 
 from .hud import HUD
-from .unit_info_popup import PopupStyle, UnitInfoPopup
+from .unit_info.unit_info_popup import PopupStyle, UnitInfoPopup
 
 __all__ = [
     "HUD",

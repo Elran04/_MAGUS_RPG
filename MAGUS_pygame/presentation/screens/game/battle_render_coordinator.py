@@ -16,7 +16,7 @@ from logger.logger import get_logger
 from presentation.components.action_panel import ActionPanel
 from presentation.components.hud import HUD
 from presentation.components.pause_menu import PauseMenu
-from presentation.components.unit_info_popup import UnitInfoPopup
+from presentation.components.unit_info.unit_info_popup import UnitInfoPopup
 from presentation.components.weapon_switch_popup import WeaponSwitchPopup
 
 logger = get_logger(__name__)
