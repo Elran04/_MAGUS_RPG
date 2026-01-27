@@ -4,7 +4,8 @@ BattleService - orchestrates turn order, action points, and victory checks.
 
 AP model:
 - Base AP per unit per turn = 10
-- For each point of Gyorsaság (Attributes.speed) above 15, gain +1 AP.
+- For each point of effective Gyorsaság (Attributes.speed - equipment MGT) above 15, gain +1 AP.
+- Equipment MGT (armor, shields) reduces speed; certain skills (heavy armor level 4+, shieldskill level 4+) negate this.
 
 This AP computation is domain logic, but lightweight enough to live here; if it
 expands (skills, conditions), extract to domain.mechanics.ap or similar.
@@ -22,6 +23,7 @@ from domain.entities import Unit
 from domain.mechanics.actions.movement_action import NEIGHBORS
 from domain.mechanics.actions.special.charge_action import ChargeAction
 from domain.mechanics.attack_resolution import apply_attack_result
+from domain.mechanics.equipment import get_effective_speed
 from domain.mechanics.initiation import (
     InitiativeOrder,
     calculate_initiative,
@@ -36,8 +38,8 @@ from .action_handler import ActionHandler
 
 def compute_unit_ap(unit: Unit) -> int:
     base = 10
-    speed = getattr(unit.attributes, "speed", 10)
-    bonus = max(0, speed - 15)
+    effective_speed = get_effective_speed(unit)
+    bonus = max(0, effective_speed - 15)
     return base + bonus
 
 

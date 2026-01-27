@@ -63,5 +63,8 @@ class Weapon:
     category: str = ""  # e.g., "Hosszú kardok"
     skill_id: str = ""  # e.g., "weaponskill_longswords" (derived from category)
 
+    # Equipment burden (for shields and other holdable equipment)
+    mgt: int = 0  # Movement Hindering Factor
+
     def __str__(self) -> str:
         return f"{self.name} (KÉ+{self.ke_modifier} TÉ+{self.te_modifier} VÉ+{self.ve_modifier})"

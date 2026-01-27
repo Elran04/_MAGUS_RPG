@@ -31,10 +31,16 @@ class DamageContext:
 
 def _get_attribute_value(unit: Unit, attr_hu: str) -> int:
     """Fetch attribute value from unit.attributes using Hungarian key mapping.
+    For Ügyesség (dexterity), applies MGT penalties from equipped armor/shields.
     Supported keys: Erő, Ügyesség, Gyorsaság, Állóképesség, Egészség, Karizma,
     Intelligencia, Akaraterő, Asztrál, Érzékelés.
     Unknown returns 0.
     """
+    if attr_hu.lower() == "ügyesség":
+        # Import here to avoid circular dependency
+        from domain.mechanics.equipment import get_effective_dexterity
+        return get_effective_dexterity(unit)
+
     return unit.attributes.get_attribute(attr_hu, 0)
 
 
@@ -44,6 +50,7 @@ def _calculate_attribute_bonus(unit: Unit, weapon: Weapon | None) -> int:
       if value > 15 => bonus += (value - 15)
     Else 0.
     Missing weapon => 0.
+    Uses effective attribute values after equipment burden.
     """
     if weapon is None:
         return 0

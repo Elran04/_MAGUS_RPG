@@ -154,6 +154,74 @@ class ArmorPiece:
 
 ---
 
+### 3b. Equipment Burden (MGT System) (`equipment.py`) ✅
+**Status:** Complete
+
+MGT (Movement Hindering Factor) represents how heavy equipment encumbers a unit, reducing combat effectiveness.
+
+**Armor Types:**
+The system tracks four armor type categories for differential skill negation:
+- `light`: Light armor (könnyűvértek)
+- `leather`: Leather armor (bőrvértek)
+- `flexible_metal`: Flexible heavy armor (rugalmas nehézvértek) - mail, scale, etc.
+- `plate`: Rigid heavy armor (merev nehézvértek) - full plate, splint, etc.
+
+**Rules:**
+- **Armor MGT:** Sum of equipped armor pieces' MGT values by type
+- **Shield MGT:** Applied only if a shield is equipped in off-hand slot
+- **Total MGT:** armor_mgt + shield_mgt (only active equipment counts)
+- **Speed Penalty:** `effective_speed = max(1, base_speed - total_mgt)`
+- **Dexterity Penalty:** `effective_dexterity = max(1, base_dexterity - total_mgt)`
+
+**Skill_heavy_armor MGT Negation (by armor type and skill level):**
+- **Level 1+:** Light and leather armor MGT negated
+- **Level 4+:** Flexible metal armor MGT negated
+- **Level 5+:** All armor types' MGT negated (rigid/plate armor also)
+
+**Shieldskill MGT Negation:**
+- **Level 4+:** All shield MGT negated
+
+**Impact on Combat:**
+- AP calculation: `AP = 10 + max(0, effective_speed - 15)`
+- Damage bonuses: Use effective dexterity for Ügyesség-based bonuses
+
+**Examples:**
+
+Scenario: Base Gyorsaság=18, Ügyesség=16, equipped plate armor (MGT=3)
+
+```
+Without skill_heavy_armor:
+  - Effective speed: 18 - 3 = 15 → AP = 10 + (15-15) = 10
+  - Effective dexterity: 16 - 3 = 13 → Damage bonus penalty
+
+With skill_heavy_armor level 4:
+  - Plate armor MGT still applies: 18 - 3 = 15 → AP = 10
+  - (Level 4 only negates flexible metal, not plate)
+
+With skill_heavy_armor level 5:
+  - All armor MGT negated: 18 → AP = 10 + (18-15) = 13
+  - Effective dexterity: 16 (full bonus restored)
+
+Scenario: Wearing flexible metal armor (MGT=2) + shield (MGT=2)
+
+Without skills:
+  - Total MGT: 2 + 2 = 4
+  - Speed: 18 - 4 = 14 → AP = 10 + (14-15) = 10
+
+With skill_heavy_armor level 4 + shieldskill level 4:
+  - Flexible metal MGT negated (level 4 heavy armor skill)
+  - Shield MGT negated (level 4 shieldskill)
+  - Speed: 18 (full speed restored) → AP = 10 + (18-15) = 13
+```
+
+**Implementation Location:** `domain/mechanics/equipment.py`
+- `EquipmentContext`: Tracks armor_mgt by type + shield_mgt with skill-dependent negation
+- `build_equipment_context()`: Extracts and categorizes armor/shield MGT from unit
+- `get_effective_attributes()`: Returns new Attributes with penalties applied
+- `get_effective_speed()`, `get_effective_dexterity()`: Convenience helpers
+
+---
+
 ### 4. Critical Hits (`critical.py`) ✅
 **Status:** Complete (placeholder skill thresholds)
 
