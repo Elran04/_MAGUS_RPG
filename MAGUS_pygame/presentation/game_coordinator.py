@@ -6,6 +6,7 @@ orchestration point, coordinating screens and delegating to application services
 """
 
 import multiprocessing
+import multiprocessing.synchronize
 from typing import TYPE_CHECKING
 
 import pygame
@@ -84,7 +85,7 @@ class GameCoordinator:
         self.menu: Menu | None = None
         self.scenario_editor: ScenarioEditorScreen | None = None
         self.tool_window_process: multiprocessing.Process | None = None
-        self.tool_window_quit_event: multiprocessing.Event | None = None
+        self.tool_window_quit_event: multiprocessing.synchronize.Event | None = None
         self.ui_to_game_queue = None
         self.game_to_ui_queue = None
         self.editor_event_bus: EditorEventBus | None = None

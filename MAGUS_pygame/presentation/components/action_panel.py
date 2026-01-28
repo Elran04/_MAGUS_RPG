@@ -362,6 +362,23 @@ class ActionPanel:
             if self.combat_message_timer <= 0:
                 self.combat_message = None
 
+    def is_message_area_click(self, x: int, y: int) -> bool:
+        """Check if a click is on the combat message area.
+
+        Args:
+            x: X coordinate (relative to action panel)
+            y: Y coordinate (relative to action panel)
+
+        Returns:
+            True if click is in message area
+        """
+        # Message area is in the bottom section, above help text
+        log_y = self.height - 108  # 30 for help + 78 for 4 lines
+        separator_y = log_y - 5
+        help_y = self.height - 30
+
+        return (0 <= x <= self.width and separator_y <= y <= help_y - 10)
+
     def handle_mouse_motion(self, mouse_pos: tuple[int, int]) -> None:
         """Update button hover states.
 

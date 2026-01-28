@@ -7,6 +7,7 @@ and rendering for turn-based combat.
 
 import pygame
 from application.battle_service import BattleService
+from application.detailed_battle_log import DetailedBattleLog
 from application.game_context import GameContext
 from config import PLAY_AREA_WIDTH, SIDEBAR_WIDTH
 from domain.entities import Unit
@@ -15,6 +16,7 @@ from infrastructure.rendering.battle_renderer import BattleRenderer
 from infrastructure.rendering.hex_grid import get_grid_bounds
 from logger.logger import get_logger
 from presentation.components.action_panel import ActionPanel
+from presentation.components.battle_log_popup import BattleLogPopup
 from presentation.components.hud import HUD
 from presentation.components.pause_menu import PauseMenu
 from presentation.components.unit_info.unit_info_popup import UnitInfoPopup
@@ -82,6 +84,12 @@ class BattleScreen:
             None  # Name of active special attack (e.g., "charge")
         )
 
+        # Detailed battle log system
+        self.detailed_log = DetailedBattleLog()
+        self.detailed_log.set_round(battle_service.round)  # Initialize with starting round
+        self._log_initiative(battle_service)  # Log initial turn order
+        self.battle_log_popup = BattleLogPopup(self.detailed_log)
+
         # Create play area surface (to the right of sidebar)
         self.play_surface = pygame.Surface((PLAY_AREA_WIDTH, screen_height))
 
@@ -105,7 +113,7 @@ class BattleScreen:
 
         # Coordinators
         self.input_handler = BattleInputHandler()
-        self.action_executor = BattleActionExecutor(battle_service)
+        self.action_executor = BattleActionExecutor(battle_service, self.detailed_log)
         self.render_coordinator = BattleRenderCoordinator(
             screen_width, screen_height, self.renderer, self.action_panel, self.hud, self.pause_menu
         )
@@ -119,6 +127,11 @@ class BattleScreen:
         Args:
             event: Pygame event
         """
+        # Let battle log popup handle its own events (scrolling)
+        if self.battle_log_popup and self.battle_log_popup.visible:
+            if self.battle_log_popup.handle_event(event):
+                return
+
         if event.type == pygame.KEYDOWN:
             self._handle_keypress(event.key)
         elif event.type == pygame.MOUSEMOTION:
@@ -133,8 +146,10 @@ class BattleScreen:
             key: Pygame key constant
         """
         if key == pygame.K_ESCAPE:
-            # Priority: Weapon switch popup > Unit popup > Action mode > Pause menu toggle
-            if self.weapon_switch_popup and self.weapon_switch_popup.visible:
+            # Priority: Battle log popup > Weapon switch popup > Unit popup > Action mode > Pause menu toggle
+            if self.battle_log_popup and self.battle_log_popup.visible:
+                self.battle_log_popup.hide()
+            elif self.weapon_switch_popup and self.weapon_switch_popup.visible:
                 self.weapon_switch_popup.hide()
             elif self.unit_popup and self.unit_popup.visible:
                 self.unit_popup.hide()
@@ -226,6 +241,11 @@ class BattleScreen:
                 self._handle_action_button(action)
                 return
 
+            # Check if click is on message area to open battle log
+            if self.action_panel.is_message_area_click(mouse_pos[0], mouse_pos[1]):
+                self.battle_log_popup.show()
+                return
+
         # Handle unit popup clicks
         if self.unit_popup and self.unit_popup.visible:
             if self.unit_popup.handle_click(*mouse_pos):
@@ -249,6 +269,11 @@ class BattleScreen:
                 return
             # If no action, click was inside popup but not on buttons
             return
+
+        # Handle battle log popup
+        if self.battle_log_popup and self.battle_log_popup.visible:
+            if self.battle_log_popup.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, {"button": button, "pos": mouse_pos})):
+                return
 
         # Handle play area clicks
         if not self.input_handler.is_click_in_play_area(mouse_pos):
@@ -553,6 +578,27 @@ class BattleScreen:
             if hasattr(rr, "message"):
                 self.action_executor.show_message(rr.message)
 
+    def _log_initiative(self, battle_service) -> None:
+        """Log initiative roll data for all units.
+
+        Args:
+            battle_service: BattleService instance with initiative data
+        """
+        if battle_service.initiative_order is None:
+            return  # Initiative not enabled
+
+        # Get initiative table: (unit_id, total, base_ke, roll)
+        table = battle_service.get_initiative_table()
+
+        # Get units for name lookup
+        unit_map = {unit.id: unit for unit in battle_service.units}
+
+        # Log each unit's initiative in order
+        for position, (unit_id, total, base_ke, roll) in enumerate(table, start=1):
+            unit = unit_map.get(unit_id)
+            if unit:
+                self.detailed_log.log_initiative(unit.name, total, base_ke, roll, position)
+
     def update(self, delta_time: float = 1 / 60) -> None:
         """Update battle state (timers, etc)."""
         # Update message timer in action_executor and sync with action_panel
@@ -582,6 +628,7 @@ class BattleScreen:
             combat_message=self.action_executor.combat_message,
             unit_popup=self.unit_popup,
             weapon_switch_popup=self.weapon_switch_popup,
+            battle_log_popup=self.battle_log_popup,
             victory_action=self.action,
         )
 

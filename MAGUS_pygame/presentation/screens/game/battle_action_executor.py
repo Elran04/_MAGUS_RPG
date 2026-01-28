@@ -4,7 +4,16 @@ Action execution for battle screen.
 Handles move, attack, rotation, and other combat actions.
 """
 
+import time
+
 from application.battle_service import BattleService
+from application.detailed_battle_log import DetailedBattleLog
+from domain.battle_log_entry import (
+    BattleLogEntry,
+    DetailedActionData,
+    DetailedAttackData,
+    DetailedMoveData,
+)
 from domain.entities import Unit
 from domain.value_objects import Facing, Position
 from infrastructure.rendering.hex_grid import calculate_facing_to_hex
@@ -16,13 +25,15 @@ logger = get_logger(__name__)
 class BattleActionExecutor:
     """Executes battle actions like move, attack, rotate."""
 
-    def __init__(self, battle_service: BattleService):
+    def __init__(self, battle_service: BattleService, detailed_log: DetailedBattleLog | None = None):
         """Initialize action executor.
 
         Args:
             battle_service: Battle service managing combat state
+            detailed_log: Optional detailed battle log for event tracking
         """
         self.battle = battle_service
+        self.detailed_log = detailed_log
         self.combat_message: str | None = None
         self.combat_message_timer = 0
 
@@ -37,6 +48,8 @@ class BattleActionExecutor:
             Summary dict with move results
         """
         current = self.battle.current_unit
+        start_pos = current.position if current else None
+
         summary = self.battle.move_current_unit(
             dest=dest,
             potential_reactors=potential_reactors,
@@ -48,6 +61,29 @@ class BattleActionExecutor:
         else:
             ap_spent = summary.get("ap_spent", 0)
             self.show_message(f"Moved (AP: -{ap_spent})")
+
+            # Log detailed movement
+            if self.detailed_log and current and start_pos:
+                # Calculate distance using Position's distance_to method
+                distance = start_pos.distance_to(dest)
+
+                # Extract reactions if any
+                reactions = []
+                if "reactions" in summary:
+                    for reaction in summary["reactions"]:
+                        reactions.append(f"{reaction.get('type', 'reaction')}: {reaction.get('message', '')}")
+
+                move_data = DetailedMoveData(
+                    unit_name=current.name,
+                    round_number=self.battle.round,
+                    from_pos=start_pos,
+                    to_pos=dest,
+                    ap_spent=ap_spent,
+                    distance=distance,
+                    reactions_triggered=reactions
+                )
+
+                self.detailed_log.log_move(f"{current.name} moved to ({dest.q}, {dest.r})", move_data)
 
         return summary
 
@@ -90,6 +126,61 @@ class BattleActionExecutor:
         if attack_res:
             msg = self._format_attack_result_message(attack_res)
             self.show_message(msg)
+
+            # Log detailed attack information
+            if self.detailed_log:
+                from domain.mechanics.attack_angle import AttackAngle, get_attack_angle
+
+                # Determine attack angle and positioning
+                attack_angle = get_attack_angle(attacker, defender)
+                is_flank = attack_angle in (AttackAngle.FRONT_RIGHT, AttackAngle.FRONT_LEFT,
+                                           AttackAngle.BACK_RIGHT, AttackAngle.BACK_LEFT)
+                is_rear = attack_angle == AttackAngle.BACK
+
+                # Check if weapon/shield VÉ was ignored due to facing
+                # Weapon VÉ applies only to front arcs (FRONT, FRONT_RIGHT, FRONT_LEFT)
+                # Shield VÉ applies only to FRONT
+                facing_ignored_ve = attack_angle not in (AttackAngle.FRONT, AttackAngle.FRONT_RIGHT, AttackAngle.FRONT_LEFT)
+
+                # Build penalty/buff dicts (simplified for now - can be expanded with more data)
+                attacker_penalties = {}
+                attacker_buffs = {}
+                defender_penalties = {}
+                defender_buffs = {}
+
+                # Add stamina as penalty if significant
+                if attacker.stamina.current_stamina < attacker.stamina.max_stamina * 0.3:
+                    attacker_penalties["Low Stamina"] = "High fatigue penalties"
+                if defender.stamina.current_stamina < defender.stamina.max_stamina * 0.3:
+                    defender_penalties["Low Stamina"] = "Reduced defense"
+
+                # Create detailed attack data
+                attack_data = DetailedAttackData(
+                    attacker_name=attacker.name,
+                    defender_name=defender.name,
+                    round_number=self.battle.round,
+                    attack_roll=attack_res.attack_roll,
+                    all_te=attack_res.all_te,
+                    all_ve=attack_res.all_ve,
+                    outcome=attack_res.outcome.value,
+                    is_flank_attack=is_flank,
+                    is_rear_attack=is_rear,
+                    facing_ignored_ve=facing_ignored_ve,
+                    damage_to_fp=attack_res.damage_to_fp,
+                    damage_to_ep=attack_res.damage_to_ep,
+                    armor_absorbed=attack_res.armor_absorbed,
+                    stamina_spent_defender=attack_res.stamina_spent_defender,
+                    hit_zone=attack_res.hit_zone,
+                    zone_sfe=attack_res.zone_sfe,
+                    is_critical=attack_res.is_critical,
+                    is_overpower=attack_res.is_overpower,
+                    attacker_penalties=attacker_penalties,
+                    attacker_buffs=attacker_buffs,
+                    defender_penalties=defender_penalties,
+                    defender_buffs=defender_buffs
+                )
+
+                self.detailed_log.log_attack(msg, attack_data)
         else:
             logger.warning(
                 f"No attack_result in action_result data. Data: {action_result.data if hasattr(action_result, 'data') else 'N/A'}"
@@ -124,6 +215,55 @@ class BattleActionExecutor:
             if attack_res:
                 msg = self._format_attack_result_message(attack_res)
                 self.show_message(msg)
+
+                # Log detailed charge attack
+                if self.detailed_log:
+                    from domain.mechanics.attack_angle import AttackAngle, get_attack_angle
+
+                    # Determine attack angle and positioning
+                    attack_angle = get_attack_angle(attacker, defender)
+                    is_flank = attack_angle in (AttackAngle.FRONT_RIGHT, AttackAngle.FRONT_LEFT,
+                                               AttackAngle.BACK_RIGHT, AttackAngle.BACK_LEFT)
+                    is_rear = attack_angle == AttackAngle.BACK
+                    facing_ignored_ve = attack_angle not in (AttackAngle.FRONT, AttackAngle.FRONT_RIGHT, AttackAngle.FRONT_LEFT)
+
+                    # Build penalty/buff dicts
+                    attacker_penalties = {}
+                    attacker_buffs = {"Charge Bonus": "+10 TÉ from charge"}
+                    defender_penalties = {}
+                    defender_buffs = {}
+
+                    if attacker.stamina.current_stamina < attacker.stamina.max_stamina * 0.3:
+                        attacker_penalties["Low Stamina"] = "High fatigue penalties"
+                    if defender.stamina.current_stamina < defender.stamina.max_stamina * 0.3:
+                        defender_penalties["Low Stamina"] = "Reduced defense"
+
+                    attack_data = DetailedAttackData(
+                        attacker_name=attacker.name,
+                        defender_name=defender.name,
+                        round_number=self.battle.round,
+                        attack_roll=attack_res.attack_roll,
+                        all_te=attack_res.all_te,
+                        all_ve=attack_res.all_ve,
+                        outcome=attack_res.outcome.value,
+                        is_flank_attack=is_flank,
+                        is_rear_attack=is_rear,
+                        facing_ignored_ve=facing_ignored_ve,
+                        damage_to_fp=attack_res.damage_to_fp,
+                        damage_to_ep=attack_res.damage_to_ep,
+                        armor_absorbed=attack_res.armor_absorbed,
+                        stamina_spent_defender=attack_res.stamina_spent_defender,
+                        hit_zone=attack_res.hit_zone,
+                        zone_sfe=attack_res.zone_sfe,
+                        is_critical=attack_res.is_critical,
+                        is_overpower=attack_res.is_overpower,
+                        attacker_penalties=attacker_penalties,
+                        attacker_buffs=attacker_buffs,
+                        defender_penalties=defender_penalties,
+                        defender_buffs=defender_buffs
+                    )
+
+                    self.detailed_log.log_attack(f"CHARGE: {msg}", attack_data)
             else:
                 self.show_message(action_result.message)
 
@@ -221,11 +361,55 @@ class BattleActionExecutor:
         self.show_message(f"Weapons switched (AP: -{ap_spent})")
         logger.info(f"{unit.name} switched weapons successfully")
 
+        # Log weapon switch
+        if self.detailed_log:
+            action_data = DetailedActionData(
+                unit_name=unit.name,
+                round_number=self.battle.round,
+                action_type="weapon_switch",
+                ap_spent=ap_spent,
+                description=f"Switched to {new_main_hand or 'empty'} / {new_off_hand or 'empty'}",
+                extra_data={"main_hand": new_main_hand, "off_hand": new_off_hand}
+            )
+            self.detailed_log.log_action(f"{unit.name} switched weapons", action_data)
+
         return result
 
     def end_turn(self) -> None:
         """End current unit's turn."""
+        current_unit = self.battle.current_unit
+        old_round = self.battle.round
+
+        # Log turn end before ending
+        if self.detailed_log and current_unit:
+            entry = BattleLogEntry(
+                entry_type="turn_end",
+                round_number=self.battle.round,
+                timestamp=time.time(),
+                message=f"{current_unit.name} ended their turn",
+                unit_name=current_unit.name
+            )
+            self.detailed_log.entries.append(entry)
+
         self.battle.end_turn()
+
+        # Check if round changed
+        new_round = self.battle.round
+        if self.detailed_log:
+            if new_round > old_round:
+                # Round advanced
+                self.detailed_log.set_round(new_round)
+
+                # Log new initiative if it was re-rolled
+                if self.battle.initiative_order is not None:
+                    table = self.battle.get_initiative_table()
+                    unit_map = {unit.id: unit for unit in self.battle.units}
+
+                    for position, (unit_id, total, base_ke, roll) in enumerate(table, start=1):
+                        unit = unit_map.get(unit_id)
+                        if unit:
+                            self.detailed_log.log_initiative(unit.name, total, base_ke, roll, position)
+
         # Show new active unit's name
         next_unit = self.battle.current_unit
         if next_unit:

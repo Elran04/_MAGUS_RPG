@@ -135,6 +135,7 @@ class BattleRenderCoordinator:
         unit_popup: UnitInfoPopup | None,
         victory_action: str | None = None,
         weapon_switch_popup: WeaponSwitchPopup | None = None,
+        battle_log_popup = None,
     ) -> None:
         """Draw complete battle scene.
 
@@ -148,6 +149,8 @@ class BattleRenderCoordinator:
             combat_message: Combat message to display
             unit_popup: Unit info popup (if open)
             victory_action: Victory action string (if battle ended)
+            weapon_switch_popup: Weapon switch popup (if open)
+            battle_log_popup: Battle log popup (if open)
         """
         # Clear play area
         self.renderer.clear()
@@ -217,6 +220,10 @@ class BattleRenderCoordinator:
         # Draw weapon switch popup if open
         if weapon_switch_popup:
             weapon_switch_popup.draw(surface)
+
+        # Draw battle log popup if open
+        if battle_log_popup:
+            battle_log_popup.draw(surface)
 
         # Draw controls help (minimalist)
         self._draw_controls(surface)
