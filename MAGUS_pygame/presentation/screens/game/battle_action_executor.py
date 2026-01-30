@@ -5,6 +5,7 @@ Handles move, attack, rotation, and other combat actions.
 """
 
 import time
+from typing import Callable, Optional
 
 from application.battle_service import BattleService
 from application.detailed_battle_log import DetailedBattleLog
@@ -25,7 +26,7 @@ logger = get_logger(__name__)
 class BattleActionExecutor:
     """Executes battle actions like move, attack, rotate."""
 
-    def __init__(self, battle_service: BattleService, detailed_log: DetailedBattleLog | None = None):
+    def __init__(self, battle_service: BattleService, detailed_log: Optional[DetailedBattleLog] = None):
         """Initialize action executor.
 
         Args:
@@ -34,8 +35,13 @@ class BattleActionExecutor:
         """
         self.battle = battle_service
         self.detailed_log = detailed_log
-        self.combat_message: str | None = None
+        self.combat_message: Optional[str] = None
         self.combat_message_timer = 0
+
+        # Reaction queue system
+        self.reaction_queue: list = []  # Queue of pending reactions
+        self.current_reaction: Optional[dict] = None  # Currently displayed reaction
+        self.reaction_callbacks: dict = {}  # Callbacks for reaction resolution
 
     def execute_move(self, dest: Position, potential_reactors: list[Unit]) -> dict:
         """Execute movement to destination.
@@ -88,8 +94,8 @@ class BattleActionExecutor:
         return summary
 
     def execute_attack(
-        self, target_pos: Position, attacker: Unit, defender: Unit | None
-    ) -> dict | None:
+        self, target_pos: Position, attacker: Unit, defender: Optional[Unit]
+    ) -> Optional[dict]:
         """Execute attack on target position.
 
         Args:
@@ -192,21 +198,30 @@ class BattleActionExecutor:
         return summary
 
     def execute_charge(
-        self, target_pos: Position, attacker: Unit, defender: Unit | None
-    ) -> dict | None:
-        """Execute charge special attack on target position."""
+        self, target_pos: Position, attacker: Unit, defender: Optional[Unit]
+    ) -> dict:
+        """Execute charge special attack on target position.
+
+        Returns a summary dict with:
+        - action_result: The charge action result
+        - path: Path the charger traveled
+        - reaction_results: Any opportunity attacks triggered
+        """
         if not defender:
             self.show_message("No target at that hex")
-            return None
+            return {"error": "No target at that hex"}
 
-        summary = self.battle.charge_current_unit(defender=defender)
+        enemies = self.battle.get_enemies(attacker)
+        summary = self.battle.charge_current_unit(defender=defender, potential_reactors=enemies)
 
         if "error" in summary:
             self.show_message(f"Charge failed: {summary['error']}")
             logger.warning(f"Charge failed: {summary['error']}")
-            return None
+            return summary
 
         action_result = summary.get("action_result")
+        reaction_results = summary.get("reaction_results", [])
+
         if action_result:
             # Prefer formatted attack message if available
             attack_res = (
@@ -302,7 +317,7 @@ class BattleActionExecutor:
 
         return result
 
-    def execute_facing_change(self, target_q: int, target_r: int, unit: Unit) -> dict | None:
+    def execute_facing_change(self, target_q: int, target_r: int, unit: Unit) -> Optional[dict]:
         """Change unit's facing to point toward target hex.
 
         Args:
@@ -332,7 +347,7 @@ class BattleActionExecutor:
         return result
 
     def execute_weapon_switch(
-        self, unit: Unit, new_main_hand: str | None, new_off_hand: str | None
+        self, unit: Unit, new_main_hand: Optional[str], new_off_hand: Optional[str]
     ) -> dict:
         """Execute weapon switch action.
 
@@ -534,3 +549,89 @@ class BattleActionExecutor:
 
         logger.debug(f"No unit at ({q}, {r})")
         return None
+
+    # ========================================================================
+    # REACTION QUEUE SYSTEM
+    # ========================================================================
+
+    def enqueue_reaction(
+        self,
+        reaction_type: str,
+        description: str,
+        reaction_data: Optional[dict] = None,
+        on_accept: Optional[Callable] = None,
+        on_decline: Optional[Callable] = None,
+    ) -> None:
+        """Enqueue a reaction for player decision.
+
+        Args:
+            reaction_type: Type of reaction (e.g., "shield_bash", "opportunity_attack")
+            description: Description text to display in popup
+            reaction_data: Optional dict with reaction details (attacker, defender, etc.)
+            on_accept: Optional callback(reaction_data) when accepted
+            on_decline: Optional callback(reaction_data) when declined
+        """
+        reaction = {
+            "type": reaction_type,
+            "description": description,
+            "data": reaction_data or {},
+            "on_accept": on_accept,
+            "on_decline": on_decline,
+        }
+        self.reaction_queue.append(reaction)
+        logger.info(f"Reaction enqueued: {reaction_type} - {description}")
+        self._show_next_reaction()
+
+    def _show_next_reaction(self) -> None:
+        """Show the next reaction from the queue."""
+        if self.reaction_queue and not self.current_reaction:
+            self.current_reaction = self.reaction_queue.pop(0)
+            logger.debug(f"Showing reaction: {self.current_reaction['type']}")
+
+    def get_current_reaction(self) -> dict | None:
+        """Get the current pending reaction.
+
+        Returns:
+            Current reaction dict or None if no reaction pending
+        """
+        return self.current_reaction
+
+    def resolve_reaction(self, accepted: bool) -> None:
+        """Resolve the current reaction.
+
+        Args:
+            accepted: Whether the reaction was accepted
+        """
+        if not self.current_reaction:
+            return
+
+        reaction = self.current_reaction
+        self.current_reaction = None
+
+        if accepted:
+            if reaction["on_accept"]:
+                reaction["on_accept"](reaction["data"])
+            self.show_message(f"Accepted {reaction['type'].replace('_', ' ')}")
+        else:
+            if reaction["on_decline"]:
+                reaction["on_decline"](reaction["data"])
+            self.show_message(f"Declined {reaction['type'].replace('_', ' ')}")
+
+        logger.info(f"Reaction resolved: {reaction['type']} - {'accepted' if accepted else 'declined'}")
+
+        # Show next reaction if available
+        self._show_next_reaction()
+
+    def has_pending_reaction(self) -> bool:
+        """Check if there are any pending reactions.
+
+        Returns:
+            True if there are reactions pending or displayed
+        """
+        return self.current_reaction is not None or len(self.reaction_queue) > 0
+
+    def clear_reactions(self) -> None:
+        """Clear all pending reactions."""
+        self.reaction_queue.clear()
+        self.current_reaction = None
+        logger.debug("Reactions cleared")

@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Weaponskill AP Costs**: Attack AP cost now properly scales with weaponskill level (unskilled doubles cost, level 1 adds +2, level 2+ uses base cost)
 - **Atomic Attack Transactions**: Attack effects (damage, stamina) are only applied after AP is successfully spent, preventing partial execution and state corruption
 - **Charge Special Attack**: Complete implementation of charge mechanics (move up to 5 hexes + melee attack)
+- **Opportunity Attack Reactions**: Accept/decline popup, queued reactions, and battle log integration
+- **Docs**: Added internal reference docs for conditions and skills
   - Domain action: ChargeAction with movement pathfinding, facing adjustment, and attack resolution
   - Combat modifiers: +20 TÉ for attack, -25 VÉ penalty, 2x damage multiplier
   - Cost: 10 AP, 20 Stamina; minimum distance 5 hexes, maximum range 5 hexes + weapon reach
@@ -83,6 +85,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **AP Validation Bug**: Added AP check to validate_attack_target() to prevent attacks without sufficient AP
 - **Weapon Skill Mapping on Switch**: Fixed BattleService._build_weapon_entity() to use correct Hungarian category mapping ("Hosszú kardok" → "weaponskill_longswords") instead of hardcoded English keys, ensuring proper skill_id assignment
 - **Float AP Cost Extraction**: Fixed _extract_ap_cost() to handle float values (from weaponskill multiplier calculations) instead of returning 0
+- **Charge Opportunity Attacks**: ZoC checks, reaction flow ordering, and log formatting
+- **Opportunity Attack Stamina Costs**: Ensure OA uses reactor weapon/skill and correct mover shield VÉ
 - **Weapon Category Mappings**: Added missing mappings for "Tőrök" (daggers) → weaponskill_daggers and "Rövid kardok" (short swords) → weaponskill_shortswords
 - **Unconscious Unit Turn Skipping**: Fixed end_turn() loop logic that incorrectly triggered battle_active=False when encountering unconscious units, causing false draw conditions
 - **Battle Service Method Naming**: Fixed battle_action_executor calling non-existent attack_unit() instead of attack_current_unit()

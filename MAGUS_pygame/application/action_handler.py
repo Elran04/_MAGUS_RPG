@@ -156,9 +156,11 @@ class ActionHandler:
         ap_available: int = 0,
         blocked: Iterable[tuple[int, int]] | None = None,
         enemy_zones: set[tuple[int, int]] | None = None,
+        potential_reactors: Iterable[Unit] | None = None,
         weapon: object | None = None,
         weapon_skill_level: int = 0,
         shield_ve: int = 0,
+        mover_shield_ve: int = 0,
         dodge_modifier: int = 0,
         attacker_conditions: int = 0,
         defender_conditions: int = 0,
@@ -208,6 +210,27 @@ class ActionHandler:
         attack_result = data.get("attack_result")
         dmg_mult = data.get("charge_damage_multiplier", 1)
 
+        # Check for opportunity attacks along the charge path BEFORE the charge lands
+        reaction_results = []
+        if path and len(path) >= 2 and potential_reactors:
+            # Get intersection info from the path
+            intersects = data.get("intersects_zoc", False)
+            intersection_index = data.get("intersection_index")
+
+            # Handle opportunity attacks along charge path (all potential reactors including defender)
+            alive_reactors = [r for r in potential_reactors if r.is_alive()]
+
+            if alive_reactors:
+                reaction_results = self.reaction_handler.handle_opportunity_attacks(
+                    movers_path=path,
+                    intersects_zoc=intersects,
+                    intersection_index=intersection_index,
+                    mover=attacker,
+                    potential_reactors=alive_reactors,
+                    mover_shield_ve=mover_shield_ve,
+                    mover_dodge_mod=dodge_modifier,
+                )
+
         # Apply damage multiplier from charge
         if attack_result:
             attack_result.damage_to_fp = int(attack_result.damage_to_fp * dmg_mult)
@@ -235,7 +258,7 @@ class ActionHandler:
         if new_facing_dir is not None:
             attacker.rotate_to(Facing(new_facing_dir))
 
-        return {"action_result": ares, "path": path}
+        return {"action_result": ares, "path": path, "reaction_results": reaction_results}
 
     # --- Facing ---
     def change_facing(

@@ -325,7 +325,7 @@ class BattleService:
 
         return {"action_result": result}
 
-    def charge_current_unit(self, defender: Unit, **kwargs: object) -> dict[str, object]:
+    def charge_current_unit(self, defender: Unit, potential_reactors: Iterable[Unit] | None = None, **kwargs: object) -> dict[str, object]:
         """Execute charge special attack with the current unit."""
         unit = self.current_unit
 
@@ -350,13 +350,25 @@ class BattleService:
                 if shield_data:
                     shield_ve = shield_data.get("VE", 0)
 
+        # Extract attacker's (mover) shield VE bonus for opportunity attacks
+        mover_shield_ve = 0
+        if self.equipment_repo and unit.character_data:
+            equipment = unit.character_data.get("equipment", {})
+            off_hand_id = equipment.get("off_hand", "")
+            if off_hand_id:
+                shield_data = self.equipment_repo.find_weapon_by_id(off_hand_id)
+                if shield_data:
+                    mover_shield_ve = shield_data.get("VE", 0)
+
         summary = self.action_handler.charge_attack(
             attacker=unit,
             defender=defender,
             ap_available=self.remaining_ap(unit),
             blocked=blocked,
             enemy_zones=enemy_zones,
+            potential_reactors=potential_reactors,
             shield_ve=shield_ve,
+            mover_shield_ve=mover_shield_ve,
             **kwargs,
         )
 

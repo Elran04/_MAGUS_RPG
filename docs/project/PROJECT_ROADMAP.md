@@ -5,6 +5,7 @@ Two modules: GM Toolkit (PySide6) for data/editing and a Pygame combat demo for 
 
 ## ✅ Recently Completed
 - **Charge Special Attack**: Complete implementation with movement pathfinding, combat modifiers (+20 TÉ, -25 VÉ, 2x damage), UI dropdown, and visual feedback; minimum 5 hex distance, costs 10 AP + 20 STA
+- **Opportunity Attack Reactions**: UI accept/decline popup, queued reactions, charge path ZoC checks, and detailed log output
 - **Weapon Switching System**: Popup-based weapon switching (hotkey 'W' or button); swap between main_hand and quickslots; 5 AP cost; validation for wield modes and weapon compatibility
 - **Menu Initialization UX**: GameContext loads on a background thread; menu stays interactive with queued selections and a loading hint for Quick Combat/New Game
 - **Skills System**: Skills VO with normalized lookup; weaponskill modifiers (BASE + UNIQUE effects); weaponskill_longswords (levels 0-6 with all effects); integrated with attack resolution and critical thresholds
@@ -15,6 +16,7 @@ Two modules: GM Toolkit (PySide6) for data/editing and a Pygame combat demo for 
 - **Unconscious Mechanics**: Units at 0 stamina have zero combat values, cannot act, turns auto-skipped
 - **Zone-Based Armor Integration**: Hit zone resolution for real hits; SFÉ absorption by body location; block/parry use raw damage
 - **Combat UI Enhancements**: HUD shows real-time stamina; conditions tab displays fatigue/injury states; enriched combat messages with zone/SFÉ/damage details
+- **Docs**: Added internal reference docs for conditions and skills
 - ScenarioService refactor + focused tests; Equipment validation fixes
 - Combat docs merged into `COMBAT_MECHANICS.md` with Quick Reference
 - Character Creator summary/export + **Character Loader UI** (browse/view/delete)

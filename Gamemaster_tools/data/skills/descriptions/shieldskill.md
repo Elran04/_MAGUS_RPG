@@ -31,10 +31,12 @@ A támadó fél még nem szenved extra hátrányt a pajzs miatt
 A pajzs innentől kezdve aktívan befolyásolja a harc ritmusát.
 
 Új speciális akció: Pajzscsapás
-AP költség: 5 AP Stamina költség: 5 stamina
+AP költség: 6 AP Stamina költség: 6 stamina
 
+A támadó zónája ennek az akciónak azok a közvetlen szomszédos mezők amely irányokból a támadások ellen érvényesül a pajzs VÉ-je.
 Alacsony sebzés (pajzs alapértelmezett sebzése)
-Siker esetén automatikus fellökési kísérlet (elszenvedő félnek vannak mentődobási kísérletei)
+TÉ a karakter fegyver és a fegyver képzettség bónusz nélküli támadó értéke.
+Siker támadás esetén fellökési kísérlet (elszenvedő félnek vannak mentődobási kísérletei)
 
 Blokkolás módosítók:
 A pajzsos karakter 3-mal kevesebb staminát veszít blokkolt ütésenként (de 1-et minimum elszenved)
@@ -42,9 +44,9 @@ Sikeres blokkolás esetén a támadó k3 (1–3) staminát veszít
 
 4. szint – Megszokott uralom
 
-A pajzs használata hatékonyabbá és kevésbé költségessé válik.
-A pajzsok MGT-je innentől nem vonódik le a karakter harcértékeiből.
-Pajzscsapás AP költsége: 3 AP Stamina költség: 3 stamina
+A pajzsok MGT-je ez a szint után nem érvényesül.
+Blokkolt támadás esetén egy reakció pajzscsapás válik lehetségessé, erre csak akkor nyílik lehetőség ha a támadás egy olyan zónából érkezik, amelyeket a speciális akció Pajzscsapással is támadni lehetne.
+Körönként 1 ilyen reakció lehetséges.
 
 Blokkolás esetén:
 
@@ -55,9 +57,10 @@ támadó k6 staminát veszít
 5. szint – Mesteri pajzshasználat
 
 A karakter gyakorlatilag mozgó fal frontális harcban.
-Blokkolás esetén a pajzsos karakter 10-zel kevesebb staminát veszít (de 1-et minimum elszenved)
-Sikeres blokkolásonként a támadó k10 staminát veszít
+Blokkolás esetén a pajzsos karakter 10-zel kevesebb staminát veszít (de 1-et minimum).
+Sikeres blokkolásonként a támadó k10 staminát veszít.
 
 A pajzs védelmi zónája kiszélesedik:
 
-Csak a közvetlen hátulról érkező támadások esetén nem érvényesül a pajzs + VÉ-je.
+Csak a közvetlen hátulról érkező támadások esetén nem érvényesül a pajzs + VÉ-je. (tehát 1 irányból lehet csak úgy támadni hogy a pajzs VÉ-je ne érvényesüljön)
+Ezzel a pajzscsapás alkalmazható zónája is megnő, mind a speciáls képességé mind a reakció Pajzscsapásé.

@@ -135,15 +135,32 @@ class ReactionHandler:
             logger.info(
                 f"Triggering opportunity attack from {reactor.name} on {mover.name} at intersection {first_idx}"
             )
+            # Determine weapon and skill level for correct stamina cost
+            weapon = getattr(reactor, "weapon", None)
+            weapon_skill_level = 0
+            if weapon is not None:
+                skill_id = getattr(weapon, "skill_id", "") or ""
+                if skill_id and getattr(reactor, "skills", None):
+                    try:
+                        weapon_skill_level = reactor.skills.get_rank(skill_id, 0)
+                    except Exception:
+                        weapon_skill_level = 0
             result = reaction.execute(
                 attacker=reactor,
                 mover=mover,
                 intersection_index=first_idx,
                 path=movers_path,
+                weapon=weapon,
+                weapon_skill_level=weapon_skill_level,
                 shield_ve=mover_shield_ve,
                 dodge_modifier=mover_dodge_mod,
                 **rkwargs,
             )
+
+            # Add unit names to result data for presentation layer
+            result.data["attacker_name"] = reactor.name
+            result.data["defender_name"] = mover.name
+
             # Apply effects (mutating mover) from domain result payload
             attack_result = result.data.get("attack_result")
             if attack_result is not None:

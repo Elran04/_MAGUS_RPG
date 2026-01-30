@@ -53,6 +53,7 @@ Two actively developed modules:
 
 ## Recent Changes (January 2026)
 - **Charge Special Attack**: Fully implemented charge mechanics with movement pathfinding, combat modifiers (+20 TÉ, -25 VÉ, 2x damage), UI dropdown, and charge-specific attackable zone highlighting; minimum 5 hex distance, costs 10 AP + 20 STA
+- **Opportunity Attack Reactions**: Accept/decline popup, queued reactions, charge path ZoC checks, and battle log integration
 - **Menu Initialization UX**: GameContext now builds on a background thread; menu stays clickable with a loading hint, and selections queue until initialization finishes (faster Quick Combat entry)
 - **Weapon Switch Popup Polish**: Variable 1h/2h display fixed, validation passes selected wield mode, and guards block ranged/two-handed pairings with occupied off-hand; unit info popup now shows item names via shared context
 - **Battle Screen Refactoring**: Split 786-line BattleScreen into three lightweight coordinators (47% reduction to 418 lines):
@@ -68,6 +69,7 @@ Two actively developed modules:
 - **Injury Conditions**: 4-tier system (Egészséges/Könnyű/Súlyos/Kritikus) based on FP/EP thresholds; penalties to KÉ/TÉ/VÉ/CÉ
 - **Zone-Based Armor**: Hit location resolution; SFÉ absorption by body part; block/parry stamina costs use raw damage
 - **Combat UI**: HUD shows real-time stamina; conditions tab displays fatigue/injury; combat messages enriched with zone/SFÉ/damage details
+- **Docs**: Added internal reference docs for conditions and skills
 - **Quick Combat**: Rapid test mode for mechanics validation
 - **Equipment Integration**: Auto-equip system; shield VE extraction
 

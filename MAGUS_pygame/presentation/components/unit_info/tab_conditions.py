@@ -67,7 +67,10 @@ def _get_stamina_condition(unit) -> tuple[str, int, int]:
 def _get_injury_condition(unit) -> tuple[str, int, int, int, int]:
     """Return (injury_label, ke_mod, te_mod, ve_mod, ce_mod) or defaults."""
     if hasattr(unit, "fp") and hasattr(unit, "ep"):
-        from domain.mechanics.injury import calculate_injury_condition, get_injury_modifiers
+        from domain.mechanics.conditions.injury import (
+            calculate_injury_condition,
+            get_injury_modifiers,
+        )
 
         injury = calculate_injury_condition(
             unit.fp.current,

@@ -16,6 +16,7 @@ from logger.logger import get_logger
 from presentation.components.action_panel import ActionPanel
 from presentation.components.hud import HUD
 from presentation.components.pause_menu import PauseMenu
+from presentation.components.reaction_popup import ReactionPopup
 from presentation.components.unit_info.unit_info_popup import UnitInfoPopup
 from presentation.components.weapon_switch_popup import WeaponSwitchPopup
 
@@ -136,6 +137,7 @@ class BattleRenderCoordinator:
         victory_action: str | None = None,
         weapon_switch_popup: WeaponSwitchPopup | None = None,
         battle_log_popup = None,
+        reaction_popup: ReactionPopup | None = None,
     ) -> None:
         """Draw complete battle scene.
 
@@ -216,6 +218,12 @@ class BattleRenderCoordinator:
         # Draw unit info popup if open
         if unit_popup:
             unit_popup.draw(surface)
+
+        # Draw reaction popup if open
+        if reaction_popup:
+            font = pygame.font.Font(None, 32)
+            small_font = pygame.font.Font(None, 24)
+            reaction_popup.draw(surface, font, small_font)
 
         # Draw weapon switch popup if open
         if weapon_switch_popup:

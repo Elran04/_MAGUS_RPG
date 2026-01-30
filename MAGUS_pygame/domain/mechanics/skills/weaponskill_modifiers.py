@@ -22,13 +22,14 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class WeaponskillModifiers:
-    """Stat and effect modifiers from a weapon skill at a given level."""
+    """Stat and effect modifiers from a weapon skill at a given level.
+
+    Note: Stat bonuses/penalties (KÉ, TÉ, VÉ, CÉ) are handled by conditions systems:
+    - Unskilled penalties from domain.mechanics.conditions.unskilled
+    - Mastery bonuses from domain.mechanics.conditions.mastery
+    """
 
     level: int
-    ke_mod: int = 0  # Initiative modifier
-    te_mod: int = 0  # Attack modifier
-    ve_mod: int = 0  # Defense modifier
-    ce_mod: int = 0  # Ranged attack modifier
 
     stamina_cost_modifier: float = (
         0  # >=1 multiplies cost (e.g., 2x unskilled); negative reduces flat (e.g., -1)
@@ -61,10 +62,6 @@ class WeaponskillModifiers:
 BASE_WEAPONSKILL_MODIFIERS = {
     0: WeaponskillModifiers(
         level=0,
-        ke_mod=-10,
-        te_mod=-25,
-        ve_mod=-20,
-        ce_mod=-30,
         stamina_cost_modifier=2,  # Double stamina/AP cost for attacks
         overpower_threshold_shift=0,
         critical_threshold_override=101,  # No crits possible;
@@ -73,10 +70,6 @@ BASE_WEAPONSKILL_MODIFIERS = {
     ),
     1: WeaponskillModifiers(
         level=1,
-        ke_mod=0,  # Negatives removed
-        te_mod=0,
-        ve_mod=0,
-        ce_mod=0,
         stamina_cost_modifier=0,  # No longer double stamina cost
         overpower_threshold_shift=0,
         critical_threshold_override=101,  # No crits; critical failure 1-5
@@ -85,10 +78,6 @@ BASE_WEAPONSKILL_MODIFIERS = {
     ),
     2: WeaponskillModifiers(
         level=2,
-        ke_mod=0,
-        te_mod=0,
-        ve_mod=0,
-        ce_mod=0,
         stamina_cost_modifier=0,
         overpower_threshold_shift=0,
         critical_threshold_override=100,  # Only nat 100 (1%); critical failure on 1
@@ -97,10 +86,6 @@ BASE_WEAPONSKILL_MODIFIERS = {
     ),
     3: WeaponskillModifiers(
         level=3,
-        ke_mod=0,
-        te_mod=0,
-        ve_mod=0,
-        ce_mod=0,
         stamina_cost_modifier=-1,  # Attack stamina cost reduced by 1
         overpower_threshold_shift=0,
         critical_threshold_override=100,  # Only nat 100; no critical failures
@@ -110,10 +95,6 @@ BASE_WEAPONSKILL_MODIFIERS = {
     ),
     4: WeaponskillModifiers(
         level=4,
-        ke_mod=5,
-        te_mod=10,
-        ve_mod=10,
-        ce_mod=10,
         stamina_cost_modifier=-2,  # Attack stamina cost reduced by 2
         overpower_threshold_shift=0,
         critical_threshold_override=96,  # 96-100 critical (5%)
@@ -122,10 +103,6 @@ BASE_WEAPONSKILL_MODIFIERS = {
     ),
     5: WeaponskillModifiers(
         level=5,
-        ke_mod=5,
-        te_mod=10,
-        ve_mod=10,
-        ce_mod=10,
         stamina_cost_modifier=-3,  # Attack stamina cost reduced by 3
         overpower_threshold_shift=-10,  # Overpower threshold reduced by 10 (50 -> 40)
         critical_threshold_override=91,  # 91-100 critical (10%)
@@ -134,10 +111,6 @@ BASE_WEAPONSKILL_MODIFIERS = {
     ),
     6: WeaponskillModifiers(
         level=6,
-        ke_mod=5,
-        te_mod=10,
-        ve_mod=10,
-        ce_mod=10,
         stamina_cost_modifier=-3,
         overpower_threshold_shift=-10,
         critical_threshold_override=91,
@@ -205,7 +178,7 @@ def apply_weaponskill_modifiers(
     attack_roll: int,
     weapon_skill_level: int,
     weapon_skill_id: str = "weaponskill_longswords",
-) -> tuple[int, int, int, int, float, int | None, int | None, float]:
+) -> tuple[float, int | None, int | None, float]:
     """Apply weaponskill modifiers to attack values.
 
     Args:
@@ -215,15 +188,13 @@ def apply_weaponskill_modifiers(
         weapon_skill_id: Weapon skill identifier
 
     Returns:
-        Tuple of (ke_mod, te_mod, ve_mod, ce_mod, stamina_cost_modifier, critical_threshold_override, critical_failure_max, attack_ap_multiplier)
+        Tuple of (stamina_cost_modifier, critical_threshold_override, critical_failure_max, attack_ap_multiplier)
+
+    Note: Stat modifiers (KÉ, TÉ, VÉ, CÉ) are applied separately via conditions systems
     """
     mods = get_weaponskill_modifiers(weapon_skill_level, weapon_skill_id)
 
     return (
-        mods.ke_mod,
-        mods.te_mod,
-        mods.ve_mod,
-        mods.ce_mod,
         mods.stamina_cost_modifier,
         mods.critical_threshold_override,
         mods.critical_failure_max,

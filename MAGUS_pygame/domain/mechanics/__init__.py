@@ -8,10 +8,9 @@ Modules:
 - critical: Critical hit detection based on skill and roll
 - attack_resolution: Complete attack flow from roll to damage application
 - weapon_wielding: Variable weapon wielding modes and bonuses
-- stamina: Stamina resource, thresholds, and combat penalties
-- injury: Injury conditions with combat penalties
- - actions: Player-initiated action abstractions (phase 1: attack, movement)
- - reactions: Event-triggered mechanics (phase 2: opportunity attack)
+- conditions: Combat conditions (stamina, injury, unskilled equipment)
+- actions: Player-initiated action abstractions (phase 1: attack, movement)
+- reactions: Event-triggered mechanics (phase 2: opportunity attack)
 """
 
 from .actions import ActionCategory, ActionCost, ActionResult, AttackAction, MovementAction
@@ -25,6 +24,34 @@ from .attack_resolution import (
     calculate_defense_values,
     resolve_attack,
 )
+from .conditions import (
+    ActiveMasteries,
+    CombatModifiers,
+    InjuryCondition,
+    InjuryModifiers,
+    MasteryModifiers,
+    MasteryType,
+    Stamina,
+    StaminaState,
+    UnskilledConditions,
+    UnskilledModifiers,
+    UnskilledType,
+    calculate_injury_condition,
+    check_all_masteries,
+    check_all_unskilled_conditions,
+    check_heavy_armor_mastery,
+    check_shield_mastery,
+    check_unskilled_heavy_armor,
+    check_unskilled_shield,
+    check_unskilled_weapon,
+    check_weapon_mastery,
+    create_fatigue_condition,
+    get_combined_mastery_modifiers,
+    get_combined_unskilled_modifiers,
+    get_injury_modifiers,
+    get_mastery_modifiers_for_unit,
+    get_unskilled_modifiers_for_unit,
+)
 from .critical import (
     CriticalContext,
     apply_critical_effects,
@@ -34,13 +61,6 @@ from .critical import (
     is_critical_hit,
 )
 from .damage import DamageContext, DamageResult, DamageService, calculate_final_damage
-from .injury import (
-    INJURY_MODIFIERS,
-    InjuryCondition,
-    InjuryModifiers,
-    calculate_injury_condition,
-    get_injury_modifiers,
-)
 from .reach import (
     calculate_mandatory_ep_loss,
     can_attack_target,
@@ -48,15 +68,6 @@ from .reach import (
     get_weapon_reach,
 )
 from .reactions import OpportunityAttackReaction, Reaction, ReactionCategory, ReactionResult
-from .stamina import (
-    DEFAULT_COMBAT_MODIFIERS,
-    THRESHOLDS,
-    CombatModifiers,
-    FatigueCondition,
-    Stamina,
-    StaminaState,
-    create_fatigue_condition,
-)
 from .weapon_wielding import (
     WieldingBonuses,
     WieldingInfo,
@@ -107,20 +118,33 @@ __all__ = [
     "get_wielding_mode",
     "get_wielding_info",
     "validate_wielding_mode_change",
-    # Stamina
+    # Conditions
     "Stamina",
     "StaminaState",
     "CombatModifiers",
-    "DEFAULT_COMBAT_MODIFIERS",
-    "THRESHOLDS",
-    "FatigueCondition",
     "create_fatigue_condition",
-    # Injury
     "InjuryCondition",
     "InjuryModifiers",
-    "INJURY_MODIFIERS",
     "calculate_injury_condition",
     "get_injury_modifiers",
+    "UnskilledType",
+    "UnskilledModifiers",
+    "UnskilledConditions",
+    "check_unskilled_shield",
+    "check_unskilled_weapon",
+    "check_unskilled_heavy_armor",
+    "check_all_unskilled_conditions",
+    "get_combined_unskilled_modifiers",
+    "get_unskilled_modifiers_for_unit",
+    "MasteryType",
+    "MasteryModifiers",
+    "ActiveMasteries",
+    "check_weapon_mastery",
+    "check_shield_mastery",
+    "check_heavy_armor_mastery",
+    "check_all_masteries",
+    "get_combined_mastery_modifiers",
+    "get_mastery_modifiers_for_unit",
     # Actions
     "ActionCategory",
     "ActionCost",

@@ -1,6 +1,6 @@
 """Unit tests for injury condition system."""
 
-from MAGUS_pygame.domain.mechanics.injury import (
+from MAGUS_pygame.domain.mechanics.conditions.injury import (
     InjuryCondition,
     calculate_injury_condition,
     get_injury_modifiers,

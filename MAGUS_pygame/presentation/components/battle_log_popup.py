@@ -218,8 +218,12 @@ class BattleLogPopup:
 
     def _draw_attack_details(self, surface: pygame.Surface, attack: any, x: int, y: int) -> int:
         """Draw detailed attack breakdown."""
+        if getattr(attack, "is_opportunity_attack", False):
+            oa_text = self.small_font.render("[OPPORTUNITY ATTACK]", True, (255, 170, 100))
+            surface.blit(oa_text, (x + 10, y))
+            y += 18
         # Attacker vs Defender
-        vs_text = self.text_font.render(f"{attack.attacker_name} → {attack.defender_name}", True, (255, 255, 255))
+        vs_text = self.text_font.render(f"{attack.attacker_name} -> {attack.defender_name}", True, (255, 255, 255))
         surface.blit(vs_text, (x + 10, y))
         y += 22
 
@@ -232,8 +236,9 @@ class BattleLogPopup:
         y += 20
 
         # Outcome
-        outcome_str = attack.outcome.replace("_", " ").title()
-        outcome_color = (255, 100, 100) if "CRITICAL" in attack.outcome else (200, 200, 200)
+        outcome_value = attack.outcome.value if hasattr(attack.outcome, 'value') else str(attack.outcome)
+        outcome_str = outcome_value.replace("_", " ").title()
+        outcome_color = (255, 100, 100) if "CRITICAL" in outcome_value else (200, 200, 200)
         outcome_text = self.small_font.render(f"Result: {outcome_str}", True, outcome_color)
         surface.blit(outcome_text, (x + 15, y))
         y += 20

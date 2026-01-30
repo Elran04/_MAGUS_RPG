@@ -32,6 +32,7 @@ from domain.mechanics.attack_angle import (
     is_attack_from_front_left,
     is_attack_from_front_right,
 )
+from domain.mechanics.conditions.stamina import Stamina
 from domain.mechanics.critical import (
     get_critical_damage_multiplier,
     is_critical_failure,
@@ -40,7 +41,6 @@ from domain.mechanics.critical import (
 from domain.mechanics.damage import DamageContext, calculate_final_damage
 from domain.mechanics.reach import calculate_mandatory_ep_loss
 from domain.mechanics.skills import get_overpower_threshold_for_skill
-from domain.mechanics.stamina import Stamina
 
 
 class AttackOutcome(Enum):
@@ -158,7 +158,7 @@ def calculate_defense_values(
 
     injury_mod = 0
     if hasattr(defender, "fp") and hasattr(defender, "ep"):
-        from .injury import calculate_injury_condition, get_injury_modifiers
+        from .conditions.injury import calculate_injury_condition, get_injury_modifiers
 
         injury_cond = calculate_injury_condition(
             defender.fp.current, defender.fp.maximum, defender.ep.current, defender.ep.maximum
@@ -167,18 +167,22 @@ def calculate_defense_values(
 
     base_ve = defender.combat_stats.VE + condition_modifier + stamina_mod + injury_mod
 
-    # === Apply directional VÉ restrictions ===
-    # Shield VÉ only applies to attacks from FRONT (angle 0)
+    # === Apply directional VÉ restrictions with shield skill ===
+    # Shield VÉ now depends on shield skill level and attack angle
     effective_shield_ve = 0
     if shield_ve > 0 and attack_angle is not None:
-        if attack_angle == AttackAngle.FRONT:
+        # Check if defender has shield skill and if shield protects from this angle
+        from domain.mechanics.skills import shield_protects_from_angle
+
+        shield_skill_level = defender.skills.get_rank("shieldskill", 0) if defender.skills else 0
+        if shield_protects_from_angle(shield_skill_level, attack_angle):
             effective_shield_ve = shield_ve
-        # Otherwise shield_ve is 0 for non-front attacks
+        # Otherwise shield_ve is 0 for non-protected angles
     elif shield_ve > 0:
         # If no attack_angle provided, assume shield applies (backward compatibility)
         effective_shield_ve = shield_ve
 
-    # Block VÉ: base + shield (if equipped and from front)
+    # Block VÉ: base + shield (if equipped and angle protected)
     block_ve = base_ve + effective_shield_ve
 
     # Parry VÉ: base + weapon VÉ (only applies to FRONT, FRONT_RIGHT, FRONT_LEFT)
@@ -241,7 +245,7 @@ def calculate_attack_value(
 
     injury_mod = 0
     if hasattr(attacker, "fp") and hasattr(attacker, "ep"):
-        from .injury import calculate_injury_condition, get_injury_modifiers
+        from .conditions.injury import calculate_injury_condition, get_injury_modifiers
 
         injury_cond = calculate_injury_condition(
             attacker.fp.current, attacker.fp.maximum, attacker.ep.current, attacker.ep.maximum
@@ -324,10 +328,6 @@ def resolve_attack(
     )
 
     (
-        skill_ke_mod,
-        skill_te_mod,
-        skill_ve_mod,
-        skill_ce_mod,
         skill_stamina_cost_modifier,
         skill_critical_override,
         skill_critical_failure_max,
@@ -533,10 +533,23 @@ def resolve_attack(
                 temp_sta = Stamina.from_attribute(
                     getattr(defender.attributes, "endurance", 10), start_full=False
                 )
+
             if outcome == AttackOutcome.BLOCKED:
-                spent = temp_sta.apply_cost(base_fp_cost, stamina_block or {})
+                # Apply shield skill stamina modifiers
+                from domain.mechanics.skills import calculate_block_stamina_cost
+
+                shield_skill_level = (
+                    defender.skills.get_rank("shieldskill", 0) if defender.skills else 0
+                )
+                # Shield skill modifies stamina cost
+                modified_cost = calculate_block_stamina_cost(
+                    base_fp_cost, shield_skill_level, is_unskilled=False
+                )
+                spent = temp_sta.apply_cost(modified_cost, stamina_block or {})
             else:
+                # Parry uses standard stamina cost
                 spent = temp_sta.apply_cost(base_fp_cost, stamina_parry or {})
+
             stamina_spent_defender = spent  # Stamina cost, not FP damage
             armor_absorbed = 0  # No armor absorption during block/parry
 

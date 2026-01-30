@@ -9,7 +9,7 @@ from MAGUS_pygame.domain.mechanics.attack_resolution import (
     calculate_defense_values,
     resolve_attack,
 )
-from MAGUS_pygame.domain.mechanics.stamina import Stamina
+from MAGUS_pygame.domain.mechanics.conditions.stamina import Stamina
 from MAGUS_pygame.domain.value_objects import Attributes, CombatStats, Position, ResourcePool
 
 

@@ -12,7 +12,8 @@ from domain.value_objects import Attributes, CombatStats, Facing, Position, Reso
 
 if TYPE_CHECKING:
     from domain.mechanics.armor import ArmorSystem
-    from domain.mechanics.stamina import Stamina
+
+    from MAGUS_pygame.domain.mechanics.conditions.stamina import Stamina
 
     from .weapon import Weapon
 

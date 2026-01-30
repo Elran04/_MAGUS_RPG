@@ -19,6 +19,7 @@ from presentation.components.action_panel import ActionPanel
 from presentation.components.battle_log_popup import BattleLogPopup
 from presentation.components.hud import HUD
 from presentation.components.pause_menu import PauseMenu
+from presentation.components.reaction_popup import ReactionPopup
 from presentation.components.unit_info.unit_info_popup import UnitInfoPopup
 from presentation.components.weapon_switch_popup import WeaponSwitchPopup
 from presentation.screens.game.battle_action_executor import BattleActionExecutor
@@ -80,6 +81,7 @@ class BattleScreen:
         self.movement_path: list[Position] | None = None
         self.unit_popup: UnitInfoPopup | None = None
         self.weapon_switch_popup: WeaponSwitchPopup | None = None
+        self.reaction_popup: ReactionPopup | None = None
         self._active_special_attack: str | None = (
             None  # Name of active special attack (e.g., "charge")
         )
@@ -110,6 +112,7 @@ class BattleScreen:
         self.action_panel = ActionPanel(SIDEBAR_WIDTH, screen_height)
         self.hud = HUD(PLAY_AREA_WIDTH, screen_height)
         self.pause_menu = PauseMenu(screen_width, screen_height)
+        self.reaction_popup = ReactionPopup(screen_width, screen_height)
 
         # Coordinators
         self.input_handler = BattleInputHandler()
@@ -127,6 +130,11 @@ class BattleScreen:
         Args:
             event: Pygame event
         """
+        # Let reaction popup handle its own events
+        if self.reaction_popup and self.reaction_popup.visible:
+            if self.reaction_popup.handle_event(event):
+                return
+
         # Let battle log popup handle its own events (scrolling)
         if self.battle_log_popup and self.battle_log_popup.visible:
             if self.battle_log_popup.handle_event(event):
@@ -146,8 +154,10 @@ class BattleScreen:
             key: Pygame key constant
         """
         if key == pygame.K_ESCAPE:
-            # Priority: Battle log popup > Weapon switch popup > Unit popup > Action mode > Pause menu toggle
-            if self.battle_log_popup and self.battle_log_popup.visible:
+            # Priority: Reaction popup > Battle log popup > Weapon switch popup > Unit popup > Action mode > Pause menu toggle
+            if self.reaction_popup and self.reaction_popup.visible:
+                self.reaction_popup.hide()
+            elif self.battle_log_popup and self.battle_log_popup.visible:
                 self.battle_log_popup.hide()
             elif self.weapon_switch_popup and self.weapon_switch_popup.visible:
                 self.weapon_switch_popup.hide()
@@ -182,6 +192,8 @@ class BattleScreen:
         """Handle mouse movement."""
         self.pause_menu.handle_mouse_motion(mouse_pos)
         self.action_panel.handle_mouse_motion(mouse_pos)
+        if self.reaction_popup:
+            self.reaction_popup.handle_mouse_motion(mouse_pos)
 
         if not self.pause_menu.visible:
             hovered = self.input_handler.update_hovered_hex(mouse_pos)
@@ -232,6 +244,17 @@ class BattleScreen:
 
         # Block all game clicks if paused
         if self.pause_menu.visible:
+            return
+
+        # Handle reaction popup clicks
+        if self.reaction_popup and self.reaction_popup.visible:
+            action = self.reaction_popup.handle_click(mouse_pos)
+            if action:  # Accept or Decline
+                return
+            # Check if click outside popup
+            if self.reaction_popup.is_click_outside(mouse_pos):
+                self.reaction_popup.handle_click(mouse_pos)  # Will call decline via callback
+                return
             return
 
         # Check action panel clicks
@@ -434,10 +457,10 @@ class BattleScreen:
 
         summary = self.action_executor.execute_move(dest, enemies)
 
-        # Show opportunity attack feedback if any
+        # Enqueue opportunity attacks as reactions
         oa_results = summary.get("reaction_results") or summary.get("opportunity_attacks")
         if oa_results:
-            self._show_opportunity_attack_results(oa_results)
+            self._enqueue_opportunity_attacks(oa_results)
 
         # Only cancel move mode if movement failed or no more AP to move
         if "error" in summary:
@@ -472,7 +495,12 @@ class BattleScreen:
         current = self.battle.current_unit
         target = self.battle.get_unit_at_position(target_pos)
 
-        self.action_executor.execute_charge(target_pos, current, target)
+        summary = self.action_executor.execute_charge(target_pos, current, target)
+
+        # Enqueue opportunity attacks from charge movement BEFORE the charge happens
+        oa_results = summary.get("reaction_results", [])
+        if oa_results:
+            self._enqueue_opportunity_attacks(oa_results)
 
         # Cancel action if no AP left
         if current and current.weapon:
@@ -569,14 +597,103 @@ class BattleScreen:
                 msg += " | Dodge check required!"
             self.action_executor.show_message(msg)
 
-    def _show_opportunity_attack_results(self, oa_results) -> None:
-        """Show opportunity attack feedback."""
-        oa_count = len(oa_results)
-        self.action_executor.show_message(f"Movement triggered {oa_count} opportunity attack(s)!")
-        for rr in oa_results:
-            # rr.message already contains the full formatted attack details with newlines
-            if hasattr(rr, "message"):
-                self.action_executor.show_message(rr.message)
+    def _enqueue_opportunity_attacks(self, oa_results) -> None:
+        """Enqueue opportunity attacks as reactions for player decision.
+
+        Args:
+            oa_results: List of opportunity attack results from reaction handler
+        """
+        for idx, oa_result in enumerate(oa_results):
+            # Extract unit names from the reaction result's data
+            attacker_name = oa_result.data.get("attacker_name", "Unknown") if oa_result.data else "Unknown"
+            defender_name = oa_result.data.get("defender_name", "Unknown") if oa_result.data else "Unknown"
+
+            # Get attack result for additional info
+            attack_result = oa_result.data.get("attack_result") if oa_result.data else None
+
+            # Create description for the reaction popup
+            description = f"{attacker_name} can make an opportunity attack against {defender_name}!"
+            if attack_result and hasattr(attack_result, 'requires_dodge_check') and attack_result.requires_dodge_check:
+                description += "\nDefender may dodge."
+
+            # Enqueue as a reaction
+            self.action_executor.enqueue_reaction(
+                reaction_type="opportunity_attack",
+                description=description,
+                reaction_data={
+                    "index": idx,
+                    "attacker_name": attacker_name,
+                    "defender_name": defender_name,
+                    "result": oa_result,
+                },
+                on_accept=lambda data: self._accept_opportunity_attack(data),
+                on_decline=lambda data: self._decline_opportunity_attack(data),
+            )
+
+    def _accept_opportunity_attack(self, reaction_data: dict) -> None:
+        """Handle acceptance of an opportunity attack reaction.
+
+        Args:
+            reaction_data: Reaction data dict with attack details
+        """
+        # Show the attack result message
+        oa_result = reaction_data.get("result")
+        attacker_name = reaction_data.get("attacker_name", "Attacker")
+        defender_name = reaction_data.get("defender_name", "Defender")
+
+        # Extract and format the attack result
+        if oa_result and oa_result.data:
+            attack_result = oa_result.data.get("attack_result")
+            if attack_result:
+                # Format the attack result nicely
+                msg = self.action_executor._format_attack_result_message(attack_result)
+                full_msg = f"{attacker_name} -> {defender_name}:\n{msg}"
+                self.action_executor.show_message(full_msg)
+
+                # Also add to battle log with clear opportunity attack label
+                if self.action_executor.detailed_log:
+                    from domain.battle_log_entry import DetailedAttackData
+                    attack_data = DetailedAttackData(
+                        attacker_name=attacker_name,
+                        defender_name=defender_name,
+                        round_number=self.battle.round,
+                        attack_roll=attack_result.attack_roll,
+                        all_te=attack_result.all_te,
+                        all_ve=attack_result.all_ve,
+                        outcome=attack_result.outcome,
+                        is_flank_attack=False,  # OA doesn't consider flanking
+                        is_rear_attack=False,   # OA doesn't consider rear attacks
+                        facing_ignored_ve=False,  # OA uses normal VÉ
+                        hit_zone=attack_result.hit_zone,
+                        zone_sfe=attack_result.zone_sfe,
+                        damage_to_fp=attack_result.damage_to_fp,
+                        damage_to_ep=attack_result.damage_to_ep,
+                        armor_absorbed=attack_result.armor_absorbed,
+                        stamina_spent_defender=attack_result.stamina_spent_defender,
+                        is_critical=attack_result.is_critical,
+                        is_overpower=attack_result.is_overpower,
+                        is_opportunity_attack=True,
+                    )
+                    self.action_executor.detailed_log.log_attack(
+                        f"{attacker_name} -> {defender_name}",
+                        attack_data
+                    )
+            else:
+                self.action_executor.show_message(f"{attacker_name} -> {defender_name}!")
+        elif oa_result and hasattr(oa_result, "message"):
+            self.action_executor.show_message(oa_result.message)
+        else:
+            self.action_executor.show_message(f"{attacker_name} -> {defender_name}!")
+
+    def _decline_opportunity_attack(self, reaction_data: dict) -> None:
+        """Handle declining of an opportunity attack reaction.
+
+        Args:
+            reaction_data: Reaction data dict with attack details
+        """
+        attacker_name = reaction_data.get("attacker_name", "Attacker")
+        self.action_executor.show_message(f"{attacker_name}'s opportunity attack was declined")
+
 
     def _log_initiative(self, battle_service) -> None:
         """Log initiative roll data for all units.
@@ -610,9 +727,30 @@ class BattleScreen:
         # Update combat message in action panel
         self.action_panel.update_combat_message()
 
+        # Update reaction popup if there's a pending reaction
+        self._update_reaction_popup()
+
         # Check for auto-victory if not already detected
         if not self.action and self.battle.is_victory():
             self._check_victory()
+
+    def _update_reaction_popup(self) -> None:
+        """Update reaction popup visibility based on pending reactions."""
+        if not self.reaction_popup:
+            return
+
+        current_reaction = self.action_executor.get_current_reaction()
+        if current_reaction and not self.reaction_popup.visible:
+            # Show the reaction popup
+            self.reaction_popup.show(
+                reaction_type=current_reaction["type"],
+                description=current_reaction["description"],
+                reaction_data=current_reaction["data"],
+                on_result=lambda accepted: self.action_executor.resolve_reaction(accepted),
+            )
+        elif not current_reaction and self.reaction_popup.visible:
+            # Hide popup if no more reactions
+            self.reaction_popup.hide()
 
     def draw(self, surface: pygame.Surface) -> None:
         """Draw the battle screen."""
@@ -629,6 +767,7 @@ class BattleScreen:
             unit_popup=self.unit_popup,
             weapon_switch_popup=self.weapon_switch_popup,
             battle_log_popup=self.battle_log_popup,
+            reaction_popup=self.reaction_popup,
             victory_action=self.action,
         )
 
