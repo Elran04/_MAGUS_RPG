@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from domain.entities import Unit, Weapon
 from domain.mechanics.attack_resolution import AttackResult as CoreAttackResult
 from domain.mechanics.attack_resolution import resolve_attack
+from domain.mechanics.lucky_roll import LuckyRollType, resolve_lucky_roll, should_use_lucky_roll
 from domain.mechanics.skills import get_weaponskill_modifiers
 
 from .base import Action, ActionCategory, ActionCost, ActionResult
@@ -99,14 +100,26 @@ class AttackAction(Action):
             actual_ap_cost = max(1, int(base_ap_cost + (skill_mods.attack_ap_multiplier * 100)))
 
         # Default random rolls if not provided (still pure wrt game state)
+        lucky_attack_rolls = None
+        lucky_damage_rolls = None
         if attack_roll is None:
-            attack_roll = random.randint(1, 100)
+            if should_use_lucky_roll(attacker, LuckyRollType.ATTACK_ROLL, wpn, weapon_skill_level):
+                roll_1 = random.randint(1, 100)
+                roll_2 = random.randint(1, 100)
+                attack_roll, _ = resolve_lucky_roll(roll_1, roll_2)
+                lucky_attack_rolls = (roll_1, roll_2, attack_roll)
+            else:
+                attack_roll = random.randint(1, 100)
         if base_damage_roll is None:
             # If weapon exists, use its min/max range; else 1
             if wpn is not None:
-                import random as _rand
-
-                base_damage_roll = _rand.randint(wpn.damage_min, wpn.damage_max)
+                if should_use_lucky_roll(attacker, LuckyRollType.DAMAGE_ROLL, wpn, weapon_skill_level):
+                    roll_1 = random.randint(wpn.damage_min, wpn.damage_max)
+                    roll_2 = random.randint(wpn.damage_min, wpn.damage_max)
+                    base_damage_roll, _ = resolve_lucky_roll(roll_1, roll_2)
+                    lucky_damage_rolls = (roll_1, roll_2, base_damage_roll)
+                else:
+                    base_damage_roll = random.randint(wpn.damage_min, wpn.damage_max)
             else:
                 base_damage_roll = 1
 
@@ -127,10 +140,16 @@ class AttackAction(Action):
             stamina_dodge=stamina_dodge,
         )
 
+        data = {"attack_result": core_result}
+        if lucky_attack_rolls is not None:
+            data["lucky_attack_rolls"] = lucky_attack_rolls
+        if lucky_damage_rolls is not None:
+            data["lucky_damage_rolls"] = lucky_damage_rolls
+
         return ActionResult(
             success=True,
             message="",  # Message formatting done in presentation layer
             ap_spent=actual_ap_cost,  # Use weapon's attack_time
             stamina_spent=0,
-            data={"attack_result": core_result},
+            data=data,
         )

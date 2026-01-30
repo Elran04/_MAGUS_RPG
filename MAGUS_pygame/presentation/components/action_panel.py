@@ -26,17 +26,46 @@ class DropdownMenu:
         """
         self.rect = pygame.Rect(x, y, width, height)
         self.label = label
+        self.base_label = label
         self.height = height
         self.width = width
         self.expanded = False
-        self.items = [
-            ("Charge", "charge"),
-        ]
+        self.items: list[tuple[str, str, bool]] = []
+        self.hide_disabled = False
         self.selected_item = None
         self.hovered_item = None
+        self.active = False
+
+    def set_items(self, items: list[tuple[str, str, bool]]) -> None:
+        """Set dropdown items with enabled state.
+
+        Args:
+            items: List of (label, key, enabled)
+        """
+        if self.hide_disabled:
+            self.items = [item for item in items if item[2]]
+        else:
+            self.items = items
+
+        if len(self.items) <= 1:
+            self.expanded = False
+
+        # Clear selection if it became unavailable
+        if self.selected_item is not None:
+            found = False
+            for _, key, enabled in items:
+                if key == self.selected_item:
+                    found = True
+                    if not enabled:
+                        self.selected_item = None
+                    break
+            if not found:
+                self.selected_item = None
 
     def toggle(self) -> None:
         """Toggle dropdown expansion."""
+        if len(self.items) <= 1:
+            return
         self.expanded = not self.expanded
 
     def get_expanded_rect(self) -> pygame.Rect:
@@ -60,7 +89,7 @@ class DropdownMenu:
 
         # Check which item is hovered (skip button row, start from first item)
         item_y = self.rect.y + self.height
-        for i, (label, _) in enumerate(self.items):
+        for i, (label, _, _) in enumerate(self.items):
             item_rect = pygame.Rect(
                 self.rect.x, item_y + i * self.height, self.rect.width, self.height
             )
@@ -80,20 +109,26 @@ class DropdownMenu:
             Selected item key if item clicked, "toggle" if button clicked, None otherwise
         """
         if self.rect.collidepoint(mouse_pos):
-            if not self.expanded:
-                return "toggle"
-            # If expanded and clicked on button, collapse
+            if len(self.items) == 1:
+                _, key, enabled = self.items[0]
+                if not enabled:
+                    return None
+                self.selected_item = key
+                self.expanded = False
+                return key
             return "toggle"
 
         if self.expanded:
             expanded = self.get_expanded_rect()
             if expanded.collidepoint(mouse_pos):
                 item_y = self.rect.y + self.height
-                for i, (_, key) in enumerate(self.items):
+                for i, (_, key, enabled) in enumerate(self.items):
                     item_rect = pygame.Rect(
                         self.rect.x, item_y + i * self.height, self.rect.width, self.height
                     )
                     if item_rect.collidepoint(mouse_pos):
+                        if not enabled:
+                            return None
                         self.selected_item = key
                         self.expanded = False
                         return key
@@ -108,30 +143,42 @@ class DropdownMenu:
             font: Font for text
         """
         # Draw button
-        bg_color = UI_ACTIVE if self.expanded else UI_INACTIVE
-        border_color = (100, 180, 255) if self.expanded else UI_BORDER
-        border_width = 3 if self.expanded else 1
+        bg_color = UI_ACTIVE if (self.expanded or self.active) else UI_INACTIVE
+        border_color = (100, 180, 255) if (self.expanded or self.active) else UI_BORDER
+        border_width = 3 if (self.expanded or self.active) else 1
 
         pygame.draw.rect(surface, bg_color, self.rect)
         pygame.draw.rect(surface, border_color, self.rect, border_width)
 
         # Draw label with dropdown arrow
-        arrow = "▼" if self.expanded else "▶"
-        text_color = (255, 255, 255) if self.expanded else UI_TEXT
-        label_surface = font.render(f"{self.label} {arrow}", True, text_color)
+        single_item = len(self.items) == 1
+        arrow = "" if single_item else ("v" if self.expanded else ">")
+        text_color = (255, 255, 255) if (self.expanded or self.active) else UI_TEXT
+        if single_item:
+            label_text = self.items[0][0]
+        else:
+            label_text = self.base_label
+            if self.selected_item:
+                for item_label, key, _ in self.items:
+                    if key == self.selected_item:
+                        label_text = item_label
+                        break
+        label_surface = font.render(f"{label_text} {arrow}".rstrip(), True, text_color)
         label_rect = label_surface.get_rect(center=self.rect.center)
         surface.blit(label_surface, label_rect)
 
         # Draw items if expanded
         if self.expanded:
             item_y = self.rect.y + self.height
-            for i, (item_label, _) in enumerate(self.items):
+            for i, (item_label, _, enabled) in enumerate(self.items):
                 item_rect = pygame.Rect(
                     self.rect.x, item_y + i * self.height, self.rect.width, self.height
                 )
 
                 # Highlight hovered item
-                if self.hovered_item == i:
+                if not enabled:
+                    item_bg = (25, 25, 30)
+                elif self.hovered_item == i:
                     item_bg = (50, 50, 60)
                 else:
                     item_bg = (30, 30, 40)
@@ -140,7 +187,8 @@ class DropdownMenu:
                 pygame.draw.rect(surface, UI_BORDER, item_rect, 1)
 
                 # Draw item label
-                item_surface = font.render(item_label, True, UI_TEXT)
+                item_text_color = (120, 120, 130) if not enabled else UI_TEXT
+                item_surface = font.render(item_label, True, item_text_color)
                 item_label_rect = item_surface.get_rect(center=item_rect.center)
                 surface.blit(item_surface, item_label_rect)
 
@@ -273,26 +321,39 @@ class ActionPanel:
         button_height = 50
         start_y = 130  # Leave space for stats section (round + name + 4 bars)
 
-        actions = [
+        # Regular full-width buttons
+        regular_actions = [
             ("Move", "M"),
             ("Attack", "A"),
-            ("Special", "S"),
             ("Switch Weapon", "W"),
-            ("Inspect", "I"),
-            ("Rotate CCW", "Q"),
-            ("Rotate CW", "E"),
-            ("End Turn", "Space"),
         ]
 
-        for i, (label, hotkey) in enumerate(actions):
+        for i, (label, hotkey) in enumerate(regular_actions):
             y = start_y + i * (button_height + 10)
             button = ActionButton(padding, y, button_width, button_height, label, hotkey)
             self.buttons.append(button)
-            # Create special attacks dropdown after "Special" button
-            if label == "Special":
-                self.special_attacks_dropdown = DropdownMenu(
-                    padding, y + button_height + 5, button_width, button_height, "Special Attacks"
-                )
+
+        # Create special attacks dropdown as its own button-like control (after Switch Weapon)
+        special_y = start_y + len(regular_actions) * (button_height + 10)
+        self.special_attacks_dropdown = DropdownMenu(
+            padding, special_y, button_width, button_height, "Special Attacks"
+        )
+        self.special_attacks_dropdown.hide_disabled = True
+
+        # Rotation buttons - smaller, side-by-side (after special attacks)
+        rotation_y = special_y + (button_height + 10)
+        rotation_button_width = (button_width - 10) // 2  # Two buttons with 10px gap
+
+        rotate_ccw = ActionButton(padding, rotation_y, rotation_button_width, button_height, "Rotate CCW", "Q")
+        self.buttons.append(rotate_ccw)
+
+        rotate_cw = ActionButton(padding + rotation_button_width + 10, rotation_y, rotation_button_width, button_height, "Rotate CW", "E")
+        self.buttons.append(rotate_cw)
+
+        # End Turn button
+        end_turn_y = rotation_y + (button_height + 10)
+        end_turn = ActionButton(padding, end_turn_y, button_width, button_height, "End Turn", "Space")
+        self.buttons.append(end_turn)
 
     def set_active_mode(self, mode: str, special_active: bool = False) -> None:
         """Set which button should be highlighted as active.
@@ -307,9 +368,14 @@ class ActionPanel:
             "inspect": "Inspect",
         }
 
-        target_label = "Special" if special_active else mode_map.get(mode, "")
+        # Don't highlight Attack button if special attack is active
+        target_label = "" if special_active else mode_map.get(mode, "")
         for button in self.buttons:
             button.active = button.label == target_label
+        if self.special_attacks_dropdown:
+            self.special_attacks_dropdown.active = special_active
+            if not special_active:
+                self.special_attacks_dropdown.selected_item = None
 
     def set_unit_stats(
         self,
@@ -345,6 +411,22 @@ class ActionPanel:
         self.max_fp = max_fp
         self.max_stamina = max_stamina
         self.current_round = round_num
+
+    def set_special_attack_availability(self, availability: dict[str, bool]) -> None:
+        """Update which special attacks are available for selection.
+
+        Args:
+            availability: Map of special attack key -> enabled
+        """
+        if not self.special_attacks_dropdown:
+            return
+
+        items = [
+            ("Charge", "charge", availability.get("charge", True)),
+            ("Dagger Combo", "dagger_combo", availability.get("dagger_combo", False)),
+            ("Shield Bash", "shield_bash", availability.get("shield_bash", False)),
+        ]
+        self.special_attacks_dropdown.set_items(items)
 
     def set_combat_message(self, message: str | None) -> None:
         """Set combat message to display.
@@ -417,11 +499,6 @@ class ActionPanel:
             if button.is_clicked(mouse_pos):
                 logger.debug(f"Action button clicked: {button.label}")
                 action_name = button.label.lower().replace(" ", "_")
-                # Don't trigger action for "Special" button, just collapse dropdown
-                if action_name == "special":
-                    if self.special_attacks_dropdown:
-                        self.special_attacks_dropdown.expanded = False
-                    return None
                 return action_name
 
         return None
@@ -510,7 +587,7 @@ class ActionPanel:
         for button in self.buttons:
             button.draw(self.surface, self.font_button)
 
-        # Draw special attacks dropdown (below Special button)
+        # Draw special attacks dropdown
         if self.special_attacks_dropdown:
             self.special_attacks_dropdown.draw(self.surface, self.font_button)
 
@@ -537,7 +614,7 @@ class ActionPanel:
         )
 
         # Draw help text at bottom
-        help_text = self.font_small.render("ESC - Menu", True, (150, 150, 160))
+        help_text = self.font_small.render("ESC - Menu  |  Click/Hotkey - Toggle", True, (150, 150, 160))
         help_rect = help_text.get_rect(centerx=self.width // 2, top=help_y)
         self.surface.blit(help_text, help_rect)
 

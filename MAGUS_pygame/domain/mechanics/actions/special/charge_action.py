@@ -33,6 +33,7 @@ from typing import Iterable
 from domain.entities import Unit, Weapon
 from domain.mechanics.attack_resolution import AttackResult as CoreAttackResult
 from domain.mechanics.attack_resolution import resolve_attack
+from domain.mechanics.lucky_roll import LuckyRollType, resolve_lucky_roll, should_use_lucky_roll
 from domain.mechanics.reach import HEX_DIRECTIONS, get_weapon_reach
 from domain.value_objects import Facing, Position
 
@@ -244,11 +245,25 @@ class ChargeAction(Action):
         )
 
         # Rolls
+        lucky_attack_rolls = None
+        lucky_damage_rolls = None
         if attack_roll is None:
-            attack_roll = random.randint(1, 100)
+            if should_use_lucky_roll(attacker, LuckyRollType.ATTACK_ROLL, weapon_use, weapon_skill_level):
+                roll_1 = random.randint(1, 100)
+                roll_2 = random.randint(1, 100)
+                attack_roll, _ = resolve_lucky_roll(roll_1, roll_2)
+                lucky_attack_rolls = (roll_1, roll_2, attack_roll)
+            else:
+                attack_roll = random.randint(1, 100)
         if base_damage_roll is None:
             if weapon_use is not None:
-                base_damage_roll = random.randint(weapon_use.damage_min, weapon_use.damage_max)
+                if should_use_lucky_roll(attacker, LuckyRollType.DAMAGE_ROLL, weapon_use, weapon_skill_level):
+                    roll_1 = random.randint(weapon_use.damage_min, weapon_use.damage_max)
+                    roll_2 = random.randint(weapon_use.damage_min, weapon_use.damage_max)
+                    base_damage_roll, _ = resolve_lucky_roll(roll_1, roll_2)
+                    lucky_damage_rolls = (roll_1, roll_2, base_damage_roll)
+                else:
+                    base_damage_roll = random.randint(weapon_use.damage_min, weapon_use.damage_max)
             else:
                 base_damage_roll = 1
 
@@ -286,6 +301,11 @@ class ChargeAction(Action):
             "charge_damage_multiplier": CHARGE_DAMAGE_MULTIPLIER,
             "charge_damage_multiplier_to_attacker": CHARGE_DAMAGE_MULTIPLIER_TO_ATTACKER,
         }
+
+        if lucky_attack_rolls is not None:
+            data["lucky_attack_rolls"] = lucky_attack_rolls
+        if lucky_damage_rolls is not None:
+            data["lucky_damage_rolls"] = lucky_damage_rolls
 
         return ActionResult(
             success=True,

@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from domain.entities import Unit, Weapon
 from domain.mechanics.attack_resolution import AttackResult as CoreAttackResult
 from domain.mechanics.attack_resolution import resolve_attack
+from domain.mechanics.lucky_roll import LuckyRollType, resolve_lucky_roll, should_use_lucky_roll
 
 from .base import Reaction, ReactionCategory, ReactionResult
 
@@ -109,11 +110,22 @@ class OpportunityAttackReaction(Reaction):
         Then movement is interrupted at the intersection index hex.
         """
         if attack_roll is None:
-            attack_roll = random.randint(1, 100)
+            wpn = weapon or attacker.weapon
+            if should_use_lucky_roll(attacker, LuckyRollType.ATTACK_ROLL, wpn, weapon_skill_level):
+                roll_1 = random.randint(1, 100)
+                roll_2 = random.randint(1, 100)
+                attack_roll, _ = resolve_lucky_roll(roll_1, roll_2)
+            else:
+                attack_roll = random.randint(1, 100)
         if base_damage_roll is None:
             wpn = weapon or attacker.weapon
             if wpn is not None:
-                base_damage_roll = random.randint(wpn.damage_min, wpn.damage_max)
+                if should_use_lucky_roll(attacker, LuckyRollType.DAMAGE_ROLL, wpn, weapon_skill_level):
+                    roll_1 = random.randint(wpn.damage_min, wpn.damage_max)
+                    roll_2 = random.randint(wpn.damage_min, wpn.damage_max)
+                    base_damage_roll, _ = resolve_lucky_roll(roll_1, roll_2)
+                else:
+                    base_damage_roll = random.randint(wpn.damage_min, wpn.damage_max)
             else:
                 base_damage_roll = 1
 

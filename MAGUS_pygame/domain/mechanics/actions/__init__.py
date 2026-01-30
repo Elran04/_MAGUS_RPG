@@ -13,7 +13,7 @@ from __future__ import annotations
 from .attack_action import AttackAction
 from .base import Action, ActionCategory, ActionCost, ActionResult
 from .movement_action import MovementAction
-from .special import ChargeAction
+from .special import AttackCombinationAction, ChargeAction, ShieldBashAction
 
 __all__ = [
     "ActionCategory",
@@ -22,5 +22,7 @@ __all__ = [
     "Action",
     "AttackAction",
     "MovementAction",
+    "AttackCombinationAction",
     "ChargeAction",
+    "ShieldBashAction",
 ]

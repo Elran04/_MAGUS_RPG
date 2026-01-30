@@ -197,6 +197,144 @@ class BattleActionExecutor:
 
         return summary
 
+    def execute_attack_combination(
+        self, target_pos: Position, attacker: Unit, defender: Optional[Unit]
+    ) -> Optional[dict]:
+        """Execute dagger attack combination on target position."""
+        if not defender:
+            self.show_message("No target at that hex")
+            return None
+
+        summary = self.battle.attack_combination_current_unit(defender=defender)
+
+        if "error" in summary:
+            self.show_message(f"Attack combination failed: {summary['error']}")
+            logger.warning(f"Attack combination failed: {summary['error']}")
+            return summary
+
+        action_result = summary.get("action_result")
+        if not action_result:
+            logger.warning("No action_result in attack combination summary")
+            return summary
+
+        combo_results = None
+        combo_config = None
+        stopped_early = False
+        if hasattr(action_result, "data") and action_result.data:
+            combo_results = action_result.data.get("attack_results")
+            combo_config = action_result.data.get("combo_config")
+            stopped_early = action_result.data.get("combo_stopped_early", False)
+
+        if combo_results:
+            total_attacks = getattr(combo_config, "attack_count", len(combo_results)) if combo_config else len(combo_results)
+            msg = self._format_attack_combination_message(attacker, defender, combo_results, total_attacks, stopped_early)
+            self.show_message(msg)
+
+            # Log detailed action entry
+            if self.detailed_log:
+                total_fp = sum(r.damage_to_fp for r in combo_results)
+                total_ep = sum(r.damage_to_ep for r in combo_results)
+                total_mandatory = sum(r.mandatory_ep_loss for r in combo_results)
+                outcomes = [r.outcome.value for r in combo_results]
+
+                action_data = DetailedActionData(
+                    unit_name=attacker.name,
+                    round_number=self.battle.round,
+                    action_type="dagger_combo",
+                    ap_spent=getattr(action_result, "ap_spent", 0),
+                    description=f"Dagger Combo ({len(combo_results)}/{total_attacks})",
+                    extra_data={
+                        "defender": defender.name,
+                        "outcomes": outcomes,
+                        "total_fp": total_fp,
+                        "total_ep": total_ep,
+                        "mandatory_ep": total_mandatory,
+                        "stopped_early": stopped_early,
+                    },
+                )
+                self.detailed_log.log_action(msg, action_data)
+        else:
+            self.show_message("Attack combination produced no results")
+
+        return summary
+
+    def execute_shield_bash(
+        self, target_pos: Position, attacker: Unit, defender: Optional[Unit]
+    ) -> Optional[dict]:
+        """Execute shield bash on target position."""
+        if not defender:
+            self.show_message("No target at that hex")
+            return None
+
+        summary = self.battle.shield_bash_current_unit(defender=defender)
+
+        if "error" in summary:
+            self.show_message(f"Shield bash failed: {summary['error']}")
+            logger.warning(f"Shield bash failed: {summary['error']}")
+            return summary
+
+        action_result = summary.get("action_result")
+        if not action_result:
+            logger.warning("No action_result in shield bash summary")
+            return summary
+
+        attack_res = None
+        if hasattr(action_result, "data") and action_result.data:
+            attack_res = action_result.data.get("attack_result")
+
+        if attack_res:
+            msg = "Shield Bash\n" + self._format_attack_result_message(attack_res)
+            self.show_message(msg)
+
+            if self.detailed_log:
+                from domain.mechanics.attack_angle import AttackAngle, get_attack_angle
+
+                attack_angle = get_attack_angle(attacker, defender)
+                is_flank = attack_angle in (
+                    AttackAngle.FRONT_RIGHT,
+                    AttackAngle.FRONT_LEFT,
+                    AttackAngle.BACK_RIGHT,
+                    AttackAngle.BACK_LEFT,
+                )
+                is_rear = attack_angle == AttackAngle.BACK
+                facing_ignored_ve = attack_angle in (
+                    AttackAngle.BACK,
+                    AttackAngle.BACK_LEFT,
+                    AttackAngle.BACK_RIGHT,
+                )
+
+                attack_data = DetailedAttackData(
+                    attacker_name=attacker.name,
+                    defender_name=defender.name,
+                    round_number=self.battle.round,
+                    attack_roll=attack_res.attack_roll,
+                    all_te=attack_res.all_te,
+                    all_ve=attack_res.all_ve,
+                    outcome=attack_res.outcome.value,
+                    is_flank_attack=is_flank,
+                    is_rear_attack=is_rear,
+                    facing_ignored_ve=facing_ignored_ve,
+                    damage_to_fp=attack_res.damage_to_fp,
+                    damage_to_ep=attack_res.damage_to_ep,
+                    mandatory_ep_loss=attack_res.mandatory_ep_loss,
+                    armor_absorbed=attack_res.armor_absorbed,
+                    stamina_spent_defender=attack_res.stamina_spent_defender,
+                    hit_zone=attack_res.hit_zone,
+                    zone_sfe=attack_res.zone_sfe,
+                    is_critical=attack_res.is_critical,
+                    is_overpower=attack_res.is_overpower,
+                    attacker_penalties={},
+                    attacker_buffs={},
+                    defender_penalties={},
+                    defender_buffs={},
+                )
+
+                self.detailed_log.log_attack("Shield Bash", attack_data)
+        else:
+            self.show_message("Shield bash produced no results")
+
+        return summary
+
     def execute_charge(
         self, target_pos: Position, attacker: Unit, defender: Optional[Unit]
     ) -> dict:
@@ -501,6 +639,65 @@ class BattleActionExecutor:
                 line3 = " | ".join(damage_parts)
 
         # Combine lines, filtering out empty ones
+        msg_lines = [line1]
+        if line2:
+            msg_lines.append(line2)
+        if line3:
+            msg_lines.append(line3)
+
+        return "\n".join(msg_lines)
+
+    def _format_attack_combination_message(
+        self,
+        attacker: Unit,
+        defender: Unit,
+        attack_results: list,
+        total_attacks: int,
+        stopped_early: bool = False,
+    ) -> str:
+        """Format dagger attack combination results into a single log message."""
+        if not attack_results:
+            return "Attack combination failed"
+
+        # Line 1: Title and participants
+        line1 = (
+            f"Dagger Combo ({len(attack_results)}/{total_attacks}) "
+            f"{attacker.name} -> {defender.name}"
+        )
+
+        # Line 2: Outcome summary per hit
+        outcomes = []
+        for i, res in enumerate(attack_results, start=1):
+            outcome_str = res.outcome.value.replace("_", " ").title()
+            outcomes.append(f"{i}:{outcome_str}")
+        line2 = " | ".join(outcomes)
+
+        # Line 3: Total damage summary
+        total_fp = sum(r.damage_to_fp for r in attack_results)
+        total_direct_ep = sum(r.damage_to_ep for r in attack_results)
+        total_mandatory_ep = sum(r.mandatory_ep_loss for r in attack_results)
+        total_ep = total_direct_ep + total_mandatory_ep
+
+        damage_parts = []
+        if total_fp > 0:
+            damage_parts.append(f"FP: {total_fp}")
+
+        if total_ep > 0:
+            if total_mandatory_ep > 0 and total_direct_ep > 0:
+                ep_str = (
+                    f"ÉP: {total_ep} (<purple>{total_mandatory_ep}</purple> + "
+                    f"<white>{total_direct_ep}</white>)"
+                )
+                damage_parts.append(ep_str)
+            elif total_mandatory_ep > 0:
+                damage_parts.append(f"ÉP: <purple>{total_mandatory_ep}</purple>")
+            else:
+                damage_parts.append(f"ÉP: <white>{total_direct_ep}</white>")
+
+        line3 = " | ".join(damage_parts)
+        if stopped_early:
+            line3 = (line3 + " | " if line3 else "") + "Target defeated"
+
         msg_lines = [line1]
         if line2:
             msg_lines.append(line2)

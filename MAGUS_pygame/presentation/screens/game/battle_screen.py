@@ -24,6 +24,7 @@ from presentation.components.unit_info.unit_info_popup import UnitInfoPopup
 from presentation.components.weapon_switch_popup import WeaponSwitchPopup
 from presentation.screens.game.battle_action_executor import BattleActionExecutor
 from presentation.screens.game.battle_input_handler import BattleInputHandler
+from presentation.screens.game.battle_reaction_coordinator import BattleReactionCoordinator
 from presentation.screens.game.battle_render_coordinator import BattleRenderCoordinator
 
 logger = get_logger(__name__)
@@ -117,6 +118,9 @@ class BattleScreen:
         # Coordinators
         self.input_handler = BattleInputHandler()
         self.action_executor = BattleActionExecutor(battle_service, self.detailed_log)
+        self.reaction_coordinator = BattleReactionCoordinator(
+            self.action_executor, battle_service, self.detailed_log
+        )
         self.render_coordinator = BattleRenderCoordinator(
             screen_width, screen_height, self.renderer, self.action_panel, self.hud, self.pause_menu
         )
@@ -154,7 +158,8 @@ class BattleScreen:
             key: Pygame key constant
         """
         if key == pygame.K_ESCAPE:
-            # Priority: Reaction popup > Battle log popup > Weapon switch popup > Unit popup > Action mode > Pause menu toggle
+            # ESC only handles menu and popups, not action deselection
+            # Priority: Reaction popup > Battle log popup > Weapon switch popup > Unit popup > Pause menu toggle
             if self.reaction_popup and self.reaction_popup.visible:
                 self.reaction_popup.hide()
             elif self.battle_log_popup and self.battle_log_popup.visible:
@@ -163,8 +168,6 @@ class BattleScreen:
                 self.weapon_switch_popup.hide()
             elif self.unit_popup and self.unit_popup.visible:
                 self.unit_popup.hide()
-            elif self.action_mode != ActionMode.IDLE:
-                self._cancel_action()
             else:
                 self.pause_menu.toggle()
             return
@@ -176,13 +179,25 @@ class BattleScreen:
         if key == pygame.K_SPACE or key == pygame.K_RETURN:
             self._end_current_turn()
         elif key == pygame.K_m:
-            self._enter_move_mode()
+            # Toggle move mode
+            if self.action_mode == ActionMode.MOVE:
+                self._cancel_action()
+            else:
+                self._enter_move_mode()
         elif key == pygame.K_a:
-            self._enter_attack_mode()
+            # Toggle attack mode
+            if self.action_mode == ActionMode.ATTACK:
+                self._cancel_action()
+            else:
+                self._enter_attack_mode()
         elif key == pygame.K_w:
             self._open_weapon_switch_popup()
         elif key == pygame.K_i:
-            self._enter_inspect_mode()
+            # Toggle inspect mode
+            if self.action_mode == ActionMode.INSPECT:
+                self._cancel_action()
+            else:
+                self._enter_inspect_mode()
         elif key == pygame.K_q:
             self._rotate_current_unit(-1)
         elif key == pygame.K_e:
@@ -333,6 +348,22 @@ class BattleScreen:
                     self.action_executor.show_message(error_msg)
                 # Exit special mode after an attempt
                 self._active_special_attack = None
+            elif self._active_special_attack == "dagger_combo":
+                is_valid, error_msg = self.battle.validate_attack_combination_target(current, target_pos)
+                if is_valid:
+                    self._execute_dagger_combo(target_pos)
+                else:
+                    self.action_executor.show_message(error_msg)
+                # Exit special mode after an attempt
+                self._active_special_attack = None
+            elif self._active_special_attack == "shield_bash":
+                is_valid, error_msg = self.battle.validate_shield_bash_target(current, target_pos)
+                if is_valid:
+                    self._execute_shield_bash(target_pos)
+                else:
+                    self.action_executor.show_message(error_msg)
+                # Exit special mode after an attempt
+                self._active_special_attack = None
             else:
                 is_valid, error_msg = self.battle.validate_attack_target(current, target_pos)
                 if is_valid:
@@ -359,23 +390,39 @@ class BattleScreen:
         Args:
             action: Action name (e.g., "move", "attack", "end_turn", "special_attack_charge")
         """
-        # Clear special mode if switching away
-        if not action.startswith("special"):
-            self._active_special_attack = None
-
+        # Check if clicking same action to deselect (toggle behavior)
         if action == "move":
-            self._enter_move_mode()
+            if self.action_mode == ActionMode.MOVE:
+                self._cancel_action()
+            else:
+                self._enter_move_mode()
         elif action == "attack":
-            self._enter_attack_mode()
-        elif action == "special":
-            # Toggle special attacks dropdown (handled in action_panel)
-            pass
+            if self.action_mode == ActionMode.ATTACK and self._active_special_attack is None:
+                self._cancel_action()
+            else:
+                self._enter_attack_mode()
         elif action == "special_attack_charge":
-            self._enter_charge_mode()
+            if self._active_special_attack == "charge":
+                self._cancel_action()
+            else:
+                self._enter_charge_mode()
+        elif action == "special_attack_dagger_combo":
+            if self._active_special_attack == "dagger_combo":
+                self._cancel_action()
+            else:
+                self._enter_dagger_combo_mode()
+        elif action == "special_attack_shield_bash":
+            if self._active_special_attack == "shield_bash":
+                self._cancel_action()
+            else:
+                self._enter_shield_bash_mode()
         elif action == "switch_weapon":
             self._open_weapon_switch_popup()
         elif action == "inspect":
-            self._enter_inspect_mode()
+            if self.action_mode == ActionMode.INSPECT:
+                self._cancel_action()
+            else:
+                self._enter_inspect_mode()
         elif action == "rotate_ccw":
             self._rotate_current_unit(-1)
         elif action == "rotate_cw":
@@ -437,6 +484,58 @@ class BattleScreen:
         self._active_special_attack = "charge"
         self.action_executor.show_message("Select target for charge (min 5 hexes away)")
 
+    def _enter_dagger_combo_mode(self) -> None:
+        """Enter dagger attack combination special attack mode."""
+        if self.battle.is_victory():
+            return
+
+        current = self.battle.current_unit
+        if not current:
+            self.action_executor.show_message("No active unit")
+            return
+
+        if not current.weapon or getattr(current.weapon, "skill_id", "") != "weaponskill_daggers":
+            self.action_executor.show_message("Attack combination requires a dagger")
+            return
+
+        skill_level = 0
+        if getattr(current, "skills", None):
+            skill_level = current.skills.get_rank("weaponskill_daggers", 0)
+
+        if skill_level < 3:
+            self.action_executor.show_message("Attack combination requires dagger skill level 3+")
+            return
+
+        can_attack, error_msg = self.battle.can_attack(current)
+        if not can_attack:
+            self.action_executor.show_message("Cannot use attack combination: " + error_msg)
+            return
+
+        self.action_mode = ActionMode.ATTACK
+        self.selected_unit = current
+        self._active_special_attack = "dagger_combo"
+        self.action_executor.show_message("Select adjacent target for attack combination")
+
+    def _enter_shield_bash_mode(self) -> None:
+        """Enter shield bash special attack mode."""
+        if self.battle.is_victory():
+            return
+
+        current = self.battle.current_unit
+        if not current:
+            self.action_executor.show_message("No active unit")
+            return
+
+        can_attack, error_msg = self.battle.can_attack(current)
+        if not can_attack:
+            self.action_executor.show_message("Cannot use shield bash: " + error_msg)
+            return
+
+        self.action_mode = ActionMode.ATTACK
+        self.selected_unit = current
+        self._active_special_attack = "shield_bash"
+        self.action_executor.show_message("Select adjacent target for shield bash")
+
     def _enter_inspect_mode(self) -> None:
         """Enter inspect mode."""
         self.action_mode = ActionMode.INSPECT
@@ -460,7 +559,7 @@ class BattleScreen:
         # Enqueue opportunity attacks as reactions
         oa_results = summary.get("reaction_results") or summary.get("opportunity_attacks")
         if oa_results:
-            self._enqueue_opportunity_attacks(oa_results)
+            self.reaction_coordinator.enqueue_opportunity_attacks(oa_results)
 
         # Only cancel move mode if movement failed or no more AP to move
         if "error" in summary:
@@ -500,7 +599,7 @@ class BattleScreen:
         # Enqueue opportunity attacks from charge movement BEFORE the charge happens
         oa_results = summary.get("reaction_results", [])
         if oa_results:
-            self._enqueue_opportunity_attacks(oa_results)
+            self.reaction_coordinator.enqueue_opportunity_attacks(oa_results)
 
         # Cancel action if no AP left
         if current and current.weapon:
@@ -509,6 +608,38 @@ class BattleScreen:
                 self._cancel_action()
         else:
             self._cancel_action()
+
+        self._check_victory()
+
+    def _execute_dagger_combo(self, target_pos: Position) -> None:
+        """Execute dagger attack combination special attack on target position."""
+        current = self.battle.current_unit
+        target = self.battle.get_unit_at_position(target_pos)
+
+        summary = self.action_executor.execute_attack_combination(target_pos, current, target)
+
+        if "error" in summary:
+            self._cancel_action()
+        else:
+            remaining_ap = self.battle.remaining_ap(current)
+            if remaining_ap < 1:
+                self._cancel_action()
+
+        self._check_victory()
+
+    def _execute_shield_bash(self, target_pos: Position) -> None:
+        """Execute shield bash special attack on target position."""
+        current = self.battle.current_unit
+        target = self.battle.get_unit_at_position(target_pos)
+
+        summary = self.action_executor.execute_shield_bash(target_pos, current, target)
+
+        if "error" in summary:
+            self._cancel_action()
+        else:
+            remaining_ap = self.battle.remaining_ap(current)
+            if remaining_ap < 1:
+                self._cancel_action()
 
         self._check_victory()
 
@@ -585,115 +716,6 @@ class BattleScreen:
             else:
                 self.action = "battle_draw"
                 self.action_executor.show_message("Battle ended in a draw")
-
-    def _show_attack_result(self, attack_result) -> None:
-        """Show attack result details."""
-        # The message is already properly formatted in attack_action.py
-        # This is used by opportunity attacks which have their result from domain
-        # Just show the core outcome for opportunity attacks
-        if attack_result.outcome:
-            msg = f"{attack_result.outcome.value.replace('_', ' ').title()}"
-            if attack_result.requires_dodge_check:
-                msg += " | Dodge check required!"
-            self.action_executor.show_message(msg)
-
-    def _enqueue_opportunity_attacks(self, oa_results) -> None:
-        """Enqueue opportunity attacks as reactions for player decision.
-
-        Args:
-            oa_results: List of opportunity attack results from reaction handler
-        """
-        for idx, oa_result in enumerate(oa_results):
-            # Extract unit names from the reaction result's data
-            attacker_name = oa_result.data.get("attacker_name", "Unknown") if oa_result.data else "Unknown"
-            defender_name = oa_result.data.get("defender_name", "Unknown") if oa_result.data else "Unknown"
-
-            # Get attack result for additional info
-            attack_result = oa_result.data.get("attack_result") if oa_result.data else None
-
-            # Create description for the reaction popup
-            description = f"{attacker_name} can make an opportunity attack against {defender_name}!"
-            if attack_result and hasattr(attack_result, 'requires_dodge_check') and attack_result.requires_dodge_check:
-                description += "\nDefender may dodge."
-
-            # Enqueue as a reaction
-            self.action_executor.enqueue_reaction(
-                reaction_type="opportunity_attack",
-                description=description,
-                reaction_data={
-                    "index": idx,
-                    "attacker_name": attacker_name,
-                    "defender_name": defender_name,
-                    "result": oa_result,
-                },
-                on_accept=lambda data: self._accept_opportunity_attack(data),
-                on_decline=lambda data: self._decline_opportunity_attack(data),
-            )
-
-    def _accept_opportunity_attack(self, reaction_data: dict) -> None:
-        """Handle acceptance of an opportunity attack reaction.
-
-        Args:
-            reaction_data: Reaction data dict with attack details
-        """
-        # Show the attack result message
-        oa_result = reaction_data.get("result")
-        attacker_name = reaction_data.get("attacker_name", "Attacker")
-        defender_name = reaction_data.get("defender_name", "Defender")
-
-        # Extract and format the attack result
-        if oa_result and oa_result.data:
-            attack_result = oa_result.data.get("attack_result")
-            if attack_result:
-                # Format the attack result nicely
-                msg = self.action_executor._format_attack_result_message(attack_result)
-                full_msg = f"{attacker_name} -> {defender_name}:\n{msg}"
-                self.action_executor.show_message(full_msg)
-
-                # Also add to battle log with clear opportunity attack label
-                if self.action_executor.detailed_log:
-                    from domain.battle_log_entry import DetailedAttackData
-                    attack_data = DetailedAttackData(
-                        attacker_name=attacker_name,
-                        defender_name=defender_name,
-                        round_number=self.battle.round,
-                        attack_roll=attack_result.attack_roll,
-                        all_te=attack_result.all_te,
-                        all_ve=attack_result.all_ve,
-                        outcome=attack_result.outcome,
-                        is_flank_attack=False,  # OA doesn't consider flanking
-                        is_rear_attack=False,   # OA doesn't consider rear attacks
-                        facing_ignored_ve=False,  # OA uses normal VÉ
-                        hit_zone=attack_result.hit_zone,
-                        zone_sfe=attack_result.zone_sfe,
-                        damage_to_fp=attack_result.damage_to_fp,
-                        damage_to_ep=attack_result.damage_to_ep,
-                        armor_absorbed=attack_result.armor_absorbed,
-                        stamina_spent_defender=attack_result.stamina_spent_defender,
-                        is_critical=attack_result.is_critical,
-                        is_overpower=attack_result.is_overpower,
-                        is_opportunity_attack=True,
-                    )
-                    self.action_executor.detailed_log.log_attack(
-                        f"{attacker_name} -> {defender_name}",
-                        attack_data
-                    )
-            else:
-                self.action_executor.show_message(f"{attacker_name} -> {defender_name}!")
-        elif oa_result and hasattr(oa_result, "message"):
-            self.action_executor.show_message(oa_result.message)
-        else:
-            self.action_executor.show_message(f"{attacker_name} -> {defender_name}!")
-
-    def _decline_opportunity_attack(self, reaction_data: dict) -> None:
-        """Handle declining of an opportunity attack reaction.
-
-        Args:
-            reaction_data: Reaction data dict with attack details
-        """
-        attacker_name = reaction_data.get("attacker_name", "Attacker")
-        self.action_executor.show_message(f"{attacker_name}'s opportunity attack was declined")
-
 
     def _log_initiative(self, battle_service) -> None:
         """Log initiative roll data for all units.

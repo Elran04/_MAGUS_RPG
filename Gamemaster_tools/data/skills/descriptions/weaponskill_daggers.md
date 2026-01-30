@@ -36,7 +36,7 @@ Alapfokú tőrhasználat.
 
 A karakter megtanulja, hogyan használja ki az ellenfél közelségét és figyelmetlenségét.
 
-**Új speciális mechanika – Szúrás kombináció:**
+**Új speciális mechanika – Támadás kombináció:**
 
 * AP költség: **10 AP**
 * Csak **közvetlen közelről** (szomszédos hex) alkalmazható
@@ -88,7 +88,7 @@ A karakter a fegyver mesteri szintű használójává válik.
 
 A tőrhasználat legendás szintje.
 
-**Szúrás kombináció (mesteri):**
+**Támadás kombináció (mesteri):**
 
 * AP költség: **8 AP**
 * Támadások száma: **5**

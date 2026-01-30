@@ -208,6 +208,31 @@ class BattleRenderCoordinator:
                 battle.round,
             )
 
+            # Special attack availability
+            from domain.mechanics.actions.special.charge_action import ChargeAction
+            from domain.mechanics.skills import can_use_shield_bash
+
+            has_weapon = getattr(current_unit, "weapon", None) is not None
+            dagger_combo = False
+            if has_weapon and getattr(current_unit.weapon, "skill_id", "") == "weaponskill_daggers":
+                if getattr(current_unit, "skills", None):
+                    dagger_combo = current_unit.skills.get_rank("weaponskill_daggers", 0) >= 3
+
+            shield_bash = can_use_shield_bash(current_unit) if current_unit else False
+            charge_available = has_weapon and ap_remaining >= ChargeAction().cost.ap
+
+            self.action_panel.set_special_attack_availability(
+                {
+                    "charge": charge_available,
+                    "dagger_combo": dagger_combo,
+                    "shield_bash": shield_bash,
+                }
+            )
+        else:
+            self.action_panel.set_special_attack_availability(
+                {"charge": False, "dagger_combo": False, "shield_bash": False}
+            )
+
         # Update combat message
         self.action_panel.set_combat_message(combat_message)
         self.action_panel.draw(surface)

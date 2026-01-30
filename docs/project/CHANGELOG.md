@@ -58,6 +58,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Root conftest.py**: Unified sys.path management for multi-package test execution with dynamic package priority
 - **docs/architecture/TESTING.md**: Complete guide to test structure, execution patterns, and namespace management
 - **Menu Loading UX**: Menu stays interactive while `GameContext` initializes on a background thread; actions are queued and auto-run once ready with a loading hint
+- **Special Attacks UI**: Dropdown behaves as a single button when only one special attack is available; dropdown shows only when multiple options exist
 
 ### Changed
 - **Message Architecture**: Moved attack result message formatting from domain layer (attack_action.py) to presentation layer (battle_action_executor.py) for proper separation of concerns
@@ -80,6 +81,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Restructured test suite from package-level folders to centralized root `tests/` folder with subdirectories
 - Test execution now uses root conftest.py with dynamic sys.path management instead of package-level conftest files
 - Menu input now remains responsive during startup; loading overlay is informational instead of blocking
+- **Action Panel Layout**: Rotate CCW/CW are now compact side-by-side buttons; Special Attacks button uses ASCII-friendly arrow characters
+- **Action Selection UX**: ESC now only handles menu/popup behavior; action deselection is done via button/hotkey toggles
 
 ### Fixed
 - **AP Validation Bug**: Added AP check to validate_attack_target() to prevent attacks without sufficient AP
@@ -102,6 +105,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Documentation: removed outdated map editor references
 - Links: updated all cross-references to archived and renamed docs
 - Weapon switch popup: variable wield modes display correctly, validation enforces ranged/two-handed off-hand restriction, and unit popup shows item names reliably
+- **Special Attacks Dropdown**: Selecting from the dropdown works correctly while still resetting label to "Special Attacks" when deselected
 
 ### Removed
 - Duplicate method definitions in `UnitSetupService`

@@ -117,7 +117,9 @@ def is_critical_hit(
     return attack_roll >= threshold
 
 
-def is_critical_failure(attack_roll: int, weapon_skill_level: int) -> bool:
+def is_critical_failure(
+    attack_roll: int, weapon_skill_level: int, threshold_override: int | None = None
+) -> bool:
     """
     Check if attack roll results in a critical failure (fumble).
 
@@ -130,10 +132,14 @@ def is_critical_failure(attack_roll: int, weapon_skill_level: int) -> bool:
     Args:
         attack_roll: Raw d100 attack roll
         weapon_skill_level: Attacker's weapon skill level
+        threshold_override: Optional explicit max roll for failure (if provided, 1-threshold_override is failure)
 
     Returns:
         True if critical failure (attack is blocked/nullified)
     """
+    if threshold_override is not None:
+        return 1 <= attack_roll <= threshold_override
+
     if weapon_skill_level == 0:
         return 1 <= attack_roll <= 10
     elif weapon_skill_level == 1:

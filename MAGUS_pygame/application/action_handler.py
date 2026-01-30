@@ -17,7 +17,9 @@ from domain.entities import Unit
 from domain.mechanics import AttackAction, MovementAction
 from domain.mechanics.actions import ActionResult
 from domain.mechanics.actions.facing_action import FacingAction
+from domain.mechanics.actions.special.attack_combination import AttackCombinationAction
 from domain.mechanics.actions.special.charge_action import ChargeAction
+from domain.mechanics.actions.special.shieldbash import ShieldBashAction
 from domain.mechanics.actions.switch_weapon_action import SwitchWeaponAction
 from domain.mechanics.attack_resolution import apply_attack_result
 from domain.value_objects import Facing, Position
@@ -259,6 +261,38 @@ class ActionHandler:
             attacker.rotate_to(Facing(new_facing_dir))
 
         return {"action_result": ares, "path": path, "reaction_results": reaction_results}
+
+    def attack_combination(
+        self: ActionHandler,
+        *,
+        attacker: Unit,
+        defender: Unit,
+        rng_overrides: dict[str, object] | None = None,
+        **kwargs: object,
+    ) -> ActionResult:
+        act = AttackCombinationAction()
+        ok, msg = act.can_execute(attacker=attacker, defender=defender, **kwargs)
+        if not ok:
+            return ActionResult(success=False, message=msg)
+
+        ares = act.execute(attacker=attacker, defender=defender, **(rng_overrides or {}), **kwargs)
+        return ares
+
+    def shield_bash(
+        self: ActionHandler,
+        *,
+        attacker: Unit,
+        defender: Unit,
+        rng_overrides: dict[str, object] | None = None,
+        **kwargs: object,
+    ) -> ActionResult:
+        act = ShieldBashAction()
+        ok, msg = act.can_execute(attacker=attacker, defender=defender, **kwargs)
+        if not ok:
+            return ActionResult(success=False, message=msg)
+
+        ares = act.execute(attacker=attacker, defender=defender, **(rng_overrides or {}), **kwargs)
+        return ares
 
     # --- Facing ---
     def change_facing(

@@ -21,7 +21,6 @@ from dataclasses import dataclass, field
 from config import AP_COST_MOVEMENT
 from domain.entities import Unit
 from domain.mechanics.actions.movement_action import NEIGHBORS
-from domain.mechanics.actions.special.charge_action import ChargeAction
 from domain.mechanics.attack_resolution import apply_attack_result
 from domain.mechanics.equipment import get_effective_speed
 from domain.mechanics.initiation import (
@@ -34,6 +33,7 @@ from domain.value_objects import Facing, Position
 from logger.logger import get_logger
 
 from .action_handler import ActionHandler
+from .special_attack_handler import SpecialAttackHandler
 
 
 def compute_unit_ap(unit: Unit) -> int:
@@ -47,6 +47,7 @@ def compute_unit_ap(unit: Unit) -> int:
 class BattleService:
     units: list[Unit]
     action_handler: ActionHandler = field(default_factory=ActionHandler)
+    special_attack_handler: SpecialAttackHandler = field(init=False)
     initiative_sort: Callable[[Unit], int] | None = None
     initiative_order: InitiativeOrder | None = None
     _rng_seed: int | None = None  # For deterministic testing if provided
@@ -65,6 +66,9 @@ class BattleService:
     team_b_ids: list[str] = field(default_factory=list)
 
     battle_active: bool = True
+
+    def __post_init__(self) -> None:
+        self.special_attack_handler = SpecialAttackHandler(self)
 
     def start_battle(self) -> None:
         """Initialize battle: perform initiative (if enabled), sort units, compute AP, reset reactions."""
@@ -241,6 +245,29 @@ class BattleService:
             summary["error"] = "Insufficient AP after movement"
         return summary
 
+    def _extract_shield_ve(self, unit: Unit) -> int:
+        """Extract shield VE bonus from unit's off-hand equipment.
+
+        Args:
+            unit: Unit to extract shield VE from
+
+        Returns:
+            Shield VE value (0 if no shield equipped)
+        """
+        if not self.equipment_repo or not unit.character_data:
+            return 0
+
+        equipment = unit.character_data.get("equipment", {})
+        off_hand_id = equipment.get("off_hand", "")
+        if not off_hand_id:
+            return 0
+
+        shield_data = self.equipment_repo.find_weapon_by_id(off_hand_id)
+        if not shield_data:
+            return 0
+
+        return shield_data.get("VE", 0)
+
     def attack_current_unit(self, defender: Unit, **kwargs: object) -> dict[str, object]:
         unit = self.current_unit
 
@@ -254,14 +281,7 @@ class BattleService:
             return {"error": "Unit is unconscious and cannot act"}
 
         # Extract defender's shield VE bonus from equipment
-        shield_ve = 0
-        if self.equipment_repo and defender.character_data:
-            equipment = defender.character_data.get("equipment", {})
-            off_hand_id = equipment.get("off_hand", "")
-            if off_hand_id:
-                shield_data = self.equipment_repo.find_weapon_by_id(off_hand_id)
-                if shield_data:
-                    shield_ve = shield_data.get("VE", 0)
+        shield_ve = self._extract_shield_ve(defender)
 
         # AttackAction has fixed AP cost inside result.ap_spent
         # Separate rng_overrides if present in kwargs
@@ -306,10 +326,35 @@ class BattleService:
 
         # Apply effects only after AP was successfully spent (atomic behavior)
         attack_result = None
+        attack_results = None
         if hasattr(result, "data") and result.data:
             attack_result = result.data.get("attack_result")
+            attack_results = result.data.get("attack_results")
 
-        if attack_result is not None:
+        if attack_results:
+            applied_results = []
+            for combo_result in attack_results:
+                apply_attack_result(combo_result, defender)
+                applied_results.append(combo_result)
+
+                # Spend attacker stamina per attack
+                if hasattr(unit, "stamina") and unit.stamina:
+                    if getattr(combo_result, "stamina_spent_attacker", 0) > 0:
+                        unit.stamina.spend_action_points(combo_result.stamina_spent_attacker)
+
+                # Spend defender stamina (block/parry/dodge) per attack
+                if hasattr(defender, "stamina") and defender.stamina:
+                    if getattr(combo_result, "stamina_spent_defender", 0) > 0:
+                        defender.stamina.spend_action_points(combo_result.stamina_spent_defender)
+
+                if not defender.is_alive():
+                    if result.data is not None:
+                        result.data["attack_results"] = applied_results
+                        result.data["combo_stopped_early"] = True
+                        result.data["combo_stop_reason"] = "defender_defeated"
+                    break
+
+        elif attack_result is not None:
             # Apply FP/EP damage to defender
             apply_attack_result(attack_result, defender)
 
@@ -325,62 +370,17 @@ class BattleService:
 
         return {"action_result": result}
 
+    def attack_combination_current_unit(self, defender: Unit, **kwargs: object) -> dict[str, object]:
+        """Execute dagger attack combination with the current unit."""
+        return self.special_attack_handler.attack_combination_current_unit(defender, **kwargs)
+
     def charge_current_unit(self, defender: Unit, potential_reactors: Iterable[Unit] | None = None, **kwargs: object) -> dict[str, object]:
         """Execute charge special attack with the current unit."""
-        unit = self.current_unit
+        return self.special_attack_handler.charge_current_unit(defender, potential_reactors, **kwargs)
 
-        if not unit.weapon:
-            return {"error": "No weapon equipped"}
-
-        # Prepare blocked hexes: other units + scenario obstacles
-        blocked = {(u.position.q, u.position.r) for u in self.units if u.id != unit.id}
-        if self.blocked_hexes:
-            blocked |= set(self.blocked_hexes)
-
-        # Enemy zones for optional reaction handling
-        enemy_zones = self.compute_enemy_zones(unit)
-
-        # Extract defender's shield VE bonus
-        shield_ve = 0
-        if self.equipment_repo and defender.character_data:
-            equipment = defender.character_data.get("equipment", {})
-            off_hand_id = equipment.get("off_hand", "")
-            if off_hand_id:
-                shield_data = self.equipment_repo.find_weapon_by_id(off_hand_id)
-                if shield_data:
-                    shield_ve = shield_data.get("VE", 0)
-
-        # Extract attacker's (mover) shield VE bonus for opportunity attacks
-        mover_shield_ve = 0
-        if self.equipment_repo and unit.character_data:
-            equipment = unit.character_data.get("equipment", {})
-            off_hand_id = equipment.get("off_hand", "")
-            if off_hand_id:
-                shield_data = self.equipment_repo.find_weapon_by_id(off_hand_id)
-                if shield_data:
-                    mover_shield_ve = shield_data.get("VE", 0)
-
-        summary = self.action_handler.charge_attack(
-            attacker=unit,
-            defender=defender,
-            ap_available=self.remaining_ap(unit),
-            blocked=blocked,
-            enemy_zones=enemy_zones,
-            potential_reactors=potential_reactors,
-            shield_ve=shield_ve,
-            mover_shield_ve=mover_shield_ve,
-            **kwargs,
-        )
-
-        if "error" in summary:
-            return summary
-
-        action_result = summary.get("action_result")
-        ap_spent = self._extract_ap_cost(getattr(action_result, "ap_spent", 0))
-        if action_result and action_result.success:
-            if not self.spend_ap(unit, ap_spent):
-                return {"error": "Insufficient AP after charge", "action_result": action_result}
-        return summary
+    def shield_bash_current_unit(self, defender: Unit, **kwargs: object) -> dict[str, object]:
+        """Execute shield bash special attack with the current unit."""
+        return self.special_attack_handler.shield_bash_current_unit(defender, **kwargs)
 
     def rotate_current_unit(self, new_facing: Facing) -> dict[str, object]:
         """Rotate current unit to face a new direction.
@@ -446,53 +446,16 @@ class BattleService:
                 if new_main_id:
                     weapon_data = self.equipment_repo.find_weapon_by_id(new_main_id)
                     if weapon_data:
-                        # Build weapon entity and update unit
-                        unit.weapon = self._build_weapon_entity(weapon_data)
+                        # Build weapon entity using UnitFactory's method for consistency
+                        from domain.services import UnitFactory
+                        factory = UnitFactory(None, self.equipment_repo)
+                        unit.weapon = factory._build_weapon_entity(weapon_data)
                         logger.debug(f"{unit.name} equipped {new_main_id}")
                 else:
                     unit.weapon = None
                     logger.debug(f"{unit.name} unequipped main hand weapon")
 
         return summary
-
-    def _build_weapon_entity(self, weapon_data: dict) -> object:
-        """Build a Weapon entity from raw weapon data.
-
-        Args:
-            weapon_data: Raw weapon dict from repository
-
-        Returns:
-            Weapon domain entity
-        """
-        from domain.entities import Weapon
-        from domain.services import UnitFactory
-
-        # Use the same category mapping as UnitFactory to ensure consistency
-        category = weapon_data.get("category", "")
-        skill_id = UnitFactory.CATEGORY_TO_SKILL_ID.get(category, "")
-
-        return Weapon(
-            id=weapon_data.get("id", ""),
-            name=weapon_data.get("name", "Unknown"),
-            ke_modifier=weapon_data.get("KE", 0),
-            te_modifier=weapon_data.get("TE", 0),
-            ve_modifier=weapon_data.get("VE", 0),
-            damage_dice=weapon_data.get("damage", "1d6"),
-            damage_min=weapon_data.get("damage_min", 1),
-            damage_max=weapon_data.get("damage_max", 6),
-            armor_penetration=weapon_data.get("armor_penetration", 0),
-            attack_time=weapon_data.get("attack_time", 5),
-            size_category=weapon_data.get("size_category", 1),
-            wield_mode=weapon_data.get("wield_mode", "one_handed"),
-            strength_required=weapon_data.get("strength_required", 0),
-            dexterity_required=weapon_data.get("dexterity_required", 0),
-            damage_types=weapon_data.get("damage_types", []) or [],
-            damage_bonus_attributes=weapon_data.get("damage_bonus_attributes", []) or [],
-            can_disarm=weapon_data.get("can_disarm", False),
-            can_break_weapon=weapon_data.get("can_break_weapon", False),
-            category=category,
-            skill_id=skill_id,
-        )
 
     def set_teams(self, team_a: Iterable[Unit], team_b: Iterable[Unit]) -> None:
         self.team_a_ids = [u.id for u in team_a]
@@ -636,31 +599,15 @@ class BattleService:
 
     def validate_charge_target(self, unit: Unit, target_pos: Position) -> tuple[bool, str]:
         """Check if target hex is valid for a charge special attack."""
-        if not unit or not unit.weapon:
-            return False, "No weapon equipped"
+        return self.special_attack_handler.validate_charge_target(unit, target_pos)
 
-        # Need enough AP for charge (10 AP)
-        if self.remaining_ap(unit) < ChargeAction().cost.ap:
-            return False, "Insufficient AP to charge"
+    def validate_attack_combination_target(self, unit: Unit, target_pos: Position) -> tuple[bool, str]:
+        """Check if target hex is valid for dagger attack combination."""
+        return self.special_attack_handler.validate_attack_combination_target(unit, target_pos)
 
-        target = self.get_unit_at_position(target_pos)
-        if not target:
-            return False, "No target at selected hex"
-        if not target.is_alive():
-            return False, "Target is already defeated"
-
-        blocked = {(u.position.q, u.position.r) for u in self.units if u.id != unit.id}
-        if self.blocked_hexes:
-            blocked |= set(self.blocked_hexes)
-
-        ok, msg = ChargeAction().can_execute(
-            attacker=unit,
-            target=target,
-            ap_available=self.remaining_ap(unit),
-            blocked=blocked,
-            weapon=unit.weapon,
-        )
-        return ok, msg
+    def validate_shield_bash_target(self, unit: Unit, target_pos: Position) -> tuple[bool, str]:
+        """Check if target hex is valid for shield bash."""
+        return self.special_attack_handler.validate_shield_bash_target(unit, target_pos)
 
     # --- Helper methods for UI highlighting ---
     def compute_reachable_hexes(self, unit: Unit) -> set[tuple[int, int]]:

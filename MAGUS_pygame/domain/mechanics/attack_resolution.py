@@ -34,6 +34,7 @@ from domain.mechanics.attack_angle import (
 )
 from domain.mechanics.conditions.stamina import Stamina
 from domain.mechanics.critical import (
+    CriticalContext,
     get_critical_damage_multiplier,
     is_critical_failure,
     is_critical_hit,
@@ -41,6 +42,47 @@ from domain.mechanics.critical import (
 from domain.mechanics.damage import DamageContext, calculate_final_damage
 from domain.mechanics.reach import calculate_mandatory_ep_loss
 from domain.mechanics.skills import get_overpower_threshold_for_skill
+
+# --- Helper Functions ---
+
+def _get_stamina_modifier(unit: Unit, modifier_type: str = "te_mod") -> int:
+    """Get stamina modifier (TE or VE) for a unit."""
+    if not hasattr(unit, "stamina") or not unit.stamina:
+        return 0
+    modifiers = unit.stamina.get_combat_modifiers()
+    return getattr(modifiers, modifier_type, 0)
+
+
+def _get_injury_modifier(unit: Unit, modifier_type: str = "te_mod") -> int:
+    """Get injury condition modifier (TE or VE) for a unit."""
+    if not hasattr(unit, "fp") or not hasattr(unit, "ep"):
+        return 0
+    from .conditions.injury import calculate_injury_condition, get_injury_modifiers
+    injury_cond = calculate_injury_condition(
+        unit.fp.current, unit.fp.maximum, unit.ep.current, unit.ep.maximum
+    )
+    modifiers = get_injury_modifiers(injury_cond)
+    return getattr(modifiers, modifier_type, 0)
+
+
+def _is_unit_conscious(unit: Unit) -> bool:
+    """Check if unit is conscious (not unconscious from stamina)."""
+    if not hasattr(unit, "stamina") or not unit.stamina:
+        return True
+    return not unit.stamina.is_unconscious()
+
+
+def _create_stamina_snapshot(unit: Unit) -> Stamina:
+    """Create a temporary stamina pool snapshot for cost calculation."""
+    if hasattr(unit, "stamina") and unit.stamina:
+        return Stamina(
+            max_stamina=unit.stamina.max_stamina,
+            current_stamina=unit.stamina.current_stamina,
+            attribute_ref=unit.stamina.attribute_ref,
+        )
+    else:
+        endurance = getattr(unit.attributes, "endurance", 10) if hasattr(unit, "attributes") else 10
+        return Stamina.from_attribute(endurance, start_full=False)
 
 
 class AttackOutcome(Enum):
@@ -149,22 +191,12 @@ def calculate_defense_values(
         DefenseValues with all thresholds
     """
     # Unconscious defenders have zero defense values
-    if hasattr(defender, "stamina") and defender.stamina and defender.stamina.is_unconscious():
+    if not _is_unit_conscious(defender):
         return DefenseValues(base_ve=0, block_ve=0, parry_ve=0, dodge_ve=0, all_ve=0)
+
     # Base VÉ from character + conditions + stamina penalties + injury penalties
-    stamina_mod = 0
-    if hasattr(defender, "stamina") and defender.stamina:
-        stamina_mod = defender.stamina.get_combat_modifiers().ve_mod
-
-    injury_mod = 0
-    if hasattr(defender, "fp") and hasattr(defender, "ep"):
-        from .conditions.injury import calculate_injury_condition, get_injury_modifiers
-
-        injury_cond = calculate_injury_condition(
-            defender.fp.current, defender.fp.maximum, defender.ep.current, defender.ep.maximum
-        )
-        injury_mod = get_injury_modifiers(injury_cond).ve_mod
-
+    stamina_mod = _get_stamina_modifier(defender, "ve_mod")
+    injury_mod = _get_injury_modifier(defender, "ve_mod")
     base_ve = defender.combat_stats.VE + condition_modifier + stamina_mod + injury_mod
 
     # === Apply directional VÉ restrictions with shield skill ===
@@ -235,23 +267,12 @@ def calculate_attack_value(
         weapon = attacker.weapon
 
     # Unconscious attackers cannot attack; force attack value to 0
-    if hasattr(attacker, "stamina") and attacker.stamina and attacker.stamina.is_unconscious():
+    if not _is_unit_conscious(attacker):
         return 0
 
     base_te = attacker.combat_stats.TE
-    stamina_mod = 0
-    if hasattr(attacker, "stamina") and attacker.stamina:
-        stamina_mod = attacker.stamina.get_combat_modifiers().te_mod
-
-    injury_mod = 0
-    if hasattr(attacker, "fp") and hasattr(attacker, "ep"):
-        from .conditions.injury import calculate_injury_condition, get_injury_modifiers
-
-        injury_cond = calculate_injury_condition(
-            attacker.fp.current, attacker.fp.maximum, attacker.ep.current, attacker.ep.maximum
-        )
-        injury_mod = get_injury_modifiers(injury_cond).te_mod
-
+    stamina_mod = _get_stamina_modifier(attacker, "te_mod")
+    injury_mod = _get_injury_modifier(attacker, "te_mod")
     weapon_te = weapon.te_modifier if weapon else 0
 
     all_te = (
@@ -309,10 +330,6 @@ def resolve_attack(
     # Armor is sourced from defender.armor_system (if present)
 
     # === Apply weapon skill modifiers ===
-    skill_ke_mod = 0
-    skill_te_mod = 0
-    skill_ve_mod = 0
-    skill_ce_mod = 0
     skill_stamina_cost_modifier = 0
     skill_critical_override = None
     skill_critical_failure_max = None
@@ -343,10 +360,7 @@ def resolve_attack(
     attack_angle = get_attack_angle(attacker, defender)
 
     # === Check for critical failure (levels 0-2) ===
-    if skill_critical_failure_max is not None:
-        is_fail = 1 <= attack_roll <= skill_critical_failure_max
-    else:
-        is_fail = is_critical_failure(attack_roll, weapon_skill_level)
+    is_fail = is_critical_failure(attack_roll, weapon_skill_level, skill_critical_failure_max)
     if is_fail:
         # Critical failure: attack is immediately CRITICAL_FAILURE outcome, no damage, no hit
         # Still show actual TÉ and VÉ values for player feedback
@@ -375,16 +389,28 @@ def resolve_attack(
             stamina_spent_defender=0,
         )
 
+    # === Build critical context ===
+    # Create context once and use consistently for all critical checks
+    critical_ctx = CriticalContext(
+        attack_roll=attack_roll,
+        weapon_skill_level=weapon_skill_level,
+        critical_threshold=skill_critical_override,
+    )
+
     # Check for critical hit first (affects everything)
-    is_crit = is_critical_hit(attack_roll, weapon_skill_level, skill_critical_override)
+    is_crit = is_critical_hit(
+        critical_ctx.attack_roll,
+        critical_ctx.weapon_skill_level,
+        critical_ctx.critical_threshold,
+    )
 
     # Unconscious attackers cannot land critical hits
-    if hasattr(attacker, "stamina") and attacker.stamina and attacker.stamina.is_unconscious():
+    if not _is_unit_conscious(attacker):
         is_crit = False
 
     # Calculate attack and defense values
     all_te = calculate_attack_value(
-        attacker, attack_roll, weapon, attacker_conditions, skill_te_mod
+        attacker, attack_roll, weapon, attacker_conditions, 0
     )
 
     # === Apply directional attack bonuses ===
@@ -446,17 +472,7 @@ def resolve_attack(
         # Placeholder base cost aligned with "action points" concept
         DODGE_STAMINA_BASE_COST = 6
         # Compute stamina cost using defender's stamina pool snapshot
-        if hasattr(defender, "stamina") and defender.stamina:
-            temp_sta = Stamina(
-                max_stamina=defender.stamina.max_stamina,
-                current_stamina=defender.stamina.current_stamina,
-                attribute_ref=defender.stamina.attribute_ref,
-            )
-        else:
-            # Fallback: derive temporary stamina from endurance
-            temp_sta = Stamina.from_attribute(
-                getattr(defender.attributes, "endurance", 10), start_full=False
-            )
+        temp_sta = _create_stamina_snapshot(defender)
         stamina_spent_defender = temp_sta.apply_cost(
             DODGE_STAMINA_BASE_COST, stamina_dodge or {"min_cost": 1}
         )
@@ -523,16 +539,7 @@ def resolve_attack(
             base_fp_cost = damage_no_armor.final_damage
 
             # Compute stamina cost using defender's stamina pool snapshot
-            if hasattr(defender, "stamina") and defender.stamina:
-                temp_sta = Stamina(
-                    max_stamina=defender.stamina.max_stamina,
-                    current_stamina=defender.stamina.current_stamina,
-                    attribute_ref=defender.stamina.attribute_ref,
-                )
-            else:
-                temp_sta = Stamina.from_attribute(
-                    getattr(defender.attributes, "endurance", 10), start_full=False
-                )
+            temp_sta = _create_stamina_snapshot(defender)
 
             if outcome == AttackOutcome.BLOCKED:
                 # Apply shield skill stamina modifiers
