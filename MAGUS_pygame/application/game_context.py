@@ -7,7 +7,6 @@ Manages lifecycle of repositories, services, and provides centralized access.
 from application.equipment_validation_service import EquipmentValidationService
 from application.scenario_service import ScenarioService
 from application.unit_setup_service import UnitSetupService
-from domain.mechanics.damage import DamageService
 from domain.services import UnitFactory
 from infrastructure.repositories import (
     CharacterRepository,
@@ -59,7 +58,6 @@ class GameContext:
         self.unit_factory = UnitFactory(
             character_repo=self.character_repo, equipment_repo=self.equipment_repo
         )
-        self.damage_service = DamageService()
 
         logger.info("GameContext initialized")
 

@@ -108,25 +108,3 @@ def calculate_final_damage(
         is_critical=False,
         overkill=0,
     )
-
-
-class DamageService:
-    """Service around damage calculation for application layer.
-
-    Responsibilities:
-    - Provide high-level API for attack resolution
-    - Future: integrate critical rolls, weapon dice parsing, status effects
-    """
-
-    def resolve_attack(
-        self,
-        attacker: Unit,
-        defender: Unit,
-        weapon: Weapon | None,
-        rolled_damage: int,
-        ctx: DamageContext | None = None,
-    ) -> DamageResult:
-        result = calculate_final_damage(attacker, weapon, rolled_damage, ctx)
-        # Apply damage to defender as a side-effect
-        defender.take_damage(result.final_damage)
-        return result

@@ -89,8 +89,9 @@ class BattleScreen:
 
         # Detailed battle log system
         self.detailed_log = DetailedBattleLog()
-        self.detailed_log.set_round(battle_service.round)  # Initialize with starting round
-        self._log_initiative(battle_service)  # Log initial turn order
+        if battle_service is not None:
+            self.detailed_log.set_round(battle_service.round)  # Initialize with starting round
+            self._log_initiative(battle_service)  # Log initial turn order
         self.battle_log_popup = BattleLogPopup(self.detailed_log)
 
         # Create play area surface (to the right of sidebar)
@@ -125,7 +126,10 @@ class BattleScreen:
             screen_width, screen_height, self.renderer, self.action_panel, self.hud, self.pause_menu
         )
 
-        logger.info(f"BattleScreen initialized with {len(battle_service.units)} units")
+        if battle_service is not None:
+            logger.info(f"BattleScreen initialized with {len(battle_service.units)} units")
+        else:
+            logger.info("BattleScreen initialized (battle service will be set later)")
         logger.info(f"Layout: Sidebar ({SIDEBAR_WIDTH}px) + Play Area ({PLAY_AREA_WIDTH}px)")
 
     def handle_event(self, event: pygame.event.Event) -> None:
@@ -577,7 +581,13 @@ class BattleScreen:
         target = self.battle.get_unit_at_position(target_pos)
 
         # Execute attack through action executor (which handles messaging)
-        self.action_executor.execute_attack(target_pos, current, target)
+        summary = self.action_executor.execute_attack(target_pos, current, target)
+
+        # Handle post-attack reactions (counterattacks, shield bash)
+        if summary:
+            reaction_results = summary.get("reaction_results")
+            if reaction_results:
+                self.reaction_coordinator.enqueue_post_attack_reactions(reaction_results)
 
         # Only cancel attack mode if no more AP
         if current and current.weapon:

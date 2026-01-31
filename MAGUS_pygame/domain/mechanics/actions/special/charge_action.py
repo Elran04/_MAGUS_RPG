@@ -33,7 +33,11 @@ from typing import Iterable
 from domain.entities import Unit, Weapon
 from domain.mechanics.attack_resolution import AttackResult as CoreAttackResult
 from domain.mechanics.attack_resolution import resolve_attack
-from domain.mechanics.lucky_roll import LuckyRollType, resolve_lucky_roll, should_use_lucky_roll
+from domain.mechanics.lucky_unlucky_roll import (
+    LuckyRollType,
+    resolve_lucky_roll,
+    should_use_lucky_roll,
+)
 from domain.mechanics.reach import HEX_DIRECTIONS, get_weapon_reach
 from domain.value_objects import Facing, Position
 

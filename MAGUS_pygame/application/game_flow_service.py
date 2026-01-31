@@ -162,6 +162,11 @@ def coordinate_game_flow(
 
     # Update battle_screen with the battle_service and background
     battle_screen.battle = battle_service
+
+    # Initialize detailed log with battle info now that battle_service is available
+    battle_screen.detailed_log.set_round(battle_service.round)
+    battle_screen._log_initiative(battle_service)
+
     if background:
         battle_screen.renderer.background = background
         logger.debug("Background updated for battle screen")

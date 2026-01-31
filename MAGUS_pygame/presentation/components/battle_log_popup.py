@@ -398,9 +398,72 @@ class BattleLogPopup:
 
         # Extra data
         for key, value in action.extra_data.items():
-            extra_text = self.small_font.render(f"{key}: {value}", True, (180, 180, 180))
-            surface.blit(extra_text, (x + 20, y))
-            y += 18
+            # Skip internal ÉP breakdown variables - only display total_ep with color codes
+            if key in ("total_overflow_ep", "total_mandatory_ep", "total_overpower_ep"):
+                continue
+
+            if isinstance(value, list):
+                # Handle list values (attacks, etc.)
+                extra_text = self.small_font.render(f"{key}:", True, (180, 180, 180))
+                surface.blit(extra_text, (x + 20, y))
+                y += 18
+                for item in value:
+                    item_text = self.small_font.render(f"  {item}", True, (180, 180, 180))
+                    surface.blit(item_text, (x + 30, y))
+                    y += 18
+            elif key == "total_ep" and "total_overflow_ep" in action.extra_data:
+                # Special handling for color-coded ÉP breakdown
+                overflow = action.extra_data.get("total_overflow_ep", 0)
+                mandatory = action.extra_data.get("total_mandatory_ep", 0)
+                overpower = action.extra_data.get("total_overpower_ep", 0)
+                total = value
+
+                # Base text: "Total ÉP: X ("
+                base_text = self.small_font.render(f"{key}: {total} (", True, (180, 180, 180))
+                x_pos = x + 20
+                surface.blit(base_text, (x_pos, y))
+                x_pos += base_text.get_width()
+
+                # Overflow (yellow)
+                if overflow > 0:
+                    overflow_text = self.small_font.render(f"FP overflow {overflow}", True, (255, 255, 100))
+                    surface.blit(overflow_text, (x_pos, y))
+                    x_pos += overflow_text.get_width()
+
+                # Separator
+                if overflow > 0 and (mandatory > 0 or overpower > 0):
+                    sep_text = self.small_font.render(" | ", True, (180, 180, 180))
+                    surface.blit(sep_text, (x_pos, y))
+                    x_pos += sep_text.get_width()
+
+                # Mandatory (purple)
+                if mandatory > 0:
+                    mandatory_text = self.small_font.render(f"mandatory {mandatory}", True, (200, 100, 255))
+                    surface.blit(mandatory_text, (x_pos, y))
+                    x_pos += mandatory_text.get_width()
+
+                # Separator
+                if mandatory > 0 and overpower > 0:
+                    sep_text = self.small_font.render(" | ", True, (180, 180, 180))
+                    surface.blit(sep_text, (x_pos, y))
+                    x_pos += sep_text.get_width()
+
+                # Overpower (red)
+                if overpower > 0:
+                    overpower_text = self.small_font.render(f"overpower {overpower}", True, (255, 100, 100))
+                    surface.blit(overpower_text, (x_pos, y))
+                    x_pos += overpower_text.get_width()
+
+                # Closing paren
+                close_text = self.small_font.render(")", True, (180, 180, 180))
+                surface.blit(close_text, (x_pos, y))
+
+                y += 18
+            else:
+                # Regular key-value pairs
+                extra_text = self.small_font.render(f"{key}: {value}", True, (180, 180, 180))
+                surface.blit(extra_text, (x + 20, y))
+                y += 18
 
         # Round number
         round_text = self.small_font.render(

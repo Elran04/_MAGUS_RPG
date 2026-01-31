@@ -9,14 +9,14 @@ Tests cover:
 """
 
 import pytest
-from domain.entities import Unit, Weapon
-from domain.mechanics.damage import (
+from MAGUS_pygame.domain.entities import Unit, Weapon
+from MAGUS_pygame.domain.mechanics.damage import (
     DamageContext,
     _calculate_attribute_bonus,
     _get_attribute_value,
     calculate_final_damage,
 )
-from domain.value_objects import Attributes, CombatStats, Facing, Position, ResourcePool
+from MAGUS_pygame.domain.value_objects import Attributes, CombatStats, Facing, Position, ResourcePool
 
 # --- Fixtures ---
 
@@ -338,70 +338,6 @@ class TestEdgeCases:
         assert result.base_damage == 5
         assert result.final_damage == 5
         assert result.armor_absorbed == 0
-
-
-# --- Test DamageService ---
-
-
-class TestDamageService:
-    """Test DamageService integration."""
-
-    def test_resolve_attack_applies_damage(self, strong_unit, basic_unit, basic_weapon):
-        """Attack resolution applies damage to defender."""
-        from domain.mechanics.damage import DamageService
-
-        service = DamageService()
-        initial_ep = basic_unit.ep.current
-
-        result = service.resolve_attack(
-            attacker=strong_unit,
-            defender=basic_unit,
-            weapon=basic_weapon,
-            rolled_damage=6,
-        )
-
-        # Damage: 6 + 4 (attribute bonus) = 10
-        assert result.final_damage == 10
-        assert basic_unit.ep.current == initial_ep - 10
-
-    def test_resolve_attack_with_context(self, strong_unit, basic_unit, basic_weapon):
-        """Attack with damage context."""
-        from domain.mechanics.damage import DamageService
-
-        service = DamageService()
-        initial_ep = basic_unit.ep.current
-
-        ctx = DamageContext(charge_multiplier=2, armor_absorption=5)
-        result = service.resolve_attack(
-            attacker=strong_unit,
-            defender=basic_unit,
-            weapon=basic_weapon,
-            rolled_damage=6,
-            ctx=ctx,
-        )
-
-        # (6 + 4) * 2 - 5 = 15
-        assert result.final_damage == 15
-        assert basic_unit.ep.current == initial_ep - 15
-
-    def test_resolve_attack_cannot_kill_below_zero(self, strong_unit, basic_unit, basic_weapon):
-        """Damage cannot reduce EP below 0."""
-        basic_unit.ep = ResourcePool(5, 15)  # Low health
-
-        from domain.mechanics.damage import DamageService
-
-        service = DamageService()
-
-        result = service.resolve_attack(
-            attacker=strong_unit,
-            defender=basic_unit,
-            weapon=basic_weapon,
-            rolled_damage=20,  # Massive overkill
-        )
-
-        # Should not go negative
-        assert basic_unit.ep.current == 0
-        assert not basic_unit.is_alive()
 
 
 if __name__ == "__main__":

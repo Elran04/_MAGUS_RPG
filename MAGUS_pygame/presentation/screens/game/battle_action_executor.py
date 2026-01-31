@@ -174,6 +174,7 @@ class BattleActionExecutor:
                     facing_ignored_ve=facing_ignored_ve,
                     damage_to_fp=attack_res.damage_to_fp,
                     damage_to_ep=attack_res.damage_to_ep,
+                    mandatory_ep_loss=attack_res.mandatory_ep_loss,
                     armor_absorbed=attack_res.armor_absorbed,
                     stamina_spent_defender=attack_res.stamina_spent_defender,
                     hit_zone=attack_res.hit_zone,
@@ -232,10 +233,82 @@ class BattleActionExecutor:
 
             # Log detailed action entry
             if self.detailed_log:
+                for idx, res in enumerate(combo_results, start=1):
+                    attack_msg = (
+                        f"Combo {idx}/{total_attacks}: {attacker.name} -> {defender.name}\n"
+                        f"{self._format_attack_result_message(res)}"
+                    )
+                    attack_data = DetailedAttackData(
+                        attacker_name=attacker.name,
+                        defender_name=defender.name,
+                        round_number=self.battle.round,
+                        attack_roll=res.attack_roll,
+                        all_te=res.all_te,
+                        all_ve=res.all_ve,
+                        outcome=res.outcome.value,
+                        is_flank_attack=False,
+                        is_rear_attack=False,
+                        facing_ignored_ve=False,
+                        damage_to_fp=res.damage_to_fp,
+                        damage_to_ep=res.damage_to_ep,
+                        mandatory_ep_loss=res.mandatory_ep_loss,
+                        armor_absorbed=res.armor_absorbed,
+                        stamina_spent_defender=res.stamina_spent_defender,
+                        hit_zone=res.hit_zone,
+                        zone_sfe=res.zone_sfe,
+                        is_critical=res.is_critical,
+                        is_overpower=res.is_overpower,
+                        attacker_penalties={},
+                        attacker_buffs={},
+                        defender_penalties={},
+                        defender_buffs={},
+                    )
+                    self.detailed_log.log_attack(attack_msg, attack_data)
+
+                # Calculate total damage with ÉP source breakdown
                 total_fp = sum(r.damage_to_fp for r in combo_results)
-                total_ep = sum(r.damage_to_ep for r in combo_results)
-                total_mandatory = sum(r.mandatory_ep_loss for r in combo_results)
-                outcomes = [r.outcome.value for r in combo_results]
+                total_overflow_ep = 0  # FP damage that overflowed to ÉP
+                total_mandatory_ep = 0  # Weapon size rule (purple)
+                total_overpower_ep = 0  # Excess TE causing direct ÉP (red)
+
+                for res in combo_results:
+                    total_mandatory_ep += res.mandatory_ep_loss
+                    if res.is_overpower:
+                        total_overpower_ep += res.damage_to_ep
+                    else:
+                        total_overflow_ep += res.damage_to_ep
+
+                total_ep = total_overflow_ep + total_mandatory_ep + total_overpower_ep
+
+                # Build attack lines for battle log
+                attack_lines = []
+                for i, res in enumerate(combo_results, start=1):
+                    outcome_str = res.outcome.value.replace("_", " ").title()
+                    damage_roll = getattr(res, "rolled_damage", 0)
+                    base = f"{i}. TÉ {res.all_te} ({res.attack_roll}) vs VÉ {res.all_ve} | {outcome_str}"
+
+                    from domain.mechanics.attack_resolution import AttackOutcome
+
+                    if res.outcome in (
+                        AttackOutcome.HIT,
+                        AttackOutcome.OVERPOWER,
+                        AttackOutcome.CRITICAL,
+                        AttackOutcome.CRITICAL_OVERPOWER,
+                    ):
+                        ep_total = res.damage_to_ep + res.mandatory_ep_loss
+                        line = (
+                            f"{base} | DMG {damage_roll} SFÉ {res.zone_sfe} | "
+                            f"FP {res.damage_to_fp} ÉP {ep_total}"
+                        )
+                    elif res.outcome in (AttackOutcome.BLOCKED, AttackOutcome.PARRIED):
+                        line = (
+                            f"{base} | DMG {damage_roll} | "
+                            f"Stamina {res.stamina_spent_defender}"
+                        )
+                    else:
+                        line = f"{base}"
+
+                    attack_lines.append(line)
 
                 action_data = DetailedActionData(
                     unit_name=attacker.name,
@@ -245,10 +318,12 @@ class BattleActionExecutor:
                     description=f"Dagger Combo ({len(combo_results)}/{total_attacks})",
                     extra_data={
                         "defender": defender.name,
-                        "outcomes": outcomes,
+                        "attacks": attack_lines,
                         "total_fp": total_fp,
                         "total_ep": total_ep,
-                        "mandatory_ep": total_mandatory,
+                        "total_overflow_ep": total_overflow_ep,
+                        "total_mandatory_ep": total_mandatory_ep,
+                        "total_overpower_ep": total_overpower_ep,
                         "stopped_early": stopped_early,
                     },
                 )
@@ -404,6 +479,7 @@ class BattleActionExecutor:
                         facing_ignored_ve=facing_ignored_ve,
                         damage_to_fp=attack_res.damage_to_fp,
                         damage_to_ep=attack_res.damage_to_ep,
+                        mandatory_ep_loss=attack_res.mandatory_ep_loss,
                         armor_absorbed=attack_res.armor_absorbed,
                         stamina_spent_defender=attack_res.stamina_spent_defender,
                         hit_zone=attack_res.hit_zone,
@@ -606,34 +682,43 @@ class BattleActionExecutor:
             else:
                 line2 = f"DMG: {pre_armor_damage}"
 
-            # Line 3: Damage deductions (final damage after armor)
+            # Line 3: Damage breakdown with transparency
             damage_parts = []
+
+            # Show armor absorption if any
+            if attack_result.armor_absorbed > 0:
+                damage_parts.append(f"Armor: -{attack_result.armor_absorbed}")
+
+            # Final FP damage
             if attack_result.damage_to_fp > 0:
                 damage_parts.append(f"FP: {attack_result.damage_to_fp}")
 
-            # Show ÉP damage with color coding based on source
-            # White: overflow/direct, Purple: weapon size rule, Red: overpower
-            direct_ep = attack_result.damage_to_ep  # Direct ÉP damage
-            mandatory_ep = attack_result.mandatory_ep_loss  # From weapon size rule
+            # ÉP damage breakdown with clear labels
+            # damage_to_ep = overflow FP damage OR overpower ÉP
+            # mandatory_ep_loss = weapon size rule (large weapons always cause ÉP)
+            direct_ep = attack_result.damage_to_ep
+            mandatory_ep = attack_result.mandatory_ep_loss
             total_ep = direct_ep + mandatory_ep
 
             if total_ep > 0:
-                # Check if this is from overpower (damage_to_ep is high from overpower rule)
-                is_overpower_ep = attack_result.is_overpower and direct_ep > 0
+                ep_parts = []
 
-                if mandatory_ep > 0 and direct_ep > 0:
-                    # Both rules apply: show with color tags
-                    ep_str = f"ÉP: {total_ep} (<purple>{mandatory_ep}</purple> + <white>{direct_ep}</white>)"
-                    damage_parts.append(ep_str)
-                elif mandatory_ep > 0:
-                    # Only weapon size rule applies - purple
-                    damage_parts.append(f"ÉP: <purple>{mandatory_ep}</purple>")
-                elif is_overpower_ep:
-                    # Overpower damage - red
-                    damage_parts.append(f"ÉP: <red>{direct_ep}</red>")
-                else:
-                    # Overflow damage - white
-                    damage_parts.append(f"ÉP: <white>{direct_ep}</white>")
+                # Mandatory ÉP from weapon size (always show if present)
+                if mandatory_ep > 0:
+                    ep_parts.append(f"Weapon:{mandatory_ep}")
+
+                # Direct ÉP damage (overflow or overpower)
+                if direct_ep > 0:
+                    if attack_result.is_overpower:
+                        # Overpower: excess TE causes direct ÉP
+                        ep_parts.append(f"Overpower:{direct_ep}")
+                    else:
+                        # Overflow: FP damage exceeded max FP
+                        ep_parts.append(f"Overflow:{direct_ep}")
+
+                if ep_parts:
+                    ep_breakdown = "+".join(ep_parts)
+                    damage_parts.append(f"ÉP: {total_ep} ({ep_breakdown})")
 
             if damage_parts:
                 line3 = " | ".join(damage_parts)
@@ -655,54 +740,88 @@ class BattleActionExecutor:
         total_attacks: int,
         stopped_early: bool = False,
     ) -> str:
-        """Format dagger attack combination results into a single log message."""
+        """Format dagger attack combination results with detailed per-attack breakdown."""
         if not attack_results:
             return "Attack combination failed"
 
         # Line 1: Title and participants
-        line1 = (
+        title = (
             f"Dagger Combo ({len(attack_results)}/{total_attacks}) "
             f"{attacker.name} -> {defender.name}"
         )
 
-        # Line 2: Outcome summary per hit
-        outcomes = []
+        # Lines 2+: Each attack result on its own line with TÉ/VÉ details
+        attack_lines = []
         for i, res in enumerate(attack_results, start=1):
             outcome_str = res.outcome.value.replace("_", " ").title()
-            outcomes.append(f"{i}:{outcome_str}")
-        line2 = " | ".join(outcomes)
+            # Format like normal attack: TÉ (roll) vs VÉ | Outcome
+            attack_line = f"  {i}. TÉ {res.all_te} ({res.attack_roll}) vs VÉ {res.all_ve} | {outcome_str}"
 
-        # Line 3: Total damage summary
-        total_fp = sum(r.damage_to_fp for r in attack_results)
-        total_direct_ep = sum(r.damage_to_ep for r in attack_results)
-        total_mandatory_ep = sum(r.mandatory_ep_loss for r in attack_results)
-        total_ep = total_direct_ep + total_mandatory_ep
+            # Add damage breakdown if hit
+            from domain.mechanics.attack_resolution import AttackOutcome
+            if res.outcome in (AttackOutcome.HIT, AttackOutcome.CRITICAL,
+                              AttackOutcome.OVERPOWER, AttackOutcome.CRITICAL_OVERPOWER):
+                damage_parts = []
+                if res.damage_to_fp > 0:
+                    damage_parts.append(f"FP:{res.damage_to_fp}")
 
-        damage_parts = []
-        if total_fp > 0:
-            damage_parts.append(f"FP: {total_fp}")
+                ep_total = res.damage_to_ep + res.mandatory_ep_loss
+                if ep_total > 0:
+                    ep_breakdown = []
+                    if res.mandatory_ep_loss > 0:
+                        ep_breakdown.append(f"W:{res.mandatory_ep_loss}")
+                    if res.damage_to_ep > 0:
+                        if res.is_overpower:
+                            ep_breakdown.append(f"O:{res.damage_to_ep}")
+                        else:
+                            ep_breakdown.append(f"Ov:{res.damage_to_ep}")
+                    damage_parts.append(f"ÉP:{ep_total}({'+'.join(ep_breakdown)})")
 
-        if total_ep > 0:
-            if total_mandatory_ep > 0 and total_direct_ep > 0:
-                ep_str = (
-                    f"ÉP: {total_ep} (<purple>{total_mandatory_ep}</purple> + "
-                    f"<white>{total_direct_ep}</white>)"
-                )
-                damage_parts.append(ep_str)
-            elif total_mandatory_ep > 0:
-                damage_parts.append(f"ÉP: <purple>{total_mandatory_ep}</purple>")
+                if damage_parts:
+                    attack_line += " | " + " ".join(damage_parts)
+
+            attack_lines.append(attack_line)
+
+        # Final line: Total damage summary
+        # Separate ÉP sources: overflow (yellow), mandatory (purple), overpower (red)
+        total_overflow_ep = 0  # FP damage that overflowed to ÉP
+        total_mandatory_ep = 0  # Weapon size rule (purple)
+        total_overpower_ep = 0  # Excess TE causing direct ÉP (red)
+
+        for res in attack_results:
+            total_mandatory_ep += res.mandatory_ep_loss
+            if res.is_overpower:
+                total_overpower_ep += res.damage_to_ep
             else:
-                damage_parts.append(f"ÉP: <white>{total_direct_ep}</white>")
+                total_overflow_ep += res.damage_to_ep
 
-        line3 = " | ".join(damage_parts)
+        total_ep = total_overflow_ep + total_mandatory_ep + total_overpower_ep
+
+        # Only count FP that didn't overflow as final FP damage
+        total_fp = sum(r.damage_to_fp for r in attack_results)
+
+        summary_parts = []
+        if total_fp > 0:
+            summary_parts.append(f"Total FP: {total_fp}")
+        if total_ep > 0:
+            ep_sources = []
+            if total_overflow_ep > 0:
+                ep_sources.append(f"yellow {total_overflow_ep}")
+            if total_mandatory_ep > 0:
+                ep_sources.append(f"purple {total_mandatory_ep}")
+            if total_overpower_ep > 0:
+                ep_sources.append(f"red {total_overpower_ep}")
+            ep_breakdown = " | ".join(ep_sources)
+            summary_parts.append(f"Total ÉP: {total_ep} ({ep_breakdown})")
+
+        summary_line = " | ".join(summary_parts)
         if stopped_early:
-            line3 = (line3 + " | " if line3 else "") + "Target defeated"
+            summary_line = (summary_line + " | " if summary_line else "") + "Target defeated"
 
-        msg_lines = [line1]
-        if line2:
-            msg_lines.append(line2)
-        if line3:
-            msg_lines.append(line3)
+        # Combine all lines
+        msg_lines = [title] + attack_lines
+        if summary_line:
+            msg_lines.append(f"  TOTAL: {summary_line}")
 
         return "\n".join(msg_lines)
 

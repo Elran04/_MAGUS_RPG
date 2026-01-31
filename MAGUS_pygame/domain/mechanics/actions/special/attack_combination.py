@@ -26,7 +26,11 @@ from domain.mechanics.actions.base import Action, ActionCategory, ActionCost, Ac
 from domain.mechanics.attack_resolution import AttackOutcome
 from domain.mechanics.attack_resolution import AttackResult as CoreAttackResult
 from domain.mechanics.attack_resolution import resolve_attack
-from domain.mechanics.lucky_roll import LuckyRollType, resolve_lucky_roll, should_use_lucky_roll
+from domain.mechanics.lucky_unlucky_roll import (
+    LuckyRollType,
+    resolve_lucky_roll,
+    should_use_lucky_roll,
+)
 
 if TYPE_CHECKING:
     from domain.entities import Unit, Weapon
@@ -108,8 +112,9 @@ def can_use_attack_combination(
     if not config:
         return False
 
-    # Check AP availability (application layer responsibility)
-    # attacker.ap >= config.ap_cost
+    # Check if attacker has enough AP
+    if attacker.ap.current < config.ap_cost:
+        return False
 
     return True
 

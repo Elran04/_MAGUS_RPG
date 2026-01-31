@@ -1,8 +1,8 @@
 """
-Shield bash special action.
+Reaction Shield Bash
 
-Unlocked at shieldskill level 3+.
-This is a melee attack using a shield as the striking tool.
+Triggered after a successful block with a shield.
+This is a free reaction attack using the shield as a weapon.
 """
 
 from __future__ import annotations
@@ -12,10 +12,13 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from domain.entities.weapon import Weapon
-from domain.mechanics.actions.base import Action, ActionCategory, ActionCost, ActionResult
-from domain.mechanics.actions.special.usability_special_attacks import can_use_shield_bash
+from domain.mechanics.actions.special.usability_special_attacks import can_use_reaction_bash
+from domain.mechanics.attack_resolution import AttackOutcome
 from domain.mechanics.attack_resolution import AttackResult as CoreAttackResult
 from domain.mechanics.attack_resolution import resolve_attack
+from domain.mechanics.reach import compute_reach_hexes
+
+from .base import Reaction, ReactionCategory, ReactionResult
 
 if TYPE_CHECKING:
 	from domain.entities import Unit
@@ -45,33 +48,46 @@ def _build_shield_bash_weapon() -> Weapon:
 
 
 @dataclass
-class ShieldBashAction(Action):
-	"""Execute shield bash special action."""
+class ReactionShieldBash(Reaction):
+	"""Reaction shield bash after a successful block."""
 
-	ap_cost: int = SHIELD_BASH_AP_COST
-
-	@property
-	def category(self) -> ActionCategory:
-		return ActionCategory.SPECIAL_ATTACK
+	name: str = "reaction_shieldbash"
+	ap_cost: int = 0
+	stamina_cost: int = 0
 
 	@property
-	def cost(self) -> ActionCost:
-		return ActionCost(ap=self.ap_cost)
+	def category(self) -> ReactionCategory:
+		return ReactionCategory.COUNTER
 
-	def can_execute(
+	def should_trigger(
 		self,
 		*,
 		attacker: Unit,
 		defender: Unit,
+		last_attack_result: CoreAttackResult | None,
+		reactions_used: int = 0,
 		**_: object,
 	) -> tuple[bool, str]:
 		if attacker is None or defender is None:
 			return (False, "Attacker and defender are required")
-		if attacker.position.distance_to(defender.position) != 1:
-			return (False, "Shield bash requires adjacent target")
-		if not can_use_shield_bash(attacker):
-			return (False, "Shield bash not available")
-		return (True, "")
+		if last_attack_result is None:
+			return (False, "Missing last attack result")
+		if last_attack_result.outcome != AttackOutcome.BLOCKED:
+			return (False, "Last attack was not blocked")
+
+		if not can_use_reaction_bash(defender, reactions_used):
+			return (False, "Reaction shield bash not available")
+
+		# Must be within defender's zone of control (adjacent for shield bash)
+		attacker_pos = getattr(attacker, "position", None)
+		if attacker_pos is None:
+			return (False, "Attacker position missing")
+
+		defender_zone = compute_reach_hexes(defender, defender.weapon)
+		if attacker_pos not in defender_zone:
+			return (False, "Attacker not in defender's zone of control")
+
+		return (True, "Reaction shield bash available")
 
 	def execute(
 		self,
@@ -88,14 +104,15 @@ class ShieldBashAction(Action):
 		stamina_block: dict | None = None,
 		stamina_parry: dict | None = None,
 		stamina_dodge: dict | None = None,
-	) -> ActionResult:
-		if not can_use_shield_bash(attacker):
-			return ActionResult(success=False, message="Shield bash not available")
+	) -> ReactionResult:
+		# Defender is the reactor; they perform the bash on the original attacker
+		reactor = defender
+		target = attacker
 
 		bash_weapon = _build_shield_bash_weapon()
 		shield_skill_level = 0
-		if getattr(attacker, "skills", None):
-			shield_skill_level = attacker.skills.get_rank("shieldskill", 0)
+		if getattr(reactor, "skills", None):
+			shield_skill_level = reactor.skills.get_rank("shieldskill", 0)
 
 		if attack_roll is None:
 			attack_roll = random.randint(1, 100)
@@ -105,8 +122,8 @@ class ShieldBashAction(Action):
 			)
 
 		core_result: CoreAttackResult = resolve_attack(
-			attacker=attacker,
-			defender=defender,
+			attacker=reactor,
+			defender=target,
 			attack_roll=attack_roll,
 			base_damage_roll=base_damage_roll,
 			weapon=bash_weapon,
@@ -121,10 +138,22 @@ class ShieldBashAction(Action):
 			stamina_dodge=stamina_dodge,
 		)
 
-		return ActionResult(
+		outcome_str = core_result.outcome.value.replace("_", " ").title()
+		msg = (
+			f"Reaction Bash!: TÉ {core_result.all_te} ({core_result.attack_roll}) "
+			f"vs VÉ {core_result.all_ve} | {outcome_str}"
+		)
+
+		data = {
+			"attack_result": core_result,
+			"special_attack": "reaction_shieldbash",
+		}
+
+		return ReactionResult(
 			success=True,
-			message="",
+			message=msg,
 			ap_spent=self.ap_cost,
 			stamina_spent=0,
-			data={"attack_result": core_result, "special_attack": "shield_bash"},
+			data=data,
+			triggered_by=self.name,
 		)

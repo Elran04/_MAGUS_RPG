@@ -52,6 +52,8 @@ Two actively developed modules:
 ## Recent Changes (December 2025)
 
 ## Recent Changes (January 2026)
+- **Enhanced Combo Attack Logging**: Dagger combo attacks now display each hit individually with TE/VE rolls and outcome-specific damage format; total damage summary shows ÉP with color-coded source breakdown (yellow FP overflow | purple mandatory ÉP | red overpower ÉP) on single line
+- **ÉP Damage Transparency**: Battle log popup renders color-coded ÉP sources with single-line format; internal breakdown variables hidden from UI display
 - **Charge Special Attack**: Fully implemented charge mechanics with movement pathfinding, combat modifiers (+20 TÉ, -25 VÉ, 2x damage), UI dropdown, and charge-specific attackable zone highlighting; minimum 5 hex distance, costs 10 AP + 20 STA
 - **Opportunity Attack Reactions**: Accept/decline popup, queued reactions, charge path ZoC checks, and battle log integration
 - **Menu Initialization UX**: GameContext now builds on a background thread; menu stays clickable with a loading hint, and selections queue until initialization finishes (faster Quick Combat entry)

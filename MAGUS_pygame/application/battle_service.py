@@ -230,6 +230,10 @@ class BattleService:
         # Prevent actions for unconscious units
         if hasattr(unit, "stamina") and unit.stamina and unit.stamina.is_unconscious():
             return {"error": "Unit is unconscious and cannot act"}
+
+        # Extract mover's shield VÉ for opportunity attack defense
+        mover_shield_ve = self._extract_shield_ve(unit)
+
         summary = self.action_handler.move_unit(
             unit=unit,
             dest=dest,
@@ -237,6 +241,7 @@ class BattleService:
             ap_available=self.remaining_ap(unit),
             blocked=blocked,
             potential_reactors=potential_reactors,
+            mover_shield_ve=mover_shield_ve,
         )
         if "error" in summary:
             return summary
@@ -331,6 +336,8 @@ class BattleService:
             attack_result = result.data.get("attack_result")
             attack_results = result.data.get("attack_results")
 
+        reaction_results = []
+
         if attack_results:
             applied_results = []
             for combo_result in attack_results:
@@ -354,6 +361,22 @@ class BattleService:
                         result.data["combo_stop_reason"] = "defender_defeated"
                     break
 
+                # After each attack in combo, trigger post-attack reactions
+                if combo_result is not None:
+                    ca_results = self.action_handler.reaction_handler.handle_counterattacks(
+                        attacker=unit,
+                        defender=defender,
+                        last_attack_result=combo_result,
+                    )
+                    reaction_results.extend(ca_results)
+
+                    sb_results = self.action_handler.reaction_handler.handle_reaction_shieldbash(
+                        attacker=unit,
+                        defender=defender,
+                        last_attack_result=combo_result,
+                    )
+                    reaction_results.extend(sb_results)
+
         elif attack_result is not None:
             # Apply FP/EP damage to defender
             apply_attack_result(attack_result, defender)
@@ -368,7 +391,25 @@ class BattleService:
                 if getattr(attack_result, "stamina_spent_defender", 0) > 0:
                     defender.stamina.spend_action_points(attack_result.stamina_spent_defender)
 
-        return {"action_result": result}
+            # After single attack, trigger post-attack reactions
+            ca_results = self.action_handler.reaction_handler.handle_counterattacks(
+                attacker=unit,
+                defender=defender,
+                last_attack_result=attack_result,
+            )
+            reaction_results.extend(ca_results)
+
+            sb_results = self.action_handler.reaction_handler.handle_reaction_shieldbash(
+                attacker=unit,
+                defender=defender,
+                last_attack_result=attack_result,
+            )
+            reaction_results.extend(sb_results)
+
+        return_dict = {"action_result": result}
+        if reaction_results:
+            return_dict["reaction_results"] = reaction_results
+        return return_dict
 
     def attack_combination_current_unit(self, defender: Unit, **kwargs: object) -> dict[str, object]:
         """Execute dagger attack combination with the current unit."""

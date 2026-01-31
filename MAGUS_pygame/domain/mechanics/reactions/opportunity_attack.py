@@ -18,7 +18,11 @@ from dataclasses import dataclass
 from domain.entities import Unit, Weapon
 from domain.mechanics.attack_resolution import AttackResult as CoreAttackResult
 from domain.mechanics.attack_resolution import resolve_attack
-from domain.mechanics.lucky_roll import LuckyRollType, resolve_lucky_roll, should_use_lucky_roll
+from domain.mechanics.lucky_unlucky_roll import (
+    LuckyRollType,
+    resolve_lucky_roll,
+    should_use_lucky_roll,
+)
 
 from .base import Reaction, ReactionCategory, ReactionResult
 

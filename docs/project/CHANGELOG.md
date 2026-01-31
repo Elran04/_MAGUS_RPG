@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **Enhanced Combo Attack Logging**: Dagger combo attacks now log each hit individually with full TE/VE details and outcome-specific damage breakdown; total damage summary uses single-line color-coded ÉP format
+- **Transparent ÉP Damage Display**: Battle logs distinguish ÉP sources: FP overflow (yellow), mandatory ÉP loss (purple), overpower strikes (red) — displayed on one line with total ÉP
 - **Weaponskill AP Costs**: Attack AP cost now properly scales with weaponskill level (unskilled doubles cost, level 1 adds +2, level 2+ uses base cost)
 - **Atomic Attack Transactions**: Attack effects (damage, stamina) are only applied after AP is successfully spent, preventing partial execution and state corruption
 - **Charge Special Attack**: Complete implementation of charge mechanics (move up to 5 hexes + melee attack)

@@ -119,6 +119,7 @@ class BattleReactionCoordinator:
                         zone_sfe=attack_result.zone_sfe,
                         damage_to_fp=attack_result.damage_to_fp,
                         damage_to_ep=attack_result.damage_to_ep,
+                        mandatory_ep_loss=attack_result.mandatory_ep_loss,
                         armor_absorbed=attack_result.armor_absorbed,
                         stamina_spent_defender=attack_result.stamina_spent_defender,
                         is_critical=attack_result.is_critical,
@@ -145,3 +146,80 @@ class BattleReactionCoordinator:
         self.action_executor.show_message(
             f"{attacker_name}'s opportunity attack was declined"
         )
+
+    def enqueue_post_attack_reactions(self, reaction_results: list) -> None:
+        """Enqueue post-attack reactions (counterattacks, reaction shield bash) for player decision.
+
+        Args:
+            reaction_results: List of reaction results from reaction handler
+        """
+        for idx, reaction_result in enumerate(reaction_results):
+            # Extract unit names from the reaction result's data
+            attacker_name = (
+                reaction_result.data.get("attacker_name", "Unknown")
+                if reaction_result.data
+                else "Unknown"
+            )
+            defender_name = (
+                reaction_result.data.get("defender_name", "Unknown")
+                if reaction_result.data
+                else "Unknown"
+            )
+
+            # Get attack result for additional info
+            attack_result = reaction_result.data.get("attack_result") if reaction_result.data else None
+
+            # Determine reaction type for proper labeling
+            reaction_type = getattr(reaction_result, "reaction_type", "counterattack")
+            if hasattr(reaction_result, "data") and reaction_result.data:
+                special_attack = reaction_result.data.get("special_attack", "")
+                if special_attack:
+                    reaction_type = special_attack
+
+            # Create description for the reaction popup
+            type_name = "Counterattack" if reaction_type == "counterattack" else "Reaction Shield Bash"
+            description = (
+                f"{attacker_name} triggered {type_name}!"
+            )
+            if (
+                attack_result
+                and hasattr(attack_result, "requires_dodge_check")
+                and attack_result.requires_dodge_check
+            ):
+                description += "\nOriginal attacker may dodge."
+
+            # Note: Post-attack reactions are automatic (no player choice), just show results
+            # Format and display the reaction attack result
+            if attack_result:
+                msg = self.action_executor._format_attack_result_message(attack_result)
+                full_msg = f"{attacker_name} {type_name}!:\n{msg}"
+                self.action_executor.show_message(full_msg)
+
+                # Log detailed reaction attack information
+                if self.detailed_log:
+                    attack_data = DetailedAttackData(
+                        attacker_name=attacker_name,
+                        defender_name=defender_name,
+                        round_number=self.battle_service.round,
+                        attack_roll=attack_result.attack_roll,
+                        all_te=attack_result.all_te,
+                        all_ve=attack_result.all_ve,
+                        outcome=attack_result.outcome,
+                        is_flank_attack=False,
+                        is_rear_attack=False,
+                        facing_ignored_ve=False,
+                        hit_zone=attack_result.hit_zone,
+                        zone_sfe=attack_result.zone_sfe,
+                        damage_to_fp=attack_result.damage_to_fp,
+                        damage_to_ep=attack_result.damage_to_ep,
+                        mandatory_ep_loss=attack_result.mandatory_ep_loss,
+                        armor_absorbed=attack_result.armor_absorbed,
+                        stamina_spent_defender=attack_result.stamina_spent_defender,
+                        is_critical=attack_result.is_critical,
+                        is_overpower=attack_result.is_overpower,
+                    )
+                    self.detailed_log.log_attack(
+                        f"{attacker_name} {type_name}", attack_data
+                    )
+            else:
+                self.action_executor.show_message(f"{attacker_name} {type_name}!")

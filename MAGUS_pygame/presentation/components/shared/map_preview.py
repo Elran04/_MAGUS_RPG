@@ -139,16 +139,20 @@ class MapPreview:
             background_surface: Background image (or None)
             scenario_data: Scenario data with spawn_zones and obstacles
         """
-        # Get screen size from surface (this is what the editor uses)
-        screen_width, screen_height = surface.get_size()
+        # Use actual game play area dimensions for rendering (not preview size)
+        # This matches what the battle screen uses
+        from config import HEIGHT, PLAY_AREA_WIDTH
 
-        # Create a full-resolution render surface (like in editor)
-        full_render = pygame.Surface((screen_width, screen_height))
+        game_width = PLAY_AREA_WIDTH  # 1024
+        game_height = HEIGHT  # 768
+
+        # Create a full-resolution render surface at game resolution
+        full_render = pygame.Surface((game_width, game_height))
         full_render.fill((20, 20, 30))  # Dark background
 
-        # Draw background at full resolution
+            # Draw background at game resolution
         if background_surface:
-            scaled_bg = pygame.transform.scale(background_surface, (screen_width, screen_height))
+            scaled_bg = pygame.transform.scale(background_surface, (game_width, game_height))
             full_render.blit(scaled_bg, (0, 0))
 
         # Draw hex grid with zones/obstacles using editor's approach

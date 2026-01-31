@@ -60,14 +60,21 @@ from .critical import (
     is_critical_failure,
     is_critical_hit,
 )
-from .damage import DamageContext, DamageResult, DamageService, calculate_final_damage
+from .damage import DamageContext, DamageResult, calculate_final_damage
 from .reach import (
     calculate_mandatory_ep_loss,
     can_attack_target,
     compute_reach_hexes,
     get_weapon_reach,
 )
-from .reactions import OpportunityAttackReaction, Reaction, ReactionCategory, ReactionResult
+from .reactions import (
+    CounterattackReaction,
+    OpportunityAttackReaction,
+    Reaction,
+    ReactionCategory,
+    ReactionResult,
+    ReactionShieldBash,
+)
 from .weapon_wielding import (
     WieldingBonuses,
     WieldingInfo,
@@ -84,7 +91,6 @@ __all__ = [
     "DamageContext",
     "DamageResult",
     "calculate_final_damage",
-    "DamageService",
     # Reach
     "get_weapon_reach",
     "compute_reach_hexes",
@@ -156,4 +162,6 @@ __all__ = [
     "ReactionResult",
     "Reaction",
     "OpportunityAttackReaction",
+    "CounterattackReaction",
+    "ReactionShieldBash",
 ]

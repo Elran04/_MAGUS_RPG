@@ -44,7 +44,7 @@ class WeaponskillModifiers:
     )
 
     # Special effects
-    has_opportunity_on_miss_parry: bool = False  # Level 3+: opportunity on miss/parry
+    counterattack: bool = False  # Level 3+: counterattack on miss/parry
     opportunity_attacks_per_turn: int = 0  # Level 3: 1, Level 6: 3
 
     @property
@@ -128,11 +128,11 @@ BASE_WEAPONSKILL_MODIFIERS = {
 WEAPONSKILL_UNIQUE_EFFECTS = {
     "weaponskill_longswords": {
         3: {
-            "has_opportunity_on_miss_parry": True,
+            "counterattack": True,
             "opportunity_attacks_per_turn": 1,
         },
         6: {
-            "has_opportunity_on_miss_parry": True,
+            "counterattack": True,
             "opportunity_attacks_per_turn": 3,
         },
     },
@@ -244,7 +244,7 @@ def should_grant_skill_opportunity_attack(
     """
     mods = get_weaponskill_modifiers(weapon_skill_level, weapon_skill_id)
 
-    if not mods.has_opportunity_on_miss_parry:
+    if not mods.counterattack:
         return False
 
     # Only on MISS or PARRIED

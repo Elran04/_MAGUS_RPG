@@ -45,6 +45,7 @@ class ActionHandler:
         blocked: Iterable[tuple[int, int]] | None = None,
         apply_move: bool = True,
         potential_reactors: Iterable[Unit] | None = None,
+        mover_shield_ve: int = 0,
         rng_overrides: dict[str, object] | None = None,
     ) -> dict[str, object]:
         """Execute movement with optional reactions. Returns a summary dict.
@@ -101,7 +102,7 @@ class ActionHandler:
                 intersection_index=ix,
                 mover=unit,
                 potential_reactors=potential_reactors,
-                mover_shield_ve=0,  # Placeholder: shield VÉ not yet modeled on Unit
+                mover_shield_ve=mover_shield_ve,
                 mover_dodge_mod=0,  # Placeholder: dodge skill not yet modeled
                 rng_overrides=rng_overrides,
             )

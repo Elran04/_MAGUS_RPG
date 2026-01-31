@@ -16,7 +16,12 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 
 from domain.entities import Unit
-from domain.mechanics import OpportunityAttackReaction, apply_attack_result
+from domain.mechanics import (
+    CounterattackReaction,
+    OpportunityAttackReaction,
+    ReactionShieldBash,
+    apply_attack_result,
+)
 from domain.mechanics.reactions import ReactionResult
 from logger.logger import get_logger
 
@@ -48,10 +53,14 @@ class ReactionHandler:
     """Coordinates reaction evaluation and execution."""
 
     budget: ReactionBudget = field(default_factory=ReactionBudget)
+    counterattacks_used: dict[str, int] = field(default_factory=dict)
+    reaction_bashes_used: dict[str, int] = field(default_factory=dict)
 
     def start_turn(self, units: Iterable[Unit]) -> None:
         """Reset budget for all units at turn start."""
         self.budget.reset_for_units(units)
+        self.counterattacks_used = {u.id: 0 for u in units}
+        self.reaction_bashes_used = {u.id: 0 for u in units}
 
     def handle_opportunity_attacks(
         self: ReactionHandler,
@@ -182,4 +191,133 @@ class ReactionHandler:
                 break
 
         logger.info(f"Total opportunity attacks triggered: {len(results)}")
+        return results
+
+    def handle_counterattacks(
+        self: ReactionHandler,
+        *,
+        attacker: Unit,
+        defender: Unit,
+        last_attack_result: object | None,
+        rng_overrides: dict[str, object] | None = None,
+    ) -> list[ReactionResult]:
+        """Evaluate and execute longsword counterattacks after a miss/parry."""
+        results: list[ReactionResult] = []
+
+        if attacker is None or defender is None:
+            return results
+
+        reaction = CounterattackReaction()
+        used = self.counterattacks_used.get(defender.id, 0)
+        should, reason = reaction.should_trigger(
+            attacker=attacker,
+            defender=defender,
+            last_attack_result=last_attack_result,
+            counterattacks_used=used,
+        )
+        logger.info(f"Counterattack should_trigger={should} reason={reason}")
+        if not should:
+            return results
+
+        rkwargs = {}
+        if rng_overrides:
+            if "attack_roll" in rng_overrides:
+                rkwargs["attack_roll"] = rng_overrides["attack_roll"]
+            if "base_damage_roll" in rng_overrides:
+                rkwargs["base_damage_roll"] = rng_overrides["base_damage_roll"]
+
+        # Determine weapon and skill level for defender (reactor)
+        weapon = getattr(defender, "weapon", None)
+        weapon_skill_level = 0
+        if weapon is not None:
+            skill_id = getattr(weapon, "skill_id", "") or ""
+            if skill_id and getattr(defender, "skills", None):
+                try:
+                    weapon_skill_level = defender.skills.get_rank(skill_id, 0)
+                except Exception:
+                    weapon_skill_level = 0
+
+        result = reaction.execute(
+            attacker=attacker,
+            defender=defender,
+            weapon=weapon,
+            weapon_skill_level=weapon_skill_level,
+            **rkwargs,
+        )
+
+        # Add unit names to result data for presentation layer
+        result.data["attacker_name"] = defender.name
+        result.data["defender_name"] = attacker.name
+
+        # Apply effects to original attacker
+        attack_result = result.data.get("attack_result")
+        if attack_result is not None:
+            apply_attack_result(attack_result, attacker)
+            if hasattr(defender, "stamina") and defender.stamina:
+                if attack_result.stamina_spent_attacker > 0:
+                    defender.stamina.spend_action_points(attack_result.stamina_spent_attacker)
+            if hasattr(attacker, "stamina") and attacker.stamina:
+                if attack_result.stamina_spent_defender > 0:
+                    attacker.stamina.spend_action_points(attack_result.stamina_spent_defender)
+
+        self.counterattacks_used[defender.id] = used + 1
+        results.append(result)
+        return results
+
+    def handle_reaction_shieldbash(
+        self: ReactionHandler,
+        *,
+        attacker: Unit,
+        defender: Unit,
+        last_attack_result: object | None,
+        rng_overrides: dict[str, object] | None = None,
+    ) -> list[ReactionResult]:
+        """Evaluate and execute reaction shield bash after a successful block."""
+        results: list[ReactionResult] = []
+
+        if attacker is None or defender is None:
+            return results
+
+        reaction = ReactionShieldBash()
+        used = self.reaction_bashes_used.get(defender.id, 0)
+        should, reason = reaction.should_trigger(
+            attacker=attacker,
+            defender=defender,
+            last_attack_result=last_attack_result,
+            reactions_used=used,
+        )
+        logger.info(f"Reaction shield bash should_trigger={should} reason={reason}")
+        if not should:
+            return results
+
+        rkwargs = {}
+        if rng_overrides:
+            if "attack_roll" in rng_overrides:
+                rkwargs["attack_roll"] = rng_overrides["attack_roll"]
+            if "base_damage_roll" in rng_overrides:
+                rkwargs["base_damage_roll"] = rng_overrides["base_damage_roll"]
+
+        result = reaction.execute(
+            attacker=attacker,
+            defender=defender,
+            **rkwargs,
+        )
+
+        # Add unit names to result data for presentation layer
+        result.data["attacker_name"] = defender.name
+        result.data["defender_name"] = attacker.name
+
+        # Apply effects to original attacker
+        attack_result = result.data.get("attack_result")
+        if attack_result is not None:
+            apply_attack_result(attack_result, attacker)
+            if hasattr(defender, "stamina") and defender.stamina:
+                if attack_result.stamina_spent_attacker > 0:
+                    defender.stamina.spend_action_points(attack_result.stamina_spent_attacker)
+            if hasattr(attacker, "stamina") and attacker.stamina:
+                if attack_result.stamina_spent_defender > 0:
+                    attacker.stamina.spend_action_points(attack_result.stamina_spent_defender)
+
+        self.reaction_bashes_used[defender.id] = used + 1
+        results.append(result)
         return results
