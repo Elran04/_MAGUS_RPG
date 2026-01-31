@@ -8,8 +8,6 @@ For setup and run, see docs/DEVELOPER_GUIDE.md
 For porting legacy features, see docs/archive/MIGRATION.md
 """
 
-import threading
-
 import pygame
 from application.game_context import GameContext
 from config import HEIGHT, WIDTH
@@ -25,37 +23,33 @@ def main() -> None:
     logger.info("MAGUS RPG - Starting Game")
     logger.info("=" * 60)
 
-    # Initialize pygame
+    # Initialize pygame first
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("MAGUS RPG")
 
-    # Initialize context on background thread (non-blocking)
-    context: GameContext | None = None
-    context_ready = threading.Event()
-
-    def init_context() -> None:
-        nonlocal context
+    # Initialize game context (fast operation: repositories are lazy-loaded)
+    try:
+        logger.info("Initializing game context...")
         context = GameContext()
-        context_ready.set()
-
-    context_thread = threading.Thread(target=init_context, daemon=True)
-    context_thread.start()
-
-    # Wait for context to be ready
-    context_ready.wait()
-    if context is None:
-        logger.error("Failed to initialize game context")
+        logger.info("Game context initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize game context: {e}", exc_info=True)
+        pygame.quit()
         return
 
-    logger.info("Game context initialized, starting coordinator")
-
     # Delegate to game coordinator
-    coordinator = GameCoordinator(context)
-    coordinator.run()
-
-    logger.info("Game coordinator finished, exiting")
-    pygame.quit()
+    try:
+        coordinator = GameCoordinator(context)
+        coordinator.run()
+    except Exception as e:
+        logger.error(f"Fatal error in game coordinator: {e}", exc_info=True)
+    finally:
+        # Graceful cleanup
+        if hasattr(context, "shutdown"):
+            context.shutdown()
+        logger.info("Game coordinator finished, exiting")
+        pygame.quit()
 
 
 if __name__ == "__main__":
