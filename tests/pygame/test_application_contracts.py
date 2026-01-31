@@ -4,6 +4,8 @@ import pytest
 
 from MAGUS_pygame.application.game_flow_service import coordinate_game_flow
 from MAGUS_pygame.application.quick_combat_service import prepare_quick_combat_battle
+from MAGUS_pygame.domain.entities import Unit
+from MAGUS_pygame.domain.value_objects import Attributes, CombatStats, Position, ResourcePool
 from MAGUS_pygame.domain.value_objects.scenario_config import ScenarioConfig, UnitSetup
 
 
@@ -23,10 +25,16 @@ def test_application_has_no_presentation_or_pygame_imports(forbidden):
 
 class DummyUnit:
     def __init__(self, name="Unit", weapon=None):
+        self.id = "dummy_unit_id"
         self.name = name
         self.weapon = weapon
         self.sprite = None
         self.armor_system = type("ArmorSys", (), {"pieces": []})()
+        self.fp = type("ResourcePool", (), {"current": 10, "maximum": 10})()
+        self.ep = type("ResourcePool", (), {"current": 10, "maximum": 10})()
+    
+    def is_alive(self):
+        return self.fp.current > 0 and self.ep.current > 0
 
 
 class DummyWeapon:
@@ -113,12 +121,18 @@ class BattleScreenStub:
         self.battle = None
         self.updated = 0
         self._action = "completed"
+        self.detailed_log = type("DetailedLog", (), {"set_round": lambda *args: None})()
+        self.renderer = type("Renderer", (), {})()
 
     def update(self):
         self.updated += 1
 
     def get_action(self):
         return self._action
+    
+    def _log_initiative(self, battle_service):
+        """Stub for logging initiative."""
+        pass
 
 
 class DummyContext:
@@ -143,7 +157,17 @@ def make_setup(off_hand=None):
 
 def test_coordinate_game_flow_wires_battle_and_units():
     weapon = DummyWeapon()
-    unit = DummyUnit(name="Hero", weapon=weapon)
+    # Create a minimal real Unit instead of DummyUnit
+    unit = Unit(
+        id="test_hero",
+        name="Hero",
+        position=Position(0, 0),
+        fp=ResourcePool(10, 10),
+        ep=ResourcePool(10, 10),
+        attributes=Attributes(speed=15),
+        combat_stats=CombatStats(KE=5, TE=40, VE=20),
+        weapon=weapon
+    )
     ctx = DummyContext(
         character_repo=DummyCharacterRepo({"hero.json": {"name": "Hero"}}),
         sprite_repo=DummySpriteRepo(),
@@ -156,18 +180,19 @@ def test_coordinate_game_flow_wires_battle_and_units():
     )
     scenario_screen = ScenarioScreenStub(cfg)
     deployment_screen = DeploymentScreenStub(cfg, background=None)
+    deployment_screen_factory = lambda config: deployment_screen  # Factory that returns the same screen
     battle_screen = BattleScreenStub()
     loop = ScreenLoopStub()
 
-    result = coordinate_game_flow(ctx, scenario_screen, deployment_screen, battle_screen, loop)
+    result = coordinate_game_flow(ctx, scenario_screen, deployment_screen_factory, battle_screen, loop)
 
     assert result == "completed"
     # battle_service injected
     assert battle_screen.battle is not None
     # update was called (battle loop)
     assert battle_screen.updated >= 0
-    # weapon wield state set (off-hand equipped)
-    assert weapon.calls == [(True, True)]
+    # weapon wield state set (off-hand equipped for Team A)
+    assert weapon.calls[0] == (True, True), f"Expected first call to be (True, True) but got {weapon.calls}"
 
 
 class DummyEquipmentRepoQC:

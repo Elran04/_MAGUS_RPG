@@ -1,6 +1,6 @@
 """Application layer ScenarioService.
 
-Handles scenario assembly and roster validation independent of presentation.
+Handles scenario assembly and roster validation independent of UI layers.
 """
 
 from __future__ import annotations

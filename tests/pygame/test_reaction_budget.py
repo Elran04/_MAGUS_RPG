@@ -17,11 +17,13 @@ def make_unit(uid: str, name: str) -> Unit:
 
 def test_reaction_budget_allows_only_one_per_turn():
     handler = ReactionHandler()
-    reactor = make_unit("r1", "Reactor")
+    reactor = make_unit("r1", "Reactor")  # at Position(0, 0), facing 0
     mover = make_unit("m1", "Mover")
     handler.start_turn([reactor, mover])
 
-    path = [(0, 0), (1, 0)]
+    # Reactor facing 0 has zone at NE direction: (1, -1)
+    # Path must pass through (1, -1) to trigger OA
+    path = [(0, 0), (1, -1)]  # Changed from [(0, 0), (1, 0)] to intersect zone
     intersects = True
     ix = 1
 

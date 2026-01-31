@@ -413,18 +413,19 @@ def resolve_attack(
         attacker, attack_roll, weapon, attacker_conditions, 0
     )
 
-    # === Apply directional attack bonuses ===
+    # === Apply directional attack bonuses (only if conscious) ===
     # Back attack: +10 TÉ
     # Side/diagonal attacks (back-left, back-right, front-left, front-right): +5 TÉ
     directional_te_bonus = 0
-    if is_attack_from_back(attacker, defender):
-        directional_te_bonus = 10
-    elif is_attack_from_back_left(attacker, defender) or is_attack_from_back_right(
-        attacker, defender
-    ) or is_attack_from_front_left(attacker, defender) or is_attack_from_front_right(
-        attacker, defender
-    ):
-        directional_te_bonus = 5
+    if _is_unit_conscious(attacker):  # Only apply bonuses if attacker is conscious
+        if is_attack_from_back(attacker, defender):
+            directional_te_bonus = 10
+        elif is_attack_from_back_left(attacker, defender) or is_attack_from_back_right(
+            attacker, defender
+        ) or is_attack_from_front_left(attacker, defender) or is_attack_from_front_right(
+            attacker, defender
+        ):
+            directional_te_bonus = 5
 
     all_te += directional_te_bonus
     defense = calculate_defense_values(

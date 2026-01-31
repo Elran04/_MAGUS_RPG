@@ -88,7 +88,9 @@ class CounterattackReaction(Reaction):
 			return (False, "Attacker position missing")
 
 		defender_zone = compute_reach_hexes(defender, weapon)
-		if attacker_pos not in defender_zone:
+		attacker_hex = (attacker_pos.q, attacker_pos.r)
+
+		if attacker_hex not in defender_zone:
 			return (False, "Attacker not in defender's zone of control")
 
 		return (True, "Counterattack available")

@@ -25,6 +25,7 @@ from .attack_resolution import (
     resolve_attack,
 )
 from .conditions import (
+    DEFAULT_COMBAT_MODIFIERS,
     ActiveMasteries,
     CombatModifiers,
     InjuryCondition,
@@ -128,6 +129,7 @@ __all__ = [
     "Stamina",
     "StaminaState",
     "CombatModifiers",
+    "DEFAULT_COMBAT_MODIFIERS",
     "create_fatigue_condition",
     "InjuryCondition",
     "InjuryModifiers",

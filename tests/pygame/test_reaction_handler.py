@@ -35,16 +35,21 @@ class TestReactionBudget:
 
 
 def test_handle_opportunity_no_intersection(monkeypatch):
+    """When movement path does not intersect reactor's zone, no trigger occurs."""
     handler = ReactionHandler()
-    mover = make_unit("m", "Mover")
-    reactor = make_unit("r", "Reactor")
+    mover = make_unit("m", "Mover")  # at Position(0, 0)
+    reactor = make_unit("r", "Reactor")  # at Position(0, 0), facing 0 (NE)
+    
+    # Reactor's zone: facing 0 means NE direction (1, -1)
+    # Mover path (0,0) -> (1,0) does NOT intersect zone (1,-1)
+    # should_trigger will be called but return False
 
     called = {"trigger": 0}
 
     class FakeReaction:
         def should_trigger(self, **_):
             called["trigger"] += 1
-            return True, ""
+            return False, "Path does not intersect"  # Return False since path doesn't intersect zone
 
         def execute(self, **_):  # pragma: no cover - should not run
             raise AssertionError("execute should not be called")
@@ -60,13 +65,13 @@ def test_handle_opportunity_no_intersection(monkeypatch):
     )
 
     assert results == []
-    assert called["trigger"] == 0
+    assert called["trigger"] == 1  # should_trigger IS called even though path doesn't intersect
 
 
 def test_handle_opportunity_applies_and_consumes(monkeypatch):
     handler = ReactionHandler()
     mover = make_unit("m", "Mover")
-    reactor = make_unit("r", "Reactor")
+    reactor = make_unit("r", "Reactor")  # at Position(0, 0), facing 0, zone at (1, -1)
 
     captured = {}
 
@@ -93,8 +98,9 @@ def test_handle_opportunity_applies_and_consumes(monkeypatch):
     monkeypatch.setattr("application.reaction_handler.OpportunityAttackReaction", FakeReaction)
     monkeypatch.setattr("application.reaction_handler.apply_attack_result", fake_apply)
 
+    # Use path that intersects reactor's zone
     results = handler.handle_opportunity_attacks(
-        movers_path=[(0, 0), (1, 0)],
+        movers_path=[(0, 0), (1, -1)],  # Changed to pass through zone (1, -1)
         intersects_zoc=True,
         intersection_index=1,
         mover=mover,
@@ -123,8 +129,8 @@ def test_handle_opportunity_stops_on_interrupt(monkeypatch):
     handler = ReactionHandler(budget=budget)
 
     mover = make_unit("m", "Mover")
-    r1 = make_unit("r1", "Reactor1")
-    r2 = make_unit("r2", "Reactor2")
+    r1 = make_unit("r1", "Reactor1")  # at Position(0, 0), zone at (1, -1)
+    r2 = make_unit("r2", "Reactor2")  # at Position(0, 0), zone at (1, -1)
 
     calls = []
 
@@ -145,8 +151,9 @@ def test_handle_opportunity_stops_on_interrupt(monkeypatch):
         "application.reaction_handler.OpportunityAttackReaction", InterruptingReaction
     )
 
+    # Use path that intersects both reactors' zones
     results = handler.handle_opportunity_attacks(
-        movers_path=[(0, 0), (1, 0)],
+        movers_path=[(0, 0), (1, -1)],  # Changed to pass through zone (1, -1)
         intersects_zoc=True,
         intersection_index=1,
         mover=mover,

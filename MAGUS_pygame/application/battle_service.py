@@ -126,6 +126,27 @@ class BattleService:
     def _init_ap(self) -> None:
         self.ap_pool = {u.id: compute_unit_ap(u) for u in self.units if u.is_alive()}
 
+    def _recover_stamina_from_unspent_ap(self) -> None:
+        """Recover stamina for all units based on their unspent AP.
+
+        Each point of unspent AP at the end of the round recovers as stamina.
+        This is called before resetting AP for the new round.
+        """
+        for unit in self.units:
+            if not unit.is_alive():
+                continue
+            if not hasattr(unit, "stamina") or unit.stamina is None:
+                continue
+
+            unspent_ap = self.remaining_ap(unit)
+            if unspent_ap > 0:
+                recovered = unit.stamina.recover(unspent_ap)
+                if recovered > 0:
+                    logger = get_logger(__name__)
+                    logger.debug(
+                        f"Unit {unit.name} recovered {recovered} stamina from {unspent_ap} unspent AP"
+                    )
+
     @property
     def current_unit(self) -> Unit:
         return self.units[self.turn_index]
@@ -168,6 +189,8 @@ class BattleService:
             if self.turn_index >= num_units:
                 self.turn_index = 0
                 self.round += 1
+                # Recover stamina from unspent AP before resetting AP pool
+                self._recover_stamina_from_unspent_ap()
                 # Refresh initiative ordering first (if enabled) then AP and reactions
                 self.refresh_initiative_for_new_round()
                 self._init_ap()

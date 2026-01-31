@@ -205,10 +205,20 @@ class ReactionHandler:
         results: list[ReactionResult] = []
 
         if attacker is None or defender is None:
+            logger.info(f"Counterattack skipped: attacker={attacker}, defender={defender}")
             return results
 
         reaction = CounterattackReaction()
         used = self.counterattacks_used.get(defender.id, 0)
+
+        logger.info(f"Counterattack evaluation for {defender.name}:")
+        logger.info(f"  - Attacker: {attacker.name}")
+        logger.info(f"  - Last attack outcome: {getattr(last_attack_result, 'outcome', 'N/A')}")
+        logger.info(f"  - Defender weapon: {getattr(defender, 'weapon', None)}")
+        if defender.weapon:
+            logger.info(f"    - Weapon skill_id: {getattr(defender.weapon, 'skill_id', 'N/A')}")
+        logger.info(f"  - Defender longsword skill: {defender.skills.get_rank('weaponskill_longswords', 0) if defender.skills else 'N/A'}")
+
         should, reason = reaction.should_trigger(
             attacker=attacker,
             defender=defender,

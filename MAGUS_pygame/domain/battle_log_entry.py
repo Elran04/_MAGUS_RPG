@@ -53,6 +53,7 @@ class DetailedAttackData:
     is_overpower: bool = False
     is_critical: bool = False
     is_opportunity_attack: bool = False
+    is_counterattack: bool = False
     weapon_name: str = ""
     weapon_damage_range: tuple[int, int] = (1, 6)
 

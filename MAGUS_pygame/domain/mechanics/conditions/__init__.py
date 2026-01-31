@@ -25,7 +25,13 @@ from .mastery import (
     get_combined_mastery_modifiers,
     get_mastery_modifiers_for_unit,
 )
-from .stamina import CombatModifiers, Stamina, StaminaState, create_fatigue_condition
+from .stamina import (
+    DEFAULT_COMBAT_MODIFIERS,
+    CombatModifiers,
+    Stamina,
+    StaminaState,
+    create_fatigue_condition,
+)
 from .unskilled import (
     UnskilledConditions,
     UnskilledModifiers,
@@ -48,6 +54,7 @@ __all__ = [
     "Stamina",
     "StaminaState",
     "CombatModifiers",
+    "DEFAULT_COMBAT_MODIFIERS",
     "create_fatigue_condition",
     # Unskilled
     "UnskilledType",

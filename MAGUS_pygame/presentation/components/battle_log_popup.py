@@ -222,6 +222,10 @@ class BattleLogPopup:
             oa_text = self.small_font.render("[OPPORTUNITY ATTACK]", True, (255, 170, 100))
             surface.blit(oa_text, (x + 10, y))
             y += 18
+        elif getattr(attack, "is_counterattack", False):
+            ca_text = self.small_font.render("[COUNTERATTACK]", True, (200, 150, 255))
+            surface.blit(ca_text, (x + 10, y))
+            y += 18
         # Attacker vs Defender
         vs_text = self.text_font.render(f"{attack.attacker_name} -> {attack.defender_name}", True, (255, 255, 255))
         surface.blit(vs_text, (x + 10, y))

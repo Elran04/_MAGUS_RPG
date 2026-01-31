@@ -294,7 +294,13 @@ def _create_team_units(context, team_config: list[dict], team_label: str) -> lis
                 continue
 
             # Log unit equipment status
-            weapon_status = f"equipped with {unit.weapon.name}" if unit.weapon else "no weapon"
+            if unit.weapon:
+                if hasattr(unit.weapon, 'name'):
+                    weapon_status = f"equipped with {unit.weapon.name}"
+                else:
+                    weapon_status = f"equipped with {unit.weapon}"
+            else:
+                weapon_status = "no weapon"
             armor_count = len(unit.armor_system.pieces) if unit.armor_system else 0
             logger.info(f"Unit {unit.name}: {weapon_status}, {armor_count} armor pieces")
 

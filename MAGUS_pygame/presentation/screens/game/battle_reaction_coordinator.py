@@ -178,48 +178,83 @@ class BattleReactionCoordinator:
 
             # Create description for the reaction popup
             type_name = "Counterattack" if reaction_type == "counterattack" else "Reaction Shield Bash"
-            description = (
-                f"{attacker_name} triggered {type_name}!"
+
+            # Enqueue as a player reaction decision (accept/decline like opportunity attacks)
+            description = f"{attacker_name} triggered {type_name}!"
+
+            reaction_data = {
+                "attacker_name": attacker_name,
+                "defender_name": defender_name,
+                "attack_result": attack_result,
+                "reaction_type": reaction_type,
+            }
+
+            self.action_executor.enqueue_reaction(
+                reaction_type=reaction_type,
+                description=description,
+                reaction_data=reaction_data,
+                on_accept=lambda data: self.accept_counterattack(data),
+                on_decline=lambda data: self.decline_counterattack(data),
             )
-            if (
-                attack_result
-                and hasattr(attack_result, "requires_dodge_check")
-                and attack_result.requires_dodge_check
-            ):
-                description += "\nOriginal attacker may dodge."
 
-            # Note: Post-attack reactions are automatic (no player choice), just show results
-            # Format and display the reaction attack result
-            if attack_result:
-                msg = self.action_executor._format_attack_result_message(attack_result)
-                full_msg = f"{attacker_name} {type_name}!:\n{msg}"
-                self.action_executor.show_message(full_msg)
+    def accept_counterattack(self, reaction_data: dict) -> None:
+        """Handle acceptance of a counterattack reaction.
 
-                # Log detailed reaction attack information
-                if self.detailed_log:
-                    attack_data = DetailedAttackData(
-                        attacker_name=attacker_name,
-                        defender_name=defender_name,
-                        round_number=self.battle_service.round,
-                        attack_roll=attack_result.attack_roll,
-                        all_te=attack_result.all_te,
-                        all_ve=attack_result.all_ve,
-                        outcome=attack_result.outcome,
-                        is_flank_attack=False,
-                        is_rear_attack=False,
-                        facing_ignored_ve=False,
-                        hit_zone=attack_result.hit_zone,
-                        zone_sfe=attack_result.zone_sfe,
-                        damage_to_fp=attack_result.damage_to_fp,
-                        damage_to_ep=attack_result.damage_to_ep,
-                        mandatory_ep_loss=attack_result.mandatory_ep_loss,
-                        armor_absorbed=attack_result.armor_absorbed,
-                        stamina_spent_defender=attack_result.stamina_spent_defender,
-                        is_critical=attack_result.is_critical,
-                        is_overpower=attack_result.is_overpower,
-                    )
-                    self.detailed_log.log_attack(
-                        f"{attacker_name} {type_name}", attack_data
-                    )
-            else:
-                self.action_executor.show_message(f"{attacker_name} {type_name}!")
+        Args:
+            reaction_data: Dict containing attacker, defender, and attack result
+        """
+        attack_result = reaction_data.get("attack_result")
+        attacker_name = reaction_data.get("attacker_name", "Unknown")
+        defender_name = reaction_data.get("defender_name", "Unknown")
+        reaction_type = reaction_data.get("reaction_type", "counterattack")
+
+        type_name = "Counterattack" if reaction_type == "counterattack" else "Reaction Shield Bash"
+
+        if attack_result:
+            msg = self.action_executor._format_attack_result_message(attack_result)
+            full_msg = f"{attacker_name} {type_name}!:\n{msg}"
+            self.action_executor.show_message(full_msg)
+
+            # Log detailed reaction attack information
+            if self.detailed_log:
+                attack_data = DetailedAttackData(
+                    attacker_name=attacker_name,
+                    defender_name=defender_name,
+                    round_number=self.battle_service.round,
+                    attack_roll=attack_result.attack_roll,
+                    all_te=attack_result.all_te,
+                    all_ve=attack_result.all_ve,
+                    outcome=attack_result.outcome.value,
+                    is_flank_attack=False,
+                    is_rear_attack=False,
+                    facing_ignored_ve=False,
+                    hit_zone=attack_result.hit_zone,
+                    zone_sfe=attack_result.zone_sfe,
+                    damage_to_fp=attack_result.damage_to_fp,
+                    damage_to_ep=attack_result.damage_to_ep,
+                    mandatory_ep_loss=attack_result.mandatory_ep_loss,
+                    armor_absorbed=attack_result.armor_absorbed,
+                    stamina_spent_defender=attack_result.stamina_spent_defender,
+                    is_critical=attack_result.is_critical,
+                    is_overpower=attack_result.is_overpower,
+                    is_counterattack=(reaction_type == "counterattack"),
+                )
+                self.detailed_log.log_attack(
+                    f"{attacker_name} {type_name}", attack_data
+                )
+        else:
+            self.action_executor.show_message(f"{attacker_name} {type_name}!")
+
+    def decline_counterattack(self, reaction_data: dict) -> None:
+        """Handle declining of a counterattack reaction.
+
+        Args:
+            reaction_data: Dict containing attacker and defender names
+        """
+        attacker_name = reaction_data.get("attacker_name", "Unknown")
+        reaction_type = reaction_data.get("reaction_type", "counterattack")
+        type_name = "Counterattack" if reaction_type == "counterattack" else "Reaction Shield Bash"
+
+        self.action_executor.show_message(
+            f"{attacker_name}'s {type_name} was declined"
+        )
