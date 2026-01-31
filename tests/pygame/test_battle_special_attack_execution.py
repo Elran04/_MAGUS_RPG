@@ -76,7 +76,7 @@ class TestSpecialAttackRegistry:
         result = registry.validate_and_execute("charge", unit, target_pos)
 
         assert result is True
-        mock_action_executor._execute_charge.assert_called_once_with(target_pos)
+        mock_action_executor.execute_charge.assert_called_once_with(target_pos)
 
     def test_validate_and_execute_validation_fails(
         self, registry, mock_battle_service, mock_action_executor
@@ -115,7 +115,7 @@ class TestSpecialAttackRegistry:
         result = registry.validate_and_execute("dagger_combo", unit, target_pos)
 
         assert result is True
-        mock_action_executor._execute_dagger_combo.assert_called_once_with(
+        mock_action_executor.execute_attack_combination.assert_called_once_with(
             target_pos
         )
 
@@ -127,7 +127,7 @@ class TestSpecialAttackRegistry:
         result = registry.validate_and_execute("shield_bash", unit, target_pos)
 
         assert result is True
-        mock_action_executor._execute_shield_bash.assert_called_once_with(target_pos)
+        mock_action_executor.execute_shield_bash.assert_called_once_with(target_pos)
 
     def test_register_replaces_existing(self, registry):
         """Should replace existing attack on re-register."""

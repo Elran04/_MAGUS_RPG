@@ -1,7 +1,11 @@
-"""Special attack configuration registry.
+"""Special attack eligibility checking.
 
-Centralized configuration for all special attacks to enable data-driven mode entry
-and eliminate duplicated validation/entry logic.
+Determines if a unit meets the prerequisites to use a special attack:
+- Has required weapon type
+- Has sufficient skill level
+- Is in valid battle state
+
+Checked BEFORE entering attack mode (not for specific target validation).
 """
 
 from enum import Enum
@@ -19,8 +23,8 @@ class SpecialAttackType(Enum):
     SHIELD_BASH = "shield_bash"
 
 
-# Configuration for each special attack
-# Used to drive dynamic mode entry with common validation
+# Eligibility requirements for each special attack
+# Defines prerequisites that must be met before entering attack mode
 SPECIAL_ATTACK_CONFIG = {
     "charge": {
         "name": "Charge",
@@ -66,21 +70,22 @@ def get_special_attack_config(attack_id: str) -> dict | None:
 def validate_special_attack_entry(
     battle_screen, attack_id: str
 ) -> tuple[bool, str | None]:
-    """Validate entry conditions for a special attack.
+    """Check if unit is eligible to use a special attack.
 
-    Common validation for all special attacks:
-    - Victory check
-    - Unit existence
-    - Attack capability
-    - Weapon requirements
-    - Skill requirements
+    Validates general prerequisites (not target-specific):
+    - Battle state (not ended)
+    - Unit exists and can attack
+    - Has required weapon type
+    - Meets minimum skill level
+
+    Called when clicking attack button, before target selection.
 
     Args:
         battle_screen: Reference to BattleScreen
-        attack_id: Special attack identifier
+        attack_id: Special attack identifier (e.g., 'charge', 'dagger_combo')
 
     Returns:
-        (is_valid, error_message) tuple
+        (is_eligible, error_message) tuple
     """
     # Victory check
     if battle_screen.battle.is_victory():

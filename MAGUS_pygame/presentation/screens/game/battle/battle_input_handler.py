@@ -128,19 +128,19 @@ class BattleInputHandler:
                     ):
                         # Hovering over enemy unit -> Attack mode
                         if self.battle_screen.action_mode.value != "attack":  # Check using enum
-                            from presentation.screens.game.battle.battle_action_mode import (
+                            from presentation.screens.game.battle.battle_action_mode_manager import (
                                 ActionMode,
                             )
                             self.battle_screen.action_mode = ActionMode.ATTACK
                     else:
                         # Hovering over empty tile or friendly unit -> Move mode
                         if self.battle_screen.action_mode.value != "move":  # Check using enum
-                            from presentation.screens.game.battle.battle_action_mode import (
+                            from presentation.screens.game.battle.battle_action_mode_manager import (
                                 ActionMode,
                             )
                             self.battle_screen.action_mode = ActionMode.MOVE
 
-                from presentation.screens.game.battle.battle_action_mode import ActionMode
+                from presentation.screens.game.battle.battle_action_mode_manager import ActionMode
                 if self.battle_screen.action_mode == ActionMode.MOVE:
                     self.battle_screen._update_movement_path_preview(*hovered)
                 else:
@@ -291,7 +291,7 @@ class BattleInputHandler:
         current = self.battle_screen.battle.current_unit
         target_pos = Position(q, r)
 
-        from presentation.screens.game.battle.battle_action_mode import ActionMode
+        from presentation.screens.game.battle.battle_action_mode_manager import ActionMode
 
         if self.battle_screen.action_mode == ActionMode.MOVE:
             is_valid, error_msg = self.battle_screen.battle.validate_move_target(current, target_pos)
@@ -353,7 +353,7 @@ class BattleInputHandler:
             action: Action name (e.g., "move", "attack", "end_turn", "special_attack_charge")
         """
         try:
-            from presentation.screens.game.battle.battle_action_mode import ActionMode
+            from presentation.screens.game.battle.battle_action_mode_manager import ActionMode
 
             # Check if clicking same action to deselect (toggle behavior)
             if action == "move":

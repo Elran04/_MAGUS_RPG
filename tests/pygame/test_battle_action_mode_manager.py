@@ -6,8 +6,8 @@ import pytest
 
 from MAGUS_pygame.presentation.screens.game.battle.battle_action_mode_manager import (
     BattleActionModeManager,
+    ActionMode,
 )
-from MAGUS_pygame.presentation.screens.game.battle.battle_action_mode import ActionMode
 
 
 class TestBattleActionModeManager:
@@ -134,7 +134,7 @@ class TestBattleActionModeManager:
         manager.enter_dagger_combo_mode()
 
         mock_battle_screen.action_executor.show_message.assert_called_with(
-            "Attack combination requires dagger skill level 3+"
+            "Attack Combination requires Daggers skill level 3+"
         )
 
     def test_enter_shield_bash_mode_success(self, manager, mock_battle_screen):
@@ -150,7 +150,7 @@ class TestBattleActionModeManager:
 
         manager.enter_shield_bash_mode()
 
-        mock_battle_screen.action_executor.show_message.assert_called_with("Cannot use shield bash: No weapon")
+        mock_battle_screen.action_executor.show_message.assert_called_with("No weapon")
 
     def test_enter_inspect_mode(self, manager, mock_battle_screen):
         """Should enter inspect mode."""

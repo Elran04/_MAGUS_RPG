@@ -2,7 +2,7 @@
 
 import pytest
 
-from MAGUS_pygame.presentation.screens.game.battle.battle_action_mode import ActionMode
+from MAGUS_pygame.presentation.screens.game.battle.battle_action_mode_manager import ActionMode
 
 
 class TestActionMode:

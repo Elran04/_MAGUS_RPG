@@ -38,11 +38,6 @@ class BattleActionExecutor:
         self.combat_message: Optional[str] = None
         self.combat_message_timer = 0
 
-        # Reaction queue system
-        self.reaction_queue: list = []  # Queue of pending reactions
-        self.current_reaction: Optional[dict] = None  # Currently displayed reaction
-        self.reaction_callbacks: dict = {}  # Callbacks for reaction resolution
-
     def execute_move(self, dest: Position, potential_reactors: list[Unit]) -> dict:
         """Execute movement to destination.
 
@@ -857,85 +852,3 @@ class BattleActionExecutor:
     # ========================================================================
     # EXECUTE METHODS (refactored)
     # ========================================================================
-
-    def enqueue_reaction(
-        self,
-        reaction_type: str,
-        description: str,
-        reaction_data: Optional[dict] = None,
-        on_accept: Optional[Callable] = None,
-        on_decline: Optional[Callable] = None,
-    ) -> None:
-        """Enqueue a reaction for player decision.
-
-        Args:
-            reaction_type: Type of reaction (e.g., "shield_bash", "opportunity_attack")
-            description: Description text to display in popup
-            reaction_data: Optional dict with reaction details (attacker, defender, etc.)
-            on_accept: Optional callback(reaction_data) when accepted
-            on_decline: Optional callback(reaction_data) when declined
-        """
-        reaction = {
-            "type": reaction_type,
-            "description": description,
-            "data": reaction_data or {},
-            "on_accept": on_accept,
-            "on_decline": on_decline,
-        }
-        self.reaction_queue.append(reaction)
-        logger.info(f"Reaction enqueued: {reaction_type} - {description}")
-        self._show_next_reaction()
-
-    def _show_next_reaction(self) -> None:
-        """Show the next reaction from the queue."""
-        if self.reaction_queue and not self.current_reaction:
-            self.current_reaction = self.reaction_queue.pop(0)
-            logger.debug(f"Showing reaction: {self.current_reaction['type']}")
-
-    def get_current_reaction(self) -> dict | None:
-        """Get the current pending reaction.
-
-        Returns:
-            Current reaction dict or None if no reaction pending
-        """
-        return self.current_reaction
-
-    def resolve_reaction(self, accepted: bool) -> None:
-        """Resolve the current reaction.
-
-        Args:
-            accepted: Whether the reaction was accepted
-        """
-        if not self.current_reaction:
-            return
-
-        reaction = self.current_reaction
-        self.current_reaction = None
-
-        if accepted:
-            if reaction["on_accept"]:
-                reaction["on_accept"](reaction["data"])
-            self.show_message(f"Accepted {reaction['type'].replace('_', ' ')}")
-        else:
-            if reaction["on_decline"]:
-                reaction["on_decline"](reaction["data"])
-            self.show_message(f"Declined {reaction['type'].replace('_', ' ')}")
-
-        logger.info(f"Reaction resolved: {reaction['type']} - {'accepted' if accepted else 'declined'}")
-
-        # Show next reaction if available
-        self._show_next_reaction()
-
-    def has_pending_reaction(self) -> bool:
-        """Check if there are any pending reactions.
-
-        Returns:
-            True if there are reactions pending or displayed
-        """
-        return self.current_reaction is not None or len(self.reaction_queue) > 0
-
-    def clear_reactions(self) -> None:
-        """Clear all pending reactions."""
-        self.reaction_queue.clear()
-        self.current_reaction = None
-        logger.debug("Reactions cleared")

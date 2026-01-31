@@ -1,13 +1,23 @@
 """Action mode management and entry logic for battle screen."""
 
+from enum import Enum
+
 from logger.logger import get_logger
-from presentation.screens.game.battle.battle_action_mode import ActionMode
-from presentation.screens.game.battle.battle_special_attack_config import (
+from presentation.screens.game.battle.battle_special_attack_eligibility import (
     get_special_attack_config,
     validate_special_attack_entry,
 )
 
 logger = get_logger(__name__)
+
+
+class ActionMode(Enum):
+    """Current action mode for player input."""
+
+    IDLE = "idle"
+    MOVE = "move"
+    ATTACK = "attack"
+    INSPECT = "inspect"
 
 
 class BattleActionModeManager:

@@ -23,15 +23,17 @@ from presentation.components.reaction_popup import ReactionPopup
 from presentation.components.unit_info.unit_info_popup import UnitInfoPopup
 from presentation.components.weapon_switch_popup import WeaponSwitchPopup
 from presentation.screens.game.battle.battle_action_executor import BattleActionExecutor
-from presentation.screens.game.battle.battle_action_mode import ActionMode
-from presentation.screens.game.battle.battle_action_mode_manager import BattleActionModeManager
+from presentation.screens.game.battle.battle_action_mode_manager import (
+    ActionMode,
+    BattleActionModeManager,
+)
 from presentation.screens.game.battle.battle_input_handler import BattleInputHandler
 from presentation.screens.game.battle.battle_keyboard_handler import BattleKeyboardHandler
 from presentation.screens.game.battle.battle_outcome import BattleOutcomeResolver
 from presentation.screens.game.battle.battle_popups import BattlePopupManager
 from presentation.screens.game.battle.battle_reaction_coordinator import BattleReactionCoordinator
 from presentation.screens.game.battle.battle_render_coordinator import BattleRenderCoordinator
-from presentation.screens.game.battle.battle_special_attacks import SpecialAttackRegistry
+from presentation.screens.game.battle.battle_special_attack_execution import SpecialAttackRegistry
 
 logger = get_logger(__name__)
 
@@ -361,14 +363,14 @@ class BattleScreen:
         if not self.reaction_popup:
             return
 
-        current_reaction = self.action_executor.get_current_reaction()
+        current_reaction = self.reaction_coordinator.get_current_reaction()
         if current_reaction and not self.reaction_popup.visible:
             # Show the reaction popup
             self.reaction_popup.show(
                 reaction_type=current_reaction["type"],
                 description=current_reaction["description"],
                 reaction_data=current_reaction["data"],
-                on_result=lambda accepted: self.action_executor.resolve_reaction(accepted),
+                on_result=lambda accepted: self.reaction_coordinator.resolve_reaction(accepted),
             )
         elif not current_reaction and self.reaction_popup.visible:
             # Hide popup if no more reactions

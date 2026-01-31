@@ -70,7 +70,7 @@ class BattleKeyboardHandler:
         if self.battle_screen.pause_menu.visible:
             return
 
-        from presentation.screens.game.battle.battle_action_mode import ActionMode
+        from presentation.screens.game.battle.battle_action_mode_manager import ActionMode
 
         if self.battle_screen.action_mode == ActionMode.MOVE:
             self.battle_screen._cancel_action()
@@ -82,7 +82,7 @@ class BattleKeyboardHandler:
         if self.battle_screen.pause_menu.visible:
             return
 
-        from presentation.screens.game.battle.battle_action_mode import ActionMode
+        from presentation.screens.game.battle.battle_action_mode_manager import ActionMode
 
         if self.battle_screen.action_mode == ActionMode.ATTACK:
             self.battle_screen._cancel_action()
@@ -99,7 +99,7 @@ class BattleKeyboardHandler:
         if self.battle_screen.pause_menu.visible:
             return
 
-        from presentation.screens.game.battle.battle_action_mode import ActionMode
+        from presentation.screens.game.battle.battle_action_mode_manager import ActionMode
 
         if self.battle_screen.action_mode == ActionMode.INSPECT:
             self.battle_screen._cancel_action()
