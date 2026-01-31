@@ -1,8 +1,6 @@
 """Game screens package."""
 
-from .battle_screen import BattleScreen
-from .deployment_screen import DeploymentScreen
-from .equipment_screen import EquipmentScreen
+from .battle.battle_screen import BattleScreen
 
 __all__ = [
     "BattleScreen",

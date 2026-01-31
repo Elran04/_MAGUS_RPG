@@ -118,80 +118,41 @@ class BattleActionExecutor:
             logger.warning(f"Attack failed: {summary['error']}")
             return None
 
-        # Format attack result message in presentation layer
-        action_result = summary.get("action_result")
-        if not action_result:
-            logger.warning("No action_result in attack summary")
+        attack_res = self._extract_attack_result_from_summary(summary)
+        if not attack_res:
+            logger.warning("No attack_result in attack summary")
             return None
 
-        # Get attack result data from action_result
-        attack_res = None
-        if hasattr(action_result, "data") and action_result.data:
-            attack_res = action_result.data.get("attack_result")
+        # Format and show message
+        msg = self._format_attack_result_message(attack_res)
+        self.show_message(msg)
 
-        if attack_res:
-            msg = self._format_attack_result_message(attack_res)
-            self.show_message(msg)
+        # Log detailed attack
+        if self.detailed_log:
+            is_flank, is_rear, facing_ignored_ve = self._get_attack_angle_info(attacker, defender)
 
-            # Log detailed attack information
-            if self.detailed_log:
-                from domain.mechanics.attack_angle import AttackAngle, get_attack_angle
+            # Check stamina for penalties
+            attacker_penalties = {}
+            attacker_buffs = {}
+            defender_penalties = {}
+            defender_buffs = {}
 
-                # Determine attack angle and positioning
-                attack_angle = get_attack_angle(attacker, defender)
-                is_flank = attack_angle in (AttackAngle.FRONT_RIGHT, AttackAngle.FRONT_LEFT,
-                                           AttackAngle.BACK_RIGHT, AttackAngle.BACK_LEFT)
-                is_rear = attack_angle == AttackAngle.BACK
+            if attacker.stamina.current_stamina < attacker.stamina.max_stamina * 0.3:
+                attacker_penalties["Low Stamina"] = "High fatigue penalties"
+            if defender.stamina.current_stamina < defender.stamina.max_stamina * 0.3:
+                defender_penalties["Low Stamina"] = "Reduced defense"
 
-                # Check if weapon/shield VÉ was ignored due to facing
-                # Weapon VÉ applies only to front arcs (FRONT, FRONT_RIGHT, FRONT_LEFT)
-                # Shield VÉ applies only to FRONT
-                facing_ignored_ve = attack_angle not in (AttackAngle.FRONT, AttackAngle.FRONT_RIGHT, AttackAngle.FRONT_LEFT)
-
-                # Build penalty/buff dicts (simplified for now - can be expanded with more data)
-                attacker_penalties = {}
-                attacker_buffs = {}
-                defender_penalties = {}
-                defender_buffs = {}
-
-                # Add stamina as penalty if significant
-                if attacker.stamina.current_stamina < attacker.stamina.max_stamina * 0.3:
-                    attacker_penalties["Low Stamina"] = "High fatigue penalties"
-                if defender.stamina.current_stamina < defender.stamina.max_stamina * 0.3:
-                    defender_penalties["Low Stamina"] = "Reduced defense"
-
-                # Create detailed attack data
-                attack_data = DetailedAttackData(
-                    attacker_name=attacker.name,
-                    defender_name=defender.name,
-                    round_number=self.battle.round,
-                    attack_roll=attack_res.attack_roll,
-                    all_te=attack_res.all_te,
-                    all_ve=attack_res.all_ve,
-                    outcome=attack_res.outcome.value,
-                    is_flank_attack=is_flank,
-                    is_rear_attack=is_rear,
-                    facing_ignored_ve=facing_ignored_ve,
-                    damage_to_fp=attack_res.damage_to_fp,
-                    damage_to_ep=attack_res.damage_to_ep,
-                    mandatory_ep_loss=attack_res.mandatory_ep_loss,
-                    armor_absorbed=attack_res.armor_absorbed,
-                    stamina_spent_defender=attack_res.stamina_spent_defender,
-                    hit_zone=attack_res.hit_zone,
-                    zone_sfe=attack_res.zone_sfe,
-                    is_critical=attack_res.is_critical,
-                    is_overpower=attack_res.is_overpower,
-                    attacker_penalties=attacker_penalties,
-                    attacker_buffs=attacker_buffs,
-                    defender_penalties=defender_penalties,
-                    defender_buffs=defender_buffs
-                )
-
-                self.detailed_log.log_attack(msg, attack_data)
-        else:
-            logger.warning(
-                f"No attack_result in action_result data. Data: {action_result.data if hasattr(action_result, 'data') else 'N/A'}"
+            attack_data = self._build_attack_data_from_result(
+                attack_res, attacker, defender, is_flank, is_rear, facing_ignored_ve,
+                attacker_penalties, attacker_buffs, defender_penalties, defender_buffs
             )
+
+            self.detailed_log.log_attack(msg, attack_data)
+
+        ap_spent = summary.get("action_result").ap_spent if "action_result" in summary else 0
+        logger.info(f"{attacker.name} attacked {defender.name} (AP spent: {ap_spent})")
+
+        return summary
 
         ap_spent = getattr(action_result, "ap_spent", 0) if action_result else 0
         logger.info(f"{attacker.name} attacked {defender.name} (AP spent: {ap_spent})")
@@ -348,60 +309,19 @@ class BattleActionExecutor:
             logger.warning(f"Shield bash failed: {summary['error']}")
             return summary
 
-        action_result = summary.get("action_result")
-        if not action_result:
-            logger.warning("No action_result in shield bash summary")
-            return summary
-
-        attack_res = None
-        if hasattr(action_result, "data") and action_result.data:
-            attack_res = action_result.data.get("attack_result")
+        attack_res = self._extract_attack_result_from_summary(summary)
 
         if attack_res:
+            # User-facing message
             msg = "Shield Bash\n" + self._format_attack_result_message(attack_res)
             self.show_message(msg)
 
+            # Detailed logging (separate from display)
             if self.detailed_log:
-                from domain.mechanics.attack_angle import AttackAngle, get_attack_angle
+                is_flank, is_rear, facing_ignored_ve = self._get_attack_angle_info(attacker, defender)
 
-                attack_angle = get_attack_angle(attacker, defender)
-                is_flank = attack_angle in (
-                    AttackAngle.FRONT_RIGHT,
-                    AttackAngle.FRONT_LEFT,
-                    AttackAngle.BACK_RIGHT,
-                    AttackAngle.BACK_LEFT,
-                )
-                is_rear = attack_angle == AttackAngle.BACK
-                facing_ignored_ve = attack_angle in (
-                    AttackAngle.BACK,
-                    AttackAngle.BACK_LEFT,
-                    AttackAngle.BACK_RIGHT,
-                )
-
-                attack_data = DetailedAttackData(
-                    attacker_name=attacker.name,
-                    defender_name=defender.name,
-                    round_number=self.battle.round,
-                    attack_roll=attack_res.attack_roll,
-                    all_te=attack_res.all_te,
-                    all_ve=attack_res.all_ve,
-                    outcome=attack_res.outcome.value,
-                    is_flank_attack=is_flank,
-                    is_rear_attack=is_rear,
-                    facing_ignored_ve=facing_ignored_ve,
-                    damage_to_fp=attack_res.damage_to_fp,
-                    damage_to_ep=attack_res.damage_to_ep,
-                    mandatory_ep_loss=attack_res.mandatory_ep_loss,
-                    armor_absorbed=attack_res.armor_absorbed,
-                    stamina_spent_defender=attack_res.stamina_spent_defender,
-                    hit_zone=attack_res.hit_zone,
-                    zone_sfe=attack_res.zone_sfe,
-                    is_critical=attack_res.is_critical,
-                    is_overpower=attack_res.is_overpower,
-                    attacker_penalties={},
-                    attacker_buffs={},
-                    defender_penalties={},
-                    defender_buffs={},
+                attack_data = self._build_attack_data_from_result(
+                    attack_res, attacker, defender, is_flank, is_rear, facing_ignored_ve
                 )
 
                 self.detailed_log.log_attack("Shield Bash", attack_data)
@@ -433,68 +353,35 @@ class BattleActionExecutor:
             return summary
 
         action_result = summary.get("action_result")
-        reaction_results = summary.get("reaction_results", [])
+        attack_res = self._extract_attack_result_from_summary(summary)
 
-        if action_result:
-            # Prefer formatted attack message if available
-            attack_res = (
-                action_result.data.get("attack_result") if hasattr(action_result, "data") else None
-            )
-            if attack_res:
-                msg = self._format_attack_result_message(attack_res)
-                self.show_message(msg)
+        if attack_res:
+            # User-facing message
+            msg = self._format_attack_result_message(attack_res)
+            self.show_message(msg)
 
-                # Log detailed charge attack
-                if self.detailed_log:
-                    from domain.mechanics.attack_angle import AttackAngle, get_attack_angle
+            # Detailed logging (separate from display message)
+            if self.detailed_log:
+                is_flank, is_rear, facing_ignored_ve = self._get_attack_angle_info(attacker, defender)
 
-                    # Determine attack angle and positioning
-                    attack_angle = get_attack_angle(attacker, defender)
-                    is_flank = attack_angle in (AttackAngle.FRONT_RIGHT, AttackAngle.FRONT_LEFT,
-                                               AttackAngle.BACK_RIGHT, AttackAngle.BACK_LEFT)
-                    is_rear = attack_angle == AttackAngle.BACK
-                    facing_ignored_ve = attack_angle not in (AttackAngle.FRONT, AttackAngle.FRONT_RIGHT, AttackAngle.FRONT_LEFT)
+                attacker_buffs = {"Charge Bonus": "+10 TÉ from charge"}
+                attacker_penalties = {}
+                defender_penalties = {}
+                defender_buffs = {}
 
-                    # Build penalty/buff dicts
-                    attacker_penalties = {}
-                    attacker_buffs = {"Charge Bonus": "+10 TÉ from charge"}
-                    defender_penalties = {}
-                    defender_buffs = {}
+                if attacker.stamina.current_stamina < attacker.stamina.max_stamina * 0.3:
+                    attacker_penalties["Low Stamina"] = "High fatigue penalties"
+                if defender.stamina.current_stamina < defender.stamina.max_stamina * 0.3:
+                    defender_penalties["Low Stamina"] = "Reduced defense"
 
-                    if attacker.stamina.current_stamina < attacker.stamina.max_stamina * 0.3:
-                        attacker_penalties["Low Stamina"] = "High fatigue penalties"
-                    if defender.stamina.current_stamina < defender.stamina.max_stamina * 0.3:
-                        defender_penalties["Low Stamina"] = "Reduced defense"
+                attack_data = self._build_attack_data_from_result(
+                    attack_res, attacker, defender, is_flank, is_rear, facing_ignored_ve,
+                    attacker_penalties, attacker_buffs, defender_penalties, defender_buffs
+                )
 
-                    attack_data = DetailedAttackData(
-                        attacker_name=attacker.name,
-                        defender_name=defender.name,
-                        round_number=self.battle.round,
-                        attack_roll=attack_res.attack_roll,
-                        all_te=attack_res.all_te,
-                        all_ve=attack_res.all_ve,
-                        outcome=attack_res.outcome.value,
-                        is_flank_attack=is_flank,
-                        is_rear_attack=is_rear,
-                        facing_ignored_ve=facing_ignored_ve,
-                        damage_to_fp=attack_res.damage_to_fp,
-                        damage_to_ep=attack_res.damage_to_ep,
-                        mandatory_ep_loss=attack_res.mandatory_ep_loss,
-                        armor_absorbed=attack_res.armor_absorbed,
-                        stamina_spent_defender=attack_res.stamina_spent_defender,
-                        hit_zone=attack_res.hit_zone,
-                        zone_sfe=attack_res.zone_sfe,
-                        is_critical=attack_res.is_critical,
-                        is_overpower=attack_res.is_overpower,
-                        attacker_penalties=attacker_penalties,
-                        attacker_buffs=attacker_buffs,
-                        defender_penalties=defender_penalties,
-                        defender_buffs=defender_buffs
-                    )
-
-                    self.detailed_log.log_attack(f"CHARGE: {msg}", attack_data)
-            else:
-                self.show_message(action_result.message)
+                self.detailed_log.log_attack(f"CHARGE: {msg}", attack_data)
+        else:
+            self.show_message(action_result.message if action_result else "Charge produced no result")
 
         ap_spent = getattr(action_result, "ap_spent", 0) if action_result else 0
         logger.info(f"{attacker.name} charged {defender.name} (AP spent: {ap_spent})")
@@ -867,7 +754,108 @@ class BattleActionExecutor:
         return None
 
     # ========================================================================
-    # REACTION QUEUE SYSTEM
+    # SPECIAL ATTACK EXECUTION HELPERS
+    # ========================================================================
+
+    def _get_attack_angle_info(self, attacker: Unit, defender: Unit) -> tuple[bool, bool, bool]:
+        """Calculate attack angle positioning info.
+
+        Args:
+            attacker: Attacking unit
+            defender: Defending unit
+
+        Returns:
+            (is_flank, is_rear, facing_ignored_ve) tuple
+        """
+        from domain.mechanics.attack_angle import AttackAngle, get_attack_angle
+
+        attack_angle = get_attack_angle(attacker, defender)
+        is_flank = attack_angle in (
+            AttackAngle.FRONT_RIGHT,
+            AttackAngle.FRONT_LEFT,
+            AttackAngle.BACK_RIGHT,
+            AttackAngle.BACK_LEFT,
+        )
+        is_rear = attack_angle == AttackAngle.BACK
+        facing_ignored_ve = attack_angle not in (
+            AttackAngle.FRONT,
+            AttackAngle.FRONT_RIGHT,
+            AttackAngle.FRONT_LEFT,
+        )
+        return is_flank, is_rear, facing_ignored_ve
+
+    def _build_attack_data_from_result(
+        self,
+        attack_result,
+        attacker: Unit,
+        defender: Unit,
+        is_flank: bool,
+        is_rear: bool,
+        facing_ignored_ve: bool,
+        attacker_penalties: dict | None = None,
+        attacker_buffs: dict | None = None,
+        defender_penalties: dict | None = None,
+        defender_buffs: dict | None = None,
+    ) -> "DetailedAttackData":
+        """Build DetailedAttackData from attack result.
+
+        Args:
+            attack_result: Attack result from domain
+            attacker: Attacking unit
+            defender: Defending unit
+            is_flank: Whether this is a flank attack
+            is_rear: Whether this is a rear attack
+            facing_ignored_ve: Whether facing ignored VÉ
+            attacker_penalties: Optional attacker penalties dict
+            attacker_buffs: Optional attacker buffs dict
+            defender_penalties: Optional defender penalties dict
+            defender_buffs: Optional defender buffs dict
+
+        Returns:
+            DetailedAttackData object
+        """
+        return DetailedAttackData(
+            attacker_name=attacker.name,
+            defender_name=defender.name,
+            round_number=self.battle.round,
+            attack_roll=attack_result.attack_roll,
+            all_te=attack_result.all_te,
+            all_ve=attack_result.all_ve,
+            outcome=attack_result.outcome.value,
+            is_flank_attack=is_flank,
+            is_rear_attack=is_rear,
+            facing_ignored_ve=facing_ignored_ve,
+            damage_to_fp=attack_result.damage_to_fp,
+            damage_to_ep=attack_result.damage_to_ep,
+            mandatory_ep_loss=attack_result.mandatory_ep_loss,
+            armor_absorbed=attack_result.armor_absorbed,
+            stamina_spent_defender=attack_result.stamina_spent_defender,
+            hit_zone=attack_result.hit_zone,
+            zone_sfe=attack_result.zone_sfe,
+            is_critical=attack_result.is_critical,
+            is_overpower=attack_result.is_overpower,
+            attacker_penalties=attacker_penalties or {},
+            attacker_buffs=attacker_buffs or {},
+            defender_penalties=defender_penalties or {},
+            defender_buffs=defender_buffs or {},
+        )
+
+    def _extract_attack_result_from_summary(self, summary: dict):
+        """Extract attack result from execution summary.
+
+        Args:
+            summary: Execution summary dict
+
+        Returns:
+            Attack result or None if not found
+        """
+        action_result = summary.get("action_result")
+        if not action_result or not hasattr(action_result, "data"):
+            return None
+        return action_result.data.get("attack_result")
+
+    # ========================================================================
+    # EXECUTE METHODS (refactored)
     # ========================================================================
 
     def enqueue_reaction(

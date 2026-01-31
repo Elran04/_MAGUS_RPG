@@ -204,6 +204,8 @@ class Menu:
         """
         if self.state == MenuState.CLOSED:
             return
+        if self.is_loading:
+            return
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
                 self._move_selection(-1)
@@ -234,12 +236,23 @@ class Menu:
         if not items:
             return
 
-        self.selected_index += direction
-        self.selected_index = max(0, min(len(items) - 1, self.selected_index))
+        start_index = self.selected_index
+        index = self.selected_index
 
-        # Skip disabled items
-        if not items[self.selected_index].enabled:
-            self._move_selection(direction)
+        for _ in range(len(items)):
+            next_index = index + direction
+            next_index = max(0, min(len(items) - 1, next_index))
+
+            if next_index == index:
+                break
+
+            index = next_index
+            if items[index].enabled:
+                self.selected_index = index
+                return
+
+        # No enabled item found in the given direction; keep current selection
+        self.selected_index = start_index
 
     def _select_current_item(self) -> None:
         """Select the currently highlighted item."""
@@ -465,5 +478,6 @@ class Menu:
 
     def _quit_game(self) -> None:
         """Quit the game."""
+        self.last_action = "quit"
         logger.info("Quit game requested")
         pygame.event.post(pygame.event.Event(pygame.QUIT))

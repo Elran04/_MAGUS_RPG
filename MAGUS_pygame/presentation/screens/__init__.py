@@ -12,7 +12,7 @@ Organized into logical subdirectories:
 from .editor.scenario_editor_screen import ScenarioEditorScreen
 
 # Game screens
-from .game.battle_screen import BattleScreen
+from .game.battle.battle_screen import BattleScreen
 from .game.deployment_screen import DeploymentScreen
 from .game.equipment_screen import EquipmentScreen
 from .menu.menu_screen import Menu, MenuItem, MenuState

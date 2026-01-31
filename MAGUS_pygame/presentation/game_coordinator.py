@@ -1,12 +1,13 @@
 """Game Coordinator - High-level game orchestration and state management.
 
 Manages the main game loop, menu navigation, and transitions between game states
-(menu, playing, scenario editor, etc.). This is the presentation layer's
-orchestration point, coordinating screens and delegating to application services.
+(menu, scenario_editor, quit). This is the presentation layer's orchestration point,
+coordinating screens and delegating to application services.
 """
 
 import multiprocessing
 import multiprocessing.synchronize
+from enum import Enum
 from typing import TYPE_CHECKING
 
 import pygame
@@ -17,7 +18,7 @@ from config import HEIGHT, WIDTH
 from infrastructure.events.event_bus import EditorEventBus
 from logger.logger import get_logger
 from presentation.screens.editor.scenario_editor_screen import ScenarioEditorScreen
-from presentation.screens.game.battle_screen import BattleScreen
+from presentation.screens.game.battle.battle_screen import BattleScreen
 from presentation.screens.game.deployment_screen import DeploymentScreen
 from presentation.screens.menu.menu_screen import Menu
 from presentation.screens.scenario_setup.scenario_screen import ScenarioScreen
@@ -26,6 +27,14 @@ if TYPE_CHECKING:
     pass
 
 logger = get_logger(__name__)
+
+
+class GameState(Enum):
+    """Main game states in the coordinator."""
+
+    MENU = "menu"
+    SCENARIO_EDITOR = "scenario_editor"
+    QUIT = "quit"
 
 
 def run_screen_loop(screen_obj, cancel_action: str | None = None, update_method=None) -> str:
@@ -81,35 +90,32 @@ class GameCoordinator:
         """
         self.context = context
         self.running = True
-        self.game_state = "menu"  # menu, playing, scenario_editor, quit
+        self.game_state = GameState.MENU
         self.menu: Menu | None = None
         self.scenario_editor: ScenarioEditorScreen | None = None
         self.tool_window_process: multiprocessing.Process | None = None
         self.tool_window_quit_event: multiprocessing.synchronize.Event | None = None
-        self.ui_to_game_queue = None
-        self.game_to_ui_queue = None
+        self.ui_to_game_queue: multiprocessing.Queue | None = None
+        self.game_to_ui_queue: multiprocessing.Queue | None = None
         self.editor_event_bus: EditorEventBus | None = None
-        self.pending_action: str | None = None
 
     def run(self) -> None:
         """Run the main game loop."""
         logger.info("GameCoordinator starting main loop")
 
         self.menu = Menu(WIDTH, HEIGHT)
-        self.menu.set_loading(True, "Initializing... you can pick a mode")
-        self.menu.set_loading(False)  # Backend should be ready by this point
         self.menu.open_main_menu()
 
         while self.running:
-            if self.game_state == "menu":
+            if self.game_state == GameState.MENU:
                 self._handle_menu_state()
-            elif self.game_state == "playing":
-                # This shouldn't happen; _handle_menu_state transitions directly
-                self.game_state = "menu"
-            elif self.game_state == "scenario_editor":
+            elif self.game_state == GameState.SCENARIO_EDITOR:
                 self._handle_scenario_editor_state()
-            elif self.game_state == "quit":
+            elif self.game_state == GameState.QUIT:
                 self.running = False
+            else:
+                logger.error(f"Invalid game state: {self.game_state}")
+                self.game_state = GameState.MENU
 
             pygame.time.wait(10)  # Prevent busy-waiting
 
@@ -157,7 +163,7 @@ class GameCoordinator:
             self.scenario_editor = ScenarioEditorScreen(WIDTH, HEIGHT, self.context)
             if self.editor_event_bus:
                 self.scenario_editor.set_event_bus(self.editor_event_bus)
-            self.game_state = "scenario_editor"
+            self.game_state = GameState.SCENARIO_EDITOR
 
         elif action == "tool_window":
             logger.info("Opening Tool Window")
@@ -166,12 +172,12 @@ class GameCoordinator:
         elif action == "quit":
             logger.info("Quit selected from menu")
             self.running = False
-            self.game_state = "quit"
+            self.game_state = GameState.QUIT
 
     def _handle_scenario_editor_state(self) -> None:
         """Handle scenario editor state."""
         if not self.scenario_editor:
-            self.game_state = "menu"
+            self.game_state = GameState.MENU
             return
 
         # Draw scenario editor
@@ -182,7 +188,7 @@ class GameCoordinator:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-                self.game_state = "quit"
+                self.game_state = GameState.QUIT
             else:
                 self.scenario_editor.handle_event(event)
 
@@ -191,8 +197,8 @@ class GameCoordinator:
         if action in ("back", "quit"):
             logger.info("Scenario editor closed")
             self.scenario_editor = None
-            self.game_state = "menu"
-            self.menu = Menu(WIDTH, HEIGHT)
+            self.game_state = GameState.MENU
+            # Reuse existing menu instead of recreating
             self.menu.open_main_menu()
             self._shutdown_tool_window()
 
@@ -285,7 +291,9 @@ class GameCoordinator:
         if self.tool_window_process:
             self.tool_window_process.join(timeout=1.0)
             if self.tool_window_process.is_alive():
-                logger.warning("Tool window did not exit cleanly")
+                logger.warning("Tool window did not exit cleanly; terminating")
+                self.tool_window_process.terminate()
+                self.tool_window_process.join(timeout=1.0)
 
         self.tool_window_process = None
         self.tool_window_quit_event = None
