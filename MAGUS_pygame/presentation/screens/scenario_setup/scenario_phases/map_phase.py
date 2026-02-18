@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pygame
 from application.game_context import GameContext
-from config import DEJAVU_FONT_PATH
+from config import DEJAVU_FONT_PATH, load_font
 from logger.logger import get_logger
 from presentation.components.scenario_play.dropdown import Dropdown
 from presentation.components.shared.map_preview import MapPreview
@@ -48,8 +48,8 @@ class MapSelectionPhase(SelectionPhaseBase):
         self._setup_ui()
 
         # Fonts
-        self.font_title = pygame.font.Font(DEJAVU_FONT_PATH, 40)
-        self.font_small = pygame.font.Font(DEJAVU_FONT_PATH, 16)
+        self.font_title = load_font(DEJAVU_FONT_PATH, 40)
+        self.font_small = load_font(DEJAVU_FONT_PATH, 16)
 
         # Colors
         self.color_bg = (20, 20, 30)

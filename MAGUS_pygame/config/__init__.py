@@ -66,6 +66,9 @@ from config.paths import (
     get_ui_asset_path,
 )
 
+# Font utilities
+from utils.font_manager import load_font
+
 __all__ = [
     # Display & Grid Configuration
     "WIDTH",
@@ -133,4 +136,6 @@ __all__ = [
     "get_ui_asset_path",
     "get_equipment_json_path",
     "get_scenario_json_path",
+    # Font Utilities
+    "load_font",
 ]

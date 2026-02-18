@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pygame
 from application.game_context import GameContext
-from config import DEJAVU_FONT_PATH
+from config import DEJAVU_FONT_PATH, load_font
 from domain.value_objects.scenario_config import UnitSetup
 from logger.logger import get_logger
 from presentation.components.equipment.equipment_panel_coordinator import EquipmentPanelCoordinator
@@ -67,9 +67,9 @@ class EquipmentPhase(SelectionPhaseBase):
             self.combined_roster.append((name, False, idx))
 
         # Fonts
-        self.font_title = pygame.font.Font(DEJAVU_FONT_PATH, 40)
-        self.font_normal = pygame.font.Font(DEJAVU_FONT_PATH, 24)
-        self.font_small = pygame.font.Font(DEJAVU_FONT_PATH, 16)
+        self.font_title = load_font(DEJAVU_FONT_PATH, 40)
+        self.font_normal = load_font(DEJAVU_FONT_PATH, 24)
+        self.font_small = load_font(DEJAVU_FONT_PATH, 16)
 
         # Colors
         self.color_bg = (20, 20, 30)

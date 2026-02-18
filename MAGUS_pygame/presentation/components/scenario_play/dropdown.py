@@ -5,7 +5,7 @@ Custom dropdown menu for selecting items from a list with keyboard and mouse sup
 """
 
 import pygame
-from config import DEJAVU_FONT_PATH
+from config import DEJAVU_FONT_PATH, load_font
 from logger.logger import get_logger
 
 logger = get_logger(__name__)
@@ -57,8 +57,8 @@ class Dropdown:
         self.dropdown_height = min(len(options), self.max_visible_items) * self.item_height
 
         # Fonts
-        self.font = pygame.font.Font(DEJAVU_FONT_PATH, 20)
-        self.font_small = pygame.font.Font(DEJAVU_FONT_PATH, 16)
+        self.font = load_font(DEJAVU_FONT_PATH, 20)
+        self.font_small = load_font(DEJAVU_FONT_PATH, 16)
 
         # Colors
         self.color_bg = (50, 50, 70)

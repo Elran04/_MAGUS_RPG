@@ -15,7 +15,7 @@ from enum import Enum
 
 import pygame
 from application.game_context import GameContext
-from config import DEJAVU_FONT_PATH
+from config import DEJAVU_FONT_PATH, load_font
 from domain.value_objects import ScenarioConfig
 from logger.logger import get_logger
 from presentation.screens.scenario_setup.scenario_phases import (
@@ -79,7 +79,7 @@ class ScenarioScreen:
         self.equipment_phase: EquipmentPhase | None = None
 
         # Fonts for navigation UI
-        self.font_normal = pygame.font.Font(DEJAVU_FONT_PATH, 24)
+        self.font_normal = load_font(DEJAVU_FONT_PATH, 24)
 
         # Colors
         self.color_bg = (20, 20, 30)

@@ -4,6 +4,7 @@ All file and directory paths are defined here for easy maintenance.
 """
 
 from pathlib import Path
+from utils.font_manager import get_dejavu_font_path
 
 # Base directory - MAGUS_pygame root
 BASE_DIR = Path(__file__).parent.parent
@@ -34,7 +35,7 @@ HUMANOID_SILHOUETTE = CHARACTER_SPRITES_DIR / "humanoid_silhouette.png"
 WARRIOR_SPRITE = CHARACTER_SPRITES_DIR / "warrior.png"
 GOBLIN_SPRITE = CHARACTER_SPRITES_DIR / "goblin.png"
 GRASS_BACKGROUND = BACKGROUND_SPRITES_DIR / "grass_bg.jpg"  # TODO: Move to backgrounds
-DEJAVU_FONT_PATH = Path("C:/Windows/Fonts/DejaVuSans.ttf")  # Adjust as needed
+DEJAVU_FONT_PATH = get_dejavu_font_path()  # Auto-downloads if not found
 
 
 def get_character_json_path(filename: str) -> Path:

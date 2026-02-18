@@ -8,7 +8,7 @@ in a three-column preview panel with scrollable sections during team composition
 from typing import TYPE_CHECKING, Any
 
 import pygame
-from config.paths import DEJAVU_FONT_PATH
+from config import DEJAVU_FONT_PATH, load_font
 from logger.logger import get_logger
 
 if TYPE_CHECKING:
@@ -57,11 +57,11 @@ class CharacterPreview:
         self._hover_pos: tuple[int, int] | None = None
 
         # Fonts
-        self.font_title = pygame.font.Font(DEJAVU_FONT_PATH, 24)
-        self.font_section = pygame.font.Font(DEJAVU_FONT_PATH, 20)
-        self.font_label = pygame.font.Font(DEJAVU_FONT_PATH, 16)
-        self.font_value = pygame.font.Font(DEJAVU_FONT_PATH, 14)
-        self.font_small = pygame.font.Font(DEJAVU_FONT_PATH, 12)
+        self.font_title = load_font(DEJAVU_FONT_PATH, 24)
+        self.font_section = load_font(DEJAVU_FONT_PATH, 20)
+        self.font_label = load_font(DEJAVU_FONT_PATH, 16)
+        self.font_value = load_font(DEJAVU_FONT_PATH, 14)
+        self.font_small = load_font(DEJAVU_FONT_PATH, 12)
 
         # Colors
         self.color_bg = (0, 0, 0, 180)

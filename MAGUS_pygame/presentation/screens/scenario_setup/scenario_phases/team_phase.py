@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pygame
 from application.game_context import GameContext
-from config import CHARACTER_SPRITES_DIR, CHARACTERS_DIR, DEJAVU_FONT_PATH
+from config import CHARACTER_SPRITES_DIR, CHARACTERS_DIR, DEJAVU_FONT_PATH, load_font
 from domain.value_objects import UnitSetup
 from logger.logger import get_logger
 from presentation.components.scenario_play.character_preview import CharacterPreview
@@ -61,9 +61,9 @@ class TeamCompositionPhase(SelectionPhaseBase):
         self._setup_ui()
 
         # Fonts
-        self.font_title = pygame.font.Font(DEJAVU_FONT_PATH, 40)
-        self.font_normal = pygame.font.Font(DEJAVU_FONT_PATH, 24)
-        self.font_small = pygame.font.Font(DEJAVU_FONT_PATH, 16)
+        self.font_title = load_font(DEJAVU_FONT_PATH, 40)
+        self.font_normal = load_font(DEJAVU_FONT_PATH, 24)
+        self.font_small = load_font(DEJAVU_FONT_PATH, 16)
 
         # Colors
         self.color_bg = (20, 20, 30)
