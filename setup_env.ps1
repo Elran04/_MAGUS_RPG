@@ -19,14 +19,28 @@ Write-Host "MAGUS RPG - Environment Setup (Windows PowerShell)" -ForegroundColor
 Write-Host "================================================" -ForegroundColor $Yellow
 Write-Host ""
 
-# Check if Python 3.13 is installed
+# Check if Python 3.9+ is installed
 Write-Host "Checking Python version..." -ForegroundColor $Yellow
 try {
     $pythonVersion = python --version 2>&1
-    Write-Host "✓ Found: $pythonVersion" -ForegroundColor $Green
+    # Extract version number from output like "Python 3.9.18"
+    if ($pythonVersion -match 'Python (\d+)\.(\d+)') {
+        $major = [int]$matches[1]
+        $minor = [int]$matches[2]
+        
+        if ($major -eq 3 -and $minor -ge 9) {
+            Write-Host "✓ Found: $pythonVersion" -ForegroundColor $Green
+        } else {
+            Write-Host "ERROR: Python 3.9+ is required. Found: $pythonVersion" -ForegroundColor $Red
+            exit 1
+        }
+    } else {
+        Write-Host "ERROR: Could not parse Python version: $pythonVersion" -ForegroundColor $Red
+        exit 1
+    }
 } catch {
     Write-Host "ERROR: Python is not installed or not in PATH." -ForegroundColor $Red
-    Write-Host "Please install Python 3.13 and add it to PATH."
+    Write-Host "Please install Python 3.9+ and add it to PATH."
     exit 1
 }
 Write-Host ""
