@@ -35,9 +35,45 @@ Megjegyzés: A Pygame modul jelenleg demo/prototípus a játékmenet mechanikák
 
 ### Követelmények
 - Python 3.13.x
-- Poetry (függőségkezelés)
+- Poetry (függőségkezelés) **VAGY** venv
 
 ### Projekt Beállítása
+
+#### Lehetőség A: Automatizált Setup Scriptek (Ajánlott)
+
+Az automatizált setup scriptek egy izolált virtuális környezetet hoznak létre és telepítik az összes szükséges függőséget.
+
+**Windows (Command Prompt vagy PowerShell):**
+```batch
+setup_env.bat
+```
+
+**Linux / macOS (Bash):**
+```bash
+chmod +x setup_env.sh
+./setup_env.sh
+```
+
+A scriptek:
+- ✓ Python 3.13 verzió ellenőrzése
+- ✓ Virtuális környezet (venv) létrehozása
+- ✓ pip frissítése
+- ✓ Főbb függőségek telepítése: `pygame`, `pyside6`, `pydantic`
+- ✓ Opcionálisan fejlesztői eszközök telepítése (black, ruff, mypy, pytest, stb.)
+
+**Környezet aktiválása a jövőben:**
+```bash
+# Linux / macOS
+source venv/bin/activate
+
+# Windows (PowerShell)
+.\venv\Scripts\Activate.ps1
+
+# Windows (Command Prompt)
+venv\Scripts\activate.bat
+```
+
+#### Lehetőség B: Poetry használata
 
 ```powershell
 # 1. Repository klónozása
@@ -55,11 +91,19 @@ poetry shell
 
 **Gamemaster Tools indítása:**
 ```powershell
+# Ha setup scriptet használtál:
+python Gamemaster_tools/main.py
+
+# Ha Poetry-t használtál:
 poetry run python Gamemaster_tools/main.py
 ```
 
 **Pygame játék indítása:**
 ```powershell
+# Ha setup scriptet használtál:
+python MAGUS_pygame/main.py
+
+# Ha Poetry-t használtál:
 poetry run python MAGUS_pygame/main.py
 ```
 
